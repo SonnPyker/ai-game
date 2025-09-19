@@ -464,9 +464,9 @@ export function WorldBuilder() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-8">
           {/* Main Form */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="xl:col-span-2 space-y-4 lg:space-y-6">
             {/* Core Idea */}
             <motion.div
               className="glass-effect p-6 rounded-xl"
@@ -500,7 +500,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               <h3 className="text-xl font-semibold text-white mb-4">Thể Loại & Bối Cảnh</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Thể loại</label>
                   <input
@@ -532,7 +532,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <h3 className="text-xl font-semibold text-white mb-4">Tông Truyện & Ngôi Kể</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Tông truyện</label>
                   <select
@@ -571,7 +571,7 @@ export function WorldBuilder() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-white">Nguyên Tắc Cốt Lõi</h3>
-                <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                   <button
                     onClick={() => handleAISuggestion('corePrinciples')}
                     disabled={isGenerating || !worldData.coreIdea.trim()}
@@ -591,7 +591,7 @@ export function WorldBuilder() {
               <p className="text-sm text-gray-400 mb-4">Các quy tắc và nguyên tắc cơ bản của thế giới</p>
               <div className="space-y-3">
                 {worldData.corePrinciples.map((principle, index) => (
-                  <div key={index} className="flex space-x-2">
+                  <div key={index} className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                     <input
                       type="text"
                       value={principle.name}
@@ -626,7 +626,7 @@ export function WorldBuilder() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-white">Thực Thể Nền Tảng</h3>
-                <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                   <button
                     onClick={() => handleAISuggestion('foundationEntities')}
                     disabled={isGenerating || !worldData.coreIdea.trim()}
@@ -704,7 +704,7 @@ export function WorldBuilder() {
               </div>
               <div className="space-y-3">
                 {worldData.currencies.map((currency, index) => (
-                  <div key={index} className="flex space-x-2">
+                  <div key={index} className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                     <input
                       type="text"
                       value={currency.name}
@@ -747,7 +747,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.6 }}
             >
               <h3 className="text-xl font-semibold text-white mb-4">Thời Gian & Độ Khó</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Năm bắt đầu</label>
                   <input
@@ -851,7 +851,7 @@ export function WorldBuilder() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-900 border border-gray-700/50 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
           >
             <h3 className="text-xl font-semibold text-white mb-2">Gợi ý Nguyên Tắc</h3>
             <p className="text-sm text-gray-400 mb-4">AI đã phân tích thế giới của bạn và đề xuất các mục sau.</p>
@@ -935,7 +935,7 @@ export function WorldBuilder() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-900 border border-gray-700/50 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
           >
             <h3 className="text-xl font-semibold text-white mb-2">Gợi ý Thực Thể</h3>
             <p className="text-sm text-gray-400 mb-4">AI đã phân tích thế giới của bạn và đề xuất các mục sau.</p>
@@ -1026,7 +1026,7 @@ export function WorldBuilder() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-900 border border-gray-700/50 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-4xl w-full mx-2 sm:mx-4 max-h-[95vh] sm:max-h-[80vh] overflow-y-auto"
           >
             <h3 className="text-2xl font-semibold text-white mb-4">Mô Tả Thế Giới</h3>
             <div className="bg-gray-700/30 border border-gray-600/50 rounded-lg p-4 mb-6">

@@ -96,7 +96,7 @@ export function HomePage() {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-8">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
@@ -129,7 +129,7 @@ export function HomePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.6 }}
       >
-        <div className="glass-effect p-12 rounded-2xl max-w-4xl mx-auto">
+        <div className="glass-effect p-6 sm:p-8 lg:p-12 rounded-2xl max-w-4xl mx-auto">
           <h2 className="text-4xl font-fantasy font-bold text-gradient mb-6">
             Sẵn Sàng Bắt Đầu Cuộc Phiêu Lưu?
           </h2>

@@ -78,11 +78,11 @@
   }
   
   .main-with-sidebar {
-    @apply lg:ml-64;
+    @apply xl:ml-64;
   }
   
   .main-full-width {
-    @apply lg:ml-0;
+    @apply xl:ml-0;
   }
 }
 

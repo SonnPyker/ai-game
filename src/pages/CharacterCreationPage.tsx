@@ -373,7 +373,7 @@ export function CharacterCreationPage() {
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-8">
         {/* Left Column */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -385,7 +385,7 @@ export function CharacterCreationPage() {
           <div className="glass-effect p-6 rounded-2xl">
             <h3 className="text-xl font-semibold text-white mb-4">Thông Tin Cơ Bản</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Tên</label>
                 <input
@@ -498,7 +498,7 @@ export function CharacterCreationPage() {
               </button>
             </div>
             
-             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 lg:gap-4 mb-4">
                {Object.entries(characterData.coreStats).map(([stat, value]) => {
                  const modifier = Math.floor((value - 10) / 2);
                  const modifierText = modifier >= 0 ? `+${modifier}` : `${modifier}`;
@@ -538,7 +538,7 @@ export function CharacterCreationPage() {
                })}
              </div>
             
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 text-sm">
               <div className="bg-white/5 p-3 rounded-lg">
                 <div className="text-gray-300">Máu Tối Đa</div>
                 <div className="text-white font-semibold">{(characterData as any).hpMax || calculateMaxHealth()}</div>
@@ -555,7 +555,7 @@ export function CharacterCreationPage() {
           <div className="glass-effect p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-white">Thành Thạo (Tối đa 3)</h3>
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                 <button
                   onClick={handleRerollSkills}
                   disabled={isRerolling}
@@ -647,7 +647,7 @@ export function CharacterCreationPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.6 }}
-        className="mt-8 flex justify-center space-x-4"
+        className="mt-8 flex flex-col sm:flex-row justify-center gap-3 sm:space-x-4"
       >
         <button
           onClick={handleResetForm}

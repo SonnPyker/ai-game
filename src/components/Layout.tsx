@@ -46,13 +46,13 @@ export function Layout({ children }: LayoutProps) {
         <main className={`flex-1 main-transition ${
           sidebarOpen ? 'main-with-sidebar' : 'main-full-width'
         } ${
-          location.pathname === '/game' ? 'p-0' : 'p-4 lg:p-6'
+          location.pathname === '/game' ? 'p-0' : 'p-2 sm:p-4 lg:p-6'
         }`}>
           {/* Toggle Button - chỉ hiện khi sidebar đóng */}
           {!sidebarOpen && (
             <button
               onClick={toggleSidebar}
-              className="fixed top-4 left-4 z-40 p-3 bg-primary-500/20 border-2 border-primary-500/50 rounded-lg text-primary-300 hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 shadow-lg"
+              className="fixed top-2 left-2 sm:top-4 sm:left-4 z-40 p-2 sm:p-3 bg-primary-500/20 border-2 border-primary-500/50 rounded-lg text-primary-300 hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 shadow-lg"
               title="Mở menu"
             >
               <Menu className="w-6 h-6" />

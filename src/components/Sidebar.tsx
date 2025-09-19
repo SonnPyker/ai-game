@@ -22,10 +22,10 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   ];
 
   return (
-    <aside className={`fixed left-0 top-0 w-64 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-50 sidebar-transition ${
+    <aside className={`fixed left-0 top-0 w-64 sm:w-72 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-50 sidebar-transition ${
       isOpen ? 'sidebar-open' : 'sidebar-closed'
     }`}>
-      <nav className="p-4">
+      <nav className="p-3 sm:p-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-white">Menu</h2>
           <div className="flex items-center space-x-2">
