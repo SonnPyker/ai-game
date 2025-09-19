@@ -27,7 +27,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
     }`}>
       <nav className="p-3 sm:p-4">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-white">Menu</h2>
+          <h2 className="text-lg font-bold-vietnamese text-white">Menu</h2>
           <div className="flex items-center space-x-2">
             <button
               onClick={onToggle}

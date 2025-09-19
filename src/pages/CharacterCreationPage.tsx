@@ -299,7 +299,7 @@ export function CharacterCreationPage() {
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <h1 className="text-5xl font-fantasy font-bold text-gradient mb-4">
+          <h1 className="text-5xl font-extrabold-vietnamese text-gradient mb-4">
             Mô Tả Nhân Vật
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
@@ -365,7 +365,7 @@ export function CharacterCreationPage() {
         transition={{ duration: 0.8 }}
         className="text-center mb-8"
       >
-        <h1 className="text-4xl font-fantasy font-bold text-gradient mb-4">
+        <h1 className="text-4xl font-bold-vietnamese text-gradient mb-4">
           Tùy Chỉnh Nhân Vật
         </h1>
         <p className="text-lg text-gray-300">
@@ -383,7 +383,7 @@ export function CharacterCreationPage() {
         >
           {/* Basic Info */}
           <div className="glass-effect p-6 rounded-2xl">
-            <h3 className="text-xl font-semibold text-white mb-4">Thông Tin Cơ Bản</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-4">Thông Tin Cơ Bản</h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
               <div>
@@ -413,7 +413,7 @@ export function CharacterCreationPage() {
 
           {/* Appearance */}
           <div className="glass-effect p-6 rounded-2xl">
-            <h3 className="text-xl font-semibold text-white mb-4">Ngoại Hình</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-4">Ngoại Hình</h3>
             <textarea
               value={characterData.appearance}
               onChange={(e) => setCharacterData(prev => ({ ...prev, appearance: e.target.value }))}
@@ -424,7 +424,7 @@ export function CharacterCreationPage() {
 
           {/* Personality */}
           <div className="glass-effect p-6 rounded-2xl">
-            <h3 className="text-xl font-semibold text-white mb-4">Tính Cách (Tóm tắt)</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-4">Tính Cách (Tóm tắt)</h3>
             <textarea
               value={characterData.personality}
               onChange={(e) => setCharacterData(prev => ({ ...prev, personality: e.target.value }))}
@@ -435,7 +435,7 @@ export function CharacterCreationPage() {
 
           {/* Backstory */}
           <div className="glass-effect p-6 rounded-2xl">
-            <h3 className="text-xl font-semibold text-white mb-4">Tiểu Sử</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-4">Tiểu Sử</h3>
             <textarea
               value={characterData.backstory}
               onChange={(e) => setCharacterData(prev => ({ ...prev, backstory: e.target.value }))}
@@ -455,7 +455,7 @@ export function CharacterCreationPage() {
           {/* Personality Traits */}
           <div className="glass-effect p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-white">Đặc Điểm Tính Cách</h3>
+              <h3 className="text-xl font-bold-vietnamese text-white">Đặc Điểm Tính Cách</h3>
               <button
                 onClick={handleAddPersonalityTrait}
                 className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm"
@@ -488,7 +488,7 @@ export function CharacterCreationPage() {
           {/* Core Stats */}
           <div className="glass-effect p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-white">Chỉ Số Cốt Lõi</h3>
+              <h3 className="text-xl font-bold-vietnamese text-white">Chỉ Số Cốt Lõi</h3>
               <button
                 onClick={handleAISuggestStats}
                 className="px-3 py-1 bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 text-sm flex items-center space-x-1"
@@ -516,7 +516,7 @@ export function CharacterCreationPage() {
                      </label>
                      
                      <div className="text-center mb-3">
-                       <div className="text-3xl font-bold text-white mb-1">{value}</div>
+                       <div className="text-3xl font-bold-vietnamese text-white mb-1">{value}</div>
                        <div className={`text-lg font-semibold ${modifierColor}`}>
                          {modifierText}
                        </div>
@@ -541,11 +541,11 @@ export function CharacterCreationPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 text-sm">
               <div className="bg-white/5 p-3 rounded-lg">
                 <div className="text-gray-300">Máu Tối Đa</div>
-                <div className="text-white font-semibold">{(characterData as any).hpMax || calculateMaxHealth()}</div>
+                <div className="text-white font-bold-vietnamese">{(characterData as any).hpMax || calculateMaxHealth()}</div>
               </div>
               <div className="bg-white/5 p-3 rounded-lg">
                 <div className="text-gray-300">Năng Lượng Tối Đa</div>
-                <div className="text-white font-semibold">{(characterData as any).energyMax || calculateMaxEnergy()}</div>
+                <div className="text-white font-bold-vietnamese">{(characterData as any).energyMax || calculateMaxEnergy()}</div>
               </div>
             </div>
           </div>
@@ -554,7 +554,7 @@ export function CharacterCreationPage() {
           {/* Proficiencies */}
           <div className="glass-effect p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-white">Thành Thạo (Tối đa 3)</h3>
+              <h3 className="text-xl font-bold-vietnamese text-white">Thành Thạo (Tối đa 3)</h3>
               <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                 <button
                   onClick={handleRerollSkills}

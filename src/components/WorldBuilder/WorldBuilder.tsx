@@ -459,7 +459,7 @@ export function WorldBuilder() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">World Builder</h1>
+            <h1 className="text-3xl font-bold-vietnamese text-white mb-2">World Builder</h1>
             <p className="text-gray-400">Tạo thế giới cho cuộc phiêu lưu của bạn</p>
           </div>
         </div>
@@ -475,7 +475,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-white">Ý Tưởng Cốt Lõi</h3>
+                <h3 className="text-xl font-bold-vietnamese text-white">Ý Tưởng Cốt Lõi</h3>
                 <button
                   onClick={() => handleAISuggestion('coreIdea')}
                   disabled={isGenerating}
@@ -499,7 +499,7 @@ export function WorldBuilder() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <h3 className="text-xl font-semibold text-white mb-4">Thể Loại & Bối Cảnh</h3>
+              <h3 className="text-xl font-bold-vietnamese text-white mb-4">Thể Loại & Bối Cảnh</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Thể loại</label>
@@ -531,7 +531,7 @@ export function WorldBuilder() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <h3 className="text-xl font-semibold text-white mb-4">Tông Truyện & Ngôi Kể</h3>
+              <h3 className="text-xl font-bold-vietnamese text-white mb-4">Tông Truyện & Ngôi Kể</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Tông truyện</label>
@@ -570,7 +570,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-white">Nguyên Tắc Cốt Lõi</h3>
+                <h3 className="text-xl font-bold-vietnamese text-white">Nguyên Tắc Cốt Lõi</h3>
                 <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                   <button
                     onClick={() => handleAISuggestion('corePrinciples')}
@@ -625,7 +625,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-white">Thực Thể Nền Tảng</h3>
+                <h3 className="text-xl font-bold-vietnamese text-white">Thực Thể Nền Tảng</h3>
                 <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                   <button
                     onClick={() => handleAISuggestion('foundationEntities')}
@@ -693,7 +693,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.5 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-white">Tiền Tệ</h3>
+                <h3 className="text-xl font-bold-vietnamese text-white">Tiền Tệ</h3>
                 <button
                   onClick={addCurrency}
                   className="p-2 bg-green-500/20 border-2 border-green-500/50 rounded-lg text-green-300 hover:bg-green-500/30 transition-colors duration-200"
@@ -746,7 +746,7 @@ export function WorldBuilder() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.6 }}
             >
-              <h3 className="text-xl font-semibold text-white mb-4">Thời Gian & Độ Khó</h3>
+              <h3 className="text-xl font-bold-vietnamese text-white mb-4">Thời Gian & Độ Khó</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Năm bắt đầu</label>
@@ -792,7 +792,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.7 }}
             >
               <div className="text-center">
-                <h3 className="text-xl font-semibold text-white mb-4">Tạo Thế Giới & Chuyển Tiếp</h3>
+                <h3 className="text-xl font-bold-vietnamese text-white mb-4">Tạo Thế Giới & Chuyển Tiếp</h3>
                 <p className="text-gray-400 mb-6">
                   Điền đầy đủ thông tin bên trên, sau đó nhấn nút để AI tạo mô tả thế giới và chuyển đến tạo nhân vật
                 </p>
@@ -853,7 +853,7 @@ export function WorldBuilder() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
           >
-            <h3 className="text-xl font-semibold text-white mb-2">Gợi ý Nguyên Tắc</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-2">Gợi ý Nguyên Tắc</h3>
             <p className="text-sm text-gray-400 mb-4">AI đã phân tích thế giới của bạn và đề xuất các mục sau.</p>
             
             <div className="mb-4">
@@ -899,7 +899,7 @@ export function WorldBuilder() {
                   {/* Card Content */}
                   <div className="pr-8">
                     {/* Header - Tên nguyên tắc */}
-                    <h4 className="text-xl font-bold text-white mb-3 leading-tight">
+                    <h4 className="text-xl font-bold-vietnamese text-white mb-3 leading-tight">
                       {principle.name}
                     </h4>
                     
@@ -937,7 +937,7 @@ export function WorldBuilder() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
           >
-            <h3 className="text-xl font-semibold text-white mb-2">Gợi ý Thực Thể</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-2">Gợi ý Thực Thể</h3>
             <p className="text-sm text-gray-400 mb-4">AI đã phân tích thế giới của bạn và đề xuất các mục sau.</p>
             
             <div className="mb-4">
@@ -983,7 +983,7 @@ export function WorldBuilder() {
                   {/* Card Content */}
                   <div className="pr-8">
                     {/* Header - Tên thực thể */}
-                    <h4 className="text-xl font-bold text-white mb-3 leading-tight">
+                    <h4 className="text-xl font-bold-vietnamese text-white mb-3 leading-tight">
                       {entity.name}
                     </h4>
                     
@@ -1028,7 +1028,7 @@ export function WorldBuilder() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-4xl w-full mx-2 sm:mx-4 max-h-[95vh] sm:max-h-[80vh] overflow-y-auto"
           >
-            <h3 className="text-2xl font-semibold text-white mb-4">Mô Tả Thế Giới</h3>
+            <h3 className="text-2xl font-bold-vietnamese text-white mb-4">Mô Tả Thế Giới</h3>
             <div className="bg-gray-700/30 border border-gray-600/50 rounded-lg p-4 mb-6">
               <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
                 {generatedWorldDescription}

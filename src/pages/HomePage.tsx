@@ -59,7 +59,7 @@ export function HomePage() {
             <Sword className="w-12 h-12 text-white" />
           </motion.div>
           
-          <h1 className="text-6xl font-fantasy font-bold text-gradient mb-6">
+          <h1 className="text-6xl font-extrabold-vietnamese text-gradient mb-6">
             Thế Giới Huyền Bí
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
@@ -88,7 +88,7 @@ export function HomePage() {
         transition={{ duration: 0.8, delay: 0.3 }}
       >
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-fantasy font-bold text-gradient mb-4">
+          <h2 className="text-4xl font-bold-vietnamese text-gradient mb-4">
             Tính Năng Nổi Bật
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
@@ -110,7 +110,7 @@ export function HomePage() {
                 <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center mb-4">
                   <Icon className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">
+                <h3 className="text-xl font-bold-vietnamese text-white mb-3">
                   {feature.title}
                 </h3>
                 <p className="text-gray-300 leading-relaxed">
