@@ -488,7 +488,7 @@ export function WorldBuilder() {
                 value={worldData.coreIdea}
                 onChange={(e) => setWorldData(prev => ({ ...prev, coreIdea: e.target.value }))}
                 placeholder="Mô tả ý tưởng cốt lõi của thế giới..."
-                className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
+                className="w-full h-32 px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none resize-none"
               />
             </motion.div>
 
@@ -508,7 +508,7 @@ export function WorldBuilder() {
                     value={worldData.genre}
                     onChange={(e) => setWorldData(prev => ({ ...prev, genre: e.target.value }))}
                     placeholder="Ví dụ: Fantasy, Sci-fi, Horror..."
-                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -518,7 +518,7 @@ export function WorldBuilder() {
                     value={worldData.setting}
                     onChange={(e) => setWorldData(prev => ({ ...prev, setting: e.target.value }))}
                     placeholder="Ví dụ: Thời trung cổ, Tương lai, Hiện đại..."
-                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -538,7 +538,7 @@ export function WorldBuilder() {
                   <select
                     value={worldData.storyTone}
                     onChange={(e) => setWorldData(prev => ({ ...prev, storyTone: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="">Chọn tông truyện</option>
                     {storyTones.map(tone => (
@@ -551,7 +551,7 @@ export function WorldBuilder() {
                   <select
                     value={worldData.narration}
                     onChange={(e) => setWorldData(prev => ({ ...prev, narration: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="">Chọn ngôi kể</option>
                     {narrations.map(narration => (
@@ -597,14 +597,14 @@ export function WorldBuilder() {
                       value={principle.name}
                       onChange={(e) => updateCorePrinciple(index, 'name', e.target.value)}
                       placeholder="Tên nguyên tắc"
-                      className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm"
+                      className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
                     />
                     <input
                       type="text"
                       value={principle.description}
                       onChange={(e) => updateCorePrinciple(index, 'description', e.target.value)}
                       placeholder="Mô tả"
-                      className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm"
+                      className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
                     />
                     <button
                       onClick={() => removeCorePrinciple(index)}
@@ -651,7 +651,7 @@ export function WorldBuilder() {
                       <select
                         value={entity.classification || 'Nhân vật'}
                         onChange={(e) => updateFoundationEntity(index, 'classification', e.target.value)}
-                        className="px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none text-sm"
+                        className="px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none text-sm"
                       >
                         {entityClassifications.map((classification) => (
                           <option key={classification} value={classification} className="bg-gray-800">
@@ -664,7 +664,7 @@ export function WorldBuilder() {
                         value={entity.name}
                         onChange={(e) => updateFoundationEntity(index, 'name', e.target.value)}
                         placeholder="Tên thực thể"
-                        className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm"
+                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
                       />
                       <button
                         onClick={() => removeFoundationEntity(index)}
@@ -678,7 +678,7 @@ export function WorldBuilder() {
                       onChange={(e) => updateFoundationEntity(index, 'description', e.target.value)}
                       placeholder="Mô tả chi tiết"
                       rows={2}
-                      className="w-full px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm resize-none"
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none"
                     />
                   </div>
                 ))}
@@ -710,14 +710,14 @@ export function WorldBuilder() {
                       value={currency.name}
                       onChange={(e) => updateCurrency(index, 'name', e.target.value)}
                       placeholder="Tên tiền tệ"
-                      className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm"
+                      className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
                     />
                     <input
                       type="text"
                       value={currency.description}
                       onChange={(e) => updateCurrency(index, 'description', e.target.value)}
                       placeholder="Mô tả"
-                      className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm"
+                      className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
                     />
                     <label className="flex items-center space-x-3 text-sm text-gray-300 cursor-pointer">
                       <input
@@ -754,7 +754,7 @@ export function WorldBuilder() {
                     type="number"
                     value={worldData.startYear}
                     onChange={(e) => setWorldData(prev => ({ ...prev, startYear: parseInt(e.target.value) || 1 }))}
-                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -762,7 +762,7 @@ export function WorldBuilder() {
                   <select
                     value={worldData.difficulty}
                     onChange={(e) => setWorldData(prev => ({ ...prev, difficulty: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="">Chọn độ khó</option>
                     {difficulties.map(difficulty => (
@@ -851,7 +851,7 @@ export function WorldBuilder() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-800 border-2 border-white/40 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            className="bg-gray-900 border border-gray-700/50 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
           >
             <h3 className="text-xl font-semibold text-white mb-2">Gợi ý Nguyên Tắc</h3>
             <p className="text-sm text-gray-400 mb-4">AI đã phân tích thế giới của bạn và đề xuất các mục sau.</p>
@@ -935,7 +935,7 @@ export function WorldBuilder() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-800 border-2 border-white/40 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            className="bg-gray-900 border border-gray-700/50 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
           >
             <h3 className="text-xl font-semibold text-white mb-2">Gợi ý Thực Thể</h3>
             <p className="text-sm text-gray-400 mb-4">AI đã phân tích thế giới của bạn và đề xuất các mục sau.</p>
@@ -1026,7 +1026,7 @@ export function WorldBuilder() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-800 border-2 border-white/40 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            className="bg-gray-900 border border-gray-700/50 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto"
           >
             <h3 className="text-2xl font-semibold text-white mb-4">Mô Tả Thế Giới</h3>
             <div className="bg-gray-700/30 border border-gray-600/50 rounded-lg p-4 mb-6">

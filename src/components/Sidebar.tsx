@@ -22,7 +22,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   ];
 
   return (
-    <aside className={`fixed left-0 top-0 w-64 h-full glass-effect border-r-4 border-white/40 overflow-y-auto scrollbar-hide z-50 sidebar-transition ${
+    <aside className={`fixed left-0 top-0 w-64 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-50 sidebar-transition ${
       isOpen ? 'sidebar-open' : 'sidebar-closed'
     }`}>
       <nav className="p-4">
@@ -31,14 +31,14 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
           <div className="flex items-center space-x-2">
             <button
               onClick={onToggle}
-              className="p-2 text-gray-300 hover:text-white transition-colors duration-200 border-2 border-white/40 rounded-lg hover:border-white/60"
+              className="p-2 text-gray-300 hover:text-white transition-colors duration-200 border border-gray-600/50 rounded-lg hover:border-gray-500/50"
               title={isOpen ? "Ẩn menu" : "Hiện menu"}
             >
               <Menu className="w-5 h-5" />
             </button>
             <button
               onClick={onClose}
-              className="lg:hidden p-2 text-gray-300 hover:text-white transition-colors duration-200 border-2 border-white/40 rounded-lg hover:border-white/60"
+              className="lg:hidden p-2 text-gray-300 hover:text-white transition-colors duration-200 border border-gray-600/50 rounded-lg hover:border-gray-500/50"
               title="Đóng menu"
             >
               <X className="w-5 h-5" />
