@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white font-sans;
+    min-height: 100vh;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .glass-effect {
+    @apply bg-white/10 backdrop-blur-md border-2 border-white/40;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-medium px-6 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-primary-500/25 border-2 border-primary-400/70;
+  }
+  
+  .btn-secondary {
+    @apply bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-medium px-6 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-secondary-500/25 border-2 border-secondary-400/70;
+  }
+  
+  .btn-outline {
+    @apply px-4 py-2 bg-transparent border-2 border-primary-500/70 rounded-lg text-primary-300 hover:bg-primary-500/20 hover:border-primary-400 transition-all duration-200 font-medium;
+  }
+  
+  .tab-active {
+    @apply bg-primary-500/30 border-2 border-primary-400/70 text-primary-100 shadow-lg;
+  }
+  
+  .tab-inactive {
+    @apply bg-white/5 border-2 border-white/20 text-gray-300 hover:bg-white/10 hover:border-white/40 transition-all duration-200;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Sidebar Animation */
+  .sidebar-transition {
+    @apply transform transition-transform duration-300 ease-in-out;
+  }
+  
+  .sidebar-open {
+    @apply translate-x-0;
+  }
+  
+  .sidebar-closed {
+    @apply -translate-x-full;
+  }
+  
+  /* Main Content Animation */
+  .main-transition {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .main-with-sidebar {
+    @apply lg:ml-64;
+  }
+  
+  .main-full-width {
+    @apply lg:ml-0;
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+}

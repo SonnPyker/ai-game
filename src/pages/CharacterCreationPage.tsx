@@ -1,0 +1,678 @@
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { Character } from '../types';
+import { geminiService } from '../services/geminiService';
+import { Sparkles, Download, RotateCcw, Check } from 'lucide-react';
+
+interface CharacterData {
+  name: string;
+  gender: 'male' | 'female' | 'other';
+  appearance: string;
+  personality: string;
+  backstory: string;
+  personalityTraits: string[];
+  coreStats: {
+    strength: number;
+    agility: number;
+    intelligence: number;
+    constitution: number;
+    wisdom: number;
+    charisma: number;
+  };
+  customStats: { name: string; value: number }[];
+  proficiencies: { name: string; level: number; energyCost?: number; description?: string }[];
+}
+
+export function CharacterCreationPage() {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState<'description' | 'customize'>('description');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isRerolling, setIsRerolling] = useState(false);
+  const [characterDescription, setCharacterDescription] = useState('');
+  const [characterData, setCharacterData] = useState<CharacterData>({
+    name: '',
+    gender: 'male',
+    appearance: '',
+    personality: '',
+    backstory: '',
+    personalityTraits: [],
+    coreStats: {
+      strength: 10,
+      agility: 10,
+      intelligence: 10,
+      constitution: 10,
+      wisdom: 10,
+      charisma: 10
+    },
+    customStats: [],
+    proficiencies: []
+  });
+
+  const calculateMaxHealth = () => {
+    return Math.floor((characterData.coreStats.constitution - 10) / 2) + 20;
+  };
+
+  const calculateMaxEnergy = () => {
+    return Math.floor((characterData.coreStats.wisdom - 10) / 2) + 15;
+  };
+
+  const handleAnalyzeDescription = async () => {
+    if (!characterDescription.trim()) return;
+    
+    setIsAnalyzing(true);
+    try {
+      // Get world context from localStorage
+      const worldGenResult = localStorage.getItem('world_gen_result');
+      const worldContext = worldGenResult ? JSON.parse(worldGenResult) : null;
+      
+      console.log('World context for character analysis:', worldContext);
+      
+      const analysis = await geminiService.analyzeCharacterDescription(characterDescription, worldContext);
+      console.log('Analysis result:', analysis);
+      
+      // Convert new schema to old format for compatibility
+      const convertedData: any = {
+        name: analysis.name || '',
+        gender: analysis.gender === 'Nam' ? 'male' : analysis.gender === 'Nữ' ? 'female' : 'male',
+        appearance: analysis.appearance || '',
+        personality: analysis.personalitySummary || '',
+        backstory: analysis.backstory || '',
+        personalityTraits: analysis.traits || [],
+        coreStats: {
+          strength: analysis.coreStats?.str?.score || 10,
+          agility: analysis.coreStats?.dex?.score || 10,
+          intelligence: analysis.coreStats?.int?.score || 10,
+          constitution: analysis.coreStats?.con?.score || 10,
+          wisdom: analysis.coreStats?.wis?.score || 10,
+          charisma: analysis.coreStats?.cha?.score || 10
+        },
+        customStats: [],
+        proficiencies: analysis.skills?.map((skill: any) => ({
+          name: skill.name || '',
+          level: skill.level || 1,
+          energyCost: skill.energyCost || 5,
+          description: skill.description || ''
+        })) || []
+      };
+      
+      // Add derived stats if available
+      if (analysis.derived) {
+        convertedData.hpMax = analysis.derived.hpMax || 100;
+        convertedData.energyMax = analysis.derived.energyMax || 100;
+      }
+      
+      console.log('Converted data:', convertedData);
+      console.log('Original analysis with evidence:', analysis);
+      setCharacterData(convertedData);
+      setCurrentStep('customize');
+      
+      // Show evidence information if available
+      if (analysis.unknown_fields && analysis.unknown_fields.length > 0) {
+        console.log('Missing fields:', analysis.unknown_fields);
+      }
+    } catch (error) {
+      console.error('Error analyzing character:', error);
+      alert('Có lỗi xảy ra khi phân tích nhân vật. Vui lòng thử lại.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleAddPersonalityTrait = () => {
+    setCharacterData(prev => ({
+      ...prev,
+      personalityTraits: [...prev.personalityTraits, '']
+    }));
+  };
+
+  const handleRemovePersonalityTrait = (index: number) => {
+    setCharacterData(prev => ({
+      ...prev,
+      personalityTraits: prev.personalityTraits.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleUpdatePersonalityTrait = (index: number, value: string) => {
+    setCharacterData(prev => ({
+      ...prev,
+      personalityTraits: prev.personalityTraits.map((trait, i) => 
+        i === index ? value : trait
+      )
+    }));
+  };
+
+
+  const handleAddProficiency = () => {
+    if (characterData.proficiencies.length >= 3) return;
+    
+    setCharacterData(prev => ({
+      ...prev,
+      proficiencies: [...prev.proficiencies, { name: '', level: 1, energyCost: 5, description: '' }]
+    }));
+  };
+
+  const handleRemoveProficiency = (index: number) => {
+    setCharacterData(prev => ({
+      ...prev,
+      proficiencies: prev.proficiencies.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleUpdateProficiency = (index: number, field: 'name' | 'level' | 'energyCost' | 'description', value: string | number) => {
+    setCharacterData(prev => ({
+      ...prev,
+      proficiencies: prev.proficiencies.map((prof, i) => 
+        i === index ? { ...prof, [field]: value } : prof
+      )
+    }));
+  };
+
+  const handleResetForm = () => {
+    setCharacterData({
+      name: '',
+      gender: 'male',
+      appearance: '',
+      personality: '',
+      backstory: '',
+      personalityTraits: [],
+      coreStats: {
+        strength: 10,
+        agility: 10,
+        intelligence: 10,
+        constitution: 10,
+        wisdom: 10,
+        charisma: 10
+      },
+      customStats: [],
+      proficiencies: []
+    });
+    setCharacterDescription('');
+    setCurrentStep('description');
+  };
+
+  const handleAcceptAndStart = () => {
+    // Convert to Character type and save
+    const character: Character = {
+      name: characterData.name,
+      class: { 
+        id: 'adventurer',
+        name: 'Phiêu lưu gia',
+        description: 'Một nhân vật phiêu lưu đa năng',
+        icon: '⚔️',
+        primaryStats: ['strength', 'agility'],
+        abilities: ['Combat', 'Exploration']
+      },
+      race: { 
+        id: 'human',
+        name: 'Con người',
+        description: 'Chủng tộc con người cân bằng',
+        icon: '👤',
+        racialBonuses: {},
+        specialAbilities: ['Adaptability']
+      },
+      gender: characterData.gender,
+      backstory: characterData.backstory,
+      // Add custom fields
+      appearance: characterData.appearance,
+      personality: characterData.personality,
+      personalityTraits: characterData.personalityTraits,
+      coreStats: characterData.coreStats,
+      customStats: [],
+      proficiencies: characterData.proficiencies
+    };
+
+    localStorage.setItem('currentCharacter', JSON.stringify(character));
+    navigate('/game');
+  };
+
+  const handleExportCharacter = () => {
+    const dataStr = JSON.stringify(characterData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${characterData.name || 'character'}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleAISuggestStats = async () => {
+    try {
+      // Get world context from localStorage
+      const worldGenResult = localStorage.getItem('world_gen_result');
+      const worldContext = worldGenResult ? JSON.parse(worldGenResult) : null;
+      
+      console.log('World context for stats suggestion:', worldContext);
+      
+      const suggestions = await geminiService.suggestCharacterStats(characterData, worldContext);
+      setCharacterData(prev => ({
+        ...prev,
+        coreStats: suggestions.coreStats || prev.coreStats,
+        customStats: [],
+        proficiencies: suggestions.proficiencies?.map((prof: any) => ({
+          name: prof.name || '',
+          level: prof.level || 1,
+          energyCost: prof.energyCost || 5,
+          description: prof.description || ''
+        })) || prev.proficiencies
+      }));
+    } catch (error) {
+      console.error('Error getting AI suggestions:', error);
+    }
+  };
+
+  const handleRerollSkills = async () => {
+    try {
+      setIsRerolling(true);
+      
+      // Get world context from localStorage
+      const worldGenResult = localStorage.getItem('world_gen_result');
+      const worldContext = worldGenResult ? JSON.parse(worldGenResult) : null;
+      
+      console.log('Rerolling skills with world context:', worldContext);
+      
+      const newSkills = await geminiService.rerollCharacterSkills(characterData, worldContext);
+      
+      setCharacterData(prev => ({
+        ...prev,
+        proficiencies: newSkills.skills?.map((skill: any) => ({
+          name: skill.name || '',
+          level: skill.level || 1,
+          energyCost: skill.energyCost || 5,
+          description: skill.description || ''
+        })) || []
+      }));
+    } catch (error) {
+      console.error('Error rerolling skills:', error);
+    } finally {
+      setIsRerolling(false);
+    }
+  };
+
+  if (currentStep === 'description') {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-5xl font-fantasy font-bold text-gradient mb-4">
+            Mô Tả Nhân Vật
+          </h1>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Hãy mô tả nhân vật của bạn bằng ngôn ngữ tự do. AI sẽ phân tích và tự động điền vào form tạo nhân vật.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="glass-effect p-8 rounded-2xl"
+        >
+          <div className="mb-6">
+            <label className="block text-lg font-semibold text-white mb-3">
+              Mô tả nhân vật của bạn
+            </label>
+            <textarea
+              value={characterDescription}
+              onChange={(e) => setCharacterDescription(e.target.value)}
+              placeholder="Ví dụ: Tôi muốn tạo một nhân vật tên là Aria, một nữ pháp sư trẻ tuổi với mái tóc bạc dài và đôi mắt tím. Cô ấy thông minh nhưng hơi kiêu ngạo, có khả năng điều khiển phép thuật băng. Cô sinh ra trong một gia đình quý tộc nhưng đã bỏ nhà ra đi để tìm kiếm tri thức cổ xưa..."
+              className="w-full h-64 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
+            />
+          </div>
+
+          <div className="flex flex-col items-center space-y-3">
+            <button
+              onClick={handleAnalyzeDescription}
+              disabled={!characterDescription.trim() || isAnalyzing}
+              className="px-8 py-4 bg-primary-500/20 border-2 border-primary-500/70 rounded-lg text-primary-300 hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3"
+            >
+              <Sparkles className="w-5 h-5" />
+              <span>{isAnalyzing ? 'Đang phân tích...' : 'Phân Tích & Tạo Nhân Vật'}</span>
+            </button>
+            
+            {/* World context indicator */}
+            {(() => {
+              try {
+                return localStorage.getItem('world_gen_result') && (
+                  <div className="text-xs text-gray-400 text-center max-w-md">
+                    <div className="flex items-center justify-center space-x-1 mb-1">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span>AI sẽ sử dụng thông tin thế giới để suy luận</span>
+                    </div>
+                    <p>Nhân vật sẽ được tạo phù hợp với thế giới đã thiết lập</p>
+                  </div>
+                );
+              } catch {
+                return null;
+              }
+            })()}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="text-center mb-8"
+      >
+        <h1 className="text-4xl font-fantasy font-bold text-gradient mb-4">
+          Tùy Chỉnh Nhân Vật
+        </h1>
+        <p className="text-lg text-gray-300">
+          Chỉnh sửa và hoàn thiện nhân vật của bạn
+        </p>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Column */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="space-y-6"
+        >
+          {/* Basic Info */}
+          <div className="glass-effect p-6 rounded-2xl">
+            <h3 className="text-xl font-semibold text-white mb-4">Thông Tin Cơ Bản</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Tên</label>
+                <input
+                  type="text"
+                  value={characterData.name}
+                  onChange={(e) => setCharacterData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Giới tính</label>
+                <select
+                  value={characterData.gender}
+                  onChange={(e) => setCharacterData(prev => ({ ...prev, gender: e.target.value as any }))}
+                  className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none"
+                >
+                  <option value="male">Nam</option>
+                  <option value="female">Nữ</option>
+                  <option value="other">Khác</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Appearance */}
+          <div className="glass-effect p-6 rounded-2xl">
+            <h3 className="text-xl font-semibold text-white mb-4">Ngoại Hình</h3>
+            <textarea
+              value={characterData.appearance}
+              onChange={(e) => setCharacterData(prev => ({ ...prev, appearance: e.target.value }))}
+              placeholder="Mô tả ngoại hình của nhân vật..."
+              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
+            />
+          </div>
+
+          {/* Personality */}
+          <div className="glass-effect p-6 rounded-2xl">
+            <h3 className="text-xl font-semibold text-white mb-4">Tính Cách (Tóm tắt)</h3>
+            <textarea
+              value={characterData.personality}
+              onChange={(e) => setCharacterData(prev => ({ ...prev, personality: e.target.value }))}
+              placeholder="Mô tả tính cách tổng quan của nhân vật..."
+              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
+            />
+          </div>
+
+          {/* Backstory */}
+          <div className="glass-effect p-6 rounded-2xl">
+            <h3 className="text-xl font-semibold text-white mb-4">Tiểu Sử</h3>
+            <textarea
+              value={characterData.backstory}
+              onChange={(e) => setCharacterData(prev => ({ ...prev, backstory: e.target.value }))}
+              placeholder="Viết tiểu sử chi tiết của nhân vật..."
+              className="w-full h-48 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
+            />
+          </div>
+        </motion.div>
+
+        {/* Right Column */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="space-y-6"
+        >
+          {/* Personality Traits */}
+          <div className="glass-effect p-6 rounded-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white">Đặc Điểm Tính Cách</h3>
+              <button
+                onClick={handleAddPersonalityTrait}
+                className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm"
+              >
+                + Thêm đặc điểm
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {characterData.personalityTraits.map((trait, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={trait}
+                    onChange={(e) => handleUpdatePersonalityTrait(index, e.target.value)}
+                    placeholder="Đặc điểm tính cách..."
+                    className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm"
+                  />
+                  <button
+                    onClick={() => handleRemovePersonalityTrait(index)}
+                    className="p-2 text-red-400 hover:text-red-300 transition-colors duration-200"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Core Stats */}
+          <div className="glass-effect p-6 rounded-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white">Chỉ Số Cốt Lõi</h3>
+              <button
+                onClick={handleAISuggestStats}
+                className="px-3 py-1 bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 text-sm flex items-center space-x-1"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Gợi ý chỉ số</span>
+              </button>
+            </div>
+            
+             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+               {Object.entries(characterData.coreStats).map(([stat, value]) => {
+                 const modifier = Math.floor((value - 10) / 2);
+                 const modifierText = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+                 const modifierColor = modifier >= 0 ? 'text-green-400' : 'text-red-400';
+                 
+                 return (
+                   <div key={stat} className="bg-white/5 p-4 rounded-lg border-2 border-white/20">
+                     <label className="block text-sm font-medium text-gray-300 mb-3 text-center capitalize">
+                       {stat === 'strength' ? 'Sức mạnh' :
+                        stat === 'agility' ? 'Nhanh nhẹn' :
+                        stat === 'intelligence' ? 'Trí tuệ' :
+                        stat === 'constitution' ? 'Thể lực' :
+                        stat === 'wisdom' ? 'Khôn ngoan' :
+                        stat === 'charisma' ? 'Uy tín' : stat}
+                     </label>
+                     
+                     <div className="text-center mb-3">
+                       <div className="text-3xl font-bold text-white mb-1">{value}</div>
+                       <div className={`text-lg font-semibold ${modifierColor}`}>
+                         {modifierText}
+                       </div>
+                     </div>
+                     
+                     <input
+                       type="number"
+                       min="1"
+                       max="20"
+                       value={value}
+                       onChange={(e) => setCharacterData(prev => ({
+                         ...prev,
+                         coreStats: { ...prev.coreStats, [stat]: parseInt(e.target.value) || 1 }
+                       }))}
+                       className="w-full px-2 py-1 bg-white/10 border-2 border-white/40 rounded text-white focus:border-primary-400 focus:outline-none text-center text-sm"
+                     />
+                   </div>
+                 );
+               })}
+             </div>
+            
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-gray-300">Máu Tối Đa</div>
+                <div className="text-white font-semibold">{(characterData as any).hpMax || calculateMaxHealth()}</div>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-gray-300">Năng Lượng Tối Đa</div>
+                <div className="text-white font-semibold">{(characterData as any).energyMax || calculateMaxEnergy()}</div>
+              </div>
+            </div>
+          </div>
+
+
+          {/* Proficiencies */}
+          <div className="glass-effect p-6 rounded-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white">Thành Thạo (Tối đa 3)</h3>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleRerollSkills}
+                  disabled={isRerolling}
+                  className="px-3 py-1 bg-yellow-500/20 border-2 border-yellow-500/70 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                >
+                  <span>{isRerolling ? 'Đang tạo...' : '🎲 Reroll'}</span>
+                </button>
+                {characterData.proficiencies.length < 3 && (
+                  <button
+                    onClick={handleAddProficiency}
+                    className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm"
+                  >
+                    + Thêm kỹ năng
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              {/* Header labels */}
+              {characterData.proficiencies.length > 0 && (
+                <div className="flex items-center space-x-2 text-xs text-gray-400 mb-2">
+                  <div className="flex-1">Tên kỹ năng</div>
+                  <div className="w-20 text-center">Cấp độ</div>
+                  <div className="w-16 text-center">⚡ Năng lượng</div>
+                  <div className="w-8"></div>
+                </div>
+              )}
+              
+              {characterData.proficiencies.map((prof, index) => (
+                <div key={index} className="space-y-2 p-4 bg-white/5 rounded-lg border border-white/20">
+                  {/* Skill Header */}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={prof.name}
+                      onChange={(e) => handleUpdateProficiency(index, 'name', e.target.value)}
+                      placeholder="Tên kỹ năng..."
+                      className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={prof.level}
+                      onChange={(e) => handleUpdateProficiency(index, 'level', parseInt(e.target.value) || 1)}
+                      className="w-20 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none text-sm"
+                      title="Cấp độ kỹ năng"
+                    />
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs text-gray-400">⚡</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={prof.energyCost || 5}
+                        onChange={(e) => handleUpdateProficiency(index, 'energyCost', parseInt(e.target.value) || 5)}
+                        className="w-16 px-2 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none text-sm"
+                        title="Năng lượng cần dùng"
+                      />
+                    </div>
+                    <button
+                      onClick={() => handleRemoveProficiency(index)}
+                      className="p-2 text-red-400 hover:text-red-300 transition-colors duration-200"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  
+                  {/* Skill Description */}
+                  <div>
+                    <textarea
+                      value={prof.description || ''}
+                      onChange={(e) => handleUpdateProficiency(index, 'description', e.target.value)}
+                      placeholder="Mô tả kỹ năng (cách sử dụng, hiệu quả)..."
+                      className="w-full px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm resize-none"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Action Buttons */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
+        className="mt-8 flex justify-center space-x-4"
+      >
+        <button
+          onClick={handleResetForm}
+          className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 flex items-center space-x-2"
+        >
+          <RotateCcw className="w-4 h-4" />
+          <span>Tạo Lại</span>
+        </button>
+        
+        <button
+          onClick={handleExportCharacter}
+          className="px-6 py-3 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 flex items-center space-x-2"
+        >
+          <Download className="w-4 h-4" />
+          <span>Tải Xuống Tệp Nhân Vật</span>
+        </button>
+        
+        <button
+          onClick={handleAcceptAndStart}
+          className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 flex items-center space-x-2"
+        >
+          <Check className="w-4 h-4" />
+          <span>Chấp Nhận & Vào Game</span>
+        </button>
+      </motion.div>
+    </div>
+  );
+}

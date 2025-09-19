@@ -1,0 +1,25 @@
+# Development files
+ai-game-start.bat
+clear_browser_storage.html
+clear_storage.js
+
+# Documentation
+README-DEPLOYMENT.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
