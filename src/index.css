@@ -54,9 +54,6 @@
     @apply bg-gray-800/50 border border-gray-700/50 text-gray-300 hover:bg-gray-700/50 hover:border-gray-600/50 transition-all duration-200;
   }
   
-  .text-gradient {
-    @apply bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent;
-  }
   
   .scrollbar-hide {
     -ms-overflow-style: none;

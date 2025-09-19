@@ -33,7 +33,7 @@ export function CharacterPreview({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <h3 className="text-xl font-fantasy font-bold text-gradient mb-6 text-center">
+      <h3 className="text-xl font-fantasy font-bold text-white mb-6 text-center">
         Xem Trước Nhân Vật
       </h3>
       

@@ -59,7 +59,7 @@ export function HomePage() {
             <Sword className="w-12 h-12 text-white" />
           </motion.div>
           
-          <h1 className="text-6xl font-extrabold-vietnamese text-gradient mb-6">
+          <h1 className="text-6xl font-extrabold-vietnamese text-white mb-6">
             Thế Giới Huyền Bí
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
@@ -68,7 +68,7 @@ export function HomePage() {
           </p>
         </div>
         
-        <div className="flex justify-center">
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
           <button 
             onClick={handleStartGame}
             className="btn-primary inline-flex items-center space-x-3 text-lg px-8 py-4 bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 transform hover:scale-105 transition-all duration-200"
@@ -76,6 +76,14 @@ export function HomePage() {
             <Play className="w-6 h-6" />
             <span>Bắt Đầu Chơi</span>
             <ArrowRight className="w-5 h-5" />
+          </button>
+          
+          <button 
+            onClick={() => navigate('/game')}
+            className="btn-secondary inline-flex items-center space-x-3 text-lg px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200"
+          >
+            <Sword className="w-6 h-6" />
+            <span>Chơi Game</span>
           </button>
         </div>
       </motion.div>
@@ -88,7 +96,7 @@ export function HomePage() {
         transition={{ duration: 0.8, delay: 0.3 }}
       >
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold-vietnamese text-gradient mb-4">
+          <h2 className="text-4xl font-bold-vietnamese text-white mb-4">
             Tính Năng Nổi Bật
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
@@ -130,7 +138,7 @@ export function HomePage() {
         transition={{ duration: 0.8, delay: 0.6 }}
       >
         <div className="glass-effect p-6 sm:p-8 lg:p-12 rounded-2xl max-w-4xl mx-auto">
-          <h2 className="text-4xl font-fantasy font-bold text-gradient mb-6">
+          <h2 className="text-4xl font-fantasy font-bold text-white mb-6">
             Sẵn Sàng Bắt Đầu Cuộc Phiêu Lưu?
           </h2>
           <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">

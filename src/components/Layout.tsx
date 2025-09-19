@@ -1,5 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { ReactNode, useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 
@@ -9,14 +8,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const location = useLocation();
   
-  useEffect(() => {
-    // Tự động đóng sidebar khi vào game
-    if (location.pathname === '/game') {
-      setSidebarOpen(false);
-    }
-  }, [location.pathname]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -45,9 +37,7 @@ export function Layout({ children }: LayoutProps) {
         />
         <main className={`flex-1 main-transition ${
           sidebarOpen ? 'main-with-sidebar' : 'main-full-width'
-        } ${
-          location.pathname === '/game' ? 'p-0' : 'p-2 sm:p-4 lg:p-6'
-        }`}>
+        } p-2 sm:p-4 lg:p-6`}>
           {/* Toggle Button - chỉ hiện khi sidebar đóng */}
           {!sidebarOpen && (
             <button

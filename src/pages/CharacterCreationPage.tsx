@@ -299,7 +299,7 @@ export function CharacterCreationPage() {
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <h1 className="text-5xl font-extrabold-vietnamese text-gradient mb-4">
+          <h1 className="text-5xl font-extrabold-vietnamese text-white mb-4">
             Mô Tả Nhân Vật
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
@@ -365,7 +365,7 @@ export function CharacterCreationPage() {
         transition={{ duration: 0.8 }}
         className="text-center mb-8"
       >
-        <h1 className="text-4xl font-bold-vietnamese text-gradient mb-4">
+        <h1 className="text-4xl font-bold-vietnamese text-white mb-4">
           Tùy Chỉnh Nhân Vật
         </h1>
         <p className="text-lg text-gray-300">

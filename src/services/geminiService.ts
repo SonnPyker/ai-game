@@ -902,6 +902,162 @@ SCHEMA JSON (bắt buộc):
       throw new Error('Không thể tạo thế giới. Vui lòng thử lại.');
     }
   }
+
+  // Roleplay Methods
+  async generateScenarioSkeleton(worldJson: string, characterJson: string): Promise<any> {
+    try {
+      const prompt = `Bạn là AI Worldbuilder & Narrative Designer cho game roleplay.
+Từ WORLD và CHARACTER dưới đây, hãy tạo một KHUNG SƯỜN CỐT TRUYỆN hoàn chỉnh.
+Cân bằng: bí ẩn-siêu nhiên + tự do người chơi + tính nhất quán thế giới.
+Chỉ xuất JSON đúng SCHEMA, không thêm văn bản ngoài JSON.
+
+WORLD:
+${worldJson}
+
+CHARACTER:
+${characterJson}
+
+SCHEMA:
+{
+  "title": "string",
+  "logline": "string",
+  "tone": ["mysterious","noir","supernatural"],
+  "themes": ["string"],
+  "continuityRules": ["quy tắc thế giới cần giữ nhất quán"],
+  "mainThreads": ["luồng cốt truyện chính (gọn)"],
+  "arcs": [
+    {
+      "act": 1,
+      "goal": "mục tiêu của act",
+      "keyBeats": ["3–6 tình tiết quan trọng"],
+      "obstacles": ["trở ngại"],
+      "twist": "plot twist (nếu có)",
+      "outcomeHint": "gợi ý kết cục có/không thành"
+    },
+    { "act": 2, "goal": "mục tiêu của act", "keyBeats": ["3–6 tình tiết quan trọng"], "obstacles": ["trở ngại"], "twist": "plot twist (nếu có)", "outcomeHint": "gợi ý kết cục có/không thành" },
+    { "act": 3, "goal": "mục tiêu của act", "keyBeats": ["3–6 tình tiết quan trọng"], "obstacles": ["trở ngại"], "twist": "plot twist (nếu có)", "outcomeHint": "gợi ý kết cục có/không thành" }
+  ],
+  "failStates": ["những tình huống dẫn tới thất bại (không chết cứng, cho phép cứu vãn)"],
+  "endings": {
+    "good": "mô tả kết thúc tích cực khả dĩ",
+    "neutral": "mô tả kết thúc trung tính",
+    "bad": "mô tả kết thúc tiêu cực khả dĩ"
+  },
+  "openingSeed": "tình huống mở đầu cô đọng để dùng cho lời mở đầu"
+}`;
+
+      const response = await this.generateContent(prompt);
+      
+      // Parse JSON response
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+        return JSON.parse(response);
+      } catch (parseError) {
+        console.error('Lỗi parse JSON scenario:', parseError);
+        throw new Error('Không thể phân tích kịch bản. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tạo scenario skeleton:', error);
+      throw new Error('Không thể tạo kịch bản. Vui lòng thử lại.');
+    }
+  }
+
+  async generateOpeningNarrative(worldJson: string, characterJson: string, scenarioJson: string): Promise<string> {
+    try {
+      const prompt = `Bạn là AI Storyteller. Hãy viết đoạn mở đầu cho phiên roleplay, dựa trên WORLD, CHARACTER, và SCENARIO_SKELETON.
+Yêu cầu:
+- Văn xuôi liền mạch 180–300 từ, góc nhìn theo "pov" của world/character (nếu có).
+- Không bullet/emoji/tiêu đề; chỉ văn bản kể chuyện.
+- Dùng "openingSeed" trong kịch bản làm mồi.
+- Gợi không khí, đặt vấn đề, hé lộ nguy cơ, kết bằng một tình huống mời người chơi hành động.
+
+WORLD:
+${worldJson}
+
+CHARACTER:
+${characterJson}
+
+SCENARIO_SKELETON:
+${scenarioJson}
+
+Chỉ xuất văn xuôi, không thêm lời dẫn.`;
+
+      const response = await this.generateContent(prompt);
+      return response.trim();
+    } catch (error) {
+      console.error('Lỗi khi tạo opening narrative:', error);
+      throw new Error('Không thể tạo lời mở đầu. Vui lòng thử lại.');
+    }
+  }
+
+  async generateTurnResponse(
+    chatHistory: Array<{role: string, content: string}>,
+    playerAction: string,
+    worldJson: string,
+    characterJson: string,
+    scenarioJson: string,
+    sceneState: any = {}
+  ): Promise<any> {
+    try {
+      const chatHistorySnippet = chatHistory.slice(-10).map(msg => 
+        `${msg.role}: ${msg.content}`
+      ).join('\n');
+
+      const prompt = `Bạn là AI Storyteller trong box chat roleplay. Nhiệm vụ:
+- Đọc lịch sử chat gần đây, hành động mới của người chơi, world/character và scenarioSkeleton.
+- Kể tiếp bằng văn xuôi (không bullet/emoji), mô tả hệ quả và cảm giác, đưa chi tiết cảm quan.
+- GIỮ NHẤT QUÁN theo continuityRules, tone, mainThreads.
+- Định hướng mềm (soft guidance) để tiến tới các keyBeats/twist/kết thúc, nhưng KHÔNG tước tự do người chơi.
+- Nếu hành động của người chơi lệch xa kịch bản, hãy uốn nhẹ bằng cảnh vật, NPC, thông tin, rủi ro — không ép buộc.
+
+Đầu vào:
+- CHAT_HISTORY (tối đa 10 lượt gần nhất): 
+${chatHistorySnippet}
+- PLAYER_ACTION (câu người chơi vừa gửi): 
+"${playerAction}"
+- WORLD:
+${worldJson}
+- CHARACTER:
+${characterJson}
+- SCENARIO_SKELETON:
+${scenarioJson}
+- SCENE_STATE hiện tại (nếu có, có thể rỗng):
+${JSON.stringify(sceneState)}
+
+Đầu ra: JSON đúng SCHEMA sau, không thêm chữ khác:
+{
+  "narrative": "văn bản kể chuyện ~120–220 từ, không bullet/emoji",
+  "softGuidance": "1–2 câu gợi hướng đi kín đáo (có thể rỗng)",
+  "sceneState": { "keys/values cần cập nhật (vị trí, NPC, manh mối, nguy cơ, đồng hồ căng thẳng...)" },
+  "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện tiến lên" }
+}
+
+Quy tắc thêm:
+- Mọi miêu tả phải phù hợp world + rules; nếu người chơi làm điều phá vỡ luật, mô tả hậu quả logic chứ không phủ nhận.
+- Ưu tiên tiến độ: mỗi lượt nên hé mở một manh mối, tăng/giảm rủi ro, hoặc dịch chuyển sang beat tiếp theo.
+- Không nhắc đến "prompt", "JSON", hay meta thông tin trong narrative.`;
+
+      const response = await this.generateContent(prompt);
+      
+      // Parse JSON response
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+        return JSON.parse(response);
+      } catch (parseError) {
+        console.error('Lỗi parse JSON turn response:', parseError);
+        throw new Error('Không thể phân tích phản hồi. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tạo turn response:', error);
+      throw new Error('Không thể tạo phản hồi. Vui lòng thử lại.');
+    }
+  }
 }
 
 export const geminiService = new GeminiService();

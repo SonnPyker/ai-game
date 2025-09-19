@@ -67,7 +67,7 @@ export function CharacterForm({ onCharacterCreate }: CharacterFormProps) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            <h3 className="text-2xl font-fantasy font-bold text-gradient mb-6">
+            <h3 className="text-2xl font-fantasy font-bold text-white mb-6">
               Thông Tin Cơ Bản
             </h3>
             
@@ -140,7 +140,7 @@ export function CharacterForm({ onCharacterCreate }: CharacterFormProps) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            <h3 className="text-2xl font-fantasy font-bold text-gradient mb-6">
+            <h3 className="text-2xl font-fantasy font-bold text-white mb-6">
               Chọn Nghề Nghiệp
             </h3>
             
@@ -182,7 +182,7 @@ export function CharacterForm({ onCharacterCreate }: CharacterFormProps) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            <h3 className="text-2xl font-fantasy font-bold text-gradient mb-6">
+            <h3 className="text-2xl font-fantasy font-bold text-white mb-6">
               Chọn Chủng Tộc
             </h3>
             
@@ -224,7 +224,7 @@ export function CharacterForm({ onCharacterCreate }: CharacterFormProps) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            <h3 className="text-2xl font-fantasy font-bold text-gradient mb-6">
+            <h3 className="text-2xl font-fantasy font-bold text-white mb-6">
               Ngoại Hình & Câu Chuyện
             </h3>
             
