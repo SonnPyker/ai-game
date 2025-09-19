@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { HomePage } from './pages/HomePage';
 import { CharacterCreationPage } from './pages/CharacterCreationPage';
 import { GamePage } from './pages/GamePage';
@@ -16,6 +17,7 @@ function App() {
         <Route path="/game" element={<GamePage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
+      <SpeedInsights />
     </Layout>
   );
 }

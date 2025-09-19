@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",
+    "@vercel/speed-insights": "^1.2.0",
     "clsx": "^2.0.0",
     "framer-motion": "^10.16.5",
     "lucide-react": "^0.294.0",
