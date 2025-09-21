@@ -194,8 +194,8 @@ export function GamePage() {
           animate={{ opacity: 1, y: 0 }}
           className="glass-effect p-8 rounded-2xl max-w-md w-full text-center"
         >
-          <h1 className="text-2xl font-bold-vietnamese text-white mb-4">
-            Bắt Đầu Cuộc Phiêu Lưu
+          <h1 className="text-2xl font-bold-vietnamese text-white mb-4 uppercase">
+            BẮT ĐẦU CUỘC PHIÊU LƯU
           </h1>
           <p className="text-gray-300 mb-6">
             AI sẽ tạo kịch bản dựa trên thế giới và nhân vật của bạn
@@ -238,8 +238,8 @@ export function GamePage() {
       <div className="glass-effect border-b border-gray-700/50 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold-vietnamese text-white">
-              {gameState.scenarioSkeleton?.title || 'Cuộc Phiêu Lưu'}
+            <h1 className="text-xl font-bold-vietnamese text-white uppercase">
+              {gameState.scenarioSkeleton?.title || 'CUỘC PHIÊU LƯU'}
             </h1>
             <p className="text-sm text-gray-400">
               {gameState.scenarioSkeleton?.logline || 'Trò chuyện với AI'}

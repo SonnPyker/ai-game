@@ -299,8 +299,8 @@ export function CharacterCreationPage() {
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <h1 className="text-5xl font-extrabold-vietnamese text-white mb-4">
-            Mô Tả Nhân Vật
+          <h1 className="text-5xl font-extrabold-vietnamese text-white mb-4 uppercase">
+            MÔ TẢ NHÂN VẬT
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Hãy mô tả nhân vật của bạn bằng ngôn ngữ tự do. AI sẽ phân tích và tự động điền vào form tạo nhân vật.
@@ -365,8 +365,8 @@ export function CharacterCreationPage() {
         transition={{ duration: 0.8 }}
         className="text-center mb-8"
       >
-        <h1 className="text-4xl font-bold-vietnamese text-white mb-4">
-          Tùy Chỉnh Nhân Vật
+        <h1 className="text-4xl font-bold-vietnamese text-white mb-4 uppercase">
+          TÙY CHỈNH NHÂN VẬT
         </h1>
         <p className="text-lg text-gray-300">
           Chỉnh sửa và hoàn thiện nhân vật của bạn
@@ -383,7 +383,7 @@ export function CharacterCreationPage() {
         >
           {/* Basic Info */}
           <div className="glass-effect p-6 rounded-2xl">
-            <h3 className="text-xl font-bold-vietnamese text-white mb-4">Thông Tin Cơ Bản</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">THÔNG TIN CƠ BẢN</h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
               <div>
@@ -413,7 +413,7 @@ export function CharacterCreationPage() {
 
           {/* Appearance */}
           <div className="glass-effect p-6 rounded-2xl">
-            <h3 className="text-xl font-bold-vietnamese text-white mb-4">Ngoại Hình</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">NGOẠI HÌNH</h3>
             <textarea
               value={characterData.appearance}
               onChange={(e) => setCharacterData(prev => ({ ...prev, appearance: e.target.value }))}
@@ -424,7 +424,7 @@ export function CharacterCreationPage() {
 
           {/* Personality */}
           <div className="glass-effect p-6 rounded-2xl">
-            <h3 className="text-xl font-bold-vietnamese text-white mb-4">Tính Cách (Tóm tắt)</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">TÍNH CÁCH (TÓM TẮT)</h3>
             <textarea
               value={characterData.personality}
               onChange={(e) => setCharacterData(prev => ({ ...prev, personality: e.target.value }))}
@@ -435,7 +435,7 @@ export function CharacterCreationPage() {
 
           {/* Backstory */}
           <div className="glass-effect p-6 rounded-2xl">
-            <h3 className="text-xl font-bold-vietnamese text-white mb-4">Tiểu Sử</h3>
+            <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">TIỂU SỬ</h3>
             <textarea
               value={characterData.backstory}
               onChange={(e) => setCharacterData(prev => ({ ...prev, backstory: e.target.value }))}
@@ -455,7 +455,7 @@ export function CharacterCreationPage() {
           {/* Personality Traits */}
           <div className="glass-effect p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold-vietnamese text-white">Đặc Điểm Tính Cách</h3>
+              <h3 className="text-xl font-bold-vietnamese text-white uppercase">ĐẶC ĐIỂM TÍNH CÁCH</h3>
               <button
                 onClick={handleAddPersonalityTrait}
                 className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm"
@@ -488,7 +488,7 @@ export function CharacterCreationPage() {
           {/* Core Stats */}
           <div className="glass-effect p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold-vietnamese text-white">Chỉ Số Cốt Lõi</h3>
+              <h3 className="text-xl font-bold-vietnamese text-white uppercase">CHỈ SỐ CỐT LÕI</h3>
               <button
                 onClick={handleAISuggestStats}
                 className="px-3 py-1 bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 text-sm flex items-center space-x-1"
@@ -554,7 +554,7 @@ export function CharacterCreationPage() {
           {/* Proficiencies */}
           <div className="glass-effect p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold-vietnamese text-white">Thành Thạo (Tối đa 3)</h3>
+              <h3 className="text-xl font-bold-vietnamese text-white uppercase">THÀNH THẠO (TỐI ĐA 3)</h3>
               <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                 <button
                   onClick={handleRerollSkills}

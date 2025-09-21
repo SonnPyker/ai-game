@@ -21,22 +21,22 @@ export function HomePage() {
   const features = [
     {
       icon: Sparkles,
-      title: 'AI Thông Minh',
+      title: 'AI THÔNG MINH',
       description: 'Trải nghiệm cuộc trò chuyện tự nhiên với AI được huấn luyện đặc biệt cho game roleplay.'
     },
     {
       icon: Users,
-      title: 'Nhân Vật Đa Dạng',
+      title: 'NHÂN VẬT ĐA DẠNG',
       description: 'Tạo nhân vật với nhiều chủng tộc, nghề nghiệp và ngoại hình khác nhau.'
     },
     {
       icon: Zap,
-      title: 'Cốt Truyện Động',
+      title: 'CỐT TRUYỆN ĐỘNG',
       description: 'Mỗi lần chơi đều có cốt truyện mới, được AI tạo ra dựa trên hành động của bạn.'
     },
     {
       icon: Star,
-      title: 'Hệ Thống Tiến Bộ',
+      title: 'HỆ THỐNG TIẾN BỘ',
       description: 'Phát triển nhân vật, hoàn thành nhiệm vụ và khám phá thế giới rộng lớn.'
     }
   ];
@@ -59,8 +59,8 @@ export function HomePage() {
             <Sword className="w-12 h-12 text-white" />
           </motion.div>
           
-          <h1 className="text-6xl font-extrabold-vietnamese text-white mb-6">
-            Thế Giới Huyền Bí
+          <h1 className="text-6xl font-extrabold-vietnamese text-white mb-6 uppercase">
+            THẾ GIỚI HUYỀN BÍ
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
             Khám phá một thế giới fantasy đầy bí ẩn, nơi mỗi quyết định của bạn sẽ định hình câu chuyện. 
@@ -68,22 +68,14 @@ export function HomePage() {
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
+        <div className="flex justify-center">
           <button 
             onClick={handleStartGame}
             className="btn-primary inline-flex items-center space-x-3 text-lg px-8 py-4 bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 transform hover:scale-105 transition-all duration-200"
           >
             <Play className="w-6 h-6" />
-            <span>Bắt Đầu Chơi</span>
+            <span>BẮT ĐẦU CHƠI MỚI</span>
             <ArrowRight className="w-5 h-5" />
-          </button>
-          
-          <button 
-            onClick={() => navigate('/game')}
-            className="btn-secondary inline-flex items-center space-x-3 text-lg px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200"
-          >
-            <Sword className="w-6 h-6" />
-            <span>Chơi Game</span>
           </button>
         </div>
       </motion.div>
@@ -96,8 +88,8 @@ export function HomePage() {
         transition={{ duration: 0.8, delay: 0.3 }}
       >
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold-vietnamese text-white mb-4">
-            Tính Năng Nổi Bật
+          <h2 className="text-4xl font-bold-vietnamese text-white mb-4 uppercase">
+            TÍNH NĂNG NỔI BẬT
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
             Khám phá những tính năng độc đáo làm cho trải nghiệm game của bạn trở nên đặc biệt
@@ -118,7 +110,7 @@ export function HomePage() {
                 <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center mb-4">
                   <Icon className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold-vietnamese text-white mb-3">
+                <h3 className="text-xl font-bold-vietnamese text-white mb-3 uppercase">
                   {feature.title}
                 </h3>
                 <p className="text-gray-300 leading-relaxed">
@@ -130,30 +122,6 @@ export function HomePage() {
         </div>
       </motion.div>
 
-      {/* CTA Section */}
-      <motion.div 
-        className="py-20 text-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.6 }}
-      >
-        <div className="glass-effect p-6 sm:p-8 lg:p-12 rounded-2xl max-w-4xl mx-auto">
-          <h2 className="text-4xl font-fantasy font-bold text-white mb-6">
-            Sẵn Sàng Bắt Đầu Cuộc Phiêu Lưu?
-          </h2>
-          <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-            Tạo thế giới, xây dựng nhân vật và bước vào cuộc phiêu lưu huyền bí, nơi mỗi lựa chọn đều quan trọng.
-          </p>
-          <button 
-            onClick={handleStartGame}
-            className="btn-primary inline-flex items-center space-x-2 text-lg px-8 py-4"
-          >
-            <Sword className="w-6 h-6" />
-            <span>Bắt Đầu Chơi</span>
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        </div>
-      </motion.div>
     </div>
   );
 }

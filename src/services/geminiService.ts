@@ -461,6 +461,46 @@ class GeminiService {
     }
   }
 
+  async generateGenreAndSetting(coreIdea: string): Promise<{genre: string, setting: string}> {
+    if (!this.isConfigured()) {
+      throw new Error('Gemini API chưa được cấu hình. Vui lòng nhập API key.');
+    }
+
+    const prompt = `Bạn là AI hỗ trợ xây dựng thế giới game roleplay.
+Nhiệm vụ: từ ý tưởng cốt lõi, hãy xác định thể loại và bối cảnh phù hợp.
+
+Ý tưởng cốt lõi: "${coreIdea}"
+
+Yêu cầu:
+- Thể loại: Xác định các thể loại chính (Fantasy, Sci-fi, Horror, Steampunk, Cyberpunk, Post-apocalyptic, Historical, Modern, etc.)
+- Bối cảnh: Mô tả địa điểm và thời gian xảy ra (ví dụ: "Thành phố cổ đại Hy Lạp năm 300 TCN", "Trạm không gian năm 2157", "Làng quê Việt Nam thập niên 1990")
+
+Xuất ra JSON đúng SCHEMA, không thêm văn bản ngoài JSON:
+{
+  "genre": "tên thể loại",
+  "setting": "mô tả bối cảnh địa điểm và thời gian"
+}`;
+
+    try {
+      const response = await this.generateContent(prompt);
+      
+      // Parse JSON response
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+        return JSON.parse(response);
+      } catch (parseError) {
+        console.error('Lỗi parse JSON genre and setting:', parseError);
+        throw new Error('Không thể phân tích thể loại và bối cảnh. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tạo thể loại và bối cảnh:', error);
+      throw new Error('Không thể tạo thể loại và bối cảnh. Vui lòng thử lại.');
+    }
+  }
+
   async generateCorePrinciples(coreIdea: string): Promise<string> {
     if (!this.isConfigured()) {
       throw new Error('Gemini API chưa được cấu hình. Vui lòng nhập API key.');
@@ -502,7 +542,7 @@ Xuất ra JSON đúng schema sau, không thêm văn bản ngoài JSON:
 
 Nhiệm vụ: từ bối cảnh sau, hãy tạo ra chính xác 5 thực thể nền tảng quan trọng nhất.
 Yêu cầu: mỗi loại phải có đúng 1 thực thể:
-- 1 Nhân vật
+- 1 Nhân vật chủ chốt trong cốt truyện  (NPC - Non-Player Character, KHÔNG phải người chơi)
 - 1 Địa điểm  
 - 1 Phe phái
 - 1 Vật phẩm
@@ -513,6 +553,12 @@ Mỗi thực thể phải có:
 - name: tên thực thể (ngắn gọn, dễ nhớ)
 - description: mô tả súc tích 2-4 câu, giàu hình ảnh
 - type: chỉ chọn 1 trong các loại ["Nhân vật", "Địa điểm", "Phe phái", "Vật phẩm", "Truyền thuyết"]
+
+Lưu ý quan trọng về "Nhân vật":
+- Nhân vật ở đây là NPC (Non-Player Character) - nhân vật trong thế giới game
+- KHÔNG phải người chơi (player character)
+- Có thể là: thầy phù thủy, hiệp sĩ, thương nhân, lãnh chúa, phản diện, v.v.
+- Là những nhân vật mà người chơi sẽ tương tác trong game
 
 Bối cảnh: "${coreIdea}"
 

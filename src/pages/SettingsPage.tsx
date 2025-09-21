@@ -62,8 +62,8 @@ export function SettingsPage() {
         transition={{ duration: 0.8 }}
         className="text-center mb-12"
       >
-        <h1 className="text-5xl font-fantasy font-bold text-white mb-4">
-          Cài Đặt
+        <h1 className="text-5xl font-fantasy font-bold text-white mb-4 uppercase">
+          CÀI ĐẶT
         </h1>
         <p className="text-xl text-gray-300 max-w-3xl mx-auto">
           Cấu hình API key và các tùy chọn khác để tối ưu hóa trải nghiệm game của bạn.

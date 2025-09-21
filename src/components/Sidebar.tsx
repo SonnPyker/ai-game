@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
   Settings,
   X,
   Menu,
-  Play
+  Play,
+  Home
 } from 'lucide-react';
 import { ServerInfo } from './ServerInfo/ServerInfo';
 
@@ -14,12 +16,25 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
-  const [activeTab, setActiveTab] = useState('home');
+  const location = useLocation();
 
   const menuItems = [
-    { id: 'new-game', label: 'Chơi Mới', icon: Play, path: '/world-builder', action: 'new-game' },
-    { id: 'settings', label: 'Cài Đặt', icon: Settings, path: '/settings' },
+    { id: 'home', label: 'TRANG CHỦ', icon: Home, path: '/', action: 'home' },
+    { id: 'new-game', label: 'CHƠI MỚI', icon: Play, path: '/world-builder', action: 'new-game' },
+    { id: 'settings', label: 'CÀI ĐẶT', icon: Settings, path: '/settings' },
   ];
+
+  // Function to determine if a menu item is active based on current location
+  const isActiveMenuItem = (item: any) => {
+    if (item.id === 'home') {
+      return location.pathname === '/';
+    } else if (item.id === 'new-game') {
+      return location.pathname === '/world-builder' || location.pathname === '/create-character' || location.pathname === '/game';
+    } else if (item.id === 'settings') {
+      return location.pathname === '/settings';
+    }
+    return false;
+  };
 
   return (
     <aside className={`fixed left-0 top-0 w-64 sm:w-72 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-50 sidebar-transition ${
@@ -27,7 +42,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
     }`}>
       <nav className="p-3 sm:p-4">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold-vietnamese text-white">Menu</h2>
+          <h2 className="text-lg font-bold-vietnamese text-white uppercase">MENU</h2>
           <div className="flex items-center space-x-2">
             <button
               onClick={onToggle}
@@ -56,12 +71,14 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               
               if (isDisabled) return;
               
-              setActiveTab(item.id);
               onClose();
               
               if (item.action === 'new-game') {
                 // Chuyển đến tạo thế giới trước
                 window.location.href = '/world-builder';
+              } else if (item.action === 'home') {
+                // Chuyển đến trang chủ
+                window.location.href = '/';
               } else {
                 // Chuyển đến path thông thường
                 window.location.href = item.path;
@@ -75,7 +92,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 border-2 ${
                     isDisabled 
                       ? 'bg-gray-500/10 border-gray-500/20 text-gray-500 cursor-not-allowed'
-                      : activeTab === item.id
+                      : isActiveMenuItem(item)
                         ? 'tab-active'
                         : 'tab-inactive'
                   }`}
