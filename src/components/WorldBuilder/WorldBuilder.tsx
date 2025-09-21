@@ -7,6 +7,7 @@ import {
   X
 } from 'lucide-react';
 import { geminiService } from '../../services/geminiService';
+import { worldTimeService } from '../../services/worldTimeService';
 import { WorldData } from '../../types';
 
 export function WorldBuilder() {
@@ -25,7 +26,8 @@ export function WorldBuilder() {
     difficulty: '',
     useLevels: false,
     description: '',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    currentTime: worldTimeService.initializeWorldTime(1)
   });
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -394,9 +396,13 @@ export function WorldBuilder() {
         throw new Error('Không thể phân tích kết quả từ AI. Vui lòng thử lại.');
       }
       
+      // Initialize world time
+      const worldTime = worldTimeService.initializeWorldTime(worldData.startYear);
+      worldJson.currentTime = worldTime;
+      
       // Save to localStorage
       localStorage.setItem('world_gen_result', JSON.stringify(worldJson));
-      console.log('✅ World data saved to localStorage');
+      console.log('✅ World data saved to localStorage with time:', worldTime);
       
       // Set the narrative opening for display
       setGeneratedWorldDescription(worldJson.narrativeOpening || 'Không có mô tả mở đầu.');

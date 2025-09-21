@@ -91,7 +91,7 @@ export function CharacterCreationPage() {
         proficiencies: analysis.skills?.map((skill: any) => ({
           name: skill.name || '',
           level: skill.level || 1,
-          energyCost: skill.energyCost || 5,
+          energyCost: calculateManaCost(skill.level || 1), // Use calculated mana cost
           description: skill.description || ''
         })) || []
       };
@@ -148,7 +148,12 @@ export function CharacterCreationPage() {
     
     setCharacterData(prev => ({
       ...prev,
-      proficiencies: [...prev.proficiencies, { name: '', level: 1, energyCost: 5, description: '' }]
+      proficiencies: [...prev.proficiencies, { 
+        name: '', 
+        level: 1, 
+        energyCost: calculateManaCost(1), // Use calculated mana cost for level 1
+        description: '' 
+      }]
     }));
   };
 
@@ -159,12 +164,34 @@ export function CharacterCreationPage() {
     }));
   };
 
+  // Function to calculate mana cost based on skill level
+  const calculateManaCost = (level: number): number => {
+    const manaCosts = {
+      1: 7,
+      2: 13,
+      3: 20,
+      4: 30,
+      5: 43
+    };
+    return manaCosts[level as keyof typeof manaCosts] || 7;
+  };
+
   const handleUpdateProficiency = (index: number, field: 'name' | 'level' | 'energyCost' | 'description', value: string | number) => {
     setCharacterData(prev => ({
       ...prev,
-      proficiencies: prev.proficiencies.map((prof, i) => 
-        i === index ? { ...prof, [field]: value } : prof
-      )
+      proficiencies: prev.proficiencies.map((prof, i) => {
+        if (i === index) {
+          const updatedProf = { ...prof, [field]: value };
+          
+          // Auto-calculate mana cost when level changes
+          if (field === 'level' && typeof value === 'number') {
+            updatedProf.energyCost = calculateManaCost(value);
+          }
+          
+          return updatedProf;
+        }
+        return prof;
+      })
     }));
   };
 
@@ -253,7 +280,7 @@ export function CharacterCreationPage() {
         proficiencies: suggestions.proficiencies?.map((prof: any) => ({
           name: prof.name || '',
           level: prof.level || 1,
-          energyCost: prof.energyCost || 5,
+          energyCost: calculateManaCost(prof.level || 1), // Use calculated mana cost
           description: prof.description || ''
         })) || prev.proficiencies
       }));
@@ -279,7 +306,7 @@ export function CharacterCreationPage() {
         proficiencies: newSkills.skills?.map((skill: any) => ({
           name: skill.name || '',
           level: skill.level || 1,
-          energyCost: skill.energyCost || 5,
+          energyCost: calculateManaCost(skill.level || 1), // Use calculated mana cost
           description: skill.description || ''
         })) || []
       }));
@@ -554,7 +581,12 @@ export function CharacterCreationPage() {
           {/* Proficiencies */}
           <div className="glass-effect p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold-vietnamese text-white uppercase">THÀNH THẠO (TỐI ĐA 3)</h3>
+              <div>
+                <h3 className="text-xl font-bold-vietnamese text-white uppercase">THÀNH THẠO (TỐI ĐA 3)</h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Năng lượng tự động tính: Level 1=7, Level 2=13, Level 3=20, Level 4=30, Level 5=43
+                </p>
+              </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                 <button
                   onClick={handleRerollSkills}
@@ -580,7 +612,7 @@ export function CharacterCreationPage() {
                 <div className="flex items-center space-x-2 text-xs text-gray-400 mb-2">
                   <div className="flex-1">Tên kỹ năng</div>
                   <div className="w-20 text-center">Cấp độ</div>
-                  <div className="w-16 text-center">⚡ Năng lượng</div>
+                  <div className="w-16 text-center" title="Năng lượng tự động tính theo cấp độ">⚡ Năng lượng (Tự động)</div>
                   <div className="w-8"></div>
                 </div>
               )}
@@ -611,10 +643,10 @@ export function CharacterCreationPage() {
                         type="number"
                         min="1"
                         max="100"
-                        value={prof.energyCost || 5}
-                        onChange={(e) => handleUpdateProficiency(index, 'energyCost', parseInt(e.target.value) || 5)}
-                        className="w-16 px-2 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none text-sm"
-                        title="Năng lượng cần dùng"
+                        value={prof.energyCost || calculateManaCost(prof.level)}
+                        readOnly
+                        className="w-16 px-2 py-2 bg-white/5 border-2 border-white/20 rounded-lg text-white text-sm cursor-not-allowed"
+                        title={`Năng lượng tự động tính theo cấp độ (Level ${prof.level} = ${prof.energyCost || calculateManaCost(prof.level)} mana)`}
                       />
                     </div>
                     <button

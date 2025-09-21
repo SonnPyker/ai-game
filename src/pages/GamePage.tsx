@@ -1,19 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, AlertCircle, Play } from 'lucide-react';
+import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, FileText, Undo2 } from 'lucide-react';
 import { geminiService } from '../services/geminiService';
-
-interface ChatMessage {
-  role: 'player' | 'ai';
-  content: string;
-  timestamp: Date;
-}
+import { worldTimeService } from '../services/worldTimeService';
+import { sccService } from '../services/sccService';
+import { WorldTime, SCCContext, ChatMessage } from '../types';
 
 interface GameState {
   scenarioSkeleton: any;
   sceneState: any;
   storyProgress: any;
   isInitialized: boolean;
+  worldTime: WorldTime | null;
+  sccContext: SCCContext | null;
+  showSummaryBanner: boolean;
+  lastSummaryTurn: number;
 }
 
 export function GamePage() {
@@ -25,7 +26,11 @@ export function GamePage() {
     scenarioSkeleton: null,
     sceneState: {},
     storyProgress: null,
-    isInitialized: false
+    isInitialized: false,
+    worldTime: null,
+    sccContext: null,
+    showSummaryBanner: false,
+    lastSummaryTurn: 0
   });
   
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -72,6 +77,10 @@ export function GamePage() {
         throw new Error('Không tìm thấy dữ liệu thế giới hoặc nhân vật. Vui lòng tạo lại.');
       }
 
+      // Parse world data and get current time
+      const worldDataParsed = JSON.parse(worldData);
+      const currentTime = worldDataParsed.currentTime || worldTimeService.initializeWorldTime(worldDataParsed.startYear || 1);
+
       // Generate scenario skeleton
       const scenarioSkeleton = await geminiService.generateScenarioSkeleton(worldData, characterData);
       
@@ -92,13 +101,24 @@ export function GamePage() {
         timestamp: new Date()
       };
 
+      // Load or initialize SCC context
+      const sccContext = sccService.loadSCCContext();
+      const updatedSccContext = sccService.addTurn(sccContext, openingMessage);
+
       setChatHistory([openingMessage]);
       setGameState({
         scenarioSkeleton,
         sceneState: {},
         storyProgress: null,
-        isInitialized: true
+        isInitialized: true,
+        worldTime: currentTime,
+        sccContext: updatedSccContext,
+        showSummaryBanner: false,
+        lastSummaryTurn: 0
       });
+
+      // Save SCC context
+      sccService.saveSCCContext(updatedSccContext);
 
     } catch (error) {
       console.error('Lỗi khởi tạo game:', error);
@@ -133,14 +153,31 @@ export function GamePage() {
         throw new Error('Thiếu dữ liệu game. Vui lòng khởi tạo lại.');
       }
 
-      // Generate AI response
+      // Update SCC context with player message
+      let updatedSccContext = gameState.sccContext;
+      if (updatedSccContext) {
+        updatedSccContext = sccService.addTurn(updatedSccContext, playerMessage);
+      }
+
+      // Check if we need to summarize
+      let shouldSummarize = false;
+      if (updatedSccContext && sccService.shouldSummarize(updatedSccContext)) {
+        shouldSummarize = true;
+        console.log(`🔄 Summarizing at turn ${updatedSccContext.turnCounter}`);
+      }
+
+      // Generate AI response using optimized context
+      const optimizedContext = updatedSccContext ? 
+        sccService.getOptimizedContext(updatedSccContext) : 
+        { summary: { recap: '', timeline: [], clues: [], openThreads: [], relationships: [], goals: [], risks: [] }, sceneState: {}, recentTurns: newChatHistory.map(msg => ({ role: msg.role, content: msg.content })) };
+
       const response = await geminiService.generateTurnResponse(
-        newChatHistory.map(msg => ({ role: msg.role, content: msg.content })),
+        optimizedContext.recentTurns,
         currentMessage.trim(),
         worldData,
         characterData,
         scenarioData,
-        gameState.sceneState
+        { ...gameState.sceneState, ...optimizedContext.sceneState }
       );
 
       // Add AI response to chat
@@ -150,14 +187,45 @@ export function GamePage() {
         timestamp: new Date()
       };
 
-      setChatHistory([...newChatHistory, aiMessage]);
+      const finalChatHistory = [...newChatHistory, aiMessage];
+      setChatHistory(finalChatHistory);
+
+      // Update SCC context with AI message
+      if (updatedSccContext) {
+        updatedSccContext = sccService.addTurn(updatedSccContext, aiMessage);
+      }
+
+      // Advance world time (1-3 hours per action)
+      const timeAdvancement = Math.floor(Math.random() * 3) + 1; // 1-3 hours
+      const newTime = gameState.worldTime ? 
+        worldTimeService.advanceTime(gameState.worldTime, timeAdvancement) : 
+        null;
 
       // Update game state
       setGameState(prev => ({
         ...prev,
         sceneState: { ...prev.sceneState, ...response.sceneState },
-        storyProgress: response.storyProgress
+        storyProgress: response.storyProgress,
+        worldTime: newTime,
+        sccContext: updatedSccContext
       }));
+
+      // Save updated time to localStorage
+      if (newTime) {
+        const worldDataParsed = JSON.parse(worldData);
+        worldDataParsed.currentTime = newTime;
+        localStorage.setItem('world_gen_result', JSON.stringify(worldDataParsed));
+      }
+
+      // Save SCC context
+      if (updatedSccContext) {
+        sccService.saveSCCContext(updatedSccContext);
+      }
+
+      // Handle summarization if needed
+      if (shouldSummarize && updatedSccContext) {
+        await handleSummarization(updatedSccContext, worldData, characterData, scenarioData);
+      }
 
     } catch (error) {
       console.error('Lỗi gửi tin nhắn:', error);
@@ -165,6 +233,108 @@ export function GamePage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSummarization = async (
+    sccContext: SCCContext, 
+    worldData: string, 
+    characterData: string, 
+    scenarioData: string
+  ) => {
+    try {
+      console.log('🔄 Starting summarization...');
+      
+      // Create backup before summarizing
+      sccService.createSummaryBackup(sccContext.summary);
+      
+      // Get recent turns for summarization
+      const recentTurns = sccContext.recentTurns.slice(-40).map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
+      // Call Gemini to summarize
+      const summaryResult = await geminiService.summarizeChatContext(
+        worldData,
+        characterData,
+        scenarioData,
+        sccContext.summary,
+        sccContext.sceneState,
+        recentTurns
+      );
+      
+      // Update SCC context with new summary
+      const updatedContext = sccService.updateContextAfterSummary(
+        sccContext,
+        summaryResult.summary,
+        summaryResult.sceneState
+      );
+      
+      // Update game state
+      setGameState(prev => ({
+        ...prev,
+        sccContext: updatedContext,
+        showSummaryBanner: true,
+        lastSummaryTurn: updatedContext.turnCounter
+      }));
+      
+      // Save updated context
+      sccService.saveSCCContext(updatedContext);
+      
+      console.log('✅ Summarization completed');
+      
+    } catch (error) {
+      console.error('❌ Error during summarization:', error);
+      // Don't throw error to avoid breaking the game flow
+    }
+  };
+
+  const handleManualSummarize = async () => {
+    if (!gameState.sccContext) return;
+    
+    try {
+      setIsLoading(true);
+      const worldData = localStorage.getItem('world_gen_result');
+      const characterData = localStorage.getItem('currentCharacter');
+      const scenarioData = localStorage.getItem('rp_scenario');
+      
+      if (!worldData || !characterData || !scenarioData) {
+        throw new Error('Thiếu dữ liệu game.');
+      }
+      
+      await handleSummarization(gameState.sccContext, worldData, characterData, scenarioData);
+      
+    } catch (error) {
+      console.error('Error in manual summarization:', error);
+      setError('Lỗi khi tóm tắt ngữ cảnh');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUndoSummary = () => {
+    const backupSummary = sccService.restoreSummaryFromBackup();
+    if (backupSummary && gameState.sccContext) {
+      const updatedContext = {
+        ...gameState.sccContext,
+        summary: backupSummary
+      };
+      
+      setGameState(prev => ({
+        ...prev,
+        sccContext: updatedContext,
+        showSummaryBanner: false
+      }));
+      
+      sccService.saveSCCContext(updatedContext);
+    }
+  };
+
+  const handleDismissBanner = () => {
+    setGameState(prev => ({
+      ...prev,
+      showSummaryBanner: false
+    }));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -180,10 +350,15 @@ export function GamePage() {
       scenarioSkeleton: null,
       sceneState: {},
       storyProgress: null,
-      isInitialized: false
+      isInitialized: false,
+      worldTime: null,
+      sccContext: null,
+      showSummaryBanner: false,
+      lastSummaryTurn: 0
     });
     localStorage.removeItem('rp_chat');
     localStorage.removeItem('rp_scenario');
+    sccService.clearSCCData();
   };
 
   if (!gameState.isInitialized) {
@@ -234,23 +409,69 @@ export function GamePage() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
-      {/* Header */}
-      <div className="glass-effect border-b border-gray-700/50 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold-vietnamese text-white uppercase">
-              {gameState.scenarioSkeleton?.title || 'CUỘC PHIÊU LƯU'}
-            </h1>
-            <p className="text-sm text-gray-400">
-              {gameState.scenarioSkeleton?.logline || 'Trò chuyện với AI'}
-            </p>
+      {/* Summary Banner */}
+      {gameState.showSummaryBanner && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-blue-500/20 border-b border-blue-500/30 p-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-sm text-blue-300">
+              <FileText className="w-4 h-4" />
+              <span>Đã tóm tắt ngữ cảnh (Lượt {gameState.lastSummaryTurn})</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleUndoSummary}
+                className="px-2 py-1 bg-yellow-600/20 border border-yellow-500/30 text-yellow-300 rounded text-xs hover:bg-yellow-600/30 transition-colors duration-200"
+                title="Hoàn tác tóm tắt"
+              >
+                <Undo2 className="w-3 h-3" />
+              </button>
+              <button
+                onClick={handleDismissBanner}
+                className="px-2 py-1 bg-gray-600/20 border border-gray-500/30 text-gray-300 rounded text-xs hover:bg-gray-600/30 transition-colors duration-200"
+                title="Đóng"
+              >
+                ×
+              </button>
+            </div>
           </div>
-          <button
-            onClick={clearChat}
-            className="px-3 py-1 bg-gray-600/50 border border-gray-500/50 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors duration-200 text-sm"
-          >
-            Bắt Đầu Lại
-          </button>
+        </motion.div>
+      )}
+
+      {/* Icon-only Header Menu */}
+      <div className="glass-effect border-b border-gray-700/50 p-2">
+        <div className="flex items-center justify-between">
+          {/* World Time Display */}
+          {gameState.worldTime && (
+            <div className="flex items-center space-x-2 text-sm text-gray-300">
+              <Clock className="w-4 h-4" />
+              <span>{worldTimeService.formatShortTime(gameState.worldTime)}</span>
+              <span className="text-gray-500">•</span>
+              <span className="text-gray-400">{worldTimeService.getTimeOfDay(gameState.worldTime)}</span>
+            </div>
+          )}
+          
+          {/* Action Buttons */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleManualSummarize}
+              disabled={isLoading}
+              className="p-2 bg-blue-600/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-600/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Tóm tắt ngay"
+            >
+              <FileText className="w-4 h-4" />
+            </button>
+            <button
+              onClick={clearChat}
+              className="p-2 bg-red-600/20 border border-red-500/30 text-red-300 rounded-lg hover:bg-red-600/30 transition-colors duration-200"
+              title="Bắt đầu lại"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -75,6 +75,12 @@ export interface GameMessage {
   characterId?: string;
 }
 
+export interface ChatMessage {
+  role: 'player' | 'ai';
+  content: string;
+  timestamp: Date;
+}
+
 export interface GameState {
   currentCharacter: Character | null;
   messages: GameMessage[];
@@ -115,6 +121,14 @@ export interface QuestReward {
   itemId?: string;
 }
 
+export interface WorldTime {
+  hour: number;    // 0-23
+  day: number;     // 1-31
+  month: number;   // 1-12
+  year: number;    // Start year from world creation
+  dayOfWeek: number; // 0-6 (0 = Sunday, 1 = Monday, etc.)
+}
+
 export interface WorldData {
   id: string;
   name: string;
@@ -142,4 +156,32 @@ export interface WorldData {
   useLevels: boolean;
   description: string;
   createdAt: string;
+  // Time system
+  currentTime: WorldTime;
+}
+
+// SCC (Summarize Chat Context) Types
+export interface SCCSummary {
+  recap: string;                // tóm tắt 5–10 câu, văn xuôi
+  timeline: { when: string; what: string }[];
+  clues: string[];              // manh mối đã/đang mở
+  openThreads: string[];        // nút chưa giải quyết
+  relationships: { npc: string; status: string; notes?: string }[];
+  goals: { pcGoal: string; actGoal?: string }[];
+  risks: string[];              // mối nguy hiện hữu
+}
+
+export interface SCCState {
+  location?: string;
+  npcs?: { name: string; state?: string }[];
+  inventory?: { name: string; qty?: number }[];
+  clocks?: { name: string; value: number; max: number }[];
+  flags?: Record<string, boolean>;
+}
+
+export interface SCCContext {
+  summary: SCCSummary;
+  sceneState: SCCState;
+  recentTurns: ChatMessage[];
+  turnCounter: number;
 }

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { multiApiKeyService, ApiKeyInfo, ApiKeyStats } from './multiApiKeyService';
+import { SCCSummary, SCCState } from '../types';
 
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
@@ -1036,6 +1037,83 @@ Chỉ xuất văn xuôi, không thêm lời dẫn.`;
     } catch (error) {
       console.error('Lỗi khi tạo opening narrative:', error);
       throw new Error('Không thể tạo lời mở đầu. Vui lòng thử lại.');
+    }
+  }
+
+  async summarizeChatContext(
+    worldJson: string,
+    characterJson: string,
+    scenarioJson: string,
+    summaryOld: SCCSummary,
+    sceneState: SCCState,
+    recentTurns: Array<{ role: string; content: string }>
+  ): Promise<{ summary: SCCSummary; sceneState: SCCState }> {
+    if (!this.isConfigured()) {
+      throw new Error('Gemini API chưa được cấu hình. Vui lòng nhập API key.');
+    }
+
+    const prompt = `Bạn là AI "Context Compressor" cho phiên roleplay. 
+Nhiệm vụ: NÉN cuộc trò chuyện thành một bản tóm tắt ngắn gọn nhưng giữ tính liên tục và hook cốt truyện.
+
+Đầu vào:
+- WORLD (rút gọn): ${worldJson}
+- CHARACTER: ${characterJson}
+- SCENARIO_SKELETON: ${scenarioJson}
+- SUMMARY_OLD (có thể rỗng): ${JSON.stringify(summaryOld)}
+- SCENE_STATE (hiện tại): ${JSON.stringify(sceneState)}
+- TURNS_RECENT (20–40 tin kể từ lần tóm tắt trước): ${JSON.stringify(recentTurns)}
+
+Yêu cầu:
+- Không viết lại toàn bộ truyện; chỉ nén những gì đã xảy ra và các mỏ neo cốt truyện.
+- Nêu rõ các manh mối đang mở, rủi ro, mục tiêu hiện tại, các mốc thời gian/quãng đường đã đi.
+- Tôn trọng continuityRules trong SCENARIO_SKELETON.
+- Xuất đúng JSON theo SCHEMA, không thêm văn bản ngoài JSON.
+
+SCHEMA:
+{
+  "summary": {
+    "recap": "5–10 câu văn xuôi; không bullet, không emoji.",
+    "timeline": [{"when":"string","what":"string"}],
+    "clues": ["string"],
+    "openThreads": ["string"],
+    "relationships": [{"npc":"string","status":"string","notes":"string"}],
+    "goals": [{"pcGoal":"string","actGoal":"string"}],
+    "risks": ["string"]
+  },
+  "sceneState": {
+    "location": "string",
+    "npcs": [{"name":"string","state":"string"}],
+    "inventory": [{"name":"string","qty":1}],
+    "clocks": [{"name":"string","value":2,"max":6}],
+    "flags": {"key": true}
+  }
+}`;
+
+    try {
+      const responseText = await this.generateContent(prompt);
+      
+      // Parse JSON response
+      let result;
+      try {
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          result = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('No JSON found in response');
+        }
+      } catch (parseError) {
+        console.error('Failed to parse summary JSON:', parseError);
+        console.log('Raw response:', responseText);
+        throw new Error('Không thể phân tích kết quả tóm tắt từ AI.');
+      }
+
+      return {
+        summary: result.summary,
+        sceneState: result.sceneState
+      };
+    } catch (error) {
+      console.error('Error summarizing chat context:', error);
+      throw error;
     }
   }
 
