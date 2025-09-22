@@ -164,7 +164,7 @@ export function CharacterCreationPage() {
     }));
   };
 
-  // Function to calculate mana cost based on skill level
+  // Function to calculate mana cost based on skill level (default for player-created skills)
   const calculateManaCost = (level: number): number => {
     const manaCosts = {
       1: 7,
@@ -174,6 +174,20 @@ export function CharacterCreationPage() {
       5: 43
     };
     return manaCosts[level as keyof typeof manaCosts] || 7;
+  };
+
+  // Function to calculate random mana cost for rerolled skills
+  const calculateRandomManaCost = (level: number): number => {
+    const manaRanges = {
+      1: { min: 5, max: 10 },   // Level 1: 5-10 mana
+      2: { min: 10, max: 16 },  // Level 2: 10-16 mana
+      3: { min: 15, max: 25 },  // Level 3: 15-25 mana
+      4: { min: 25, max: 35 },  // Level 4: 25-35 mana
+      5: { min: 35, max: 50 }   // Level 5: 35-50 mana
+    };
+    
+    const range = manaRanges[level as keyof typeof manaRanges] || manaRanges[1];
+    return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
   };
 
   const handleUpdateProficiency = (index: number, field: 'name' | 'level' | 'energyCost' | 'description', value: string | number) => {
@@ -306,7 +320,7 @@ export function CharacterCreationPage() {
         proficiencies: newSkills.skills?.map((skill: any) => ({
           name: skill.name || '',
           level: skill.level || 1,
-          energyCost: calculateManaCost(skill.level || 1), // Use calculated mana cost
+          energyCost: calculateRandomManaCost(skill.level || 1), // Use random mana cost for rerolled skills
           description: skill.description || ''
         })) || []
       }));
@@ -584,7 +598,10 @@ export function CharacterCreationPage() {
               <div>
                 <h3 className="text-xl font-bold-vietnamese text-white uppercase">THÀNH THẠO (TỐI ĐA 3)</h3>
                 <p className="text-xs text-gray-400 mt-1">
-                  Năng lượng tự động tính: Level 1=7, Level 2=13, Level 3=20, Level 4=30, Level 5=43
+                  Năng lượng mặc định: Level 1=7, Level 2=13, Level 3=20, Level 4=30, Level 5=43
+                </p>
+                <p className="text-xs text-blue-400 mt-1">
+                  Reroll sẽ tạo mana ngẫu nhiên trong khoảng cho phép
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
@@ -592,6 +609,7 @@ export function CharacterCreationPage() {
                   onClick={handleRerollSkills}
                   disabled={isRerolling}
                   className="px-3 py-1 bg-yellow-500/20 border-2 border-yellow-500/70 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                  title="Tạo 3 kỹ năng ngẫu nhiên với mana cost ngẫu nhiên"
                 >
                   <span>{isRerolling ? 'Đang tạo...' : '🎲 Reroll'}</span>
                 </button>
@@ -646,7 +664,7 @@ export function CharacterCreationPage() {
                         value={prof.energyCost || calculateManaCost(prof.level)}
                         readOnly
                         className="w-16 px-2 py-2 bg-white/5 border-2 border-white/20 rounded-lg text-white text-sm cursor-not-allowed"
-                        title={`Năng lượng tự động tính theo cấp độ (Level ${prof.level} = ${prof.energyCost || calculateManaCost(prof.level)} mana)`}
+                        title={`Năng lượng mặc định theo cấp độ (Level ${prof.level} = ${prof.energyCost || calculateManaCost(prof.level)} mana)`}
                       />
                     </div>
                     <button

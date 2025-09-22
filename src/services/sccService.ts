@@ -1,4 +1,5 @@
 import { SCCSummary, SCCState, SCCContext, ChatMessage } from '../types';
+import { saveIndexedSummary, cleanupOldChatHistory } from '../lib/context';
 
 class SCCService {
   private static instance: SCCService;
@@ -221,6 +222,20 @@ class SCCService {
 
   private saveSceneState(sceneState: SCCState): void {
     localStorage.setItem('rp_scene_state', JSON.stringify(sceneState));
+  }
+
+  /**
+   * Save indexed summary for delta context system
+   */
+  saveIndexedSummary(turn: number, summary: SCCSummary, sceneState: SCCState): void {
+    saveIndexedSummary(turn, summary, sceneState);
+  }
+
+  /**
+   * Clean up old chat history to save memory
+   */
+  cleanupOldChatHistory(currentTurn: number): void {
+    cleanupOldChatHistory(currentTurn);
   }
 
   private loadRecentTurns(): ChatMessage[] {

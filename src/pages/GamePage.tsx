@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, FileText, Undo2 } from 'lucide-react';
+import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2 } from 'lucide-react';
 import { geminiService } from '../services/geminiService';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
 import { WorldTime, SCCContext, ChatMessage } from '../types';
+import { buildContextForAI } from '../lib/context';
 
 interface GameState {
   scenarioSkeleton: any;
@@ -22,6 +23,7 @@ export function GamePage() {
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnCounter, setTurnCounter] = useState(0);
   const [gameState, setGameState] = useState<GameState>({
     scenarioSkeleton: null,
     sceneState: {},
@@ -105,7 +107,11 @@ export function GamePage() {
       const sccContext = sccService.loadSCCContext();
       const updatedSccContext = sccService.addTurn(sccContext, openingMessage);
 
+      // Load turn counter from localStorage
+      const savedTurnCounter = parseInt(localStorage.getItem('game_turn_counter') || '0', 10);
+      
       setChatHistory([openingMessage]);
+      setTurnCounter(savedTurnCounter);
       setGameState({
         scenarioSkeleton,
         sceneState: {},
@@ -134,7 +140,8 @@ export function GamePage() {
     const playerMessage: ChatMessage = {
       role: 'player',
       content: currentMessage.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
+      turn: turnCounter + 1
     };
 
     const newChatHistory = [...chatHistory, playerMessage];
@@ -166,25 +173,26 @@ export function GamePage() {
         console.log(`🔄 Summarizing at turn ${updatedSccContext.turnCounter}`);
       }
 
-      // Generate AI response using optimized context
-      const optimizedContext = updatedSccContext ? 
-        sccService.getOptimizedContext(updatedSccContext) : 
-        { summary: { recap: '', timeline: [], clues: [], openThreads: [], relationships: [], goals: [], risks: [] }, sceneState: {}, recentTurns: newChatHistory.map(msg => ({ role: msg.role, content: msg.content })) };
-
-      const response = await geminiService.generateTurnResponse(
-        optimizedContext.recentTurns,
-        currentMessage.trim(),
+      // Build delta context for AI
+      const deltaContext = buildContextForAI(turnCounter + 1, 4); // +1 because we're about to add the current turn
+      
+      // Generate AI response using delta context
+      const response = await geminiService.generateTurnResponseWithDelta(
         worldData,
         characterData,
         scenarioData,
-        { ...gameState.sceneState, ...optimizedContext.sceneState }
+        deltaContext.summary,
+        deltaContext.sceneState,
+        deltaContext.recentTurns.map(msg => ({ role: msg.role, content: msg.content, turn: msg.turn || 0 })),
+        currentMessage.trim()
       );
 
       // Add AI response to chat
       const aiMessage: ChatMessage = {
         role: 'ai',
         content: response.narrative,
-        timestamp: new Date()
+        timestamp: new Date(),
+        turn: turnCounter + 1
       };
 
       const finalChatHistory = [...newChatHistory, aiMessage];
@@ -200,6 +208,13 @@ export function GamePage() {
       const newTime = gameState.worldTime ? 
         worldTimeService.advanceTime(gameState.worldTime, timeAdvancement) : 
         null;
+
+      // Increment turn counter after AI response
+      setTurnCounter(prev => {
+        const newCounter = prev + 1;
+        localStorage.setItem('game_turn_counter', newCounter.toString());
+        return newCounter;
+      });
 
       // Update game state
       setGameState(prev => ({
@@ -281,6 +296,13 @@ export function GamePage() {
       // Save updated context
       sccService.saveSCCContext(updatedContext);
       
+      // Save indexed summary for delta context system
+      const summaryTurn = Math.floor(updatedContext.turnCounter / 20) * 20; // Round down to nearest 20
+      sccService.saveIndexedSummary(summaryTurn, summaryResult.summary, summaryResult.sceneState);
+      
+      // Clean up old chat history to save memory
+      sccService.cleanupOldChatHistory(updatedContext.turnCounter);
+      
       console.log('✅ Summarization completed');
       
     } catch (error) {
@@ -289,28 +311,6 @@ export function GamePage() {
     }
   };
 
-  const handleManualSummarize = async () => {
-    if (!gameState.sccContext) return;
-    
-    try {
-      setIsLoading(true);
-      const worldData = localStorage.getItem('world_gen_result');
-      const characterData = localStorage.getItem('currentCharacter');
-      const scenarioData = localStorage.getItem('rp_scenario');
-      
-      if (!worldData || !characterData || !scenarioData) {
-        throw new Error('Thiếu dữ liệu game.');
-      }
-      
-      await handleSummarization(gameState.sccContext, worldData, characterData, scenarioData);
-      
-    } catch (error) {
-      console.error('Error in manual summarization:', error);
-      setError('Lỗi khi tóm tắt ngữ cảnh');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleUndoSummary = () => {
     const backupSummary = sccService.restoreSummaryFromBackup();
@@ -346,6 +346,7 @@ export function GamePage() {
 
   const clearChat = () => {
     setChatHistory([]);
+    setTurnCounter(0);
     setGameState({
       scenarioSkeleton: null,
       sceneState: {},
@@ -358,6 +359,8 @@ export function GamePage() {
     });
     localStorage.removeItem('rp_chat');
     localStorage.removeItem('rp_scenario');
+    localStorage.removeItem('game_turn_counter');
+    localStorage.removeItem('rp_summary_indexed');
     sccService.clearSCCData();
   };
 
@@ -419,7 +422,7 @@ export function GamePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-blue-300">
               <FileText className="w-4 h-4" />
-              <span>Đã tóm tắt ngữ cảnh (Lượt {gameState.lastSummaryTurn})</span>
+              <span>Đã tóm tắt ngữ cảnh (Lượt {turnCounter})</span>
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -444,26 +447,27 @@ export function GamePage() {
       {/* Icon-only Header Menu */}
       <div className="glass-effect border-b border-gray-700/50 p-2">
         <div className="flex items-center justify-between">
-          {/* World Time Display */}
-          {gameState.worldTime && (
-            <div className="flex items-center space-x-2 text-sm text-gray-300">
-              <Clock className="w-4 h-4" />
-              <span>{worldTimeService.formatShortTime(gameState.worldTime)}</span>
-              <span className="text-gray-500">•</span>
-              <span className="text-gray-400">{worldTimeService.getTimeOfDay(gameState.worldTime)}</span>
+          {/* World Time & Turn Counter Display */}
+          <div className="flex items-center space-x-4 text-sm text-gray-300">
+            {/* World Time */}
+            {gameState.worldTime && (
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4" />
+                <span>{worldTimeService.formatShortTime(gameState.worldTime)}</span>
+                <span className="text-gray-500">•</span>
+                <span className="text-gray-400">{worldTimeService.getTimeOfDay(gameState.worldTime)}</span>
+              </div>
+            )}
+            
+            {/* Turn Counter */}
+            <div className="flex items-center space-x-2">
+              <MessageSquare className="w-4 h-4" />
+              <span>Lượt {turnCounter}</span>
             </div>
-          )}
+          </div>
           
           {/* Action Buttons */}
           <div className="flex items-center space-x-2">
-            <button
-              onClick={handleManualSummarize}
-              disabled={isLoading}
-              className="p-2 bg-blue-600/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-600/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Tóm tắt ngay"
-            >
-              <FileText className="w-4 h-4" />
-            </button>
             <button
               onClick={clearChat}
               className="p-2 bg-red-600/20 border border-red-500/30 text-red-300 rounded-lg hover:bg-red-600/30 transition-colors duration-200"

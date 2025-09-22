@@ -1182,6 +1182,88 @@ Quy tắc thêm:
       throw new Error('Không thể tạo phản hồi. Vui lòng thử lại.');
     }
   }
+
+  /**
+   * Generate turn response using SCC Delta Context
+   */
+  async generateTurnResponseWithDelta(
+    worldJson: string,
+    characterJson: string,
+    scenarioJson: string,
+    summary: SCCSummary,
+    sceneState: SCCState,
+    chatDelta: Array<{ role: string; content: string; turn: number }>,
+    playerAction: string
+  ): Promise<{
+    narrative: string;
+    softGuidance: string;
+    sceneState: SCCState;
+    storyProgress: any;
+  }> {
+    if (!this.isConfigured()) {
+      throw new Error('Gemini API chưa được cấu hình. Vui lòng nhập API key.');
+    }
+
+    const prompt = `Bạn là AI Storyteller trong box chat roleplay. 
+Hãy kể tiếp câu chuyện dựa trên:
+- WORLD, CHARACTER, SCENARIO (khung sườn),
+- SUMMARY (SCC snapshot gần nhất: recap, timeline, clues, openThreads, relationships, goals, risks),
+- SCENE_STATE hiện tại (ưu tiên state này),
+- CHAT_DELTA: chỉ các lượt chat kể từ snapshot tới trước hành động hiện tại,
+- PLAYER_ACTION: hành động người chơi vừa nêu.
+
+Quy tắc:
+- Nếu có xung đột thông tin: ưu tiên SCENE_STATE, sau đó đến SUMMARY, cuối cùng mới tới CHAT_DELTA.
+- Văn xuôi 120–220 từ, không bullet/emoji/markdown, mô tả hệ quả cụ thể, cảm quan, và tiến độ cốt truyện.
+- Tôn trọng continuityRules, tone, mainThreads trong SCENARIO; định hướng mềm tới các keyBeats/twist/kết thúc, nhưng không ép buộc tự do người chơi.
+- Không nhắc đến "prompt/JSON/meta".
+
+ĐẦU VÀO:
+- WORLD: ${worldJson}
+- CHARACTER: ${characterJson}
+- SCENARIO: ${scenarioJson}
+- SUMMARY (SCC): ${JSON.stringify(summary)}
+- SCENE_STATE: ${JSON.stringify(sceneState)}
+- CHAT_DELTA (sau snapshot, ≤ ${chatDelta.length} lượt): ${JSON.stringify(chatDelta)}
+- PLAYER_ACTION: "${playerAction}"
+
+ĐẦU RA (JSON, không thêm chữ khác):
+{
+  "narrative": "văn xuôi 120–220 từ, liền mạch, không bullet/emoji",
+  "softGuidance": "1–2 câu định hướng kín đáo (có thể rỗng)",
+  "sceneState": { "các trường cần cập nhật (vị trí, NPC, manh mối, rủi ro, đồng hồ…)" },
+  "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện" }
+}`;
+
+    try {
+      const responseText = await this.generateContent(prompt);
+      
+      // Parse JSON response
+      let result;
+      try {
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          result = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('No JSON found in response');
+        }
+      } catch (parseError) {
+        console.error('Failed to parse turn response JSON:', parseError);
+        console.log('Raw response:', responseText);
+        throw new Error('Không thể phân tích kết quả từ AI.');
+      }
+
+      return {
+        narrative: result.narrative || '',
+        softGuidance: result.softGuidance || '',
+        sceneState: result.sceneState || {},
+        storyProgress: result.storyProgress || {}
+      };
+    } catch (error) {
+      console.error('Lỗi khi tạo turn response với delta context:', error);
+      throw new Error('Không thể tạo phản hồi. Vui lòng thử lại.');
+    }
+  }
 }
 
 export const geminiService = new GeminiService();

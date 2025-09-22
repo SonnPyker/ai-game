@@ -79,6 +79,7 @@ export interface ChatMessage {
   role: 'player' | 'ai';
   content: string;
   timestamp: Date;
+  turn?: number;
 }
 
 export interface GameState {
