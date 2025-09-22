@@ -66,8 +66,8 @@ export function buildContextForAI(turn: number, deltaWindow: number = 4): Contex
       risks: []
     };
     
-    // Use last 10 turns as fallback
-    recentTurns = takeLast(chatHistory, 10);
+    // Use last 20 turns as fallback
+    recentTurns = takeLast(chatHistory, 20);
   }
   
   return {

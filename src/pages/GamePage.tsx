@@ -412,75 +412,78 @@ export function GamePage() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
-      {/* Summary Banner */}
-      {gameState.showSummaryBanner && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-blue-500/20 border-b border-blue-500/30 p-3"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-sm text-blue-300">
-              <FileText className="w-4 h-4" />
-              <span>Đã tóm tắt ngữ cảnh (Lượt {turnCounter})</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handleUndoSummary}
-                className="px-2 py-1 bg-yellow-600/20 border border-yellow-500/30 text-yellow-300 rounded text-xs hover:bg-yellow-600/30 transition-colors duration-200"
-                title="Hoàn tác tóm tắt"
-              >
-                <Undo2 className="w-3 h-3" />
-              </button>
-              <button
-                onClick={handleDismissBanner}
-                className="px-2 py-1 bg-gray-600/20 border border-gray-500/30 text-gray-300 rounded text-xs hover:bg-gray-600/30 transition-colors duration-200"
-                title="Đóng"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Icon-only Header Menu */}
-      <div className="glass-effect border-b border-gray-700/50 p-2">
-        <div className="flex items-center justify-between">
-          {/* World Time & Turn Counter Display */}
-          <div className="flex items-center space-x-4 text-sm text-gray-300">
-            {/* World Time */}
-            {gameState.worldTime && (
-              <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4" />
-                <span>{worldTimeService.formatShortTime(gameState.worldTime)}</span>
-                <span className="text-gray-500">•</span>
-                <span className="text-gray-400">{worldTimeService.getTimeOfDay(gameState.worldTime)}</span>
+      {/* Fixed Header Section */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-black">
+        {/* Summary Banner */}
+        {gameState.showSummaryBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-blue-500/20 border-b border-blue-500/30 p-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-sm text-blue-300">
+                <FileText className="w-4 h-4" />
+                <span>Đã tóm tắt ngữ cảnh (Lượt {turnCounter})</span>
               </div>
-            )}
-            
-            {/* Turn Counter */}
-            <div className="flex items-center space-x-2">
-              <MessageSquare className="w-4 h-4" />
-              <span>Lượt {turnCounter}</span>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleUndoSummary}
+                  className="px-2 py-1 bg-yellow-600/20 border border-yellow-500/30 text-yellow-300 rounded text-xs hover:bg-yellow-600/30 transition-colors duration-200"
+                  title="Hoàn tác tóm tắt"
+                >
+                  <Undo2 className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={handleDismissBanner}
+                  className="px-2 py-1 bg-gray-600/20 border border-gray-500/30 text-gray-300 rounded text-xs hover:bg-gray-600/30 transition-colors duration-200"
+                  title="Đóng"
+                >
+                  ×
+                </button>
+              </div>
             </div>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={clearChat}
-              className="p-2 bg-red-600/20 border border-red-500/30 text-red-300 rounded-lg hover:bg-red-600/30 transition-colors duration-200"
-              title="Bắt đầu lại"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
+          </motion.div>
+        )}
+
+        {/* Icon-only Header Menu */}
+        <div className="glass-effect border-b border-gray-700/50 p-2">
+          <div className="flex items-center justify-between">
+            {/* World Time & Turn Counter Display */}
+            <div className="flex items-center space-x-4 text-sm text-gray-300">
+              {/* World Time */}
+              {gameState.worldTime && (
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4" />
+                  <span>{worldTimeService.formatShortTime(gameState.worldTime)}</span>
+                  <span className="text-gray-500">•</span>
+                  <span className="text-gray-400">{worldTimeService.getTimeOfDay(gameState.worldTime)}</span>
+                </div>
+              )}
+              
+              {/* Turn Counter */}
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="w-4 h-4" />
+                <span>Lượt {turnCounter}</span>
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={clearChat}
+                className="p-2 bg-red-600/20 border border-red-500/30 text-red-300 rounded-lg hover:bg-red-600/30 transition-colors duration-200"
+                title="Bắt đầu lại"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      {/* Scrollable Chat Area */}
+      <div className="flex-1 flex flex-col pt-20 pb-32">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {chatHistory.map((message, index) => (
@@ -524,10 +527,13 @@ export function GamePage() {
           
           <div ref={chatEndRef} />
         </div>
+      </div>
 
+      {/* Fixed Input Area */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-black">
         {/* Error Display */}
         {error && (
-          <div className="mx-4 mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+          <div className="mx-4 mb-2 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
             <div className="flex items-center space-x-2 text-red-300">
               <AlertCircle className="w-4 h-4" />
               <span className="text-sm">{error}</span>
