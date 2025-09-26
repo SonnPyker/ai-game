@@ -301,7 +301,7 @@ export function CharacterForm({ onCharacterCreate }: CharacterFormProps) {
           </div>
           <div className="w-full bg-white/10 rounded-full h-2">
             <motion.div
-              className="bg-gradient-to-r from-primary-500 to-secondary-500 h-2 rounded-full"
+              className="bg-primary-500 h-2 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${(step / 4) * 100}%` }}
               transition={{ duration: 0.3 }}

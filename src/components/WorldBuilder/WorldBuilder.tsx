@@ -470,7 +470,7 @@ export function WorldBuilder() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+    <div className="min-h-screen bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -815,7 +815,7 @@ export function WorldBuilder() {
                 <button
                   onClick={handleCreateWorld}
                   disabled={isGenerating}
-                  className="w-full py-4 bg-gradient-to-r from-primary-500/20 to-primary-600/20 border-2 border-primary-500/50 text-primary-300 rounded-lg hover:from-primary-500/30 hover:to-primary-600/30 hover:border-primary-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 text-lg font-medium"
+                  className="w-full py-4 bg-primary-500/20 border-2 border-primary-500/50 text-primary-300 rounded-lg hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 text-lg font-medium"
                 >
                   <Sparkles className="w-6 h-6" />
                   <span>{isGenerating ? 'Đang tạo thế giới...' : 'Tạo Thế Giới & Chuyển Tiếp'}</span>

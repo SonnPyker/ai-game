@@ -8,7 +8,6 @@ import {
   Play,
   Home
 } from 'lucide-react';
-import { ServerInfo } from './ServerInfo/ServerInfo';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,7 +20,6 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
   const menuItems = [
     { id: 'home', label: 'TRANG CHỦ', icon: Home, path: '/', action: 'home' },
-    { id: 'new-game', label: 'CHƠI MỚI', icon: Play, path: '/world-builder', action: 'new-game' },
     { id: 'settings', label: 'CÀI ĐẶT', icon: Settings, path: '/settings' },
   ];
 
@@ -29,8 +27,6 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const isActiveMenuItem = (item: any) => {
     if (item.id === 'home') {
       return location.pathname === '/';
-    } else if (item.id === 'new-game') {
-      return location.pathname === '/world-builder' || location.pathname === '/create-character' || location.pathname === '/game';
     } else if (item.id === 'settings') {
       return location.pathname === '/settings';
     }
@@ -83,10 +79,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               
               onClose();
               
-              if (item.action === 'new-game') {
-                // Chuyển đến tạo thế giới trước
-                window.location.href = '/world-builder';
-              } else if (item.action === 'home') {
+              if (item.action === 'home') {
                 // Chuyển đến trang chủ
                 window.location.href = '/';
               } else {
@@ -115,11 +108,6 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             );
           })}
         </ul>
-        
-        {/* Server Info */}
-        <div className="mt-6">
-          <ServerInfo />
-        </div>
       </nav>
     </aside>
     </>

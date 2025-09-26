@@ -69,7 +69,7 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
       transition={{ duration: 0.5 }}
     >
       <div className="flex items-center space-x-3 mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
+        <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
           <Key className="w-5 h-5 text-white" />
         </div>
         <div>

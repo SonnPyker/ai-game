@@ -52,7 +52,7 @@ export function HomePage() {
       >
         <div className="mb-8">
           <motion.div 
-            className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center"
+            className="w-24 h-24 mx-auto mb-6 bg-primary-500 rounded-full flex items-center justify-center"
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           >
@@ -71,7 +71,7 @@ export function HomePage() {
         <div className="flex justify-center">
           <button 
             onClick={handleStartGame}
-            className="btn-primary inline-flex items-center space-x-3 text-lg px-8 py-4 bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 transform hover:scale-105 transition-all duration-200"
+            className="btn-primary inline-flex items-center space-x-3 text-lg px-8 py-4 bg-primary-500 hover:bg-primary-600 transform hover:scale-105 transition-all duration-200"
           >
             <Play className="w-6 h-6" />
             <span>BẮT ĐẦU CHƠI MỚI</span>
@@ -107,7 +107,7 @@ export function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center mb-4">
                   <Icon className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold-vietnamese text-white mb-3 uppercase">

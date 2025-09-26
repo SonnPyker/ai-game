@@ -6,8 +6,12 @@ import { GamePage } from './pages/GamePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { WorldBuilder } from './components/WorldBuilder/WorldBuilder';
 import { Layout } from './components/Layout';
+import { useRefreshHandler } from './hooks/useRefreshHandler';
 
 function App() {
+  // Sử dụng hook để xử lý refresh (tạm thời tắt để tránh xung đột với navigation)
+  // useRefreshHandler();
+
   return (
     <Layout>
       <Routes>
