@@ -14,6 +14,32 @@ export function HomePage() {
   const navigate = useNavigate();
 
   const handleStartGame = () => {
+    // Reset game data nhưng giữ lại save slots và API keys
+    const keysToRemove = [
+      'rp_chat',
+      'rp_scenario', 
+      'game_turn_counter',
+      'rp_summary_indexed',
+      'rp_scene_state',
+      'world_gen_result',
+      'currentCharacter',
+      'scc_context',
+      'scc_summary_backup',
+      // World Builder keys
+      'completeWorldData',
+      'currentWorldData',
+      'currentWorldDescription',
+      'worldTitle',
+      'rp_summary',
+      'rp_turn_counter'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    console.log('✅ Đã reset game data, giữ lại save slots và API keys');
+    
     // Bắt đầu flow game: World Builder → Character Creation → Game
     navigate('/world-builder');
   };
@@ -121,7 +147,6 @@ export function HomePage() {
           })}
         </div>
       </motion.div>
-
     </div>
   );
 }

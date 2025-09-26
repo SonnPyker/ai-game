@@ -1,11 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2 } from 'lucide-react';
+import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2, Save } from 'lucide-react';
 import { geminiService } from '../services/geminiService';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
 import { WorldTime, SCCContext, ChatMessage } from '../types';
 import { buildContextForAI } from '../lib/context';
+import { SaveManager } from '../components/SaveManager/SaveManager';
+import { SavePopup } from '../components/SaveManager/SavePopup';
+import { SaveGame } from '../types/saveGame';
+import { localSaveService } from '../services/saveStorage/localSaveService';
+import { cloudSyncService } from '../services/saveStorage/cloudSyncService';
 
 interface GameState {
   scenarioSkeleton: any;
@@ -24,6 +29,10 @@ export function GamePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnCounter, setTurnCounter] = useState(0);
+  const [showSaveManager, setShowSaveManager] = useState(false);
+  const [showSavePopup, setShowSavePopup] = useState(false);
+  // Removed saveLoading state as it's handled in SavePopup
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     scenarioSkeleton: null,
     sceneState: {},
@@ -57,6 +66,55 @@ export function GamePage() {
         console.error('Lỗi load chat history:', error);
       }
     }
+  }, []);
+
+  // Check for loaded save game data
+  useEffect(() => {
+    const checkForLoadedSave = () => {
+      // Check if we have world, character AND scenario data
+      const worldData = localStorage.getItem('world_gen_result');
+      const characterData = localStorage.getItem('currentCharacter');
+      const scenarioData = localStorage.getItem('rp_scenario');
+      
+      if (worldData && characterData && scenarioData) {
+        // We have complete game data, initialize the game state
+        try {
+          const world = JSON.parse(worldData);
+          const scenario = JSON.parse(scenarioData);
+          
+          // Load turn counter and chat history
+          const savedTurnCounter = parseInt(localStorage.getItem('game_turn_counter') || '0', 10);
+          const savedChat = localStorage.getItem('rp_chat');
+          let chatHistory = [];
+          if (savedChat) {
+            try {
+              chatHistory = JSON.parse(savedChat).map((msg: any) => ({
+                ...msg,
+                timestamp: new Date(msg.timestamp)
+              }));
+            } catch (error) {
+              console.error('Lỗi load chat history:', error);
+            }
+          }
+          
+          setGameState(prev => ({
+            ...prev,
+            isInitialized: true,
+            scenarioSkeleton: scenario,
+            worldTime: world.currentTime || { day: 1, hour: 12, month: 1, year: 1, dayOfWeek: 1 }
+          }));
+          
+          setTurnCounter(savedTurnCounter);
+          setChatHistory(chatHistory);
+          
+          console.log('✅ Đã load game data từ localStorage');
+        } catch (error) {
+          console.error('❌ Lỗi load game data:', error);
+        }
+      }
+    };
+
+    checkForLoadedSave();
   }, []);
 
   // Save chat history to localStorage
@@ -338,6 +396,105 @@ export function GamePage() {
     }));
   };
 
+  // Save game to slot
+  const handleSaveGame = async (slotId: 'slot1' | 'slot2' | 'slot3' | 'local1' | 'local2' | 'local3') => {
+    try {
+      setSaveMessage(null);
+
+      // Get current game data
+      const worldData = localStorage.getItem('world_gen_result');
+      const characterData = localStorage.getItem('currentCharacter');
+      const scenarioData = localStorage.getItem('rp_scenario');
+      const sccData = localStorage.getItem('rp_summary_indexed');
+      const sceneState = localStorage.getItem('rp_scene_state');
+      const savedTurnCounter = parseInt(localStorage.getItem('game_turn_counter') || '0', 10);
+
+      if (!worldData || !characterData || !scenarioData) {
+        setSaveMessage('Không có dữ liệu game để lưu');
+        return;
+      }
+
+      // Create SaveGame object
+      const worldParsed = JSON.parse(worldData);
+      const characterParsed = JSON.parse(characterData);
+      
+      // Debug log để kiểm tra data
+      console.log('World data:', worldParsed);
+      console.log('Character data:', characterParsed);
+      
+      const saveGame: SaveGame = {
+        version: '1.0.0',
+        meta: {
+          slotId,
+          updatedAt: Date.now(),
+          source: 'local',
+          pendingSync: true
+        },
+        world: worldParsed,
+        character: characterParsed,
+        scenario: JSON.parse(scenarioData),
+        summary: sccData ? JSON.parse(sccData) : { content: '', sceneState: {} },
+        sceneState: sceneState ? JSON.parse(sceneState) : {},
+        chat: chatHistory,
+        turnCounter: savedTurnCounter,
+        worldTime: gameState.worldTime || { day: 1, hour: 12, month: 1, year: 1, dayOfWeek: 1 },
+        ui: { showSummaryBanner: gameState.showSummaryBanner, lastSummaryTurn: gameState.lastSummaryTurn }
+      };
+
+      // Determine if it's a local or cloud slot
+      const isLocalSlot = slotId.startsWith('local');
+      const actualSlotId = isLocalSlot ? slotId : slotId;
+
+      // Update SaveGame metadata based on slot type
+      const updatedSaveGame: SaveGame = {
+        ...saveGame,
+        meta: {
+          ...saveGame.meta,
+          slotId: actualSlotId,
+          source: isLocalSlot ? 'local' : 'cloud',
+          pendingSync: isLocalSlot ? true : false
+        }
+      };
+
+      let result;
+      
+      if (isLocalSlot) {
+        // Save to local storage
+        result = await localSaveService.saveGame(
+          actualSlotId as any,
+          updatedSaveGame.world,
+          updatedSaveGame.character,
+          updatedSaveGame.scenario,
+          updatedSaveGame.summary,
+          updatedSaveGame.sceneState,
+          updatedSaveGame.chat,
+          updatedSaveGame.turnCounter,
+          updatedSaveGame.worldTime,
+          updatedSaveGame.ui
+        );
+      } else {
+        // Save to cloud
+        const cloudResult = await cloudSyncService.saveToCloud(actualSlotId as any, updatedSaveGame);
+        result = {
+          success: cloudResult.success,
+          error: cloudResult.error
+        };
+      }
+
+      if (result.success) {
+        const source = isLocalSlot ? 'Local' : 'Cloud';
+        setSaveMessage(`✅ Đã lưu vào slot ${slotId} (${source})`);
+        setTimeout(() => setSaveMessage(null), 3000);
+      } else {
+        setSaveMessage(`❌ Lỗi: ${result.error}`);
+      }
+    } catch (error) {
+      setSaveMessage(`❌ Lỗi khi lưu game: ${error}`);
+    } finally {
+      // Loading state is handled in SavePopup
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -345,7 +502,8 @@ export function GamePage() {
     }
   };
 
-  const clearChat = () => {
+  const resetGameData = () => {
+    // Reset game state
     setChatHistory([]);
     setTurnCounter(0);
     setGameState({
@@ -358,11 +516,105 @@ export function GamePage() {
       showSummaryBanner: false,
       lastSummaryTurn: 0
     });
-    localStorage.removeItem('rp_chat');
-    localStorage.removeItem('rp_scenario');
-    localStorage.removeItem('game_turn_counter');
-    localStorage.removeItem('rp_summary_indexed');
+    
+    // Clear game-related localStorage but keep save slots and API keys
+    const keysToRemove = [
+      'rp_chat',
+      'rp_scenario', 
+      'game_turn_counter',
+      'rp_summary_indexed',
+      'rp_scene_state',
+      'world_gen_result',
+      'currentCharacter',
+      'scc_context',
+      'scc_summary_backup',
+      // World Builder keys
+      'completeWorldData',
+      'currentWorldData',
+      'currentWorldDescription',
+      'worldTitle',
+      'rp_summary',
+      'rp_turn_counter'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    // Clear SCC data
     sccService.clearSCCData();
+    
+    console.log('✅ Đã reset game data, giữ lại save slots và API keys');
+  };
+
+
+  // Xử lý load game từ SaveManager
+  const handleLoadGame = (saveGame: SaveGame) => {
+    try {
+      // Cập nhật game state từ SaveGame
+      setGameState({
+        scenarioSkeleton: saveGame.scenario,
+        sceneState: saveGame.sceneState,
+        storyProgress: null, // Có thể cần thêm logic để restore
+        isInitialized: true,
+        worldTime: saveGame.worldTime,
+        sccContext: {
+          summary: saveGame.summary,
+          sceneState: saveGame.sceneState,
+          recentTurns: saveGame.chat,
+          turnCounter: saveGame.turnCounter
+        },
+        showSummaryBanner: saveGame.ui?.showSummaryBanner || false,
+        lastSummaryTurn: saveGame.ui?.lastSummaryTurn || 0
+      });
+
+      // Cập nhật chat history và turn counter
+      setChatHistory(saveGame.chat);
+      setTurnCounter(saveGame.turnCounter);
+
+      // Cập nhật localStorage để tương thích với hệ thống cũ
+      localStorage.setItem('rp_chat', JSON.stringify(saveGame.chat));
+      localStorage.setItem('rp_scenario', JSON.stringify(saveGame.scenario));
+      localStorage.setItem('game_turn_counter', saveGame.turnCounter.toString());
+      localStorage.setItem('world_gen_result', JSON.stringify(saveGame.world));
+      localStorage.setItem('currentCharacter', JSON.stringify(saveGame.character));
+
+      // Cập nhật SCC context
+      if (gameState.sccContext) {
+        sccService.saveSCCContext(gameState.sccContext);
+      }
+
+      console.log('✅ Đã load game từ SaveGame');
+    } catch (error) {
+      console.error('❌ Lỗi load game:', error);
+      setError('Lỗi tải game');
+    }
+  };
+
+  // Lấy dữ liệu game hiện tại cho SaveManager
+  const getCurrentGameData = () => {
+    return {
+      worldData: gameState.worldTime ? JSON.parse(localStorage.getItem('world_gen_result') || '{}') : null,
+      characterData: JSON.parse(localStorage.getItem('currentCharacter') || '{}'),
+      scenarioData: gameState.scenarioSkeleton,
+      summaryData: gameState.sccContext?.summary || {
+        recap: '',
+        timeline: [],
+        clues: [],
+        openThreads: [],
+        relationships: [],
+        goals: [],
+        risks: []
+      },
+      sceneStateData: gameState.sceneState,
+      chatData: chatHistory,
+      turnCounter: turnCounter,
+      worldTime: gameState.worldTime,
+      uiState: {
+        showSummaryBanner: gameState.showSummaryBanner,
+        lastSummaryTurn: gameState.lastSummaryTurn
+      }
+    };
   };
 
   if (!gameState.isInitialized) {
@@ -471,10 +723,18 @@ export function GamePage() {
             
             {/* Action Buttons */}
             <div className="flex items-center space-x-2">
+              {/* Save Button */}
               <button
-                onClick={clearChat}
+                onClick={() => setShowSavePopup(true)}
+                className="p-2 bg-green-600/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-600/30 transition-colors duration-200"
+                title="Lưu game"
+              >
+                <Save className="w-4 h-4" />
+              </button>
+              <button
+                onClick={resetGameData}
                 className="p-2 bg-red-600/20 border border-red-500/30 text-red-300 rounded-lg hover:bg-red-600/30 transition-colors duration-200"
-                title="Bắt đầu lại"
+                title="Chơi mới (giữ save slots)"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -542,6 +802,16 @@ export function GamePage() {
           </div>
         )}
 
+        {/* Save Message Display */}
+        {saveMessage && (
+          <div className="mx-4 mb-2 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
+            <div className="flex items-center space-x-2 text-green-300">
+              <Save className="w-4 h-4" />
+              <span className="text-sm">{saveMessage}</span>
+            </div>
+          </div>
+        )}
+
         {/* Input Area */}
         <div className="glass-effect border-t border-gray-700/50 p-4">
           <div className="flex space-x-3">
@@ -568,6 +838,21 @@ export function GamePage() {
           </div>
         </div>
       </div>
+
+      {/* Save Popup */}
+      <SavePopup
+        isOpen={showSavePopup}
+        onClose={() => setShowSavePopup(false)}
+        onSaveGame={handleSaveGame}
+      />
+
+      {/* Save Manager */}
+      <SaveManager
+        isOpen={showSaveManager}
+        onClose={() => setShowSaveManager(false)}
+        onLoadGame={handleLoadGame}
+        currentGameData={getCurrentGameData()}
+      />
     </div>
   );
 }

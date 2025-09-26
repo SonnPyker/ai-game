@@ -133,6 +133,7 @@ export interface WorldTime {
 export interface WorldData {
   id: string;
   name: string;
+  worldTitle?: string; // Tên thế giới hiển thị
   coreIdea: string;
   genre: string;
   setting: string;

@@ -5,20 +5,24 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Home
+  Home,
+  Download
 } from 'lucide-react';
+import { AuthButton } from './Auth/AuthButton';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onToggle: () => void;
+  onOpenAuthModal: () => void;
 }
 
-export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarProps) {
   const location = useLocation();
 
   const menuItems = [
     { id: 'home', label: 'TRANG CHỦ', icon: Home, path: '/', action: 'home' },
+    { id: 'saveload', label: 'TẢI GAME', icon: Download, path: '/saveload', action: 'saveload' },
     { id: 'settings', label: 'CÀI ĐẶT', icon: Settings, path: '/settings' },
   ];
 
@@ -26,6 +30,8 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const isActiveMenuItem = (item: any) => {
     if (item.id === 'home') {
       return location.pathname === '/';
+    } else if (item.id === 'saveload') {
+      return location.pathname === '/saveload';
     } else if (item.id === 'settings') {
       return location.pathname === '/settings';
     }
@@ -52,7 +58,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       <aside className={`fixed left-0 top-0 w-64 sm:w-72 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-50 sidebar-transition ${
         isOpen ? 'sidebar-open' : 'sidebar-closed'
       }`}>
-        <nav className="p-3 sm:p-4">
+        <nav className="p-3 sm:p-4 h-full flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold-vietnamese text-white uppercase">MENU</h2>
             <div className="flex items-center space-x-2">
@@ -66,49 +72,57 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             </div>
           </div>
         
-        <ul className="space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isDisabled = false;
-            
-            const handleClick = (e: React.MouseEvent) => {
-              e.preventDefault();
+          <ul className="space-y-2 flex-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isDisabled = false;
               
-              if (isDisabled) return;
-              
-              onClose();
-              
+              const handleClick = (e: React.MouseEvent) => {
+                e.preventDefault();
+                
+                if (isDisabled) return;
+                
+                onClose();
+                
               if (item.action === 'home') {
                 // Chuyển đến trang chủ
                 window.location.href = '/';
+              } else if (item.action === 'saveload') {
+                // Chuyển đến trang save/load
+                window.location.href = '/saveload';
               } else {
                 // Chuyển đến path thông thường
                 window.location.href = item.path;
               }
-            };
-            
-            return (
-              <li key={item.id}>
-                <a
-                  href={item.path}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 border-2 ${
-                    isDisabled 
-                      ? 'bg-gray-500/10 border-gray-500/20 text-gray-500 cursor-not-allowed'
-                      : isActiveMenuItem(item)
-                        ? 'tab-active'
-                        : 'tab-inactive'
-                  }`}
-                  onClick={handleClick}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-    </aside>
+              };
+              
+              return (
+                <li key={item.id}>
+                  <a
+                    href={item.path}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 border-2 ${
+                      isDisabled 
+                        ? 'bg-gray-500/10 border-gray-500/20 text-gray-500 cursor-not-allowed'
+                        : isActiveMenuItem(item)
+                          ? 'tab-active'
+                          : 'tab-inactive'
+                    }`}
+                    onClick={handleClick}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Auth Button ở cuối sidebar */}
+          <div className="mt-4 pt-4 border-t border-gray-700/50">
+            <AuthButton onOpenAuthModal={onOpenAuthModal} />
+          </div>
+        </nav>
+      </aside>
     </>
   );
 }

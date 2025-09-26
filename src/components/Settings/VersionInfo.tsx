@@ -12,16 +12,16 @@ export function VersionInfo() {
       version: "1.2.0",
       date: now.toISOString().split('T')[0],
       changes: [
-        "📊 Tăng kích thước font chữ lên 18px cho dễ đọc hơn",
-        "📁 Thêm tính năng import/export JSON cho dữ liệu thế giới",
-        "👤 Thêm tính năng import/export JSON cho dữ liệu nhân vật",
-        "🌍 Hiển thị mô tả thế giới trong trang tạo nhân vật",
-        "🤖 Cải thiện AI để luôn output tiếng Việt, giữ tên riêng tiếng Anh",
-        "🎯 Sửa lỗi AI kể sai ngôi (thứ nhất/thứ hai/thứ ba)",
-        "⚡ Cải thiện logic delta context calculation cho SCC",
-        "🎨 Cải thiện UI World Builder: principles và currencies",
-        "🔧 Tối ưu hóa 'Chi tiết hóa & Hoàn thành' tạo 6 foundation entities",
-        "🐛 Sửa các lỗi TypeScript và tối ưu build process"
+        "💾 Hệ thống Save/Load hoàn chỉnh với Supabase + LocalStorage",
+        "☁️ 3 slot Cloud Save với đồng bộ real-time",
+        "💻 3 slot Local Save cho offline gaming",
+        "🔄 Cơ chế sync thông minh giữa Cloud và Local",
+        "⚡ UI Save/Load được tối ưu với thông tin chi tiết",
+        "🎮 Tách biệt hoàn toàn Cloud và Local saves",
+        "🗑️ Xóa bỏ class nhân vật không cần thiết",
+        "🧹 Dọn dẹp code và tối ưu hóa bundle size",
+        "🐛 Sửa lỗi [object Object] trong hiển thị save",
+        "✨ Cải thiện UX với thông tin thế giới và nhân vật"
       ]
     },
     {
