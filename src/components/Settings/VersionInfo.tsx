@@ -2,15 +2,31 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "1.1.0";
+  const version = "1.2.0";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
   const updateLog = [
     {
-      version: "1.1.0",
+      version: "1.2.0",
       date: now.toISOString().split('T')[0],
+      changes: [
+        "📊 Tăng kích thước font chữ lên 18px cho dễ đọc hơn",
+        "📁 Thêm tính năng import/export JSON cho dữ liệu thế giới",
+        "👤 Thêm tính năng import/export JSON cho dữ liệu nhân vật",
+        "🌍 Hiển thị mô tả thế giới trong trang tạo nhân vật",
+        "🤖 Cải thiện AI để luôn output tiếng Việt, giữ tên riêng tiếng Anh",
+        "🎯 Sửa lỗi AI kể sai ngôi (thứ nhất/thứ hai/thứ ba)",
+        "⚡ Cải thiện logic delta context calculation cho SCC",
+        "🎨 Cải thiện UI World Builder: principles và currencies",
+        "🔧 Tối ưu hóa 'Chi tiết hóa & Hoàn thành' tạo 6 foundation entities",
+        "🐛 Sửa các lỗi TypeScript và tối ưu build process"
+      ]
+    },
+    {
+      version: "1.1.0",
+      date: "2025-09-25",
       changes: [
         "🎨 Loại bỏ hoàn toàn UI gradient, chuyển sang flat colors",
         "🗂️ Tách riêng Settings thành 3 tab: API Keys, Game Settings, Version & Info",
@@ -20,7 +36,6 @@ export function VersionInfo() {
         "🎯 Loại bỏ nút 'Chơi mới' khỏi sidebar, chỉ bắt đầu từ trang chủ",
         "🔄 Cải thiện cơ chế refresh trang với các trường hợp ngoại lệ",
         "🔤 Cập nhật font chữ sang 'SVN-Determination Sans'",
-        "📊 Tăng kích thước font chữ thường lên 16px",
         "🐛 Sửa lỗi TypeScript và tối ưu hóa build"
       ]
     },
