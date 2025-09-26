@@ -11,14 +11,16 @@ export function VersionInfo() {
       version: "1.1.0",
       date: "2024-12-19",
       changes: [
-        "🔄 Cải tiến giao diện Settings với hệ thống tab",
-        "⚙️ Tách riêng API Keys, Game Settings và Version Info",
-        "🎮 Thêm cài đặt game chi tiết (âm thanh, hiệu suất, dữ liệu)",
-        "🎨 Loại bỏ gradient, sử dụng flat colors",
-        "🔤 Cập nhật font chữ SVN-Determination Sans",
-        "📱 Tối ưu responsive design",
-        "✨ Cải thiện UX với navigation mượt mà",
-        "🛠️ Thêm quản lý dữ liệu game (lưu, reset)"
+        "🎨 Loại bỏ hoàn toàn UI gradient, chuyển sang flat colors",
+        "🗂️ Tách riêng Settings thành 3 tab: API Keys, Game Settings, Version & Info",
+        "🎮 Thêm Game Settings với cài đặt âm thanh, hiệu suất, quản lý dữ liệu",
+        "🔧 Cải thiện hệ thống quản lý API keys",
+        "📱 Tối ưu hóa responsive design",
+        "🎯 Loại bỏ nút 'Chơi mới' khỏi sidebar, chỉ bắt đầu từ trang chủ",
+        "🔄 Cải thiện cơ chế refresh trang với các trường hợp ngoại lệ",
+        "🔤 Cập nhật font chữ sang 'SVN-Determination Sans'",
+        "📊 Tăng kích thước font chữ thường lên 16px",
+        "🐛 Sửa lỗi TypeScript và tối ưu hóa build"
       ]
     },
     {

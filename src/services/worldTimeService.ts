@@ -2,7 +2,7 @@ import { WorldTime } from '../types';
 
 class WorldTimeService {
   private static instance: WorldTimeService;
-  private timeInterval: number | null = null;
+  private timeInterval: NodeJS.Timeout | null = null;
   private timeSpeed: number = 1; // 1 = real time, 2 = 2x speed, etc.
 
   private constructor() {}

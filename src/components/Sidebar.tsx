@@ -5,7 +5,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Play,
   Home
 } from 'lucide-react';
 
