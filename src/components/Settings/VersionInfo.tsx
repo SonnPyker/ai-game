@@ -2,11 +2,25 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "1.0.0";
-  const buildDate = "2024-01-15";
-  const lastUpdate = "2024-01-15";
+  const version = "1.1.0";
+  const buildDate = "2024-12-19";
+  const lastUpdate = "2024-12-19";
 
   const updateLog = [
+    {
+      version: "1.1.0",
+      date: "2024-12-19",
+      changes: [
+        "🔄 Cải tiến giao diện Settings với hệ thống tab",
+        "⚙️ Tách riêng API Keys, Game Settings và Version Info",
+        "🎮 Thêm cài đặt game chi tiết (âm thanh, hiệu suất, dữ liệu)",
+        "🎨 Loại bỏ gradient, sử dụng flat colors",
+        "🔤 Cập nhật font chữ SVN-Determination Sans",
+        "📱 Tối ưu responsive design",
+        "✨ Cải thiện UX với navigation mượt mà",
+        "🛠️ Thêm quản lý dữ liệu game (lưu, reset)"
+      ]
+    },
     {
       version: "1.0.0",
       date: "2024-01-15",
