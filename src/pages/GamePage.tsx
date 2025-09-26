@@ -176,6 +176,16 @@ export function GamePage() {
       // Build delta context for AI
       const deltaContext = buildContextForAI(turnCounter + 1, 4); // +1 because we're about to add the current turn
       
+      // Debug delta context (remove in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🎮 Game Turn ${turnCounter + 1} - Delta Context:`);
+        console.log(`   Current Turn: ${turnCounter + 1}`);
+        console.log(`   Delta Window: 4`);
+        console.log(`   Summary:`, deltaContext.summary.recap ? 'Available' : 'Empty');
+        console.log(`   Recent Turns: ${deltaContext.recentTurns.length} turns`);
+        console.log(`   Scene State:`, Object.keys(deltaContext.sceneState).length > 0 ? 'Available' : 'Empty');
+      }
+      
       // Generate AI response using delta context
       const response = await geminiService.generateTurnResponseWithDelta(
         worldData,

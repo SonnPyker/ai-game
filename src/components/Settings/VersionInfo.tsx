@@ -3,13 +3,14 @@ import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
   const version = "1.1.0";
-  const buildDate = "2024-12-19";
-  const lastUpdate = "2024-12-19";
+  const now = new Date();
+  const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+  const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
   const updateLog = [
     {
       version: "1.1.0",
-      date: "2024-12-19",
+      date: now.toISOString().split('T')[0],
       changes: [
         "🎨 Loại bỏ hoàn toàn UI gradient, chuyển sang flat colors",
         "🗂️ Tách riêng Settings thành 3 tab: API Keys, Game Settings, Version & Info",

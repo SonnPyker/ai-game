@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Character } from '../types';
 import { geminiService } from '../services/geminiService';
-import { Sparkles, Download, RotateCcw, Check } from 'lucide-react';
+import { Sparkles, Download, RotateCcw, Check, Globe, Upload } from 'lucide-react';
 
 interface CharacterData {
   name: string;
@@ -30,6 +30,7 @@ export function CharacterCreationPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRerolling, setIsRerolling] = useState(false);
   const [characterDescription, setCharacterDescription] = useState('');
+  const [worldDescription, setWorldDescription] = useState('');
   const [characterData, setCharacterData] = useState<CharacterData>({
     name: '',
     gender: 'male',
@@ -48,6 +49,14 @@ export function CharacterCreationPage() {
     customStats: [],
     proficiencies: []
   });
+
+  // Load world description from localStorage
+  useEffect(() => {
+    const savedWorldDescription = localStorage.getItem('currentWorldDescription');
+    if (savedWorldDescription) {
+      setWorldDescription(savedWorldDescription);
+    }
+  }, []);
 
   const calculateMaxHealth = () => {
     return Math.floor((characterData.coreStats.constitution - 10) / 2) + 20;
@@ -268,14 +277,71 @@ export function CharacterCreationPage() {
   };
 
   const handleExportCharacter = () => {
-    const dataStr = JSON.stringify(characterData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${characterData.name || 'character'}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const exportData = {
+        ...characterData,
+        exportedAt: new Date().toISOString(),
+        version: '1.0.0'
+      };
+      
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `character-${characterData.name || 'unnamed'}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert('✅ Đã xuất dữ liệu nhân vật thành công!');
+    } catch (error) {
+      console.error('Error exporting character:', error);
+      alert('❌ Có lỗi xảy ra khi xuất dữ liệu nhân vật');
+    }
+  };
+
+  // Import character data from JSON file
+  const handleImportCharacter = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const importedData = JSON.parse(content);
+        
+        // Validate the imported data structure
+        if (!importedData.name && !importedData.coreStats) {
+          throw new Error('Dữ liệu không hợp lệ: thiếu thông tin cơ bản');
+        }
+        
+        // Update character data with imported data
+        setCharacterData(prev => ({
+          ...prev,
+          ...importedData,
+          // Ensure required fields have defaults
+          name: importedData.name || prev.name,
+          gender: importedData.gender || prev.gender,
+          coreStats: importedData.coreStats || prev.coreStats,
+          personalityTraits: importedData.personalityTraits || prev.personalityTraits,
+          customStats: importedData.customStats || prev.customStats,
+          proficiencies: importedData.proficiencies || prev.proficiencies
+        }));
+        
+        // Auto switch to customize tab after successful import
+        setCurrentStep('customize');
+        
+        alert('✅ Đã nhập dữ liệu nhân vật thành công! Chuyển sang tab tùy chỉnh.');
+      } catch (error) {
+        console.error('Error importing character:', error);
+        alert('❌ Có lỗi xảy ra khi nhập dữ liệu nhân vật: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleAISuggestStats = async () => {
@@ -348,6 +414,31 @@ export function CharacterCreationPage() {
           </p>
         </motion.div>
 
+        {/* World Description Reference */}
+        {worldDescription && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="glass-effect p-6 rounded-xl mb-6"
+          >
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <Globe className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Thế giới đã tạo</h3>
+            </div>
+            <div className="bg-gray-800/30 border border-gray-600/50 rounded-lg p-4 max-h-40 overflow-y-auto">
+              <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                {worldDescription}
+              </p>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              💡 Tham khảo thông tin thế giới ở trên để mô tả nhân vật phù hợp với bối cảnh
+            </p>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -376,6 +467,18 @@ export function CharacterCreationPage() {
               <span>{isAnalyzing ? 'Đang phân tích...' : 'Phân Tích & Tạo Nhân Vật'}</span>
             </button>
             
+            {/* Import Character Button */}
+            <label className="px-6 py-3 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 cursor-pointer flex items-center space-x-2">
+              <Upload className="w-4 h-4" />
+              <span>Nhập nhân vật từ file JSON</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImportCharacter}
+                className="hidden"
+              />
+            </label>
+            
             {/* World context indicator */}
             {(() => {
               try {
@@ -394,6 +497,29 @@ export function CharacterCreationPage() {
             })()}
           </div>
         </motion.div>
+
+        {/* Import/Export Guide */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="glass-effect p-6 rounded-xl"
+        >
+          <h3 className="text-lg font-semibold text-white mb-4">📁 Nhập/Xuất Nhân Vật</h3>
+          <div className="space-y-3">
+            <div className="border-l-4 border-blue-500 pl-4">
+              <h4 className="font-medium text-blue-300 mb-1">Nhập nhân vật</h4>
+              <p className="text-sm text-gray-300">Tải file JSON để khôi phục nhân vật đã lưu trước đó. Tự động chuyển sang tab tùy chỉnh.</p>
+            </div>
+            <div className="border-l-4 border-green-500 pl-4">
+              <h4 className="font-medium text-green-300 mb-1">Xuất nhân vật</h4>
+              <p className="text-sm text-gray-300">Lưu nhân vật hiện tại thành file JSON để chia sẻ hoặc backup (có trong tab tùy chỉnh)</p>
+            </div>
+            <div className="text-xs text-gray-400 mt-2">
+              💡 Bạn có thể chia sẻ nhân vật với bạn bè hoặc tạo nhiều nhân vật khác nhau cho cùng một thế giới
+            </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -406,12 +532,27 @@ export function CharacterCreationPage() {
         transition={{ duration: 0.8 }}
         className="text-center mb-8"
       >
-        <h1 className="text-4xl font-bold-vietnamese text-white mb-4 uppercase">
-          TÙY CHỈNH NHÂN VẬT
-        </h1>
-        <p className="text-lg text-gray-300">
-          Chỉnh sửa và hoàn thiện nhân vật của bạn
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold-vietnamese text-white mb-2 uppercase">
+              TÙY CHỈNH NHÂN VẬT
+            </h1>
+            <p className="text-lg text-gray-300">
+              Chỉnh sửa và hoàn thiện nhân vật của bạn
+            </p>
+          </div>
+          
+          {/* Export Button */}
+          <div className="flex space-x-3">
+            <button
+              onClick={handleExportCharacter}
+              className="px-4 py-2 bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 flex items-center space-x-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Xuất nhân vật</span>
+            </button>
+          </div>
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-8">
@@ -712,7 +853,7 @@ export function CharacterCreationPage() {
           className="px-6 py-3 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 flex items-center space-x-2"
         >
           <Download className="w-4 h-4" />
-          <span>Tải Xuống Tệp Nhân Vật</span>
+          <span>Xuất Nhân Vật</span>
         </button>
         
         <button

@@ -4,7 +4,9 @@ import {
   Sparkles, 
   Play,
   Plus,
-  X
+  X,
+  Download,
+  Upload
 } from 'lucide-react';
 import { geminiService } from '../../services/geminiService';
 import { worldTimeService } from '../../services/worldTimeService';
@@ -143,17 +145,63 @@ export function WorldBuilder() {
     
     try {
       if (field === 'coreIdea') {
-        // Generate both core idea and genre/setting
-        const [suggestion, genreSetting] = await Promise.all([
+        // Generate complete world data from core idea
+        const [suggestion, genreSetting, principles, entities, worldDetails] = await Promise.all([
           geminiService.generateCoreIdea(worldData.coreIdea),
-          geminiService.generateGenreAndSetting(worldData.coreIdea)
+          geminiService.generateGenreAndSetting(worldData.coreIdea),
+          geminiService.generateCorePrinciples(worldData.coreIdea),
+          geminiService.generateFoundationEntities(worldData.coreIdea),
+          geminiService.generateWorldDetails(worldData.coreIdea)
         ]);
+        
+        // Parse principles
+        let parsedPrinciples = [];
+        try {
+          const jsonMatch = principles.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            parsedPrinciples = JSON.parse(jsonMatch[0]).slice(0, 5);
+          }
+        } catch (error) {
+          console.warn('Failed to parse principles:', error);
+        }
+        
+        // Parse entities
+        let parsedEntities = [];
+        try {
+          const jsonMatch = entities.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            parsedEntities = JSON.parse(jsonMatch[0]).slice(0, 6);
+            parsedEntities = parsedEntities.map((entity: any) => ({
+              ...entity,
+              classification: entity.type || entity.classification || 'Nhân vật'
+            }));
+          }
+        } catch (error) {
+          console.warn('Failed to parse entities:', error);
+        }
+        
+        // Parse world details
+        let parsedDetails: any = {};
+        try {
+          const jsonMatch = worldDetails.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            parsedDetails = JSON.parse(jsonMatch[0]);
+          }
+        } catch (error) {
+          console.warn('Failed to parse world details:', error);
+        }
         
         setWorldData(prev => ({ 
           ...prev, 
           coreIdea: suggestion,
           genre: genreSetting.genre,
-          setting: genreSetting.setting
+          setting: genreSetting.setting,
+          storyTone: parsedDetails.storyTone || prev.storyTone,
+          narration: parsedDetails.narration || prev.narration,
+          difficulty: parsedDetails.difficulty || prev.difficulty,
+          corePrinciples: [...prev.corePrinciples, ...parsedPrinciples],
+          foundationEntities: [...prev.foundationEntities, ...parsedEntities],
+          currencies: parsedDetails.currencies ? [...prev.currencies, ...parsedDetails.currencies] : prev.currencies
         }));
       } else if (field === 'corePrinciples') {
         const principlesText = await geminiService.generateCorePrinciples(worldData.coreIdea);
@@ -220,44 +268,66 @@ export function WorldBuilder() {
               classification: entity.type || 'Nhân vật'
             }));
             
-            // Ensure we have exactly 5 entities with one of each type
+            // Ensure we have exactly 6 entities with proper distribution
             const requiredTypes = ['Nhân vật', 'Địa điểm', 'Phe phái', 'Vật phẩm', 'Truyền thuyết'];
             const typeCounts: {[key: string]: number} = {};
             const finalEntities: any[] = [];
             
-            // First pass: collect one of each required type
+            // First pass: collect one of each required type (except Phe phái which needs 2)
             for (const entity of entities) {
               const type = entity.classification;
-              if (requiredTypes.includes(type) && !typeCounts[type]) {
-                typeCounts[type] = 1;
-                finalEntities.push(entity);
+              if (requiredTypes.includes(type)) {
+                if (type === 'Phe phái') {
+                  if (typeCounts[type] < 2) {
+                    typeCounts[type] = (typeCounts[type] || 0) + 1;
+                    finalEntities.push(entity);
+                  }
+                } else if (!typeCounts[type]) {
+                  typeCounts[type] = 1;
+                  finalEntities.push(entity);
+                }
               }
             }
             
             // Second pass: fill remaining slots if needed
             for (const entity of entities) {
-              if (finalEntities.length >= 5) break;
+              if (finalEntities.length >= 6) break;
               const type = entity.classification;
-              if (requiredTypes.includes(type) && typeCounts[type] < 1) {
-                typeCounts[type] = 1;
-                finalEntities.push(entity);
+              if (requiredTypes.includes(type)) {
+                if (type === 'Phe phái' && typeCounts[type] < 2) {
+                  typeCounts[type] = (typeCounts[type] || 0) + 1;
+                  finalEntities.push(entity);
+                } else if (type !== 'Phe phái' && !typeCounts[type]) {
+                  typeCounts[type] = 1;
+                  finalEntities.push(entity);
+                }
               }
             }
             
-            // If we still don't have 5, create fallback entities for missing types
+            // If we still don't have 6, create fallback entities for missing types
             for (const requiredType of requiredTypes) {
-              if (finalEntities.length >= 5) break;
-              if (!typeCounts[requiredType]) {
+              if (finalEntities.length >= 6) break;
+              if (requiredType === 'Phe phái' && (typeCounts[requiredType] || 0) < 2) {
+                const count = typeCounts[requiredType] || 0;
+                finalEntities.push({
+                  id: `entity_${requiredType.toLowerCase()}_${count + 1}`,
+                  name: `Phe phái ${count + 1}`,
+                  description: `Mô tả cho phe phái ${count + 1} trong thế giới này.`,
+                  classification: requiredType
+                });
+                typeCounts[requiredType] = (typeCounts[requiredType] || 0) + 1;
+              } else if (requiredType !== 'Phe phái' && !typeCounts[requiredType]) {
                 finalEntities.push({
                   id: `entity_${requiredType.toLowerCase()}`,
                   name: `Thực thể ${requiredType}`,
                   description: `Mô tả cho ${requiredType.toLowerCase()} trong thế giới này.`,
                   classification: requiredType
                 });
+                typeCounts[requiredType] = 1;
               }
             }
             
-            entities = finalEntities.slice(0, 5);
+            entities = finalEntities.slice(0, 6);
           } else {
             throw new Error('No JSON found');
           }
@@ -282,15 +352,36 @@ export function WorldBuilder() {
             }
           }
           
-          // Final fallback - ensure we have 5 entities with one of each type
+          // Final fallback - ensure we have 6 entities with proper distribution
           if (entities.length === 0) {
             const requiredTypes = ['Nhân vật', 'Địa điểm', 'Phe phái', 'Vật phẩm', 'Truyền thuyết'];
-            const fallbackEntities = requiredTypes.map((type, i) => ({
-              id: `entity_${i}`,
-              name: `Thực thể ${type}`,
-              description: `Mô tả cho ${type.toLowerCase()} trong thế giới này.`,
-              classification: type
-            }));
+            const fallbackEntities = [];
+            
+            // Add one of each type except Phe phái
+            for (const type of requiredTypes) {
+              if (type === 'Phe phái') {
+                // Add 2 phe phái
+                fallbackEntities.push({
+                  id: `entity_phe_phai_1`,
+                  name: `Phe phái 1`,
+                  description: `Mô tả cho phe phái đầu tiên trong thế giới này.`,
+                  classification: type
+                });
+                fallbackEntities.push({
+                  id: `entity_phe_phai_2`,
+                  name: `Phe phái 2`,
+                  description: `Mô tả cho phe phái thứ hai trong thế giới này.`,
+                  classification: type
+                });
+              } else {
+                fallbackEntities.push({
+                  id: `entity_${type.toLowerCase()}`,
+                  name: `Thực thể ${type}`,
+                  description: `Mô tả cho ${type.toLowerCase()} trong thế giới này.`,
+                  classification: type
+                });
+              }
+            }
             entities.push(...fallbackEntities);
           }
         }
@@ -468,6 +559,68 @@ export function WorldBuilder() {
     }
   };
 
+  // Export world data to JSON file
+  const handleExportWorld = () => {
+    try {
+      const exportData = {
+        ...worldData,
+        exportedAt: new Date().toISOString(),
+        version: '1.0.0'
+      };
+      
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `world-${worldData.name || 'unnamed'}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert('✅ Đã xuất dữ liệu thế giới thành công!');
+    } catch (error) {
+      console.error('Error exporting world:', error);
+      alert('❌ Có lỗi xảy ra khi xuất dữ liệu thế giới');
+    }
+  };
+
+  // Import world data from JSON file
+  const handleImportWorld = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const importedData = JSON.parse(content);
+        
+        // Validate the imported data structure
+        if (!importedData.coreIdea) {
+          throw new Error('Dữ liệu không hợp lệ: thiếu ý tưởng cốt lõi');
+        }
+        
+        // Update world data with imported data
+        setWorldData(prev => ({
+          ...prev,
+          ...importedData,
+          id: prev.id, // Keep current ID
+          createdAt: prev.createdAt, // Keep current creation date
+          currentTime: prev.currentTime // Keep current time
+        }));
+        
+        alert('✅ Đã nhập dữ liệu thế giới thành công!');
+      } catch (error) {
+        console.error('Error importing world:', error);
+        alert('❌ Có lỗi xảy ra khi nhập dữ liệu thế giới: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+      }
+    };
+    reader.readAsText(file);
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-900 p-6">
@@ -477,6 +630,28 @@ export function WorldBuilder() {
           <div>
             <h1 className="text-3xl font-bold-vietnamese text-white mb-2 uppercase">WORLD BUILDER</h1>
             <p className="text-gray-400">Tạo thế giới cho cuộc phiêu lưu của bạn</p>
+          </div>
+          
+          {/* Import/Export Buttons */}
+          <div className="flex space-x-3">
+            <label className="px-4 py-2 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 cursor-pointer flex items-center space-x-2">
+              <Upload className="w-4 h-4" />
+              <span>Nhập thế giới</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImportWorld}
+                className="hidden"
+              />
+            </label>
+            
+            <button
+              onClick={handleExportWorld}
+              className="px-4 py-2 bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 flex items-center space-x-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Xuất thế giới</span>
+            </button>
           </div>
         </div>
 
@@ -497,7 +672,7 @@ export function WorldBuilder() {
                   disabled={isGenerating}
                   className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm disabled:opacity-50"
                 >
-                  {isGenerating && generatingField === 'coreIdea' ? 'Đang tạo...' : 'Chi tiết hóa & Điền thể loại'}
+                  {isGenerating && generatingField === 'coreIdea' ? 'Đang tạo...' : 'Chi tiết hóa & Hoàn thành tất cả'}
                 </button>
               </div>
               <textarea
@@ -607,27 +782,29 @@ export function WorldBuilder() {
               <p className="text-sm text-gray-400 mb-4">Các quy tắc và nguyên tắc thế giới cơ bản</p>
               <div className="space-y-3">
                 {worldData.corePrinciples.map((principle, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
-                    <input
-                      type="text"
-                      value={principle.name}
-                      onChange={(e) => updateCorePrinciple(index, 'name', e.target.value)}
-                      placeholder="Tên nguyên tắc thế giới"
-                      className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
-                    />
-                    <input
-                      type="text"
+                  <div key={index} className="space-y-2">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={principle.name}
+                        onChange={(e) => updateCorePrinciple(index, 'name', e.target.value)}
+                        placeholder="Tên nguyên tắc thế giới"
+                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
+                      />
+                      <button
+                        onClick={() => removeCorePrinciple(index)}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors duration-200"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <textarea
                       value={principle.description}
                       onChange={(e) => updateCorePrinciple(index, 'description', e.target.value)}
-                      placeholder="Mô tả"
-                      className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
+                      placeholder="Mô tả chi tiết nguyên tắc thế giới"
+                      rows={2}
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none"
                     />
-                    <button
-                      onClick={() => removeCorePrinciple(index)}
-                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors duration-200"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
                 ))}
               </div>
@@ -720,36 +897,38 @@ export function WorldBuilder() {
               </div>
               <div className="space-y-3">
                 {worldData.currencies.map((currency, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
-                    <input
-                      type="text"
-                      value={currency.name}
-                      onChange={(e) => updateCurrency(index, 'name', e.target.value)}
-                      placeholder="Tên tiền tệ"
-                      className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
-                    />
-                    <input
-                      type="text"
+                  <div key={index} className="space-y-2">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={currency.name}
+                        onChange={(e) => updateCurrency(index, 'name', e.target.value)}
+                        placeholder="Tên tiền tệ"
+                        className="w-1/3 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
+                      />
+                      <label className="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={currency.isMain}
+                          onChange={(e) => updateCurrency(index, 'isMain', e.target.checked)}
+                          className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-primary-500 focus:ring-primary-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
+                        />
+                        <span>Chính</span>
+                      </label>
+                      <button
+                        onClick={() => removeCurrency(index)}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors duration-200"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <textarea
                       value={currency.description}
                       onChange={(e) => updateCurrency(index, 'description', e.target.value)}
-                      placeholder="Mô tả"
-                      className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
+                      placeholder="Mô tả tiền tệ"
+                      rows={2}
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none"
                     />
-                    <label className="flex items-center space-x-3 text-sm text-gray-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={currency.isMain}
-                        onChange={(e) => updateCurrency(index, 'isMain', e.target.checked)}
-                        className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-primary-500 focus:ring-primary-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
-                      />
-                      <span>Chính</span>
-                    </label>
-                    <button
-                      onClick={() => removeCurrency(index)}
-                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors duration-200"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
                 ))}
               </div>
@@ -841,7 +1020,22 @@ export function WorldBuilder() {
                 </div>
                 <div className="border-l-4 border-green-500 pl-4">
                   <h4 className="font-medium text-green-300 mb-1">Chi Tiết Hóa bằng AI</h4>
-                  <p className="text-sm text-gray-300">Phát triển và mở rộng ý tưởng hiện tại thành ý tưởng hoàn chỉnh hơn.</p>
+                  <p className="text-sm text-gray-300">Tự động hoàn thành tất cả các mục: ý tưởng, thể loại, bối cảnh, tông truyện, ngôi kể, độ khó, nguyên tắc, thực thể, tiền tệ.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Import/Export Guide */}
+            <div className="glass-effect p-6 rounded-xl">
+              <h3 className="text-lg font-semibold text-white mb-4">📁 Nhập/Xuất Thế Giới</h3>
+              <div className="space-y-3">
+                <div className="border-l-4 border-blue-500 pl-4">
+                  <h4 className="font-medium text-blue-300 mb-1">Xuất thế giới</h4>
+                  <p className="text-sm text-gray-300">Lưu thế giới hiện tại thành file JSON để chia sẻ hoặc backup</p>
+                </div>
+                <div className="border-l-4 border-green-500 pl-4">
+                  <h4 className="font-medium text-green-300 mb-1">Nhập thế giới</h4>
+                  <p className="text-sm text-gray-300">Tải file JSON để khôi phục thế giới đã lưu trước đó</p>
                 </div>
               </div>
             </div>
@@ -855,6 +1049,7 @@ export function WorldBuilder() {
                 <li>• Thực thể thế giới là các tổ chức/sức mạnh quan trọng</li>
                 <li>• Tông truyện ảnh hưởng đến cách AI kể chuyện</li>
                 <li>• Ngôi kể quyết định góc nhìn của người chơi</li>
+                <li>• Sử dụng tính năng nhập/xuất để chia sẻ thế giới với bạn bè</li>
               </ul>
             </div>
           </motion.div>

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Gamepad2, Zap, Save, RotateCcw } from 'lucide-react';
+import { Gamepad2, Zap } from 'lucide-react';
 
 export function GameSettings() {
   return (
@@ -122,23 +122,12 @@ export function GameSettings() {
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-semibold text-white">Lưu Game Tự Động</h4>
-              <p className="text-sm text-gray-300">Tự động lưu mỗi 5 phút</p>
+              <p className="text-sm text-gray-300">Tự động lưu sau mỗi 5 turn</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" defaultChecked />
               <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
-          </div>
-
-          <div className="flex space-x-3">
-            <button className="px-4 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 flex items-center space-x-2">
-              <Save className="w-4 h-4" />
-              <span>Lưu Ngay</span>
-            </button>
-            <button className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors duration-200 flex items-center space-x-2">
-              <RotateCcw className="w-4 h-4" />
-              <span>Reset Game</span>
-            </button>
           </div>
         </div>
       </motion.div>

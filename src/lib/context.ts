@@ -30,10 +30,10 @@ export function buildContextForAI(turn: number, deltaWindow: number = 4): Contex
   // Load chat history
   const chatHistory = JSON.parse(localStorage.getItem('rp_chat') || '[]');
   
-  // Find the most recent summary snapshot
+  // Find the most recent summary snapshot (SCC turn)
   const summaryKeys = Object.keys(indexedSummaries)
     .map(Number)
-    .filter(key => key <= turn)
+    .filter(key => key < turn) // Chỉ lấy summary trước turn hiện tại
     .sort((a, b) => b - a); // Sort descending to get most recent
   
   let summary: SCCSummary;
@@ -41,21 +41,31 @@ export function buildContextForAI(turn: number, deltaWindow: number = 4): Contex
   let recentTurns: ChatMessage[] = [];
   
   if (summaryKeys.length > 0) {
-    // Use most recent summary
+    // Use most recent summary (SCC turn)
     summaryTurn = summaryKeys[0];
     const indexedSummary = indexedSummaries[summaryTurn];
     summary = indexedSummary.summary;
     
-    // Get delta turns (turns after the summary)
+    // Calculate delta: turns từ sau SCC turn đến trước turn hiện tại
+    // Ví dụ: SCC ở turn 40, turn hiện tại 47 → delta = turns 41-46
     const deltaStartTurn = summaryTurn + 1;
+    const deltaEndTurn = turn - 1; // Trừ 1 vì turn hiện tại chưa được tạo
+    
     recentTurns = chatHistory.filter((msg: ChatMessage) => 
-      msg.turn && msg.turn >= deltaStartTurn && msg.turn < turn
+      msg.turn && msg.turn >= deltaStartTurn && msg.turn <= deltaEndTurn
     );
     
-    // Limit to delta window
+    // Limit to delta window (chỉ lấy N turn gần nhất trong delta)
     recentTurns = takeLast(recentTurns, deltaWindow);
+    
+    console.log(`📊 Delta Context for turn ${turn}:`);
+    console.log(`   SCC Turn: ${summaryTurn}`);
+    console.log(`   Delta Range: ${deltaStartTurn}-${deltaEndTurn}`);
+    console.log(`   Delta Turns: ${recentTurns.length} turns`);
+    console.log(`   Delta Window: ${deltaWindow}`);
   } else {
-    // Fallback: no summary yet, use recent turns
+    // Fallback: no summary yet, use recent turns from beginning
+    // Ví dụ: turn 9, chưa có SCC → lấy turns 1-8
     summary = {
       recap: '',
       timeline: [],
@@ -66,8 +76,17 @@ export function buildContextForAI(turn: number, deltaWindow: number = 4): Contex
       risks: []
     };
     
-    // Use last 20 turns as fallback
-    recentTurns = takeLast(chatHistory, 20);
+    // Lấy tất cả turns từ đầu đến trước turn hiện tại
+    recentTurns = chatHistory.filter((msg: ChatMessage) => 
+      msg.turn && msg.turn < turn
+    );
+    
+    // Limit to reasonable number for fallback
+    recentTurns = takeLast(recentTurns, Math.min(20, turn - 1));
+    
+    console.log(`📊 Fallback Context for turn ${turn}:`);
+    console.log(`   No SCC found, using turns 1-${turn-1}`);
+    console.log(`   Recent Turns: ${recentTurns.length} turns`);
   }
   
   return {
@@ -176,4 +195,46 @@ export function getMostRecentSummaryTurn(): number {
   const indexedSummaries = JSON.parse(localStorage.getItem('rp_summary_indexed') || '{}');
   const summaryKeys = Object.keys(indexedSummaries).map(Number).sort((a, b) => b - a);
   return summaryKeys.length > 0 ? summaryKeys[0] : 0;
+}
+
+/**
+ * Debug function to show delta calculation details
+ * @param turn Current turn number
+ * @param deltaWindow Delta window size
+ */
+export function debugDeltaContext(turn: number, deltaWindow: number = 4): void {
+  const indexedSummaries = JSON.parse(localStorage.getItem('rp_summary_indexed') || '{}');
+  const chatHistory = JSON.parse(localStorage.getItem('rp_chat') || '[]');
+  
+  console.log(`🔍 Debug Delta Context for Turn ${turn}:`);
+  console.log(`   Available SCC Turns:`, Object.keys(indexedSummaries).map(Number).sort((a, b) => a - b));
+  
+  const summaryKeys = Object.keys(indexedSummaries)
+    .map(Number)
+    .filter(key => key < turn)
+    .sort((a, b) => b - a);
+  
+  if (summaryKeys.length > 0) {
+    const summaryTurn = summaryKeys[0];
+    const deltaStartTurn = summaryTurn + 1;
+    const deltaEndTurn = turn - 1;
+    
+    const deltaTurns = chatHistory.filter((msg: ChatMessage) => 
+      msg.turn && msg.turn >= deltaStartTurn && msg.turn <= deltaEndTurn
+    );
+    
+    console.log(`   ✅ Using SCC Turn: ${summaryTurn}`);
+    console.log(`   📊 Delta Range: ${deltaStartTurn}-${deltaEndTurn} (${deltaEndTurn - deltaStartTurn + 1} turns)`);
+    console.log(`   📝 Delta Turns Found: ${deltaTurns.length}`);
+    console.log(`   🎯 Delta Window: ${deltaWindow}`);
+    console.log(`   📋 Final Delta:`, deltaTurns.slice(-deltaWindow).map((t: ChatMessage) => `Turn ${t.turn}`));
+  } else {
+    const allTurns = chatHistory.filter((msg: ChatMessage) => 
+      msg.turn && msg.turn < turn
+    );
+    console.log(`   ❌ No SCC found, using fallback`);
+    console.log(`   📊 Fallback Range: 1-${turn-1} (${turn-1} turns)`);
+    console.log(`   📝 All Turns Found: ${allTurns.length}`);
+    console.log(`   📋 Final Turns:`, allTurns.slice(-Math.min(20, turn - 1)).map((t: ChatMessage) => `Turn ${t.turn}`));
+  }
 }
