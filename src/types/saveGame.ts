@@ -1,4 +1,4 @@
-import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime } from './index';
+import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime, ContentFlags } from './index';
 
 // SaveGame Schema - Versioned JSON chứa toàn bộ dữ liệu game
 export interface SaveGame {
@@ -13,6 +13,7 @@ export interface SaveGame {
   turnCounter: number; // Số lượt hiện tại
   worldTime: WorldTime; // Thời gian thế giới hiện tại
   ui?: SaveGameUI; // Trạng thái UI (không đồng bộ cloud)
+  contentFlags?: ContentFlags; // Cờ nội dung 18+
 }
 
 // Metadata của save game

@@ -40,8 +40,8 @@ export function HomePage() {
     
     console.log('✅ Đã reset game data, giữ lại save slots và API keys');
     
-    // Bắt đầu flow game: World Builder → Character Creation → Game
-    navigate('/world-builder');
+    // Bắt đầu flow game: Init Page → World Builder → Character Creation → Game
+    navigate('/init');
   };
 
   const features = [

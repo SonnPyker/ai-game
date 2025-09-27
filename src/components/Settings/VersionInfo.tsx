@@ -2,15 +2,33 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "1.2.0";
+  const version = "1.3.0";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-  const updateLog = [
+const updateLog = [
+    {
+      version: "1.3.0",
+      date: now.toISOString().split('T')[0],
+      changes: [
+        "🎯 Thêm tính năng Nội dung 18+ với 2 mức độ: An toàn & Tả thực",
+        "🔒 Age-gate confirmation cho lần đầu kích hoạt nội dung 18+",
+        "📋 Tab 'Khởi tạo' mới để quản lý flow tạo game",
+        "🚫 Logic disable bảo vệ flow: không thể bỏ qua các bước bắt buộc",
+        "📝 Hiển thị tên thế giới và nhân vật trong tab Khởi tạo",
+        "❓ HelpTooltip thay thế text area hướng dẫn, tiết kiệm không gian UI",
+        "📐 Layout mở rộng: WorldBuilder và CharacterCreation full width",
+        "🎭 Sửa lỗi Opening Message không tuân theo ngôi kể đã cài đặt",
+        "📊 Thêm trường narration vào world_gen_result schema",
+        "❌ Loại bỏ câu hỏi trực tiếp trong Opening Message",
+        "🎨 UI cải thiện với visual feedback cho trạng thái disabled",
+        "⚡ Tối ưu hóa prompt và AI guidance cho nội dung 18+"
+      ]
+    },
     {
       version: "1.2.0",
-      date: now.toISOString().split('T')[0],
+      date: "2024-12-19",
       changes: [
         "💾 Hệ thống Save/Load hoàn chỉnh với Supabase + LocalStorage",
         "☁️ 3 slot Cloud Save với đồng bộ real-time",

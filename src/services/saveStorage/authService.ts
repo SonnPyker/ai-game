@@ -181,6 +181,11 @@ export class AuthService {
       this.authState.isLoading = false;
       this.notifyListeners();
       
+      // Auto refresh trang để cập nhật trạng thái
+      setTimeout(() => {
+        window.location.reload();
+      }, 100); // Delay 100ms để đảm bảo state đã được cập nhật
+      
       return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -241,6 +246,11 @@ export class AuthService {
       this.authState.error = null;
       this.authState.isLoading = false;
       this.notifyListeners();
+      
+      // Auto refresh trang để cập nhật trạng thái
+      setTimeout(() => {
+        window.location.reload();
+      }, 100); // Delay 100ms để đảm bảo state đã được cập nhật
       
       return { success: true };
     } catch (error) {

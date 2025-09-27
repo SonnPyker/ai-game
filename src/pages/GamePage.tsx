@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2, Save } from 'lucide-react';
+import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle } from 'lucide-react';
 import { geminiService } from '../services/geminiService';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
-import { WorldTime, SCCContext, ChatMessage } from '../types';
+import { WorldTime, SCCContext, ChatMessage, ContentFlags } from '../types';
 import { buildContextForAI } from '../lib/context';
 import { SaveManager } from '../components/SaveManager/SaveManager';
 import { SavePopup } from '../components/SaveManager/SavePopup';
@@ -21,6 +21,7 @@ interface GameState {
   sccContext: SCCContext | null;
   showSummaryBanner: boolean;
   lastSummaryTurn: number;
+  contentFlags: ContentFlags | null;
 }
 
 export function GamePage() {
@@ -41,7 +42,8 @@ export function GamePage() {
     worldTime: null,
     sccContext: null,
     showSummaryBanner: false,
-    lastSummaryTurn: 0
+    lastSummaryTurn: 0,
+    contentFlags: null
   });
   
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -82,6 +84,22 @@ export function GamePage() {
           const world = JSON.parse(worldData);
           const scenario = JSON.parse(scenarioData);
           
+          // Load content flags from SaveGame (không từ localStorage riêng)
+          let contentFlags: ContentFlags | null = null;
+          // Kiểm tra nếu có save game đã load trước đó
+          const existingSave = localStorage.getItem('save_local1') || 
+                              localStorage.getItem('save_local2') || 
+                              localStorage.getItem('save_local3');
+          
+          if (existingSave) {
+            try {
+              const saveData = JSON.parse(existingSave);
+              contentFlags = saveData.contentFlags || null;
+            } catch (error) {
+              console.error('Lỗi load content flags từ save:', error);
+            }
+          }
+          
           // Load turn counter and chat history
           const savedTurnCounter = parseInt(localStorage.getItem('game_turn_counter') || '0', 10);
           const savedChat = localStorage.getItem('rp_chat');
@@ -101,7 +119,8 @@ export function GamePage() {
             ...prev,
             isInitialized: true,
             scenarioSkeleton: scenario,
-            worldTime: world.currentTime || { day: 1, hour: 12, month: 1, year: 1, dayOfWeek: 1 }
+            worldTime: world.currentTime || { day: 1, hour: 12, month: 1, year: 1, dayOfWeek: 1 },
+            contentFlags: contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true }
           }));
           
           setTurnCounter(savedTurnCounter);
@@ -135,6 +154,20 @@ export function GamePage() {
 
       if (!worldData || !characterData) {
         throw new Error('Không tìm thấy dữ liệu thế giới hoặc nhân vật. Vui lòng tạo lại.');
+      }
+
+      // Load content flags từ world_gen_result (từ AI generation)
+      let contentFlags: ContentFlags = { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true };
+      if (worldData) {
+        try {
+          const worldDataParsed = JSON.parse(worldData);
+          if (worldDataParsed.contentFlags) {
+            contentFlags = worldDataParsed.contentFlags;
+            console.log('✅ Loaded content flags from world_gen_result:', contentFlags);
+          }
+        } catch (error) {
+          console.error('Lỗi parse world_gen_result:', error);
+        }
       }
 
       // Parse world data and get current time
@@ -178,7 +211,8 @@ export function GamePage() {
         worldTime: currentTime,
         sccContext: updatedSccContext,
         showSummaryBanner: false,
-        lastSummaryTurn: 0
+        lastSummaryTurn: 0,
+        contentFlags: contentFlags
       });
 
       // Save SCC context
@@ -243,7 +277,8 @@ export function GamePage() {
         deltaContext.summary,
         deltaContext.sceneState,
         deltaContext.recentTurns.map(msg => ({ role: msg.role, content: msg.content, turn: msg.turn || 0 })),
-        currentMessage.trim()
+        currentMessage.trim(),
+        gameState.contentFlags || undefined
       );
 
       // Add AI response to chat
@@ -438,7 +473,8 @@ export function GamePage() {
         chat: chatHistory,
         turnCounter: savedTurnCounter,
         worldTime: gameState.worldTime || { day: 1, hour: 12, month: 1, year: 1, dayOfWeek: 1 },
-        ui: { showSummaryBanner: gameState.showSummaryBanner, lastSummaryTurn: gameState.lastSummaryTurn }
+        ui: { showSummaryBanner: gameState.showSummaryBanner, lastSummaryTurn: gameState.lastSummaryTurn },
+        contentFlags: gameState.contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true }
       };
 
       // Determine if it's a local or cloud slot
@@ -470,7 +506,8 @@ export function GamePage() {
           updatedSaveGame.chat,
           updatedSaveGame.turnCounter,
           updatedSaveGame.worldTime,
-          updatedSaveGame.ui
+          updatedSaveGame.ui,
+          updatedSaveGame.contentFlags
         );
       } else {
         // Save to cloud
@@ -514,7 +551,8 @@ export function GamePage() {
       worldTime: null,
       sccContext: null,
       showSummaryBanner: false,
-      lastSummaryTurn: 0
+      lastSummaryTurn: 0,
+      contentFlags: null
     });
     
     // Clear game-related localStorage but keep save slots and API keys
@@ -528,6 +566,7 @@ export function GamePage() {
       'currentCharacter',
       'scc_context',
       'scc_summary_backup',
+      'contentFlags', // Xóa contentFlags khi reset game
       // World Builder keys
       'completeWorldData',
       'currentWorldData',
@@ -565,7 +604,8 @@ export function GamePage() {
           turnCounter: saveGame.turnCounter
         },
         showSummaryBanner: saveGame.ui?.showSummaryBanner || false,
-        lastSummaryTurn: saveGame.ui?.lastSummaryTurn || 0
+        lastSummaryTurn: saveGame.ui?.lastSummaryTurn || 0,
+        contentFlags: saveGame.contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true }
       });
 
       // Cập nhật chat history và turn counter
@@ -578,6 +618,9 @@ export function GamePage() {
       localStorage.setItem('game_turn_counter', saveGame.turnCounter.toString());
       localStorage.setItem('world_gen_result', JSON.stringify(saveGame.world));
       localStorage.setItem('currentCharacter', JSON.stringify(saveGame.character));
+      
+      // KHÔNG lưu contentFlags vào localStorage riêng biệt
+      // ContentFlags chỉ được lưu trong SaveGame JSON
 
       // Cập nhật SCC context
       if (gameState.sccContext) {
@@ -719,6 +762,27 @@ export function GamePage() {
                 <MessageSquare className="w-4 h-4" />
                 <span>Lượt {turnCounter}</span>
               </div>
+
+              {/* Adult Content Status */}
+              {gameState.contentFlags?.adult_enabled && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-500">•</span>
+                  <div className="flex items-center space-x-1">
+                    {gameState.contentFlags.adult_intensity === 'direct' ? (
+                      <AlertTriangle className="w-4 h-4 text-red-400" />
+                    ) : (
+                      <Shield className="w-4 h-4 text-orange-400" />
+                    )}
+                    <span className={`text-xs font-medium ${
+                      gameState.contentFlags.adult_intensity === 'direct' 
+                        ? 'text-red-300' 
+                        : 'text-orange-300'
+                    }`}>
+                      18+ {gameState.contentFlags.adult_intensity === 'direct' ? 'Tả thực' : 'An toàn'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Action Buttons */}

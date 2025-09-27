@@ -6,7 +6,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
-  Download
+  Download,
+  Play
 } from 'lucide-react';
 import { AuthButton } from './Auth/AuthButton';
 
@@ -20,8 +21,16 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarProps) {
   const location = useLocation();
 
+  // Function to check if user is in game creation process
+  const isInGameCreationProcess = () => {
+    return location.pathname === '/world-builder' || 
+           location.pathname === '/create-character' || 
+           location.pathname === '/game';
+  };
+
   const menuItems = [
     { id: 'home', label: 'TRANG CHỦ', icon: Home, path: '/', action: 'home' },
+    { id: 'init', label: 'KHỞI TẠO', icon: Play, path: '/init', action: 'init' },
     { id: 'saveload', label: 'TẢI GAME', icon: Download, path: '/saveload', action: 'saveload' },
     { id: 'settings', label: 'CÀI ĐẶT', icon: Settings, path: '/settings' },
   ];
@@ -30,6 +39,9 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
   const isActiveMenuItem = (item: any) => {
     if (item.id === 'home') {
       return location.pathname === '/';
+    } else if (item.id === 'init') {
+      // Highlight "Khởi tạo" when in game creation process OR on init page
+      return location.pathname === '/init' || isInGameCreationProcess();
     } else if (item.id === 'saveload') {
       return location.pathname === '/saveload';
     } else if (item.id === 'settings') {
@@ -75,7 +87,8 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
           <ul className="space-y-2 flex-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isDisabled = false;
+              // Disable "Khởi tạo" tab when in game creation process
+              const isDisabled = item.id === 'init' && isInGameCreationProcess();
               
               const handleClick = (e: React.MouseEvent) => {
                 e.preventDefault();
@@ -87,6 +100,9 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
               if (item.action === 'home') {
                 // Chuyển đến trang chủ
                 window.location.href = '/';
+              } else if (item.action === 'init') {
+                // Chuyển đến trang khởi tạo
+                window.location.href = '/init';
               } else if (item.action === 'saveload') {
                 // Chuyển đến trang save/load
                 window.location.href = '/saveload';

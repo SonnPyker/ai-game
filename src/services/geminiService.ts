@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { multiApiKeyService, ApiKeyInfo, ApiKeyStats } from './multiApiKeyService';
-import { SCCSummary, SCCState } from '../types';
+import { SCCSummary, SCCState, ContentFlags } from '../types';
 
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
@@ -245,6 +245,42 @@ class GeminiService {
   isUsingMultiKeyService(): boolean {
     return this.useMultiKeyService;
   }
+
+  // Helper function to generate content guidance based on flags
+  private getContentGuidance(contentFlags?: ContentFlags): string {
+    if (!contentFlags || !contentFlags.adult_enabled) {
+      return `HƯỚNG DẪN NỘI DUNG:
+- Tránh nội dung 18+, dùng ám chỉ và chuyển cảnh
+- Khi gặp tình huống nhạy cảm, hãy "fade-to-black" hoặc chuyển sang mô tả cảm xúc/hậu quả
+- Tập trung vào kịch bản, cốt truyện và phát triển nhân vật
+- Không mô tả chi tiết các hành động trưởng thành hoặc bạo lực`;
+    }
+
+    if (contentFlags.adult_intensity === 'direct_safe') {
+      return `HƯỚNG DẪN NỘI DUNG (18+ An toàn):
+- Cho phép mô tả trưởng thành CONSENSUAL giữa người lớn
+- Giữ văn phong tinh tế, không đồ họa
+- TUYỆT ĐỐI cấm: nội dung trẻ vị thành niên, cưỡng bức, bạo lực tình dục, loạn luân, thú tính
+- Tôn trọng luật địa phương và chính sách nền tảng
+- Nếu người chơi yêu cầu giảm nhẹ, hãy giảm ngay`;
+    }
+
+    if (contentFlags.adult_intensity === 'direct') {
+      return `HƯỚNG DẪN NỘI DUNG (18+ Tả thực):
+- Cho phép mô tả trưởng thành ở mức cao hơn, chi tiết sinh động hơn
+- SỬ DỤNG từ ngữ tả bộ phận sinh dục nhiều hơn
+- MÔ TẢ cảm xúc rõ ràng sinh động hơn, tránh né tránh quá nhiều
+- MÔ TẢ cảnh thân mật, quan hệ tình dục rõ ràng hơn, càng chi tiết càng tốt
+- TUYỆT ĐỐI cấm: nội dung trẻ vị thành niên, cưỡng bức, bạo lực tình dục, loạn luân, thú tính
+- Tôn trọng luật địa phương và chính sách nền tảng
+- Nếu người chơi yêu cầu giảm nhẹ, hãy giảm ngay`;
+    }
+
+    return `HƯỚNG DẪN NỘI DUNG:
+- Tránh nội dung 18+, dùng ám chỉ và chuyển cảnh
+- Khi gặp tình huống nhạy cảm, hãy "fade-to-black" hoặc chuyển sang mô tả cảm xúc/hậu quả`;
+  }
+
 
   async generateContent(prompt: string): Promise<string> {
     if (this.useMultiKeyService) {
@@ -935,6 +971,7 @@ SCHEMA JSON (bắt buộc):
   "genres": ["string"],
   "settings": ["string"],
   "rules": ["string"],
+  "narration": "${pov}",
   "system": {
     "powerOrTech": "string",
     "limitations": ["string"]
@@ -1046,10 +1083,17 @@ SCHEMA:
     try {
       const prompt = `Bạn là AI Storyteller. Hãy viết đoạn mở đầu cho phiên roleplay, dựa trên WORLD, CHARACTER, và SCENARIO_SKELETON.
 Yêu cầu:
-- Văn xuôi liền mạch 180–300 từ, góc nhìn theo "pov" của world/character (nếu có).
+- Văn xuôi liền mạch 180–300 từ, góc nhìn theo ngôi kể đã được cài đặt trong WORLD.
 - Không bullet/emoji/tiêu đề; chỉ văn bản kể chuyện.
 - Dùng "openingSeed" trong kịch bản làm mồi.
-- Gợi không khí, đặt vấn đề, hé lộ nguy cơ, kết bằng một tình huống mời người chơi hành động.
+- Gợi không khí, đặt vấn đề, hé lộ nguy cơ, kết bằng một tình huống mở đầu hấp dẫn.
+- KHÔNG đặt câu hỏi trực tiếp cho người chơi, chỉ mô tả tình huống để người chơi tự quyết định hành động.
+
+QUAN TRỌNG VỀ NGÔI KỂ:
+- Kiểm tra trường "narration" trong WORLD để xác định ngôi kể
+- Nếu narration = "Ngôi thứ hai": sử dụng "Bạn" khi nói về nhân vật chính
+- Nếu narration = "Ngôi thứ nhất": sử dụng "Tôi" khi nói về nhân vật chính  
+- Nếu narration = "Ngôi thứ ba": sử dụng "Anh ấy/Cô ấy" khi nói về nhân vật chính
 
 WORLD:
 ${worldJson}
@@ -1153,12 +1197,15 @@ SCHEMA:
     worldJson: string,
     characterJson: string,
     scenarioJson: string,
-    sceneState: any = {}
+    sceneState: any = {},
+    contentFlags?: ContentFlags
   ): Promise<any> {
     try {
       const chatHistorySnippet = chatHistory.slice(-10).map(msg => 
         `${msg.role}: ${msg.content}`
       ).join('\n');
+
+      const contentGuidance = this.getContentGuidance(contentFlags);
 
       const prompt = `Bạn là AI Storyteller trong box chat roleplay. Nhiệm vụ:
 - Đọc lịch sử chat gần đây, hành động mới của người chơi, world/character và scenarioSkeleton.
@@ -1167,6 +1214,8 @@ SCHEMA:
 - Định hướng mềm (soft guidance) để tiến tới các keyBeats/twist/kết thúc, nhưng KHÔNG tước tự do người chơi.
 - Nếu hành động của người chơi lệch xa kịch bản, hãy uốn nhẹ bằng cảnh vật, NPC, thông tin, rủi ro — không ép buộc.
 - QUAN TRỌNG: Sử dụng đúng ngôi kể đã được cài đặt trong WORLD (narration field). Nếu narration là "Ngôi thứ hai", hãy kể bằng "Bạn" thay vì "Anh ấy/Cô ấy". Nếu narration là "Ngôi thứ nhất", hãy kể bằng "Tôi". Nếu narration là "Ngôi thứ ba", hãy kể bằng "Anh ấy/Cô ấy".
+
+${contentGuidance}
 
 Đầu vào:
 - CHAT_HISTORY (tối đa 10 lượt gần nhất): 
@@ -1225,7 +1274,8 @@ Quy tắc thêm:
     summary: SCCSummary,
     sceneState: SCCState,
     chatDelta: Array<{ role: string; content: string; turn: number }>,
-    playerAction: string
+    playerAction: string,
+    contentFlags?: ContentFlags
   ): Promise<{
     narrative: string;
     softGuidance: string;
@@ -1236,6 +1286,8 @@ Quy tắc thêm:
       throw new Error('Gemini API chưa được cấu hình. Vui lòng nhập API key.');
     }
 
+    const contentGuidance = this.getContentGuidance(contentFlags);
+
     const prompt = `Bạn là AI Storyteller trong box chat roleplay. 
 Hãy kể tiếp câu chuyện dựa trên:
 - WORLD, CHARACTER, SCENARIO (khung sườn),
@@ -1244,12 +1296,15 @@ Hãy kể tiếp câu chuyện dựa trên:
 - CHAT_DELTA: chỉ các lượt chat kể từ snapshot tới trước hành động hiện tại,
 - PLAYER_ACTION: hành động người chơi vừa nêu.
 
+${contentGuidance}
+
 Quy tắc:
 - Nếu có xung đột thông tin: ưu tiên SCENE_STATE, sau đó đến SUMMARY, cuối cùng mới tới CHAT_DELTA.
 - Văn xuôi 120–220 từ, không bullet/emoji/markdown, mô tả hệ quả cụ thể, cảm quan, và tiến độ cốt truyện.
 - Tôn trọng continuityRules, tone, mainThreads trong SCENARIO; định hướng mềm tới các keyBeats/twist/kết thúc, nhưng không ép buộc tự do người chơi.
 - KHÔNG nhắc đến "prompt/JSON/meta".
 - QUAN TRỌNG: Sử dụng đúng ngôi kể đã được cài đặt trong WORLD (narration field). Nếu narration là "Ngôi thứ hai", hãy kể bằng "Bạn" thay vì "Anh ấy/Cô ấy". Nếu narration là "Ngôi thứ nhất", hãy kể bằng "Tôi". Nếu narration là "Ngôi thứ ba", hãy kể bằng "Anh ấy/Cô ấy".
+- Nếu hành động của người chơi vi phạm chính sách nội dung, hãy từ chối lịch sự và đề xuất hướng thay thế an toàn.
 
 ĐẦU VÀO:
 - WORLD: ${worldJson}

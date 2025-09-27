@@ -187,3 +187,26 @@ export interface SCCContext {
   recentTurns: ChatMessage[];
   turnCounter: number;
 }
+
+// Content Flags for Adult Content Control
+export interface ContentFlags {
+  adult_enabled: boolean;
+  adult_intensity: 'light' | 'fade' | 'direct_safe' | 'direct';
+  first_time_setup?: boolean; // Để hiển thị age gate lần đầu
+}
+
+export interface ContinuityRules {
+  noMinors: boolean;           // Không nội dung trẻ vị thành niên
+  noNonConsensual: boolean;    // Không cưỡng bức/bạo lực tình dục
+  noIncest: boolean;           // Không loạn luân
+  noBestiality: boolean;       // Không thú tính
+  noIllegalContent: boolean;   // Không nội dung phi pháp
+  respectLocalLaws: boolean;   // Tôn trọng luật địa phương
+}
+
+export interface StyleGuidance {
+  whenOff: string;             // Hướng dẫn khi 18+ OFF
+  whenOnSafe: string;          // Hướng dẫn khi 18+ ON an toàn
+  whenOnDirect: string;        // Hướng dẫn khi 18+ ON tả thực
+  rejectionMessage: string;    // Thông báo từ chối vi phạm
+}

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Character } from '../types';
 import { geminiService } from '../services/geminiService';
 import { Sparkles, Download, RotateCcw, Check, Globe, Upload } from 'lucide-react';
+import { HelpTooltip } from '../components/HelpTooltip';
 
 interface CharacterData {
   name: string;
@@ -498,28 +499,6 @@ export function CharacterCreationPage() {
           </div>
         </motion.div>
 
-        {/* Import/Export Guide */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="glass-effect p-6 rounded-xl"
-        >
-          <h3 className="text-lg font-semibold text-white mb-4">📁 Nhập/Xuất Nhân Vật</h3>
-          <div className="space-y-3">
-            <div className="border-l-4 border-blue-500 pl-4">
-              <h4 className="font-medium text-blue-300 mb-1">Nhập nhân vật</h4>
-              <p className="text-sm text-gray-300">Tải file JSON để khôi phục nhân vật đã lưu trước đó. Tự động chuyển sang tab tùy chỉnh.</p>
-            </div>
-            <div className="border-l-4 border-green-500 pl-4">
-              <h4 className="font-medium text-green-300 mb-1">Xuất nhân vật</h4>
-              <p className="text-sm text-gray-300">Lưu nhân vật hiện tại thành file JSON để chia sẻ hoặc backup (có trong tab tùy chỉnh)</p>
-            </div>
-            <div className="text-xs text-gray-400 mt-2">
-              💡 Bạn có thể chia sẻ nhân vật với bạn bè hoặc tạo nhiều nhân vật khác nhau cho cùng một thế giới
-            </div>
-          </div>
-        </motion.div>
       </div>
     );
   }
@@ -555,8 +534,8 @@ export function CharacterCreationPage() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-8">
-        {/* Left Column */}
+      <div className="space-y-6">
+        {/* Main Content */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -625,15 +604,7 @@ export function CharacterCreationPage() {
               className="w-full h-48 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
             />
           </div>
-        </motion.div>
 
-        {/* Right Column */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="space-y-6"
-        >
           {/* Personality Traits */}
           <div className="glass-effect p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
@@ -831,6 +802,24 @@ export function CharacterCreationPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Help Tooltip */}
+        <HelpTooltip
+          title="Hướng Dẫn Tạo Nhân Vật"
+          content={[
+            "📁 NHẬP/XUẤT NHÂN VẬT:",
+            "• Nhập nhân vật: Tải file JSON để khôi phục nhân vật đã lưu trước đó. Tự động chuyển sang tab tùy chỉnh.",
+            "• Xuất nhân vật: Lưu nhân vật hiện tại thành file JSON để chia sẻ hoặc backup (có trong tab tùy chỉnh)",
+            "• Bạn có thể chia sẻ nhân vật với bạn bè hoặc tạo nhiều nhân vật khác nhau cho cùng một thế giới",
+            "",
+            "💡 MẸO TẠO NHÂN VẬT:",
+            "• Điền đầy đủ thông tin cơ bản trước khi sử dụng AI gợi ý",
+            "• Chỉ số cốt lõi ảnh hưởng đến khả năng của nhân vật trong game",
+            "• Đặc điểm tính cách giúp AI hiểu rõ hơn về nhân vật",
+            "• Tiểu sử chi tiết sẽ giúp AI tạo kịch bản phù hợp hơn",
+            "• Sử dụng tính năng gợi ý AI để tự động hoàn thiện nhân vật"
+          ]}
+        />
       </div>
 
       {/* Action Buttons */}

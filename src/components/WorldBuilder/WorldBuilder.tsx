@@ -10,7 +10,9 @@ import {
 } from 'lucide-react';
 import { geminiService } from '../../services/geminiService';
 import { worldTimeService } from '../../services/worldTimeService';
-import { WorldData } from '../../types';
+import { WorldData, ContentFlags } from '../../types';
+import { AdultContentSettings } from './AdultContentSettings';
+import { HelpTooltip } from '../HelpTooltip';
 
 export function WorldBuilder() {
   const [worldData, setWorldData] = useState<WorldData>({
@@ -44,6 +46,13 @@ export function WorldBuilder() {
   const [selectedPrincipleIndices, setSelectedPrincipleIndices] = useState<number[]>([]);
   const [selectedEntityIndices, setSelectedEntityIndices] = useState<number[]>([]);
   const [generatedWorldDescription, setGeneratedWorldDescription] = useState<string>('');
+  
+  // Content flags state
+  const [contentFlags, setContentFlags] = useState<ContentFlags>({
+    adult_enabled: false,
+    adult_intensity: 'fade',
+    first_time_setup: true
+  });
 
   const storyTones = [
     'Bí ẩn', 'Hào hùng', 'U ám', 'Vui tươi', 'Căng thẳng',
@@ -487,13 +496,16 @@ export function WorldBuilder() {
         throw new Error('Không thể phân tích kết quả từ AI. Vui lòng thử lại.');
       }
       
-      // Initialize world time
-      const worldTime = worldTimeService.initializeWorldTime(worldData.startYear);
-      worldJson.currentTime = worldTime;
-      
-      // Save to localStorage
-      localStorage.setItem('world_gen_result', JSON.stringify(worldJson));
-      console.log('✅ World data saved to localStorage with time:', worldTime);
+       // Initialize world time
+       const worldTime = worldTimeService.initializeWorldTime(worldData.startYear);
+       worldJson.currentTime = worldTime;
+       
+       // Merge contentFlags vào world data
+       worldJson.contentFlags = contentFlags;
+       
+       // Save to localStorage
+       localStorage.setItem('world_gen_result', JSON.stringify(worldJson));
+       console.log('✅ World data saved to localStorage with time and contentFlags:', worldTime, contentFlags);
       
       // Set the narrative opening for display
       setGeneratedWorldDescription(worldJson.narrativeOpening || 'Không có mô tả mở đầu.');
@@ -510,7 +522,15 @@ export function WorldBuilder() {
   const handleStartGame = () => {
     // Lưu mô tả thế giới vào localStorage để game có thể sử dụng
     localStorage.setItem('currentWorldDescription', generatedWorldDescription);
-    localStorage.setItem('currentWorldData', JSON.stringify(worldData));
+    
+    // Lưu worldData kèm contentFlags để GamePage có thể sử dụng
+    const worldDataWithFlags = {
+      ...worldData,
+      contentFlags: contentFlags
+    };
+    localStorage.setItem('currentWorldData', JSON.stringify(worldDataWithFlags));
+    
+    console.log('✅ Content flags đã lưu trong currentWorldData:', contentFlags);
     
     // Lấy dữ liệu thế giới hoàn chỉnh từ localStorage nếu có
     const worldGenResult = localStorage.getItem('world_gen_result');
@@ -544,9 +564,12 @@ export function WorldBuilder() {
         throw new Error('Không thể phân tích kết quả từ AI. Vui lòng thử lại.');
       }
       
-      // Save to localStorage
-      localStorage.setItem('world_gen_result', JSON.stringify(worldJson));
-      console.log('✅ Regenerated world data saved to localStorage');
+       // Merge contentFlags vào world data
+       worldJson.contentFlags = contentFlags;
+       
+       // Save to localStorage
+       localStorage.setItem('world_gen_result', JSON.stringify(worldJson));
+       console.log('✅ Regenerated world data saved to localStorage with contentFlags:', contentFlags);
       
       // Set the narrative opening for display
       setGeneratedWorldDescription(worldJson.narrativeOpening || 'Không có mô tả mở đầu.');
@@ -655,9 +678,9 @@ export function WorldBuilder() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-8">
+        <div className="space-y-4 lg:space-y-6">
           {/* Main Form */}
-          <div className="xl:col-span-2 space-y-4 lg:space-y-6">
+          <div className="space-y-4 lg:space-y-6">
             {/* Core Idea */}
             <motion.div
               className="glass-effect p-6 rounded-xl"
@@ -979,6 +1002,12 @@ export function WorldBuilder() {
               </div>
             </motion.div>
 
+            {/* Adult Content Settings */}
+            <AdultContentSettings
+              contentFlags={contentFlags}
+              onContentFlagsChange={setContentFlags}
+            />
+
             {/* Create World & Start Game */}
             <motion.div
               className="glass-effect p-6 rounded-xl"
@@ -1002,58 +1031,29 @@ export function WorldBuilder() {
               </div>
             </motion.div>
           </div>
-
-          {/* Sidebar */}
-          <motion.div
-            className="space-y-6"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            {/* AI Features Guide */}
-            <div className="glass-effect p-6 rounded-xl">
-              <h3 className="text-lg font-semibold text-white mb-4">🤖 Hướng Dẫn Sử Dụng AI</h3>
-              <div className="space-y-4">
-                <div className="border-l-4 border-primary-500 pl-4">
-                  <h4 className="font-medium text-primary-300 mb-1">Gợi ý bằng AI (Nguyên tắc thế giới/Thực thể thế giới)</h4>
-                  <p className="text-sm text-gray-300">Tạo gợi ý phù hợp với ý tưởng cốt lõi. Cần điền ý tưởng cốt lõi trước.</p>
-                </div>
-                <div className="border-l-4 border-green-500 pl-4">
-                  <h4 className="font-medium text-green-300 mb-1">Chi Tiết Hóa bằng AI</h4>
-                  <p className="text-sm text-gray-300">Tự động hoàn thành tất cả các mục: ý tưởng, thể loại, bối cảnh, tông truyện, ngôi kể, độ khó, nguyên tắc, thực thể, tiền tệ.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Import/Export Guide */}
-            <div className="glass-effect p-6 rounded-xl">
-              <h3 className="text-lg font-semibold text-white mb-4">📁 Nhập/Xuất Thế Giới</h3>
-              <div className="space-y-3">
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h4 className="font-medium text-blue-300 mb-1">Xuất thế giới</h4>
-                  <p className="text-sm text-gray-300">Lưu thế giới hiện tại thành file JSON để chia sẻ hoặc backup</p>
-                </div>
-                <div className="border-l-4 border-green-500 pl-4">
-                  <h4 className="font-medium text-green-300 mb-1">Nhập thế giới</h4>
-                  <p className="text-sm text-gray-300">Tải file JSON để khôi phục thế giới đã lưu trước đó</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Tips */}
-            <div className="glass-effect p-6 rounded-xl">
-              <h3 className="text-lg font-semibold text-white mb-4">💡 Mẹo Tạo Thế Giới</h3>
-              <ul className="text-sm text-gray-300 space-y-2">
-                <li>• Viết ý tưởng cốt lõi cơ bản, sau đó dùng "Chi Tiết Hóa bằng AI" để phát triển</li>
-                <li>• Nguyên tắc thế giới định nghĩa quy luật của thế giới</li>
-                <li>• Thực thể thế giới là các tổ chức/sức mạnh quan trọng</li>
-                <li>• Tông truyện ảnh hưởng đến cách AI kể chuyện</li>
-                <li>• Ngôi kể quyết định góc nhìn của người chơi</li>
-                <li>• Sử dụng tính năng nhập/xuất để chia sẻ thế giới với bạn bè</li>
-              </ul>
-            </div>
-          </motion.div>
         </div>
+
+        {/* Help Tooltip */}
+        <HelpTooltip
+          title="Hướng Dẫn Tạo Thế Giới"
+          content={[
+            "🤖 HƯỚNG DẪN SỬ DỤNG AI:",
+            "• Gợi ý bằng AI (Nguyên tắc thế giới/Thực thể thế giới): Tạo gợi ý phù hợp với ý tưởng cốt lõi. Cần điền ý tưởng cốt lõi trước.",
+            "• Chi Tiết Hóa bằng AI: Tự động hoàn thành tất cả các mục: ý tưởng, thể loại, bối cảnh, tông truyện, ngôi kể, độ khó, nguyên tắc, thực thể, tiền tệ.",
+            "",
+            "📁 NHẬP/XUẤT THẾ GIỚI:",
+            "• Xuất thế giới: Lưu thế giới hiện tại thành file JSON để chia sẻ hoặc backup",
+            "• Nhập thế giới: Tải file JSON để khôi phục thế giới đã lưu trước đó",
+            "",
+            "💡 MẸO TẠO THẾ GIỚI:",
+            "• Viết ý tưởng cốt lõi cơ bản, sau đó dùng 'Chi Tiết Hóa bằng AI' để phát triển",
+            "• Nguyên tắc thế giới định nghĩa quy luật của thế giới",
+            "• Thực thể thế giới là các tổ chức/sức mạnh quan trọng",
+            "• Tông truyện ảnh hưởng đến cách AI kể chuyện",
+            "• Ngôi kể quyết định góc nhìn của người chơi",
+            "• Sử dụng tính năng nhập/xuất để chia sẻ thế giới với bạn bè"
+          ]}
+        />
       </div>
 
       {/* Principle Selection Popup */}

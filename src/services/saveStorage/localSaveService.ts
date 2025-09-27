@@ -46,7 +46,8 @@ export class LocalSaveService {
     chatData: any[],
     turnCounter: number,
     worldTime: any,
-    uiState?: any
+    uiState?: any,
+    contentFlags?: any
   ): Promise<SaveResult> {
     try {
       // Create SaveGame object
@@ -66,7 +67,8 @@ export class LocalSaveService {
         chat: chatData,
         turnCounter,
         worldTime,
-        ui: uiState
+        ui: uiState,
+        contentFlags: contentFlags
       };
 
       await this.localStorageStore.save(slotId, saveGame);
