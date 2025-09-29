@@ -120,6 +120,7 @@
   .main-full-width {
     @apply xl:ml-0;
   }
+  
 }
 
 @layer utilities {

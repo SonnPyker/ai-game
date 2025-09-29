@@ -2,15 +2,30 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "1.3.0";
+  const version = "1.3.1";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
 const updateLog = [
     {
-      version: "1.3.0",
+      version: "1.3.1",
       date: now.toISOString().split('T')[0],
+      changes: [
+        "📊 Thêm InfoMenu với thông tin game chi tiết",
+        "🎮 Hiển thị thông tin nhân vật: chỉ số, kỹ năng, tính cách",
+        "🌍 Hiển thị thông tin thế giới: phe phái, địa điểm, quy tắc",
+        "📋 Menu thông tin với 7 sections: Nhân Vật, Thế Giới, Phe Phái, Địa Điểm, Thực Thể, Quy Tắc, Nhiệm Vụ",
+        "📌 Tính năng ghim menu để theo dõi real-time",
+        "🎨 UI responsive với animation mượt mà",
+        "⚙️ Xóa Game Settings tab khỏi cài đặt",
+        "🔧 Tối ưu hóa layout và performance",
+        "📱 Cải thiện trải nghiệm người dùng"
+      ]
+    },
+    {
+      version: "1.3.0",
+      date: "2024-12-19",
       changes: [
         "🎯 Thêm tính năng Nội dung 18+ với 2 mức độ: An toàn & Tả thực",
         "🔒 Age-gate confirmation cho lần đầu kích hoạt nội dung 18+",

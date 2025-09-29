@@ -3,15 +3,14 @@ import { motion } from 'framer-motion';
 import { ApiKeyConfig } from '../components/Settings/ApiKeyConfig';
 import { MultiApiKeyManager } from '../components/Settings/MultiApiKeyManager';
 import { VersionInfo } from '../components/Settings/VersionInfo';
-import { GameSettings } from '../components/Settings/GameSettings';
 import { geminiService } from '../services/geminiService';
-import { Key, Gamepad2, Info } from 'lucide-react';
+import { Key, Info } from 'lucide-react';
 
 export function SettingsPage() {
   const [isApiConfigured, setIsApiConfigured] = useState(false);
   const [showMultiKeyManager, setShowMultiKeyManager] = useState(true); // Default to multi-key mode
   const [useMultiKeyMode, setUseMultiKeyMode] = useState(true);
-  const [activeTab, setActiveTab] = useState<'api' | 'game' | 'info'>('api');
+  const [activeTab, setActiveTab] = useState<'api' | 'info'>('api');
 
   useEffect(() => {
     // Kiểm tra trạng thái API khi component mount
@@ -64,12 +63,6 @@ export function SettingsPage() {
       label: 'API Keys',
       icon: Key,
       description: 'Cấu hình API keys cho AI'
-    },
-    {
-      id: 'game' as const,
-      label: 'Game Settings',
-      icon: Gamepad2,
-      description: 'Cài đặt trò chơi'
     },
     {
       id: 'info' as const,
@@ -215,8 +208,6 @@ export function SettingsPage() {
             </motion.div>
           </div>
         );
-      case 'game':
-        return <GameSettings />;
       case 'info':
         return <VersionInfo />;
       default:

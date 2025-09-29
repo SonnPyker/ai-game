@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle } from 'lucide-react';
+import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info } from 'lucide-react';
 import { geminiService } from '../services/geminiService';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
@@ -8,6 +8,7 @@ import { WorldTime, SCCContext, ChatMessage, ContentFlags } from '../types';
 import { buildContextForAI } from '../lib/context';
 import { SaveManager } from '../components/SaveManager/SaveManager';
 import { SavePopup } from '../components/SaveManager/SavePopup';
+import { InfoMenu } from '../components/InfoMenu/InfoMenu';
 import { SaveGame } from '../types/saveGame';
 import { localSaveService } from '../services/saveStorage/localSaveService';
 import { cloudSyncService } from '../services/saveStorage/cloudSyncService';
@@ -32,6 +33,8 @@ export function GamePage() {
   const [turnCounter, setTurnCounter] = useState(0);
   const [showSaveManager, setShowSaveManager] = useState(false);
   const [showSavePopup, setShowSavePopup] = useState(false);
+  const [showInfoMenu, setShowInfoMenu] = useState(false);
+  const [isInfoMenuPinned, setIsInfoMenuPinned] = useState(false);
   // Removed saveLoading state as it's handled in SavePopup
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState>({
@@ -786,7 +789,30 @@ export function GamePage() {
             </div>
             
             {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
+            <div className={`flex items-center space-x-2 transition-all duration-300 ${
+              isInfoMenuPinned ? 'mr-96' : ''
+            }`}>
+              {/* Info Menu Button */}
+              <button
+                onClick={() => {
+                  if (isInfoMenuPinned) {
+                    // Nếu đã ghim, bỏ ghim và đóng menu
+                    setIsInfoMenuPinned(false);
+                    setShowInfoMenu(false);
+                  } else {
+                    // Nếu chưa ghim, mở menu
+                    setShowInfoMenu(true);
+                  }
+                }}
+                className={`p-2 border rounded-lg transition-colors duration-200 ${
+                  isInfoMenuPinned 
+                    ? 'bg-blue-600/30 border-blue-500/50 text-blue-200' 
+                    : 'bg-blue-600/20 border-blue-500/30 text-blue-300 hover:bg-blue-600/30'
+                }`}
+                title={isInfoMenuPinned ? "Bỏ ghim menu" : "Thông tin game"}
+              >
+                <Info className="w-4 h-4" />
+              </button>
               {/* Save Button */}
               <button
                 onClick={() => setShowSavePopup(true)}
@@ -810,7 +836,9 @@ export function GamePage() {
       {/* Scrollable Chat Area */}
       <div className="flex-1 flex flex-col pt-20 pb-32">
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className={`flex-1 overflow-y-auto p-4 space-y-4 transition-all duration-300 ${
+          isInfoMenuPinned ? 'mr-96' : ''
+        }`}>
           {chatHistory.map((message, index) => (
             <motion.div
               key={index}
@@ -858,7 +886,9 @@ export function GamePage() {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-black">
         {/* Error Display */}
         {error && (
-          <div className="mx-4 mb-2 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+          <div className={`mx-4 mb-2 p-3 bg-red-500/20 border border-red-500/50 rounded-lg transition-all duration-300 ${
+            isInfoMenuPinned ? 'mr-96' : ''
+          }`}>
             <div className="flex items-center space-x-2 text-red-300">
               <AlertCircle className="w-4 h-4" />
               <span className="text-sm">{error}</span>
@@ -868,7 +898,9 @@ export function GamePage() {
 
         {/* Save Message Display */}
         {saveMessage && (
-          <div className="mx-4 mb-2 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
+          <div className={`mx-4 mb-2 p-3 bg-green-500/20 border border-green-500/50 rounded-lg transition-all duration-300 ${
+            isInfoMenuPinned ? 'mr-96' : ''
+          }`}>
             <div className="flex items-center space-x-2 text-green-300">
               <Save className="w-4 h-4" />
               <span className="text-sm">{saveMessage}</span>
@@ -878,7 +910,9 @@ export function GamePage() {
 
         {/* Input Area */}
         <div className="glass-effect border-t border-gray-700/50 p-4">
-          <div className="flex space-x-3">
+          <div className={`flex space-x-3 transition-all duration-300 ${
+            isInfoMenuPinned ? 'mr-96' : ''
+          }`}>
             <textarea
               ref={textareaRef}
               value={currentMessage}
@@ -917,6 +951,19 @@ export function GamePage() {
         onLoadGame={handleLoadGame}
         currentGameData={getCurrentGameData()}
       />
+
+      {/* Info Menu - Only render when needed */}
+      {(showInfoMenu || isInfoMenuPinned) && (
+        <InfoMenu
+          isOpen={showInfoMenu || isInfoMenuPinned}
+          onClose={() => setShowInfoMenu(false)}
+          worldData={gameState.worldTime ? JSON.parse(localStorage.getItem('world_gen_result') || '{}') : null}
+          characterData={JSON.parse(localStorage.getItem('currentCharacter') || '{}')}
+          worldTime={gameState.worldTime}
+          isPinned={isInfoMenuPinned}
+          onTogglePin={() => setIsInfoMenuPinned(!isInfoMenuPinned)}
+        />
+      )}
     </div>
   );
 }

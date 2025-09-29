@@ -160,6 +160,31 @@ export interface WorldData {
   createdAt: string;
   // Time system
   currentTime: WorldTime;
+  // AI Generated Content
+  factions?: Array<{
+    name: string;
+    goal: string;
+    methods: string;
+    weakness: string;
+  }>;
+  locations?: Array<{
+    name: string;
+    description: string;
+    role: string;
+  }>;
+  keyEntities?: Array<{
+    name: string;
+    type: string;
+    description: string;
+    hook: string;
+  }>;
+  rules?: string[];
+  starterQuest?: {
+    title: string;
+    objective: string;
+    steps: string[];
+    reward: string;
+  };
 }
 
 // SCC (Summarize Chat Context) Types
