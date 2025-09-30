@@ -25,6 +25,7 @@ export function HomePage() {
       'currentCharacter',
       'scc_context',
       'scc_summary_backup',
+      'quest_system', // Xóa quest system khi reset game
       // World Builder keys
       'completeWorldData',
       'currentWorldData',

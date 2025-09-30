@@ -12,6 +12,8 @@ import { InfoMenu } from '../components/InfoMenu/InfoMenu';
 import { SaveGame } from '../types/saveGame';
 import { localSaveService } from '../services/saveStorage/localSaveService';
 import { cloudSyncService } from '../services/saveStorage/cloudSyncService';
+import { useQuestSystem } from '../hooks/useQuestSystem';
+import { QuestOfferModal } from '../components/QuestOfferModal/QuestOfferModal';
 
 interface GameState {
   scenarioSkeleton: any;
@@ -37,6 +39,10 @@ export function GamePage() {
   const [isInfoMenuPinned, setIsInfoMenuPinned] = useState(false);
   // Removed saveLoading state as it's handled in SavePopup
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  
+  // Quest offer modal state
+  const [showQuestOfferModal, setShowQuestOfferModal] = useState(false);
+  const [pendingQuestOffer, setPendingQuestOffer] = useState<any>(null);
   const [gameState, setGameState] = useState<GameState>({
     scenarioSkeleton: null,
     sceneState: {},
@@ -48,6 +54,18 @@ export function GamePage() {
     lastSummaryTurn: 0,
     contentFlags: null
   });
+
+  // Quest system hook
+  const {
+    questSystem,
+    acceptQuest,
+    declineQuest,
+    completeObjective,
+    claimReward,
+    analyzeChatInput,
+    generateSideQuestFromAI,
+    refreshQuestsFromWorld
+  } = useQuestSystem();
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -190,6 +208,9 @@ export function GamePage() {
       // Save scenario to localStorage
       localStorage.setItem('rp_scenario', JSON.stringify(scenarioSkeleton));
 
+      // Refresh quest system từ world data
+      refreshQuestsFromWorld();
+
       // Add opening message to chat
       const openingMessage: ChatMessage = {
         role: 'ai',
@@ -281,7 +302,8 @@ export function GamePage() {
         deltaContext.sceneState,
         deltaContext.recentTurns.map(msg => ({ role: msg.role, content: msg.content, turn: msg.turn || 0 })),
         currentMessage.trim(),
-        gameState.contentFlags || undefined
+        gameState.contentFlags || undefined,
+        questSystem
       );
 
       // Add AI response to chat
@@ -294,6 +316,26 @@ export function GamePage() {
 
       const finalChatHistory = [...newChatHistory, aiMessage];
       setChatHistory(finalChatHistory);
+
+      // Quest detection và generation
+      try {
+        // Phân tích chat input để detect quest completion
+        const questAnalysis = await analyzeChatInput(currentMessage.trim());
+        
+        // Xử lý side quest offer từ AI response
+        if (response.sideQuestOffer) {
+          // Hiển thị modal để người chơi chọn nhận/từ chối
+          setPendingQuestOffer(response.sideQuestOffer);
+          setShowQuestOfferModal(true);
+          console.log('🎯 Side quest offer từ AI:', response.sideQuestOffer.title);
+        }
+        
+        if (questAnalysis.completedObjectives.length > 0) {
+          console.log('✅ Quest objectives hoàn thành:', questAnalysis.completedObjectives);
+        }
+      } catch (questError) {
+        console.error('Lỗi quest system:', questError);
+      }
 
       // Update SCC context with AI message
       if (updatedSccContext) {
@@ -542,6 +584,41 @@ export function GamePage() {
     }
   };
 
+  // Quest offer modal handlers
+  const handleAcceptQuestOffer = async () => {
+    if (!pendingQuestOffer) return;
+    
+    try {
+      const worldData = localStorage.getItem('world_gen_result');
+      const characterData = localStorage.getItem('currentCharacter');
+      
+      if (worldData && characterData) {
+        const newSideQuest = await generateSideQuestFromAI('', {
+          worldData: JSON.parse(worldData),
+          characterData: JSON.parse(characterData),
+          currentTurn: turnCounter,
+          sideQuestOffer: pendingQuestOffer
+        });
+        
+        if (newSideQuest) {
+          console.log('✅ Side quest được chấp nhận:', newSideQuest.title);
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi chấp nhận side quest:', error);
+    } finally {
+      // Reset modal state sau khi xử lý xong
+      setShowQuestOfferModal(false);
+      setPendingQuestOffer(null);
+    }
+  };
+
+  const handleDeclineQuestOffer = () => {
+    console.log('❌ Side quest bị từ chối:', pendingQuestOffer?.title);
+    setShowQuestOfferModal(false);
+    setPendingQuestOffer(null);
+  };
+
   const resetGameData = () => {
     // Reset game state
     setChatHistory([]);
@@ -570,6 +647,7 @@ export function GamePage() {
       'scc_context',
       'scc_summary_backup',
       'contentFlags', // Xóa contentFlags khi reset game
+      'quest_system', // Xóa quest system khi reset game
       // World Builder keys
       'completeWorldData',
       'currentWorldData',
@@ -962,8 +1040,25 @@ export function GamePage() {
           worldTime={gameState.worldTime}
           isPinned={isInfoMenuPinned}
           onTogglePin={() => setIsInfoMenuPinned(!isInfoMenuPinned)}
+          questSystem={questSystem}
+          onQuestUpdate={completeObjective}
+          onQuestAccept={acceptQuest}
+          onQuestDecline={declineQuest}
+          onClaimReward={claimReward}
         />
       )}
+
+      {/* Quest Offer Modal */}
+      <QuestOfferModal
+        isOpen={showQuestOfferModal}
+        onClose={() => {
+          setShowQuestOfferModal(false);
+          setPendingQuestOffer(null);
+        }}
+        onAccept={handleAcceptQuestOffer}
+        onDecline={handleDeclineQuestOffer}
+        questOffer={pendingQuestOffer}
+      />
     </div>
   );
 }

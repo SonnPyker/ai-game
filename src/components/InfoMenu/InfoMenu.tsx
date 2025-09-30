@@ -16,7 +16,8 @@ import {
   Eye,
   Star
 } from 'lucide-react';
-import { WorldData, Character, WorldTime } from '../../types';
+import { WorldData, Character, WorldTime, QuestSystem } from '../../types';
+import { QuestTracker } from '../QuestTracker/QuestTracker';
 
 interface InfoMenuProps {
   isOpen: boolean;
@@ -26,6 +27,11 @@ interface InfoMenuProps {
   worldTime: WorldTime | null;
   isPinned: boolean;
   onTogglePin: () => void;
+  questSystem?: QuestSystem | null;
+  onQuestUpdate?: (questId: string, objectiveId: string, completed: boolean) => void;
+  onQuestAccept?: (questId: string) => void;
+  onQuestDecline?: (questId: string) => void;
+  onClaimReward?: (questId: string, rewardId: string) => void;
 }
 
 interface MenuSection {
@@ -42,19 +48,24 @@ export function InfoMenu({
   characterData, 
   worldTime,
   isPinned,
-  onTogglePin 
+  onTogglePin,
+  questSystem,
+  onQuestUpdate,
+  onQuestAccept,
+  onQuestDecline,
+  onClaimReward
 }: InfoMenuProps) {
   const [activeSection, setActiveSection] = useState<string>('character');
   
   // Các mục menu chính
   const menuSections: MenuSection[] = [
     { id: 'character', title: 'Nhân Vật', icon: <User className="w-4 h-4" />, isActive: true },
+    { id: 'quests', title: 'Nhiệm Vụ', icon: <Target className="w-4 h-4" />, isActive: true },
     { id: 'world', title: 'Thế Giới', icon: <MapPin className="w-4 h-4" />, isActive: true },
     { id: 'factions', title: 'Phe Phái', icon: <Users className="w-4 h-4" />, isActive: true },
     { id: 'locations', title: 'Địa Điểm', icon: <MapPin className="w-4 h-4" />, isActive: true },
     { id: 'entities', title: 'Thực Thể', icon: <Star className="w-4 h-4" />, isActive: true },
-    { id: 'rules', title: 'Quy Tắc', icon: <BookOpen className="w-4 h-4" />, isActive: true },
-    { id: 'quests', title: 'Nhiệm Vụ', icon: <Target className="w-4 h-4" />, isActive: true }
+    { id: 'rules', title: 'Quy Tắc', icon: <BookOpen className="w-4 h-4" />, isActive: true }
   ];
 
   // Format thời gian thế giới
@@ -79,7 +90,6 @@ export function InfoMenu({
             <div><span className="text-gray-400">Tên:</span> <span className="text-white">{characterData.name}</span></div>
             <div><span className="text-gray-400">Giới tính:</span> <span className="text-white">{characterData.gender}</span></div>
             <div><span className="text-gray-400">Chủng tộc:</span> <span className="text-white">{characterData.race?.name}</span></div>
-            <div><span className="text-gray-400">Lớp:</span> <span className="text-white">{characterData.class?.name}</span></div>
           </div>
         </div>
 
@@ -96,74 +106,116 @@ export function InfoMenu({
                   <Sword className="w-4 h-4 mr-1" />
                   Sức mạnh
                 </span>
-                <span className="text-white font-medium">{characterData.coreStats.strength}</span>
+                <span className="text-white font-medium">
+                  {characterData.coreStats.strength}
+                  {(() => {
+                    const modifier = characterData.coreStats.modifiers?.strength ?? Math.floor((characterData.coreStats.strength - 10) / 2);
+                    return modifier >= 0 ? `(+${modifier})` : `(${modifier})`;
+                  })()}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 flex items-center">
                   <Eye className="w-4 h-4 mr-1" />
                   Nhanh nhẹn
                 </span>
-                <span className="text-white font-medium">{characterData.coreStats.agility}</span>
+                <span className="text-white font-medium">
+                  {characterData.coreStats.agility}
+                  {(() => {
+                    const modifier = characterData.coreStats.modifiers?.agility ?? Math.floor((characterData.coreStats.agility - 10) / 2);
+                    return modifier >= 0 ? `(+${modifier})` : `(${modifier})`;
+                  })()}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 flex items-center">
                   <Brain className="w-4 h-4 mr-1" />
                   Trí tuệ
                 </span>
-                <span className="text-white font-medium">{characterData.coreStats.intelligence}</span>
+                <span className="text-white font-medium">
+                  {characterData.coreStats.intelligence}
+                  {(() => {
+                    const modifier = characterData.coreStats.modifiers?.intelligence ?? Math.floor((characterData.coreStats.intelligence - 10) / 2);
+                    return modifier >= 0 ? `(+${modifier})` : `(${modifier})`;
+                  })()}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 flex items-center">
                   <Heart className="w-4 h-4 mr-1" />
                   Thể chất
                 </span>
-                <span className="text-white font-medium">{characterData.coreStats.constitution}</span>
+                <span className="text-white font-medium">
+                  {characterData.coreStats.constitution}
+                  {(() => {
+                    const modifier = characterData.coreStats.modifiers?.constitution ?? Math.floor((characterData.coreStats.constitution - 10) / 2);
+                    return modifier >= 0 ? `(+${modifier})` : `(${modifier})`;
+                  })()}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 flex items-center">
                   <Star className="w-4 h-4 mr-1" />
                   Khôn ngoan
                 </span>
-                <span className="text-white font-medium">{characterData.coreStats.wisdom}</span>
+                <span className="text-white font-medium">
+                  {characterData.coreStats.wisdom}
+                  {(() => {
+                    const modifier = characterData.coreStats.modifiers?.wisdom ?? Math.floor((characterData.coreStats.wisdom - 10) / 2);
+                    return modifier >= 0 ? `(+${modifier})` : `(${modifier})`;
+                  })()}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 flex items-center">
                   <Zap className="w-4 h-4 mr-1" />
                   Sức hút
                 </span>
-                <span className="text-white font-medium">{characterData.coreStats.charisma}</span>
+                <span className="text-white font-medium">
+                  {characterData.coreStats.charisma}
+                  {(() => {
+                    const modifier = characterData.coreStats.modifiers?.charisma ?? Math.floor((characterData.coreStats.charisma - 10) / 2);
+                    return modifier >= 0 ? `(+${modifier})` : `(${modifier})`;
+                  })()}
+                </span>
               </div>
             </div>
           </div>
         )}
 
         {/* Máu và Mana */}
-        {(characterData.hpMax || characterData.energyMax) && (
+        {(characterData.health || characterData.mana) && (
           <div className="bg-gray-800/50 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
               <Heart className="w-5 h-5 mr-2" />
               Trạng Thái
             </h3>
             <div className="space-y-3">
-              {characterData.hpMax && (
+              {characterData.health && (
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-400">Máu</span>
-                    <span className="text-white">{characterData.hpMax}/{characterData.hpMax}</span>
+                    <span className="text-white">{characterData.health.current}/{characterData.health.max}</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div className="bg-red-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                    <div 
+                      className="bg-red-500 h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${(characterData.health.current / characterData.health.max) * 100}%` }}
+                    ></div>
                   </div>
                 </div>
               )}
-              {characterData.energyMax && (
+              {characterData.mana && (
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-400">Mana</span>
-                    <span className="text-white">{characterData.energyMax}/{characterData.energyMax}</span>
+                    <span className="text-white">{characterData.mana.current}/{characterData.mana.max}</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${(characterData.mana.current / characterData.mana.max) * 100}%` }}
+                    ></div>
                   </div>
                 </div>
               )}
@@ -363,37 +415,20 @@ export function InfoMenu({
     );
   };
 
-  // Render section nhiệm vụ
+  // Render section nhiệm vụ mới với quest system
   const renderQuestsSection = () => {
-    if (!worldData?.starterQuest) {
-      return <div className="text-gray-400">Không có dữ liệu nhiệm vụ</div>;
+    if (!questSystem) {
+      return <div className="text-gray-400">Hệ thống quest chưa được khởi tạo</div>;
     }
 
-    const quest = worldData.starterQuest;
     return (
-      <div className="space-y-4">
-        <div className="bg-gray-800/50 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-white mb-3">{quest.title}</h3>
-          <div className="space-y-3 text-sm">
-            <div>
-              <span className="text-gray-400">Mục tiêu:</span>
-              <p className="text-white mt-1">{quest.objective}</p>
-            </div>
-            <div>
-              <span className="text-gray-400">Các bước:</span>
-              <ul className="text-white mt-1 space-y-1">
-                {quest.steps?.map((step: string, index: number) => (
-                  <li key={index}>• {step}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <span className="text-gray-400">Phần thưởng:</span>
-              <p className="text-white mt-1">{quest.reward}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <QuestTracker
+        questSystem={questSystem}
+        onQuestUpdate={onQuestUpdate || (() => {})}
+        onQuestAccept={onQuestAccept || (() => {})}
+        onQuestDecline={onQuestDecline || (() => {})}
+        onClaimReward={onClaimReward || (() => {})}
+      />
     );
   };
 
@@ -401,6 +436,8 @@ export function InfoMenu({
     switch (activeSection) {
       case 'character':
         return renderCharacterSection();
+      case 'quests':
+        return renderQuestsSection();
       case 'world':
         return renderWorldSection();
       case 'factions':
@@ -411,8 +448,6 @@ export function InfoMenu({
         return renderEntitiesSection();
       case 'rules':
         return renderRulesSection();
-      case 'quests':
-        return renderQuestsSection();
       default:
         return renderCharacterSection();
     }

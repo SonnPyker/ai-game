@@ -2,15 +2,31 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "1.3.1";
+  const version = "1.3.2";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
 const updateLog = [
     {
-      version: "1.3.1",
+      version: "1.3.2",
       date: now.toISOString().split('T')[0],
+      changes: [
+        "🎯 Hệ thống Quest hoàn chỉnh với Main & Side Quests",
+        "📜 Progressive quest objectives (hiện từng bước một)",
+        "🔒 Quest bị khóa ẩn objectives và rewards",
+        "🎬 Quest mở đầu độc lập, unlock Act 1 khi hoàn thành",
+        "💪 Thêm Health & Mana cho nhân vật (nhân x10)",
+        "📊 Hiển thị Health/Mana với thanh tiến độ trong InfoMenu",
+        "🧮 Auto-calculate modifiers theo cơ chế DnD",
+        "🔄 Flow unlock quest: Mở đầu → Act 1 → Act 2 → ...",
+        "🐛 Fix duplicate side quest khi accept",
+        "✨ Cải thiện quest detection và generation"
+      ]
+    },
+    {
+      version: "1.3.1",
+      date: "2025-01-01",
       changes: [
         "📊 Thêm InfoMenu với thông tin game chi tiết",
         "🎮 Hiển thị thông tin nhân vật: chỉ số, kỹ năng, tính cách",

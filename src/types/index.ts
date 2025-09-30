@@ -19,6 +19,24 @@ export interface Character {
     constitution: number;
     wisdom: number;
     charisma: number;
+    // Modifiers được tính toán tự động từ base stats theo cơ chế DnD
+    modifiers: {
+      strength: number;
+      agility: number;
+      intelligence: number;
+      constitution: number;
+      wisdom: number;
+      charisma: number;
+    };
+  };
+  // Health và Mana
+  health?: {
+    current: number;
+    max: number;
+  };
+  mana?: {
+    current: number;
+    max: number;
   };
   customStats?: { name: string; value: number }[];
   proficiencies?: { name: string; level: number; energyCost?: number; description?: string }[];
@@ -120,6 +138,53 @@ export interface QuestReward {
   type: 'experience' | 'item' | 'gold';
   amount: number;
   itemId?: string;
+}
+
+// Hệ thống Quest mới với progress tracking
+export interface QuestProgress {
+  id: string;
+  type: 'main' | 'side';
+  title: string;
+  description: string;
+  status: 'active' | 'completed' | 'failed' | 'locked' | 'available';
+  act?: number; // Chỉ cho main quest
+  objectives: QuestObjectiveProgress[];
+  rewards: QuestRewardProgress[];
+  prerequisites?: string[]; // Quest cần hoàn thành trước
+  unlockConditions?: {
+    timeBased?: boolean;
+    turnBased?: number;
+    storyProgress?: string;
+  };
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+export interface QuestObjectiveProgress {
+  id: string;
+  description: string;
+  completed: boolean;
+  completedAt?: Date;
+  aiKeywords?: string[]; // Từ khóa AI cần nhận diện
+  unlocked: boolean; // Objectives chỉ hiển thị khi đã unlock
+}
+
+export interface QuestRewardProgress {
+  type: 'experience' | 'item' | 'gold' | 'story_progress';
+  amount: number;
+  itemId?: string;
+  description: string;
+  claimed: boolean;
+  claimedAt?: Date;
+}
+
+export interface QuestSystem {
+  mainQuests: QuestProgress[];
+  sideQuests: QuestProgress[];
+  currentAct: number;
+  totalActs: number;
+  unlockedActs: number[];
+  questHistory: QuestProgress[];
 }
 
 export interface WorldTime {

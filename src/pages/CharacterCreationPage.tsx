@@ -20,6 +20,22 @@ interface CharacterData {
     constitution: number;
     wisdom: number;
     charisma: number;
+    modifiers: {
+      strength: number;
+      agility: number;
+      intelligence: number;
+      constitution: number;
+      wisdom: number;
+      charisma: number;
+    };
+  };
+  health?: {
+    current: number;
+    max: number;
+  };
+  mana?: {
+    current: number;
+    max: number;
   };
   customStats: { name: string; value: number }[];
   proficiencies: { name: string; level: number; energyCost?: number; description?: string }[];
@@ -45,7 +61,23 @@ export function CharacterCreationPage() {
       intelligence: 10,
       constitution: 10,
       wisdom: 10,
-      charisma: 10
+      charisma: 10,
+      modifiers: {
+        strength: 0,
+        agility: 0,
+        intelligence: 0,
+        constitution: 0,
+        wisdom: 0,
+        charisma: 0
+      }
+    },
+    health: {
+      current: 200, // Sẽ được tính lại dựa trên constitution
+      max: 200
+    },
+    mana: {
+      current: 150, // Sẽ được tính lại dựa trên wisdom
+      max: 150
     },
     customStats: [],
     proficiencies: []
@@ -59,12 +91,24 @@ export function CharacterCreationPage() {
     }
   }, []);
 
-  const calculateMaxHealth = () => {
-    return Math.floor((characterData.coreStats.constitution - 10) / 2) + 20;
-  };
 
-  const calculateMaxEnergy = () => {
-    return Math.floor((characterData.coreStats.wisdom - 10) / 2) + 15;
+  // Cập nhật health và mana khi core stats thay đổi
+  const updateHealthAndMana = (newCoreStats: typeof characterData.coreStats) => {
+    const maxHealth = (Math.floor((newCoreStats.constitution - 10) / 2) + 20) * 10;
+    const maxMana = (Math.floor((newCoreStats.wisdom - 10) / 2) + 15) * 10;
+    
+    setCharacterData(prev => ({
+      ...prev,
+      coreStats: newCoreStats,
+      health: {
+        current: Math.min(prev.health?.current || maxHealth, maxHealth),
+        max: maxHealth
+      },
+      mana: {
+        current: Math.min(prev.mana?.current || maxMana, maxMana),
+        max: maxMana
+      }
+    }));
   };
 
   const handleAnalyzeDescription = async () => {
@@ -95,7 +139,23 @@ export function CharacterCreationPage() {
           intelligence: analysis.coreStats?.int?.score || 10,
           constitution: analysis.coreStats?.con?.score || 10,
           wisdom: analysis.coreStats?.wis?.score || 10,
-          charisma: analysis.coreStats?.cha?.score || 10
+          charisma: analysis.coreStats?.cha?.score || 10,
+          modifiers: {
+            strength: Math.floor(((analysis.coreStats?.str?.score || 10) - 10) / 2),
+            agility: Math.floor(((analysis.coreStats?.dex?.score || 10) - 10) / 2),
+            intelligence: Math.floor(((analysis.coreStats?.int?.score || 10) - 10) / 2),
+            constitution: Math.floor(((analysis.coreStats?.con?.score || 10) - 10) / 2),
+            wisdom: Math.floor(((analysis.coreStats?.wis?.score || 10) - 10) / 2),
+            charisma: Math.floor(((analysis.coreStats?.cha?.score || 10) - 10) / 2)
+          }
+        },
+        health: {
+          current: (Math.floor(((analysis.coreStats?.con?.score || 10) - 10) / 2) + 20) * 10,
+          max: (Math.floor(((analysis.coreStats?.con?.score || 10) - 10) / 2) + 20) * 10
+        },
+        mana: {
+          current: (Math.floor(((analysis.coreStats?.wis?.score || 10) - 10) / 2) + 15) * 10,
+          max: (Math.floor(((analysis.coreStats?.wis?.score || 10) - 10) / 2) + 15) * 10
         },
         customStats: [],
         proficiencies: analysis.skills?.map((skill: any) => ({
@@ -220,6 +280,26 @@ export function CharacterCreationPage() {
   };
 
   const handleResetForm = () => {
+    const defaultCoreStats = {
+      strength: 10,
+      agility: 10,
+      intelligence: 10,
+      constitution: 10,
+      wisdom: 10,
+      charisma: 10,
+      modifiers: {
+        strength: 0,
+        agility: 0,
+        intelligence: 0,
+        constitution: 0,
+        wisdom: 0,
+        charisma: 0
+      }
+    };
+    
+    const maxHealth = (Math.floor((defaultCoreStats.constitution - 10) / 2) + 20) * 10;
+    const maxMana = (Math.floor((defaultCoreStats.wisdom - 10) / 2) + 15) * 10;
+    
     setCharacterData({
       name: '',
       gender: 'male',
@@ -227,13 +307,14 @@ export function CharacterCreationPage() {
       personality: '',
       backstory: '',
       personalityTraits: [],
-      coreStats: {
-        strength: 10,
-        agility: 10,
-        intelligence: 10,
-        constitution: 10,
-        wisdom: 10,
-        charisma: 10
+      coreStats: defaultCoreStats,
+      health: {
+        current: maxHealth,
+        max: maxHealth
+      },
+      mana: {
+        current: maxMana,
+        max: maxMana
       },
       customStats: [],
       proficiencies: []
@@ -269,6 +350,8 @@ export function CharacterCreationPage() {
       personality: characterData.personality,
       personalityTraits: characterData.personalityTraits,
       coreStats: characterData.coreStats,
+      health: characterData.health,
+      mana: characterData.mana,
       customStats: [],
       proficiencies: characterData.proficiencies
     };
@@ -653,7 +736,10 @@ export function CharacterCreationPage() {
             
              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 lg:gap-4 mb-4">
                {Object.entries(characterData.coreStats).map(([stat, value]) => {
-                 const modifier = Math.floor((value - 10) / 2);
+                   if (stat === 'modifiers') return null; // Skip modifiers object
+                 
+                 const baseValue = typeof value === 'number' ? value : 10;
+                 const modifier = Math.floor((baseValue - 10) / 2);
                  const modifierText = modifier >= 0 ? `+${modifier}` : `${modifier}`;
                  const modifierColor = modifier >= 0 ? 'text-green-400' : 'text-red-400';
                  
@@ -669,7 +755,7 @@ export function CharacterCreationPage() {
                      </label>
                      
                      <div className="text-center mb-3">
-                       <div className="text-3xl font-bold-vietnamese text-white mb-1">{value}</div>
+                       <div className="text-3xl font-bold-vietnamese text-white mb-1">{baseValue}</div>
                        <div className={`text-lg font-semibold ${modifierColor}`}>
                          {modifierText}
                        </div>
@@ -679,11 +765,19 @@ export function CharacterCreationPage() {
                        type="number"
                        min="1"
                        max="20"
-                       value={value}
-                       onChange={(e) => setCharacterData(prev => ({
-                         ...prev,
-                         coreStats: { ...prev.coreStats, [stat]: parseInt(e.target.value) || 1 }
-                       }))}
+                       value={baseValue}
+                       onChange={(e) => {
+                         const newValue = parseInt(e.target.value) || 1;
+                         const newCoreStats = {
+                           ...characterData.coreStats,
+                           [stat]: newValue,
+                           modifiers: {
+                             ...characterData.coreStats.modifiers,
+                             [stat]: Math.floor((newValue - 10) / 2)
+                           }
+                         };
+                         updateHealthAndMana(newCoreStats);
+                       }}
                        className="w-full px-2 py-1 bg-white/10 border-2 border-white/40 rounded text-white focus:border-primary-400 focus:outline-none text-center text-sm"
                      />
                    </div>
@@ -693,12 +787,16 @@ export function CharacterCreationPage() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 text-sm">
               <div className="bg-white/5 p-3 rounded-lg">
-                <div className="text-gray-300">Máu Tối Đa</div>
-                <div className="text-white font-bold-vietnamese">{(characterData as any).hpMax || calculateMaxHealth()}</div>
+                <div className="text-gray-300">Máu (Hiện tại/Tối đa)</div>
+                <div className="text-white font-bold-vietnamese">
+                  {characterData.health?.current || 0}/{characterData.health?.max || 0}
+                </div>
               </div>
               <div className="bg-white/5 p-3 rounded-lg">
-                <div className="text-gray-300">Năng Lượng Tối Đa</div>
-                <div className="text-white font-bold-vietnamese">{(characterData as any).energyMax || calculateMaxEnergy()}</div>
+                <div className="text-gray-300">Mana (Hiện tại/Tối đa)</div>
+                <div className="text-white font-bold-vietnamese">
+                  {characterData.mana?.current || 0}/{characterData.mana?.max || 0}
+                </div>
               </div>
             </div>
           </div>

@@ -959,10 +959,12 @@ YÊU CẦU NỘI DUNG:
 1) Tổng quan thế giới ngắn gọn, nhất quán với coreIdea/genres/settings.
 2) Mô tả hệ thống cốt lõi: công nghệ/phép thuật/sức mạnh, quy tắc siêu nhiên (nếu có).
 3) Ẩn hoạ & xung đột chủ đạo.
+4) Tạo main quest cho tất cả 5 Acts - mỗi Act phải có main quest riêng với độ khó tăng dần.
 
 TỰ SUY LUẬN KHI THIẾU:
 - Nếu trường trống, hãy chọn giá trị hợp lý dựa theo thể loại/bối cảnh.
 - Tôn trọng tone/thể loại người chơi chọn (ví dụ bí ẩn siêu nhiên, cyberpunk…).
+- Main quests phải có sự tiến triển logic: Act 1 (khởi đầu), Act 2 (phát triển), Act 3 (xung đột), Act 4 (cao trào), Act 5 (kết thúc).
 
 SCHEMA JSON (bắt buộc):
 {
@@ -995,11 +997,148 @@ SCHEMA JSON (bắt buộc):
   "dangerAndConflict": ["string"],
   "plotHooks": ["string"],
   "starterQuest": {
+    "id": "starter_quest",
+    "act": 1,
     "title": "string",
-    "objective": "string",
-    "steps": ["string"],
-    "reward": "string"
+    "description": "string",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "string",
+        "aiKeywords": ["string"]
+      }
+    ],
+    "rewards": [
+      {
+        "type": "experience",
+        "amount": 300,
+        "description": "string"
+      }
+    ]
   },
+  "mainQuests": [
+    {
+      "id": "main_quest_act_1",
+      "act": 1,
+      "title": "string",
+      "description": "string",
+      "objectives": [
+        {
+          "id": "obj_1",
+          "description": "string",
+          "aiKeywords": ["string"]
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 500,
+          "description": "string"
+        }
+      ]
+    },
+    {
+      "id": "main_quest_act_2",
+      "act": 2,
+      "title": "string",
+      "description": "string",
+      "objectives": [
+        {
+          "id": "obj_1",
+          "description": "string",
+          "aiKeywords": ["string"]
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 750,
+          "description": "string"
+        }
+      ]
+    },
+    {
+      "id": "main_quest_act_3",
+      "act": 3,
+      "title": "string",
+      "description": "string",
+      "objectives": [
+        {
+          "id": "obj_1",
+          "description": "string",
+          "aiKeywords": ["string"]
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 1000,
+          "description": "string"
+        }
+      ]
+    },
+    {
+      "id": "main_quest_act_4",
+      "act": 4,
+      "title": "string",
+      "description": "string",
+      "objectives": [
+        {
+          "id": "obj_1",
+          "description": "string",
+          "aiKeywords": ["string"]
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 1250,
+          "description": "string"
+        }
+      ]
+    },
+    {
+      "id": "main_quest_act_5",
+      "act": 5,
+      "title": "string",
+      "description": "string",
+      "objectives": [
+        {
+          "id": "obj_1",
+          "description": "string",
+          "aiKeywords": ["string"]
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 1500,
+          "description": "string"
+        }
+      ]
+    }
+  ],
+  "sideQuests": [
+    {
+      "id": "side_quest_1",
+      "title": "string",
+      "description": "string",
+      "objectives": [
+        {
+          "id": "obj_1",
+          "description": "string",
+          "aiKeywords": ["string"]
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 200,
+          "description": "string"
+        }
+      ]
+    }
+  ],
   "leveling": {
     "enabled": ${useLevel},
     "progression": "string",
@@ -1046,10 +1185,135 @@ SCHEMA:
       "keyBeats": ["3–6 tình tiết quan trọng"],
       "obstacles": ["trở ngại"],
       "twist": "plot twist (nếu có)",
-      "outcomeHint": "gợi ý kết cục có/không thành"
+      "outcomeHint": "gợi ý kết cục có/không thành",
+      "mainQuest": {
+        "title": "tên quest chính của act",
+        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "objectives": [
+          {
+            "id": "obj_1",
+            "description": "mục tiêu 1 của quest",
+            "aiKeywords": ["từ khóa AI cần nhận diện"]
+          },
+          {
+            "id": "obj_2", 
+            "description": "mục tiêu 2 của quest",
+            "aiKeywords": ["từ khóa AI cần nhận diện"]
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": 500,
+            "description": "Kinh nghiệm +500"
+          }
+        ]
+      }
     },
-    { "act": 2, "goal": "mục tiêu của act", "keyBeats": ["3–6 tình tiết quan trọng"], "obstacles": ["trở ngại"], "twist": "plot twist (nếu có)", "outcomeHint": "gợi ý kết cục có/không thành" },
-    { "act": 3, "goal": "mục tiêu của act", "keyBeats": ["3–6 tình tiết quan trọng"], "obstacles": ["trở ngại"], "twist": "plot twist (nếu có)", "outcomeHint": "gợi ý kết cục có/không thành" }
+    { 
+      "act": 2, 
+      "goal": "mục tiêu của act", 
+      "keyBeats": ["3–6 tình tiết quan trọng"], 
+      "obstacles": ["trở ngại"], 
+      "twist": "plot twist (nếu có)", 
+      "outcomeHint": "gợi ý kết cục có/không thành",
+      "mainQuest": {
+        "title": "tên quest chính của act 2",
+        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "objectives": [
+          {
+            "id": "obj_1",
+            "description": "mục tiêu 1 của quest act 2",
+            "aiKeywords": ["từ khóa AI cần nhận diện"]
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": 750,
+            "description": "Kinh nghiệm +750"
+          }
+        ]
+      }
+    },
+    { 
+      "act": 3, 
+      "goal": "mục tiêu của act", 
+      "keyBeats": ["3–6 tình tiết quan trọng"], 
+      "obstacles": ["trở ngại"], 
+      "twist": "plot twist (nếu có)", 
+      "outcomeHint": "gợi ý kết cục có/không thành",
+      "mainQuest": {
+        "title": "tên quest chính của act 3",
+        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "objectives": [
+          {
+            "id": "obj_1",
+            "description": "mục tiêu 1 của quest act 3",
+            "aiKeywords": ["từ khóa AI cần nhận diện"]
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": 1000,
+            "description": "Kinh nghiệm +1000"
+          }
+        ]
+      }
+    },
+    { 
+      "act": 4, 
+      "goal": "mục tiêu của act", 
+      "keyBeats": ["3–6 tình tiết quan trọng"], 
+      "obstacles": ["trở ngại"], 
+      "twist": "plot twist (nếu có)", 
+      "outcomeHint": "gợi ý kết cục có/không thành",
+      "mainQuest": {
+        "title": "tên quest chính của act 4",
+        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "objectives": [
+          {
+            "id": "obj_1",
+            "description": "mục tiêu 1 của quest act 4",
+            "aiKeywords": ["từ khóa AI cần nhận diện"]
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": 1250,
+            "description": "Kinh nghiệm +1250"
+          }
+        ]
+      }
+    },
+    { 
+      "act": 5, 
+      "goal": "mục tiêu của act", 
+      "keyBeats": ["3–6 tình tiết quan trọng"], 
+      "obstacles": ["trở ngại"], 
+      "twist": "plot twist (nếu có)", 
+      "outcomeHint": "gợi ý kết cục có/không thành",
+      "mainQuest": {
+        "title": "tên quest chính của act 5",
+        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "objectives": [
+          {
+            "id": "obj_1",
+            "description": "mục tiêu 1 của quest act 5",
+            "aiKeywords": ["từ khóa AI cần nhận diện"]
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": 1500,
+            "description": "Kinh nghiệm +1500"
+          }
+        ]
+      }
+    }
   ],
   "failStates": ["những tình huống dẫn tới thất bại (không chết cứng, cho phép cứu vãn)"],
   "endings": {
@@ -1198,7 +1462,8 @@ SCHEMA:
     characterJson: string,
     scenarioJson: string,
     sceneState: any = {},
-    contentFlags?: ContentFlags
+    contentFlags?: ContentFlags,
+    questSystem?: any
   ): Promise<any> {
     try {
       const chatHistorySnippet = chatHistory.slice(-10).map(msg => 
@@ -1207,15 +1472,33 @@ SCHEMA:
 
       const contentGuidance = this.getContentGuidance(contentFlags);
 
-      const prompt = `Bạn là AI Storyteller trong box chat roleplay. Nhiệm vụ:
+      // Quest system context
+      const questContext = questSystem ? `
+QUEST SYSTEM CONTEXT:
+- Current Act: ${questSystem.currentAct}
+- Active Main Quests: ${questSystem.mainQuests?.filter((q: any) => q.status === 'active').length || 0}
+- Active Side Quests: ${questSystem.sideQuests?.filter((q: any) => q.status === 'active').length || 0}
+- Quest History: ${questSystem.questHistory?.length || 0} completed quests
+` : '';
+
+      const prompt = `Bạn là AI Storyteller trong box chat roleplay. Vai trò:
 - Đọc lịch sử chat gần đây, hành động mới của người chơi, world/character và scenarioSkeleton.
 - Kể tiếp bằng văn xuôi (không bullet/emoji), mô tả hệ quả và cảm giác, đưa chi tiết cảm quan.
 - GIỮ NHẤT QUÁN theo continuityRules, tone, mainThreads.
 - Định hướng mềm (soft guidance) để tiến tới các keyBeats/twist/kết thúc, nhưng KHÔNG tước tự do người chơi.
 - Nếu hành động của người chơi lệch xa kịch bản, hãy uốn nhẹ bằng cảnh vật, NPC, thông tin, rủi ro — không ép buộc.
 - QUAN TRỌNG: Sử dụng đúng ngôi kể đã được cài đặt trong WORLD (narration field). Nếu narration là "Ngôi thứ hai", hãy kể bằng "Bạn" thay vì "Anh ấy/Cô ấy". Nếu narration là "Ngôi thứ nhất", hãy kể bằng "Tôi". Nếu narration là "Ngôi thứ ba", hãy kể bằng "Anh ấy/Cô ấy".
+- QUAN TRỌNG: KHÔNG BAO GIỜ nói trực tiếp "nhiệm vụ của bạn là", "bạn phải làm", "mục tiêu là" hay các từ tương tự. Hãy để câu chuyện tự nhiên dẫn dắt người chơi.
 
 ${contentGuidance}
+${questContext}
+
+QUEST SYSTEM RULES:
+- Chỉ tạo side quest khi có cơ hội tự nhiên trong câu chuyện (không ép buộc)
+- Tránh tạo quá nhiều side quest cùng lúc (tối đa 1 side quest mỗi 3-5 turn)
+- Side quest phải liên quan đến context hiện tại và có ý nghĩa với story
+- Nếu có quest system data, hãy tham khảo để tạo response phù hợp với quest progress
+- QUAN TRỌNG: Khi tích hợp quest vào narrative, hãy mô tả tình huống và bối cảnh một cách tự nhiên, để người chơi tự hiểu và quyết định hành động. KHÔNG nói "Bây giờ bạn có nhiệm vụ..." hay "Mục tiêu của bạn là..."
 
 Đầu vào:
 - CHAT_HISTORY (tối đa 10 lượt gần nhất): 
@@ -1236,7 +1519,25 @@ ${JSON.stringify(sceneState)}
   "narrative": "văn bản kể chuyện ~120–220 từ, không bullet/emoji",
   "softGuidance": "1–2 câu gợi hướng đi kín đáo (có thể rỗng)",
   "sceneState": { "keys/values cần cập nhật (vị trí, NPC, manh mối, nguy cơ, đồng hồ căng thẳng...)" },
-  "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện tiến lên" }
+  "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện tiến lên" },
+  "sideQuestOffer": {
+    "title": "tên quest phụ (chỉ có khi có cơ hội tự nhiên)",
+    "description": "mô tả quest phụ",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "mục tiêu quest phụ",
+        "aiKeywords": ["từ khóa AI cần nhận diện"]
+      }
+    ],
+    "rewards": [
+      {
+        "type": "experience",
+        "amount": 200,
+        "description": "Kinh nghiệm +200"
+      }
+    ]
+  }
 }
 
 Quy tắc thêm:
@@ -1275,18 +1576,29 @@ Quy tắc thêm:
     sceneState: SCCState,
     chatDelta: Array<{ role: string; content: string; turn: number }>,
     playerAction: string,
-    contentFlags?: ContentFlags
+    contentFlags?: ContentFlags,
+    questSystem?: any
   ): Promise<{
     narrative: string;
     softGuidance: string;
     sceneState: SCCState;
     storyProgress: any;
+    sideQuestOffer?: any;
   }> {
     if (!this.isConfigured()) {
       throw new Error('Gemini API chưa được cấu hình. Vui lòng nhập API key.');
     }
 
     const contentGuidance = this.getContentGuidance(contentFlags);
+
+    // Quest system context
+    const questContext = questSystem ? `
+QUEST SYSTEM CONTEXT:
+- Current Act: ${questSystem.currentAct}
+- Active Main Quests: ${questSystem.mainQuests?.filter((q: any) => q.status === 'active').length || 0}
+- Active Side Quests: ${questSystem.sideQuests?.filter((q: any) => q.status === 'active').length || 0}
+- Quest History: ${questSystem.questHistory?.length || 0} completed quests
+` : '';
 
     const prompt = `Bạn là AI Storyteller trong box chat roleplay. 
 Hãy kể tiếp câu chuyện dựa trên:
@@ -1296,7 +1608,10 @@ Hãy kể tiếp câu chuyện dựa trên:
 - CHAT_DELTA: chỉ các lượt chat kể từ snapshot tới trước hành động hiện tại,
 - PLAYER_ACTION: hành động người chơi vừa nêu.
 
+QUAN TRỌNG: KHÔNG BAO GIỜ nói trực tiếp "nhiệm vụ của bạn là", "bạn phải làm", "mục tiêu là" hay các từ tương tự. Hãy để câu chuyện tự nhiên dẫn dắt người chơi.
+
 ${contentGuidance}
+${questContext}
 
 Quy tắc:
 - Nếu có xung đột thông tin: ưu tiên SCENE_STATE, sau đó đến SUMMARY, cuối cùng mới tới CHAT_DELTA.
@@ -1305,6 +1620,13 @@ Quy tắc:
 - KHÔNG nhắc đến "prompt/JSON/meta".
 - QUAN TRỌNG: Sử dụng đúng ngôi kể đã được cài đặt trong WORLD (narration field). Nếu narration là "Ngôi thứ hai", hãy kể bằng "Bạn" thay vì "Anh ấy/Cô ấy". Nếu narration là "Ngôi thứ nhất", hãy kể bằng "Tôi". Nếu narration là "Ngôi thứ ba", hãy kể bằng "Anh ấy/Cô ấy".
 - Nếu hành động của người chơi vi phạm chính sách nội dung, hãy từ chối lịch sự và đề xuất hướng thay thế an toàn.
+
+QUEST SYSTEM RULES:
+- Chỉ tạo side quest khi có cơ hội tự nhiên trong câu chuyện (không ép buộc)
+- Tránh tạo quá nhiều side quest cùng lúc (tối đa 1 side quest mỗi 3-5 turn)
+- Side quest phải liên quan đến context hiện tại và có ý nghĩa với story
+- Nếu có quest system data, hãy tham khảo để tạo response phù hợp với quest progress
+- QUAN TRỌNG: Khi tích hợp quest vào narrative, hãy mô tả tình huống và bối cảnh một cách tự nhiên, để người chơi tự hiểu và quyết định hành động. KHÔNG nói "Bây giờ bạn có nhiệm vụ..." hay "Mục tiêu của bạn là..."
 
 ĐẦU VÀO:
 - WORLD: ${worldJson}
@@ -1326,7 +1648,25 @@ LƯU Ý VỀ NGÔI KỂ:
   "narrative": "văn xuôi 120–220 từ, liền mạch, không bullet/emoji",
   "softGuidance": "1–2 câu định hướng kín đáo (có thể rỗng)",
   "sceneState": { "các trường cần cập nhật (vị trí, NPC, manh mối, rủi ro, đồng hồ…)" },
-  "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện" }
+  "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện" },
+  "sideQuestOffer": {
+    "title": "tên quest phụ (chỉ có khi có cơ hội tự nhiên)",
+    "description": "mô tả quest phụ",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "mục tiêu quest phụ",
+        "aiKeywords": ["từ khóa AI cần nhận diện"]
+      }
+    ],
+    "rewards": [
+      {
+        "type": "experience",
+        "amount": 200,
+        "description": "Kinh nghiệm +200"
+      }
+    ]
+  }
 }`;
 
     try {
@@ -1351,7 +1691,8 @@ LƯU Ý VỀ NGÔI KỂ:
         narrative: result.narrative || '',
         softGuidance: result.softGuidance || '',
         sceneState: result.sceneState || {},
-        storyProgress: result.storyProgress || {}
+        storyProgress: result.storyProgress || {},
+        sideQuestOffer: result.sideQuestOffer || null
       };
     } catch (error) {
       console.error('Lỗi khi tạo turn response với delta context:', error);
