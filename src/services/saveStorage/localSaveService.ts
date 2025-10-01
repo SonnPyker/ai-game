@@ -46,6 +46,7 @@ export class LocalSaveService {
     chatData: any[],
     turnCounter: number,
     worldTime: any,
+    questSystemData?: any,
     uiState?: any,
     contentFlags?: any
   ): Promise<SaveResult> {
@@ -67,6 +68,7 @@ export class LocalSaveService {
         chat: chatData,
         turnCounter,
         worldTime,
+        questSystem: questSystemData,
         ui: uiState,
         contentFlags: contentFlags
       };

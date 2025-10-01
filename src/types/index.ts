@@ -146,7 +146,7 @@ export interface QuestProgress {
   type: 'main' | 'side';
   title: string;
   description: string;
-  status: 'active' | 'completed' | 'failed' | 'locked' | 'available';
+  status: 'active' | 'completed' | 'failed' | 'locked' | 'available' | 'declined';
   act?: number; // Chỉ cho main quest
   objectives: QuestObjectiveProgress[];
   rewards: QuestRewardProgress[];

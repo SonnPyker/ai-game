@@ -153,7 +153,8 @@ export class LocalStore implements SaveStorageAdapter {
       'game_turn_counter',
       'rp_summary',
       'rp_scene_state',
-      'rp_summary_indexed'
+      'rp_summary_indexed',
+      'quest_system'
     ];
 
     const legacyData: Record<string, string | null> = {};

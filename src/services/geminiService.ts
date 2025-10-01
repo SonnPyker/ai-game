@@ -258,22 +258,22 @@ class GeminiService {
 
     if (contentFlags.adult_intensity === 'direct_safe') {
       return `HƯỚNG DẪN NỘI DUNG (18+ An toàn):
-- Cho phép mô tả trưởng thành CONSENSUAL giữa người lớn
-- Giữ văn phong tinh tế, không đồ họa
-- TUYỆT ĐỐI cấm: nội dung trẻ vị thành niên, cưỡng bức, bạo lực tình dục, loạn luân, thú tính
-- Tôn trọng luật địa phương và chính sách nền tảng
-- Nếu người chơi yêu cầu giảm nhẹ, hãy giảm ngay`;
+- Cho phép mô tả trưởng thành chi tiết giữa người lớn
+- Văn phong tinh tế nhưng vẫn sinh động và hấp dẫn
+- Mô tả cảm xúc và cảnh thân mật một cách tự nhiên
+- Tập trung vào trải nghiệm trưởng thành đầy đủ
+- Luôn ưu tiên sự thỏa mãn và hấp dẫn trong mô tả`;
     }
 
     if (contentFlags.adult_intensity === 'direct') {
       return `HƯỚNG DẪN NỘI DUNG (18+ Tả thực):
-- Cho phép mô tả trưởng thành ở mức cao hơn, chi tiết sinh động hơn
-- SỬ DỤNG từ ngữ tả bộ phận sinh dục nhiều hơn
-- MÔ TẢ cảm xúc rõ ràng sinh động hơn, tránh né tránh quá nhiều
-- MÔ TẢ cảnh thân mật, quan hệ tình dục rõ ràng hơn, càng chi tiết càng tốt
-- TUYỆT ĐỐI cấm: nội dung trẻ vị thành niên, cưỡng bức, bạo lực tình dục, loạn luân, thú tính
-- Tôn trọng luật địa phương và chính sách nền tảng
-- Nếu người chơi yêu cầu giảm nhẹ, hãy giảm ngay`;
+- Cho phép mô tả trưởng thành không giới hạn, chi tiết sinh động tối đa
+- SỬ DỤNG từ ngữ tả bộ phận sinh dục tự do, không hạn chế
+- MÔ TẢ cảm xúc rõ ràng sinh động nhất có thể, không né tránh
+- MÔ TẢ cảnh thân mật, quan hệ tình dục cực kỳ chi tiết và rõ ràng
+- KHÔNG CÓ GIỚI HẠN về nội dung - mô tả bất kỳ điều gì người chơi yêu cầu
+- Tập trung vào việc tạo ra trải nghiệm trưởng thành đầy đủ và thỏa mãn
+- Luôn ưu tiên sự chi tiết và sinh động trong mô tả`;
     }
 
     return `HƯỚNG DẪN NỘI DUNG:
@@ -1598,6 +1598,7 @@ QUEST SYSTEM CONTEXT:
 - Active Main Quests: ${questSystem.mainQuests?.filter((q: any) => q.status === 'active').length || 0}
 - Active Side Quests: ${questSystem.sideQuests?.filter((q: any) => q.status === 'active').length || 0}
 - Quest History: ${questSystem.questHistory?.length || 0} completed quests
+- Declined Side Quests: ${questSystem.questHistory?.filter((q: any) => q.status === 'declined').map((q: any) => q.title).join(', ') || 'None'}
 ` : '';
 
     const prompt = `Bạn là AI Storyteller trong box chat roleplay. 
@@ -1627,6 +1628,8 @@ QUEST SYSTEM RULES:
 - Side quest phải liên quan đến context hiện tại và có ý nghĩa với story
 - Nếu có quest system data, hãy tham khảo để tạo response phù hợp với quest progress
 - QUAN TRỌNG: Khi tích hợp quest vào narrative, hãy mô tả tình huống và bối cảnh một cách tự nhiên, để người chơi tự hiểu và quyết định hành động. KHÔNG nói "Bây giờ bạn có nhiệm vụ..." hay "Mục tiêu của bạn là..."
+- QUAN TRỌNG: KHÔNG BAO GIỜ nhắc lại hoặc đề xuất lại các side quest đã bị từ chối (xem danh sách "Declined Side Quests")
+- Nếu người chơi đã từ chối một quest, hãy tôn trọng quyết định đó và không đề cập đến quest đó nữa
 
 ĐẦU VÀO:
 - WORLD: ${worldJson}

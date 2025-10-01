@@ -14,10 +14,12 @@ import {
   Sword,
   Brain,
   Eye,
-  Star
+  Star,
+  FileText
 } from 'lucide-react';
 import { WorldData, Character, WorldTime, QuestSystem } from '../../types';
 import { QuestTracker } from '../QuestTracker/QuestTracker';
+import { SCCJournal } from './SCCJournal';
 
 interface InfoMenuProps {
   isOpen: boolean;
@@ -31,6 +33,7 @@ interface InfoMenuProps {
   onQuestUpdate?: (questId: string, objectiveId: string, completed: boolean) => void;
   onQuestAccept?: (questId: string) => void;
   onQuestDecline?: (questId: string) => void;
+  onQuestDeclineActive?: (questId: string) => void;
   onClaimReward?: (questId: string, rewardId: string) => void;
 }
 
@@ -53,6 +56,7 @@ export function InfoMenu({
   onQuestUpdate,
   onQuestAccept,
   onQuestDecline,
+  onQuestDeclineActive,
   onClaimReward
 }: InfoMenuProps) {
   const [activeSection, setActiveSection] = useState<string>('character');
@@ -61,6 +65,7 @@ export function InfoMenu({
   const menuSections: MenuSection[] = [
     { id: 'character', title: 'Nhân Vật', icon: <User className="w-4 h-4" />, isActive: true },
     { id: 'quests', title: 'Nhiệm Vụ', icon: <Target className="w-4 h-4" />, isActive: true },
+    { id: 'journal', title: 'Nhật Ký', icon: <FileText className="w-4 h-4" />, isActive: true },
     { id: 'world', title: 'Thế Giới', icon: <MapPin className="w-4 h-4" />, isActive: true },
     { id: 'factions', title: 'Phe Phái', icon: <Users className="w-4 h-4" />, isActive: true },
     { id: 'locations', title: 'Địa Điểm', icon: <MapPin className="w-4 h-4" />, isActive: true },
@@ -427,9 +432,15 @@ export function InfoMenu({
         onQuestUpdate={onQuestUpdate || (() => {})}
         onQuestAccept={onQuestAccept || (() => {})}
         onQuestDecline={onQuestDecline || (() => {})}
+        onQuestDeclineActive={onQuestDeclineActive || (() => {})}
         onClaimReward={onClaimReward || (() => {})}
       />
     );
+  };
+
+  // Render section nhật ký SCC
+  const renderJournalSection = () => {
+    return <SCCJournal isVisible={activeSection === 'journal'} />;
   };
 
   const renderActiveSection = () => {
@@ -438,6 +449,8 @@ export function InfoMenu({
         return renderCharacterSection();
       case 'quests':
         return renderQuestsSection();
+      case 'journal':
+        return renderJournalSection();
       case 'world':
         return renderWorldSection();
       case 'factions':
@@ -454,7 +467,7 @@ export function InfoMenu({
   };
 
   return (
-    <div className={`fixed top-0 right-0 h-full w-96 bg-black/95 backdrop-blur-sm border-l border-gray-700/50 z-50 flex flex-col transition-all duration-300 ${
+    <div className={`fixed top-0 right-0 h-screen w-96 bg-black/95 backdrop-blur-sm border-l border-gray-700/50 z-50 flex flex-col transition-all duration-300 ${
       isOpen ? 'translate-x-0' : 'translate-x-full'
     }`}>
       {/* Header */}

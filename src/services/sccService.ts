@@ -190,7 +190,7 @@ class SCCService {
     localStorage.removeItem('rp_summary');
     localStorage.removeItem('rp_scene_state');
     localStorage.removeItem('rp_chat');
-    localStorage.removeItem('rp_turn_counter');
+    localStorage.removeItem('game_turn_counter');
     localStorage.removeItem('rp_summary_backup');
   }
 
@@ -255,12 +255,12 @@ class SCCService {
   }
 
   private loadTurnCounter(): number {
-    const saved = localStorage.getItem('rp_turn_counter');
+    const saved = localStorage.getItem('game_turn_counter');
     return saved ? parseInt(saved) : 0;
   }
 
   private saveTurnCounter(turnCounter: number): void {
-    localStorage.setItem('rp_turn_counter', turnCounter.toString());
+    localStorage.setItem('game_turn_counter', turnCounter.toString());
   }
 }
 

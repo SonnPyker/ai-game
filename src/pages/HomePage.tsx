@@ -31,8 +31,7 @@ export function HomePage() {
       'currentWorldData',
       'currentWorldDescription',
       'worldTitle',
-      'rp_summary',
-      'rp_turn_counter'
+      'rp_summary'
     ];
     
     keysToRemove.forEach(key => {

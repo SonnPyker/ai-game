@@ -15,12 +15,11 @@ export interface ContextForAI {
 }
 
 /**
- * Build context for AI based on turn number and delta window
+ * Build context for AI based on turn number
  * @param turn Current turn number
- * @param deltaWindow Number of recent turns to include (default: 4)
  * @returns Context object for AI
  */
-export function buildContextForAI(turn: number, deltaWindow: number = 4): ContextForAI {
+export function buildContextForAI(turn: number): ContextForAI {
   // Load indexed summaries
   const indexedSummaries = JSON.parse(localStorage.getItem('rp_summary_indexed') || '{}');
   
@@ -55,14 +54,14 @@ export function buildContextForAI(turn: number, deltaWindow: number = 4): Contex
       msg.turn && msg.turn >= deltaStartTurn && msg.turn <= deltaEndTurn
     );
     
-    // Limit to delta window (chỉ lấy N turn gần nhất trong delta)
-    recentTurns = takeLast(recentTurns, deltaWindow);
+    // Không giới hạn delta window - lấy tất cả turns từ SCC đến hiện tại
+    // recentTurns đã được filter đúng phạm vi, không cần giới hạn thêm
     
     console.log(`📊 Delta Context for turn ${turn}:`);
     console.log(`   SCC Turn: ${summaryTurn}`);
     console.log(`   Delta Range: ${deltaStartTurn}-${deltaEndTurn}`);
     console.log(`   Delta Turns: ${recentTurns.length} turns`);
-    console.log(`   Delta Window: ${deltaWindow}`);
+    console.log(`   Delta Window: Unlimited (all turns from SCC to current)`);
   } else {
     // Fallback: no summary yet, use recent turns from beginning
     // Ví dụ: turn 9, chưa có SCC → lấy turns 1-8
@@ -81,8 +80,8 @@ export function buildContextForAI(turn: number, deltaWindow: number = 4): Contex
       msg.turn && msg.turn < turn
     );
     
-    // Limit to reasonable number for fallback
-    recentTurns = takeLast(recentTurns, Math.min(20, turn - 1));
+    // Không giới hạn cho fallback - lấy tất cả turns từ đầu đến hiện tại
+    // recentTurns đã được filter đúng phạm vi, không cần giới hạn thêm
     
     console.log(`📊 Fallback Context for turn ${turn}:`);
     console.log(`   No SCC found, using turns 1-${turn-1}`);
@@ -93,7 +92,7 @@ export function buildContextForAI(turn: number, deltaWindow: number = 4): Contex
     summary,
     sceneState: currentSceneState,
     recentTurns,
-    deltaWindow
+    deltaWindow: recentTurns.length // Số lượng turns thực tế thay vì giới hạn cố định
   };
 }
 
@@ -200,9 +199,8 @@ export function getMostRecentSummaryTurn(): number {
 /**
  * Debug function to show delta calculation details
  * @param turn Current turn number
- * @param deltaWindow Delta window size
  */
-export function debugDeltaContext(turn: number, deltaWindow: number = 4): void {
+export function debugDeltaContext(turn: number): void {
   const indexedSummaries = JSON.parse(localStorage.getItem('rp_summary_indexed') || '{}');
   const chatHistory = JSON.parse(localStorage.getItem('rp_chat') || '[]');
   
@@ -226,8 +224,8 @@ export function debugDeltaContext(turn: number, deltaWindow: number = 4): void {
     console.log(`   ✅ Using SCC Turn: ${summaryTurn}`);
     console.log(`   📊 Delta Range: ${deltaStartTurn}-${deltaEndTurn} (${deltaEndTurn - deltaStartTurn + 1} turns)`);
     console.log(`   📝 Delta Turns Found: ${deltaTurns.length}`);
-    console.log(`   🎯 Delta Window: ${deltaWindow}`);
-    console.log(`   📋 Final Delta:`, deltaTurns.slice(-deltaWindow).map((t: ChatMessage) => `Turn ${t.turn}`));
+    console.log(`   🎯 Delta Window: Unlimited (all turns from SCC to current)`);
+    console.log(`   📋 Final Delta:`, deltaTurns.map((t: ChatMessage) => `Turn ${t.turn}`));
   } else {
     const allTurns = chatHistory.filter((msg: ChatMessage) => 
       msg.turn && msg.turn < turn
@@ -235,6 +233,6 @@ export function debugDeltaContext(turn: number, deltaWindow: number = 4): void {
     console.log(`   ❌ No SCC found, using fallback`);
     console.log(`   📊 Fallback Range: 1-${turn-1} (${turn-1} turns)`);
     console.log(`   📝 All Turns Found: ${allTurns.length}`);
-    console.log(`   📋 Final Turns:`, allTurns.slice(-Math.min(20, turn - 1)).map((t: ChatMessage) => `Turn ${t.turn}`));
+    console.log(`   📋 Final Turns:`, allTurns.map((t: ChatMessage) => `Turn ${t.turn}`));
   }
 }

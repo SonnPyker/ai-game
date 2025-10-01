@@ -2,15 +2,31 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "1.3.2";
+  const version = "1.4.0";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
 const updateLog = [
     {
-      version: "1.3.2",
+      version: "1.4.0",
       date: now.toISOString().split('T')[0],
+      changes: [
+        "💾 Tích hợp Quest System vào Save System",
+        "🔄 Lưu và khôi phục tiến trình quest hoàn chỉnh",
+        "📜 SCC Journal với lịch sử tóm tắt có thể thu gọn",
+        "🎯 Cải thiện hệ thống từ chối side quest",
+        "🤖 AI không nhắc lại quest đã từ chối",
+        "📝 Auto-fill chat input khi accept/decline quest",
+        "🔧 Đồng bộ turnCounter giữa SCC và game state",
+        "📊 Hiển thị quest đã từ chối trong QuestTracker",
+        "🔄 Migration system hỗ trợ quest system",
+        "✨ Cải thiện UX và performance tổng thể"
+      ]
+    },
+    {
+      version: "1.3.2",
+      date: "2025-01-01",
       changes: [
         "🎯 Hệ thống Quest hoàn chỉnh với Main & Side Quests",
         "📜 Progressive quest objectives (hiện từng bước một)",

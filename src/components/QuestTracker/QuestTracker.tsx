@@ -20,6 +20,7 @@ interface QuestTrackerProps {
   onQuestUpdate: (questId: string, objectiveId: string, completed: boolean) => void;
   onQuestAccept: (questId: string) => void;
   onQuestDecline: (questId: string) => void;
+  onQuestDeclineActive: (questId: string) => void;
   onClaimReward: (questId: string, rewardId: string) => void;
 }
 
@@ -28,7 +29,8 @@ export function QuestTracker({
   onQuestUpdate, 
   onQuestAccept, 
   onQuestDecline,
-  onClaimReward 
+  onQuestDeclineActive,
+  onClaimReward
 }: QuestTrackerProps) {
   // Suppress unused parameter warnings for future use
   void onQuestAccept;
@@ -71,6 +73,8 @@ export function QuestTracker({
         return <Target className="w-4 h-4 text-yellow-400" />; // Icon khác cho side quest available
       case 'failed':
         return <AlertCircle className="w-4 h-4 text-red-400" />;
+      case 'declined':
+        return <AlertCircle className="w-4 h-4 text-red-400" />; // Icon cho quest đã từ chối
       default:
         return <Clock className="w-4 h-4 text-yellow-400" />;
     }
@@ -81,6 +85,7 @@ export function QuestTracker({
     const progress = getQuestProgress(quest);
     const isCompleted = quest.status === 'completed';
     const isLocked = quest.status === 'locked';
+    const isDeclined = quest.status === 'declined';
 
     return (
       <motion.div
@@ -92,6 +97,8 @@ export function QuestTracker({
             ? 'border-green-500/50 bg-green-900/20' 
             : isLocked
             ? 'border-gray-500/30 bg-gray-900/20'
+            : isDeclined
+            ? 'border-red-500/30 bg-red-900/20'
             : 'border-blue-500/30 hover:border-blue-500/50'
         }`}
       >
@@ -118,7 +125,7 @@ export function QuestTracker({
             )}
           </div>
           <div className="flex items-center space-x-2">
-            {!isLocked && (
+            {!isLocked && !isDeclined && (
               <>
                 <span className="text-sm text-gray-400">
                   {Math.round(progress)}%
@@ -128,6 +135,9 @@ export function QuestTracker({
             )}
             {isLocked && (
               <span className="text-xs text-gray-500 italic">Bị khóa</span>
+            )}
+            {isDeclined && (
+              <span className="text-xs text-red-400 italic">Đã từ chối</span>
             )}
           </div>
         </div>
@@ -145,8 +155,8 @@ export function QuestTracker({
               {/* Quest Description */}
               <p className="text-sm text-gray-300 mb-3">{quest.description}</p>
 
-        {/* Progress Bar - Chỉ hiển thị khi quest không bị khóa */}
-        {!isLocked && (
+        {/* Progress Bar - Chỉ hiển thị khi quest không bị khóa và không bị từ chối */}
+        {!isLocked && !isDeclined && (
           <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
             <div 
               className={`h-2 rounded-full transition-all duration-300 ${
@@ -157,8 +167,8 @@ export function QuestTracker({
           </div>
         )}
 
-        {/* Objectives - Chỉ hiển thị khi quest không bị khóa */}
-        {quest.objectives.length > 0 && !isLocked && (
+        {/* Objectives - Chỉ hiển thị khi quest không bị khóa và không bị từ chối */}
+        {quest.objectives.length > 0 && !isLocked && !isDeclined && (
           <div className="space-y-2 mb-3">
             <h4 className="text-sm font-medium text-gray-400">Mục tiêu:</h4>
             {quest.objectives
@@ -199,8 +209,16 @@ export function QuestTracker({
           </div>
         )}
 
-        {/* Rewards - Chỉ hiển thị khi quest không bị khóa */}
-        {quest.rewards.length > 0 && !isLocked && (
+        {/* Thông báo cho quest đã từ chối */}
+        {isDeclined && (
+          <div className="text-center py-4 text-red-400">
+            <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm italic">Quest này đã bị từ chối và không thể nhận lại</p>
+          </div>
+        )}
+
+        {/* Rewards - Chỉ hiển thị khi quest không bị khóa và không bị từ chối */}
+        {quest.rewards.length > 0 && !isLocked && !isDeclined && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-gray-400">Phần thưởng:</h4>
             <div className="flex flex-wrap gap-2">
@@ -226,6 +244,27 @@ export function QuestTracker({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Quest Actions - Chỉ cho side quest đã nhận */}
+        {quest.type === 'side' && !isLocked && !isDeclined && quest.status === 'active' && (
+          <div className="flex justify-end space-x-2 mt-3 pt-3 border-t border-gray-700/50">
+            <button
+              onClick={() => onQuestDeclineActive(quest.id)}
+              className="px-3 py-1 bg-red-600/20 border border-red-500/50 text-red-300 rounded text-sm hover:bg-red-600/30 transition-colors"
+            >
+              Từ chối Quest
+            </button>
+          </div>
+        )}
+
+        {/* Hiển thị trạng thái cho quest đã từ chối */}
+        {quest.type === 'side' && quest.status === 'declined' && (
+          <div className="flex justify-end space-x-2 mt-3 pt-3 border-t border-gray-700/50">
+            <span className="px-3 py-1 bg-gray-600/20 border border-gray-500/50 text-gray-400 rounded text-sm">
+              Đã từ chối
+            </span>
           </div>
         )}
 

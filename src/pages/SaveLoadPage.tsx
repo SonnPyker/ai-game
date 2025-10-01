@@ -119,6 +119,12 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
           localStorage.setItem('rp_summary_indexed', JSON.stringify(saveGame.summary));
         }
         
+        // Khôi phục quest system nếu có
+        if (saveGame.questSystem) {
+          localStorage.setItem('quest_system', JSON.stringify(saveGame.questSystem));
+          console.log('✅ Đã khôi phục quest system từ save file');
+        }
+        
         const source = isCloudSlot ? 'Cloud' : 'Local';
         setSuccess(`Đã tải từ ${source} (Slot ${slotId})`);
         

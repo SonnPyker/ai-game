@@ -43,6 +43,7 @@ export function GamePage() {
   // Quest offer modal state
   const [showQuestOfferModal, setShowQuestOfferModal] = useState(false);
   const [pendingQuestOffer, setPendingQuestOffer] = useState<any>(null);
+  const [processedQuests, setProcessedQuests] = useState<Set<string>>(new Set());
   const [gameState, setGameState] = useState<GameState>({
     scenarioSkeleton: null,
     sceneState: {},
@@ -60,11 +61,11 @@ export function GamePage() {
     questSystem,
     acceptQuest,
     declineQuest,
+    declineActiveQuest,
     completeObjective,
     claimReward,
     analyzeChatInput,
-    generateSideQuestFromAI,
-    refreshQuestsFromWorld
+    generateSideQuestFromAI
   } = useQuestSystem();
   
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -136,12 +137,17 @@ export function GamePage() {
             }
           }
           
+          // Load and sync SCC context
+          const sccContext = sccService.loadSCCContext();
+          sccContext.turnCounter = savedTurnCounter;
+          
           setGameState(prev => ({
             ...prev,
             isInitialized: true,
             scenarioSkeleton: scenario,
             worldTime: world.currentTime || { day: 1, hour: 12, month: 1, year: 1, dayOfWeek: 1 },
-            contentFlags: contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true }
+            contentFlags: contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true },
+            sccContext: sccContext
           }));
           
           setTurnCounter(savedTurnCounter);
@@ -208,8 +214,8 @@ export function GamePage() {
       // Save scenario to localStorage
       localStorage.setItem('rp_scenario', JSON.stringify(scenarioSkeleton));
 
-      // Refresh quest system từ world data
-      refreshQuestsFromWorld();
+       // Bỏ refresh quest system từ world data - chỉ nhận side quest từ chat
+       // Không cần gọi refreshQuestsFromWorld() nữa
 
       // Add opening message to chat
       const openingMessage: ChatMessage = {
@@ -218,12 +224,14 @@ export function GamePage() {
         timestamp: new Date()
       };
 
-      // Load or initialize SCC context
-      const sccContext = sccService.loadSCCContext();
-      const updatedSccContext = sccService.addTurn(sccContext, openingMessage);
-
       // Load turn counter from localStorage
       const savedTurnCounter = parseInt(localStorage.getItem('game_turn_counter') || '0', 10);
+      
+      // Load or initialize SCC context
+      const sccContext = sccService.loadSCCContext();
+      // Sync SCC turnCounter with game turnCounter
+      sccContext.turnCounter = savedTurnCounter;
+      const updatedSccContext = sccService.addTurn(sccContext, openingMessage);
       
       setChatHistory([openingMessage]);
       setTurnCounter(savedTurnCounter);
@@ -279,6 +287,8 @@ export function GamePage() {
       // Update SCC context with player message
       let updatedSccContext = gameState.sccContext;
       if (updatedSccContext) {
+        // Sync SCC turnCounter with game turnCounter
+        updatedSccContext.turnCounter = turnCounter;
         updatedSccContext = sccService.addTurn(updatedSccContext, playerMessage);
       }
 
@@ -290,7 +300,7 @@ export function GamePage() {
       }
 
       // Build delta context for AI
-      const deltaContext = buildContextForAI(turnCounter + 1, 4); // +1 because we're about to add the current turn
+      const deltaContext = buildContextForAI(turnCounter + 1); // +1 because we're about to add the current turn
       
       
       // Generate AI response using delta context
@@ -324,10 +334,16 @@ export function GamePage() {
         
         // Xử lý side quest offer từ AI response
         if (response.sideQuestOffer) {
-          // Hiển thị modal để người chơi chọn nhận/từ chối
-          setPendingQuestOffer(response.sideQuestOffer);
-          setShowQuestOfferModal(true);
-          console.log('🎯 Side quest offer từ AI:', response.sideQuestOffer.title);
+          // Kiểm tra quest đã được xử lý chưa
+          const questId = response.sideQuestOffer.id || response.sideQuestOffer.title;
+          if (!processedQuests.has(questId)) {
+            // Hiển thị modal để người chơi chọn nhận/từ chối
+            setPendingQuestOffer(response.sideQuestOffer);
+            setShowQuestOfferModal(true);
+            console.log('🎯 Side quest offer từ AI:', response.sideQuestOffer.title);
+          } else {
+            console.log('⚠️ Quest đã được xử lý trước đó:', response.sideQuestOffer.title);
+          }
         }
         
         if (questAnalysis.completedObjectives.length > 0) {
@@ -339,6 +355,8 @@ export function GamePage() {
 
       // Update SCC context with AI message
       if (updatedSccContext) {
+        // Sync SCC turnCounter with game turnCounter before adding AI message
+        updatedSccContext.turnCounter = turnCounter;
         updatedSccContext = sccService.addTurn(updatedSccContext, aiMessage);
       }
 
@@ -436,11 +454,11 @@ export function GamePage() {
       sccService.saveSCCContext(updatedContext);
       
       // Save indexed summary for delta context system
-      const summaryTurn = Math.floor(updatedContext.turnCounter / 20) * 20; // Round down to nearest 20
-      sccService.saveIndexedSummary(summaryTurn, summaryResult.summary, summaryResult.sceneState);
+      // Lưu summary với turn hiện tại (turnCounter) thay vì làm tròn xuống 20
+      sccService.saveIndexedSummary(turnCounter, summaryResult.summary, summaryResult.sceneState);
       
       // Clean up old chat history to save memory
-      sccService.cleanupOldChatHistory(updatedContext.turnCounter);
+      sccService.cleanupOldChatHistory(turnCounter);
       
       console.log('✅ Summarization completed');
       
@@ -487,6 +505,7 @@ export function GamePage() {
       const scenarioData = localStorage.getItem('rp_scenario');
       const sccData = localStorage.getItem('rp_summary_indexed');
       const sceneState = localStorage.getItem('rp_scene_state');
+      const questSystemData = localStorage.getItem('quest_system');
       const savedTurnCounter = parseInt(localStorage.getItem('game_turn_counter') || '0', 10);
 
       if (!worldData || !characterData || !scenarioData) {
@@ -518,6 +537,7 @@ export function GamePage() {
         chat: chatHistory,
         turnCounter: savedTurnCounter,
         worldTime: gameState.worldTime || { day: 1, hour: 12, month: 1, year: 1, dayOfWeek: 1 },
+        questSystem: questSystemData ? JSON.parse(questSystemData) : undefined,
         ui: { showSummaryBanner: gameState.showSummaryBanner, lastSummaryTurn: gameState.lastSummaryTurn },
         contentFlags: gameState.contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true }
       };
@@ -551,6 +571,7 @@ export function GamePage() {
           updatedSaveGame.chat,
           updatedSaveGame.turnCounter,
           updatedSaveGame.worldTime,
+          updatedSaveGame.questSystem,
           updatedSaveGame.ui,
           updatedSaveGame.contentFlags
         );
@@ -602,6 +623,13 @@ export function GamePage() {
         
         if (newSideQuest) {
           console.log('✅ Side quest được chấp nhận:', newSideQuest.title);
+          
+          // Đánh dấu quest đã được xử lý
+          const questId = pendingQuestOffer.id || pendingQuestOffer.title;
+          setProcessedQuests(prev => new Set([...prev, questId]));
+          
+          // Tự động điền chat input
+          setCurrentMessage(`Tôi chấp nhận nhiệm vụ "${pendingQuestOffer.title}".`);
         }
       }
     } catch (error) {
@@ -614,7 +642,17 @@ export function GamePage() {
   };
 
   const handleDeclineQuestOffer = () => {
-    console.log('❌ Side quest bị từ chối:', pendingQuestOffer?.title);
+    if (!pendingQuestOffer) return;
+    
+    console.log('❌ Side quest bị từ chối:', pendingQuestOffer.title);
+    
+    // Đánh dấu quest đã được xử lý
+    const questId = pendingQuestOffer.id || pendingQuestOffer.title;
+    setProcessedQuests(prev => new Set([...prev, questId]));
+    
+    // Tự động điền chat input
+    setCurrentMessage(`Tôi từ chối nhiệm vụ "${pendingQuestOffer.title}".`);
+    
     setShowQuestOfferModal(false);
     setPendingQuestOffer(null);
   };
@@ -645,7 +683,7 @@ export function GamePage() {
       'world_gen_result',
       'currentCharacter',
       'scc_context',
-      'scc_summary_backup',
+      'rp_summary_backup', // Sửa từ scc_summary_backup thành rp_summary_backup
       'contentFlags', // Xóa contentFlags khi reset game
       'quest_system', // Xóa quest system khi reset game
       // World Builder keys
@@ -653,8 +691,7 @@ export function GamePage() {
       'currentWorldData',
       'currentWorldDescription',
       'worldTitle',
-      'rp_summary',
-      'rp_turn_counter'
+      'rp_summary'
     ];
     
     keysToRemove.forEach(key => {
@@ -699,6 +736,12 @@ export function GamePage() {
       localStorage.setItem('game_turn_counter', saveGame.turnCounter.toString());
       localStorage.setItem('world_gen_result', JSON.stringify(saveGame.world));
       localStorage.setItem('currentCharacter', JSON.stringify(saveGame.character));
+      
+      // Khôi phục quest system nếu có
+      if (saveGame.questSystem) {
+        localStorage.setItem('quest_system', JSON.stringify(saveGame.questSystem));
+        console.log('✅ Đã khôi phục quest system từ save file');
+      }
       
       // KHÔNG lưu contentFlags vào localStorage riêng biệt
       // ContentFlags chỉ được lưu trong SaveGame JSON
@@ -1044,6 +1087,7 @@ export function GamePage() {
           onQuestUpdate={completeObjective}
           onQuestAccept={acceptQuest}
           onQuestDecline={declineQuest}
+          onQuestDeclineActive={declineActiveQuest}
           onClaimReward={claimReward}
         />
       )}

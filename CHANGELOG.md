@@ -5,6 +5,32 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-01-02
+
+### 🎯 Added
+- **Tích hợp Quest System vào Save System**: Quest progress được lưu và khôi phục hoàn chỉnh
+- **SCC Journal**: Lịch sử tóm tắt SCC với UI có thể thu gọn trong InfoMenu
+- **Auto-fill Chat Input**: Tự động điền câu trả lời khi accept/decline quest
+- **Quest Decline System**: Cho phép từ chối side quest đã nhận với tracking đầy đủ
+
+### 🔧 Changed
+- **Đồng bộ Turn Counter**: SCC và game state sử dụng cùng một turn counter
+- **AI Quest Behavior**: AI không nhắc lại quest đã từ chối
+- **Quest UI**: Bỏ nút "Nhận Quest" ở QuestTracker, chỉ giữ "Từ chối"
+- **Migration System**: Hỗ trợ migrate quest system từ localStorage cũ
+
+### 🐛 Fixed
+- **Quest Duplication**: Ngăn chặn quest hiện lại sau khi đã accept/decline
+- **SCC Summary Keying**: Fix lỗi SCC summary không hiển thị trong journal
+- **Turn Counter Sync**: Đồng bộ hóa turn counter giữa các hệ thống
+- **Save Data Cleanup**: Fix `rp_summary_backup` không được xóa khi reset game
+
+### ✨ Improved
+- **Quest UX**: Cải thiện trải nghiệm người dùng với quest system
+- **Save System**: Tăng cường khả năng lưu/khôi phục dữ liệu
+- **Performance**: Tối ưu hóa hiệu suất và memory usage
+- **UI/UX**: Cải thiện giao diện và trải nghiệm tổng thể
+
 ## [1.3.0] - 2024-12-20
 
 ### 🎯 Added

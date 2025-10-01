@@ -230,13 +230,39 @@ export function useQuestSystem() {
     });
   }, [saveQuestSystem]);
 
-  // Decline quest
+  // Decline quest (chỉ cho quest chưa nhận)
   const declineQuest = useCallback((questId: string) => {
     setQuestSystem(prev => {
       const newSystem = { ...prev };
       
-      // Xóa quest khỏi side quests
+      // Xóa quest khỏi side quests (chỉ quest chưa nhận)
       newSystem.sideQuests = newSystem.sideQuests.filter(q => q.id !== questId);
+      
+      saveQuestSystem(newSystem);
+      return newSystem;
+    });
+  }, [saveQuestSystem]);
+
+  // Decline active quest (cho quest đã nhận)
+  const declineActiveQuest = useCallback((questId: string) => {
+    setQuestSystem(prev => {
+      const newSystem = { ...prev };
+      
+      // Tìm quest trong side quests
+      const questIndex = newSystem.sideQuests.findIndex(q => q.id === questId);
+      if (questIndex !== -1) {
+        // Chuyển status thành declined thay vì xóa
+        newSystem.sideQuests[questIndex] = {
+          ...newSystem.sideQuests[questIndex],
+          status: 'declined'
+        };
+        
+        // Thêm vào quest history với status declined
+        newSystem.questHistory.push({
+          ...newSystem.sideQuests[questIndex],
+          status: 'declined'
+        });
+      }
       
       saveQuestSystem(newSystem);
       return newSystem;
@@ -435,6 +461,13 @@ export function useQuestSystem() {
         return prev; // Không thay đổi state
       }
       
+      // Kiểm tra quest đã bị từ chối chưa (trong quest history)
+      const wasDeclined = newSystem.questHistory.some(q => q.id === quest.id && q.status === 'declined');
+      if (wasDeclined) {
+        console.warn(`⚠️ Quest ${quest.id} đã bị từ chối trước đó, không thể nhận lại`);
+        return prev; // Không thay đổi state
+      }
+      
       newSystem.sideQuests.push(quest);
       console.log(`✅ Added side quest: ${quest.title} (${quest.id})`);
       saveQuestSystem(newSystem);
@@ -504,6 +537,7 @@ export function useQuestSystem() {
     questSystem,
     acceptQuest,
     declineQuest,
+    declineActiveQuest,
     completeObjective,
     claimReward,
     addSideQuest,

@@ -66,6 +66,10 @@ export class MigrationService {
         ? JSON.parse(legacyData['rp_scene_state'])
         : {};
 
+      const questSystemData = legacyData['quest_system']
+        ? JSON.parse(legacyData['quest_system'])
+        : undefined;
+
       // Tạo SaveGame từ dữ liệu cũ
       const saveGame: SaveGame = {
         version: '1.0.0',
@@ -89,7 +93,8 @@ export class MigrationService {
           month: 1,
           year: 1,
           dayOfWeek: 1
-        }
+        },
+        questSystem: questSystemData
       };
 
       // Validate dữ liệu trước khi lưu
