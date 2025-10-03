@@ -29,17 +29,13 @@ export interface Character {
       charisma: number;
     };
   };
-  // Health và Mana
+  // Health
   health?: {
     current: number;
     max: number;
   };
-  mana?: {
-    current: number;
-    max: number;
-  };
   customStats?: { name: string; value: number }[];
-  proficiencies?: { name: string; level: number; energyCost?: number; description?: string }[];
+  proficiencies?: { name: string; level: number; description?: string }[];
   hpMax?: number;
   energyMax?: number;
 }
@@ -70,7 +66,6 @@ export interface CharacterStats {
   wisdom: number;
   charisma: number;
   health: number;
-  mana: number;
   experience: number;
 }
 
@@ -386,15 +381,6 @@ export interface ContentFlags {
   adult_enabled: boolean;
   adult_intensity: 'light' | 'fade' | 'direct_safe' | 'direct';
   first_time_setup?: boolean; // Để hiển thị age gate lần đầu
-}
-
-export interface ContinuityRules {
-  noMinors: boolean;           // Không nội dung trẻ vị thành niên
-  noNonConsensual: boolean;    // Không cưỡng bức/bạo lực tình dục
-  noIncest: boolean;           // Không loạn luân
-  noBestiality: boolean;       // Không thú tính
-  noIllegalContent: boolean;   // Không nội dung phi pháp
-  respectLocalLaws: boolean;   // Tôn trọng luật địa phương
 }
 
 export interface StyleGuidance {

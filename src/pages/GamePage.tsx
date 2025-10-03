@@ -1,25 +1,47 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw } from 'lucide-react';
-import { geminiService } from '../services/geminiService';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
 import { WorldTime, SCCContext, ChatMessage, ContentFlags } from '../types';
 import { buildContextForAI } from '../lib/context';
-import { SaveManager } from '../components/SaveManager/SaveManager';
-import { SavePopup } from '../components/SaveManager/SavePopup';
-import { InfoMenu } from '../components/InfoMenu/InfoMenu';
 import { SaveGame } from '../types/saveGame';
-import { localSaveService } from '../services/saveStorage/localSaveService';
-import { cloudSyncService } from '../services/saveStorage/cloudSyncService';
 import { useQuestSystem } from '../hooks/useQuestSystem';
-import { QuestOfferModal } from '../components/QuestOfferModal/QuestOfferModal';
-import { npcRelationshipService } from '../services/npcRelationshipService';
 import { DialogueRenderer } from '../components/DialogueRenderer';
 import { detectPlayerDialogue, enhanceDialogueForAI } from '../utils/dialogueProcessor';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
-import { UIToggle } from '../components/UIToggle';
-import { UIModeIndicator } from '../components/UIModeIndicator';
+
+// Lazy load các services lớn để giảm kích thước bundle chính
+let geminiService: any;
+let localSaveService: any;
+let cloudSyncService: any;
+let npcRelationshipService: any;
+
+// Dynamic imports cho services
+const loadServices = async () => {
+  if (!geminiService) {
+    const geminiModule = await import('../services/geminiService');
+    geminiService = geminiModule.geminiService;
+  }
+  if (!localSaveService) {
+    const localSaveModule = await import('../services/saveStorage/localSaveService');
+    localSaveService = localSaveModule.localSaveService;
+  }
+  if (!cloudSyncService) {
+    const cloudSyncModule = await import('../services/saveStorage/cloudSyncService');
+    cloudSyncService = cloudSyncModule.cloudSyncService;
+  }
+  if (!npcRelationshipService) {
+    const npcModule = await import('../services/npcRelationshipService');
+    npcRelationshipService = npcModule.npcRelationshipService;
+  }
+};
+
+// Lazy load các components lớn để giảm kích thước bundle chính
+const InfoMenu = lazy(() => import('../components/InfoMenu/InfoMenu').then(module => ({ default: module.InfoMenu })));
+const SaveManager = lazy(() => import('../components/SaveManager/SaveManager').then(module => ({ default: module.SaveManager })));
+const SavePopup = lazy(() => import('../components/SaveManager/SavePopup').then(module => ({ default: module.SavePopup })));
+const QuestOfferModal = lazy(() => import('../components/QuestOfferModal/QuestOfferModal').then(module => ({ default: module.QuestOfferModal })));
 
 interface GameState {
   scenarioSkeleton: any;
@@ -242,6 +264,9 @@ export function GamePage() {
       setIsLoading(true);
       setError(null);
 
+      // Load services trước khi sử dụng
+      await loadServices();
+
       // Load world and character data
       const worldData = localStorage.getItem('world_gen_result');
       const characterData = localStorage.getItem('currentCharacter');
@@ -343,6 +368,9 @@ export function GamePage() {
 
   const sendMessage = async () => {
     if (!currentMessage.trim() || isLoading || isAIProcessing || isNPCAnalysisProcessing) return;
+
+    // Load services trước khi sử dụng
+    await loadServices();
 
     // Detect and process dialogue in player input
     const dialogueInfo = detectPlayerDialogue(currentMessage.trim());
@@ -726,6 +754,9 @@ export function GamePage() {
     try {
       setSaveMessage(null);
 
+      // Load services trước khi sử dụng
+      await loadServices();
+
       // Get current game data
       const worldData = localStorage.getItem('world_gen_result');
       const characterData = localStorage.getItem('currentCharacter');
@@ -888,7 +919,10 @@ export function GamePage() {
     setPendingQuestOffer(null);
   };
 
-  const resetGameData = () => {
+  const resetGameData = async () => {
+    // Load services trước khi sử dụng
+    await loadServices();
+    
     // Reset game state
     setChatHistory([]);
     setTurnCounter(0);
@@ -942,8 +976,11 @@ export function GamePage() {
 
 
   // Xử lý load game từ SaveManager
-  const handleLoadGame = (saveGame: SaveGame) => {
+  const handleLoadGame = async (saveGame: SaveGame) => {
     try {
+      // Load services trước khi sử dụng
+      await loadServices();
+      
       // Clear existing NPC data before loading save
       npcRelationshipService.clearAllData();
       
@@ -1233,8 +1270,9 @@ export function GamePage() {
         {/* Icon-only Header Menu */}
         <div className="glass-effect border-b border-gray-700/50 p-2 mobile-padding">
           <div className="flex items-center justify-between">
-            {/* World Time & Turn Counter Display */}
-            <div className="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-300 mobile-text">
+            {/* World Time & Turn Counter Display - Only on desktop */}
+            {!shouldUseMobileLayout() && (
+              <div className="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-300 mobile-text">
               {/* World Time */}
               {gameState.worldTime && (
                 <div className="flex items-center space-x-2">
@@ -1297,26 +1335,14 @@ export function GamePage() {
                   )}
                 </div>
               )}
-            </div>
-            
-            {/* UI Mode Indicator - Only show on desktop */}
-            {!shouldUseMobileLayout() && (
-              <div className="flex items-center space-x-2">
-                <UIModeIndicator />
-                <span className="text-gray-500">•</span>
               </div>
             )}
+            
             
             {/* Action Buttons */}
             <div className={`flex items-center space-x-1 sm:space-x-2 transition-all duration-300 ${
               isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
-            }`}>
-              {/* UI Toggle - Only show on mobile */}
-              {shouldUseMobileLayout() && (
-                <div className="mr-2">
-                  <UIToggle />
-                </div>
-              )}
+            } ${shouldUseMobileLayout() ? 'flex-1 justify-start' : ''}`}>
               {/* Info Menu Button */}
               <button
                 onClick={() => {
@@ -1504,7 +1530,7 @@ export function GamePage() {
             </div>
           )}
           
-          <div className={`${shouldUseMobileLayout() ? 'flex-col space-y-2' : 'flex space-x-2 sm:space-x-3'} transition-all duration-300 ${
+          <div className={`${shouldUseMobileLayout() ? 'flex space-x-2' : 'flex space-x-2 sm:space-x-3'} transition-all duration-300 ${
             isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
           }`}>
             <textarea
@@ -1532,7 +1558,7 @@ export function GamePage() {
             <button
               onClick={sendMessage}
               disabled={!currentMessage.trim() || isLoading || isAIProcessing || isNPCAnalysisProcessing}
-              className={`${shouldUseMobileLayout() ? 'w-full px-4 py-3' : 'px-3 sm:px-4 py-3'} border rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mobile-button touch-feedback ${
+              className={`px-3 sm:px-4 py-3 border rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${shouldUseMobileLayout() ? 'min-h-[48px] min-w-[48px]' : 'mobile-button'} touch-feedback ${
                 isAIProcessing || isNPCAnalysisProcessing
                   ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300'
                   : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30'
@@ -1548,56 +1574,71 @@ export function GamePage() {
       </div>
 
       {/* Save Popup */}
-      <SavePopup
-        isOpen={showSavePopup}
-        onClose={() => setShowSavePopup(false)}
-        onSaveGame={handleSaveGame}
-      />
+      <Suspense fallback={null}>
+        <SavePopup
+          isOpen={showSavePopup}
+          onClose={() => setShowSavePopup(false)}
+          onSaveGame={handleSaveGame}
+        />
+      </Suspense>
 
       {/* Save Manager */}
-      <SaveManager
-        isOpen={showSaveManager}
-        onClose={() => setShowSaveManager(false)}
-        onLoadGame={handleLoadGame}
-        currentGameData={getCurrentGameData()}
-      />
+      <Suspense fallback={null}>
+        <SaveManager
+          isOpen={showSaveManager}
+          onClose={() => setShowSaveManager(false)}
+          onLoadGame={handleLoadGame}
+          currentGameData={getCurrentGameData()}
+        />
+      </Suspense>
 
       {/* Info Menu - Only render when needed */}
       {(showInfoMenu || isInfoMenuPinned) && (
-        <InfoMenu
-          key={npcRelationshipsUpdated} // Force re-render when NPC relationships update
-          isOpen={showInfoMenu || isInfoMenuPinned}
-          onClose={() => setShowInfoMenu(false)}
-          worldData={infoMenuData.worldData}
-          characterData={infoMenuData.characterData}
-          worldTime={gameState.worldTime}
-          isPinned={isInfoMenuPinned}
-          onTogglePin={() => setIsInfoMenuPinned(!isInfoMenuPinned)}
-          questSystem={questSystem}
-          onQuestUpdate={completeObjective}
-          onQuestAccept={acceptQuest}
-          onQuestDecline={declineQuest}
-          onQuestDeclineActive={declineActiveQuest}
-          onClaimReward={claimReward}
-          onRemoveDeclinedQuests={removeDeclinedQuests}
-          onCreateFactionQuest={createFactionQuestFromAI}
-          isAIProcessing={isAIProcessing}
-          isNPCAnalysisProcessing={isNPCAnalysisProcessing}
-          contentFlags={gameState.contentFlags || undefined}
-        />
+        <Suspense fallback={
+          <div className="fixed top-0 right-0 h-screen bg-black/95 backdrop-blur-sm border-l border-gray-700/50 z-50 flex items-center justify-center w-96">
+            <div className="glass-effect p-8 rounded-2xl text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-white text-sm">Đang tải menu...</p>
+            </div>
+          </div>
+        }>
+          <InfoMenu
+            key={npcRelationshipsUpdated} // Force re-render when NPC relationships update
+            isOpen={showInfoMenu || isInfoMenuPinned}
+            onClose={() => setShowInfoMenu(false)}
+            worldData={infoMenuData.worldData}
+            characterData={infoMenuData.characterData}
+            worldTime={gameState.worldTime}
+            isPinned={isInfoMenuPinned}
+            onTogglePin={() => setIsInfoMenuPinned(!isInfoMenuPinned)}
+            questSystem={questSystem}
+            onQuestUpdate={completeObjective}
+            onQuestAccept={acceptQuest}
+            onQuestDecline={declineQuest}
+            onQuestDeclineActive={declineActiveQuest}
+            onClaimReward={claimReward}
+            onRemoveDeclinedQuests={removeDeclinedQuests}
+            onCreateFactionQuest={createFactionQuestFromAI}
+            isAIProcessing={isAIProcessing}
+            isNPCAnalysisProcessing={isNPCAnalysisProcessing}
+            contentFlags={gameState.contentFlags || undefined}
+          />
+        </Suspense>
       )}
 
       {/* Quest Offer Modal */}
-      <QuestOfferModal
-        isOpen={showQuestOfferModal}
-        onClose={() => {
-          setShowQuestOfferModal(false);
-          setPendingQuestOffer(null);
-        }}
-        onAccept={handleAcceptQuestOffer}
-        onDecline={handleDeclineQuestOffer}
-        questOffer={pendingQuestOffer}
-      />
+      <Suspense fallback={null}>
+        <QuestOfferModal
+          isOpen={showQuestOfferModal}
+          onClose={() => {
+            setShowQuestOfferModal(false);
+            setPendingQuestOffer(null);
+          }}
+          onAccept={handleAcceptQuestOffer}
+          onDecline={handleDeclineQuestOffer}
+          questOffer={pendingQuestOffer}
+        />
+      </Suspense>
     </div>
   );
 }

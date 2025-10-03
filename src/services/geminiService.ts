@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { multiApiKeyService, ApiKeyInfo, ApiKeyStats } from './multiApiKeyService';
 import { SCCSummary, SCCState, ContentFlags } from '../types';
 import { npcRelationshipService } from './npcRelationshipService';
+import { nameGenerationService } from './nameGenerationService';
 
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
@@ -706,7 +707,7 @@ SCHEMA:
   "backstory": "",
   "traits": ["", ""],
   "skills": [
-    {"name": "", "level": 1, "energyCost": 5, "description": ""}
+    {"name": "", "level": 1, "description": ""}
   ],
   "coreStats": {
     "str": {"score": 10, "mod": 0, "reason": ""},
@@ -733,7 +734,7 @@ Yêu cầu bổ sung:
 - Traits: 3–5 đặc điểm tính cách của con người.
 - Skills: chính xác 3 kỹ năng phù hợp với thế giới, mô tả và hệ thống sức mạnh.
 - Description: mô tả ngắn gọn 1-2 câu về cách sử dụng và hiệu quả của kỹ năng.
-- EnergyCost: tính dựa trên level skill (level 1: 5-10, level 2: 10-15, level 3: 15-25, level 4: 25-35, level 5: 35-50).
+- Tất cả skills đều level 1.
 - Tên nhân vật: nếu không có, tạo tên phù hợp với thể loại và bối cảnh thế giới.
 - Backstory: nếu thiếu, tạo câu chuyện phù hợp với thế giới và xung đột.
 - Không xuất gì ngoài JSON.`;
@@ -765,7 +766,53 @@ Yêu cầu bổ sung:
         customStats: []
       };
 
-      return this.parseJsonResponse(responseText, fallbackData);
+      const result = this.parseJsonResponse(responseText, fallbackData);
+      
+      // Nếu không có tên hoặc tên rỗng, tạo tên phù hợp với thế giới
+      if (!result.name || result.name.trim() === '') {
+        try {
+          // Xác định thể loại thế giới để chọn văn hóa phù hợp
+          let culture = 'western';
+          if (worldContext) {
+            const genres = Array.isArray(worldContext.genres) ? worldContext.genres : [worldContext.genres];
+            const genreStr = genres.join(' ').toLowerCase();
+            
+            if (genreStr.includes('vietnam') || genreStr.includes('việt')) {
+              culture = 'vietnamese';
+            } else if (genreStr.includes('japan') || genreStr.includes('nhật')) {
+              culture = 'japanese';
+            } else if (genreStr.includes('china') || genreStr.includes('trung')) {
+              culture = 'chinese';
+            } else if (genreStr.includes('korea') || genreStr.includes('hàn')) {
+              culture = 'korean';
+            } else if (genreStr.includes('fantasy') || genreStr.includes('fantasy')) {
+              culture = 'fantasy';
+            } else if (genreStr.includes('sci-fi') || genreStr.includes('khoa học')) {
+              culture = 'sci-fi';
+            } else if (genreStr.includes('medieval') || genreStr.includes('trung cổ')) {
+              culture = 'medieval';
+            }
+          }
+          
+          // Tạo tên phù hợp
+          const generatedName = nameGenerationService.generateName({
+            culture: culture as any,
+            gender: result.gender === 'Nam' ? 'male' : result.gender === 'Nữ' ? 'female' : 'any',
+            type: 'full',
+            length: 'medium',
+            style: 'traditional'
+          });
+          
+          result.name = generatedName.name;
+          console.log(`🎲 Tạo tên tự động: ${generatedName.name} (${generatedName.culture})`);
+        } catch (nameError) {
+          console.error('Lỗi tạo tên tự động:', nameError);
+          // Fallback tên mặc định
+          result.name = 'Nhân vật chưa đặt tên';
+        }
+      }
+      
+      return result;
     } catch (error) {
       console.error('Lỗi khi phân tích nhân vật:', error);
       throw new Error('Không thể phân tích nhân vật. Vui lòng thử lại.');
@@ -817,7 +864,7 @@ Trả về JSON theo format:
     {"name": "Tên chỉ số", "value": 10-20}
   ],
   "proficiencies": [
-    {"name": "Tên kỹ năng", "level": 1-10, "energyCost": 5-50, "description": "Mô tả kỹ năng"}
+    {"name": "Tên kỹ năng", "level": 1, "description": "Mô tả kỹ năng"}
   ]
 }
 
@@ -878,16 +925,15 @@ Tiểu sử: ${characterData.backstory || 'N/A'}
 JSON:
 {
   "skills": [
-    {"name": "", "level": 1-5, "energyCost": 5-50, "description": ""},
-    {"name": "", "level": 1-5, "energyCost": 5-50, "description": ""},
-    {"name": "", "level": 1-5, "energyCost": 5-50, "description": ""}
+    {"name": "", "level": 1, "description": ""},
+    {"name": "", "level": 1, "description": ""},
+    {"name": "", "level": 1, "description": ""}
   ]
 }
 
 Rules:
 - Chính xác 3 skills
-- Level random 1-5
-- EnergyCost: level 1: 5-10, level 2: 10-15, level 3: 15-25, level 4: 25-35, level 5: 35-50
+- Tất cả skills đều level 1
 - Skills phù hợp với thế giới và nhân vật
 - Description: mô tả ngắn gọn 1-2 câu về cách sử dụng và hiệu quả
 - Chỉ xuất JSON.`;
@@ -898,9 +944,9 @@ Rules:
       // Parse JSON với fallback
       const fallbackData = {
         skills: [
-          { name: 'Kỹ năng cơ bản', level: 1, energyCost: 5, description: 'Kỹ năng cơ bản có thể sử dụng trong nhiều tình huống' },
-          { name: 'Kỹ năng trung bình', level: 2, energyCost: 12, description: 'Kỹ năng trung bình với hiệu quả tốt hơn' },
-          { name: 'Kỹ năng nâng cao', level: 3, energyCost: 20, description: 'Kỹ năng nâng cao với sức mạnh đáng kể' }
+          { name: 'Kỹ năng cơ bản', level: 1, description: 'Kỹ năng cơ bản có thể sử dụng trong nhiều tình huống' },
+          { name: 'Kỹ năng trung bình', level: 1, description: 'Kỹ năng trung bình với hiệu quả tốt hơn' },
+          { name: 'Kỹ năng nâng cao', level: 1, description: 'Kỹ năng nâng cao với sức mạnh đáng kể' }
         ]
       };
 
@@ -1837,6 +1883,125 @@ QUAN TRỌNG VỀ NPCs:
       };
 
       const result = this.parseJsonResponse(responseText, fallbackResult);
+
+      // Cải thiện tên NPC trong sceneState nếu có
+      if (result.sceneState && result.sceneState.npcs && Array.isArray(result.sceneState.npcs)) {
+        try {
+          // Parse world context để xác định văn hóa
+          let worldContext: any = null;
+          try {
+            worldContext = JSON.parse(worldJson);
+          } catch (e) {
+            console.warn('Không thể parse world context:', e);
+          }
+
+          // Xác định văn hóa dựa trên thế giới
+          let culture = 'western';
+          if (worldContext) {
+            const genres = Array.isArray(worldContext.genres) ? worldContext.genres : [worldContext.genres];
+            const genreStr = genres.join(' ').toLowerCase();
+            
+            if (genreStr.includes('vietnam') || genreStr.includes('việt')) {
+              culture = 'vietnamese';
+            } else if (genreStr.includes('japan') || genreStr.includes('nhật')) {
+              culture = 'japanese';
+            } else if (genreStr.includes('china') || genreStr.includes('trung')) {
+              culture = 'chinese';
+            } else if (genreStr.includes('korea') || genreStr.includes('hàn')) {
+              culture = 'korean';
+            } else if (genreStr.includes('fantasy') || genreStr.includes('fantasy')) {
+              culture = 'fantasy';
+            } else if (genreStr.includes('sci-fi') || genreStr.includes('khoa học')) {
+              culture = 'sci-fi';
+            } else if (genreStr.includes('medieval') || genreStr.includes('trung cổ')) {
+              culture = 'medieval';
+            }
+          }
+
+          // Parse character context để lấy tên nhân vật chính
+          let characterName = '';
+          try {
+            const characterContext = JSON.parse(characterJson);
+            characterName = characterContext.name || characterContext.characterName || '';
+          } catch (e) {
+            console.warn('Không thể parse character context:', e);
+          }
+
+          // Cải thiện tên NPC
+          result.sceneState.npcs = result.sceneState.npcs.map((npc: any) => {
+            // Nếu NPC không có tên hoặc tên quá chung chung
+            if (!npc.name || 
+                npc.name.toLowerCase().includes('npc') || 
+                npc.name.toLowerCase().includes('người') ||
+                npc.name.toLowerCase().includes('nhân vật') ||
+                npc.name === 'Unknown' ||
+                npc.name === 'N/A' ||
+                npc.name.trim() === '') {
+              
+              try {
+                // Xác định giới tính dựa trên mô tả hoặc tags
+                let gender: 'male' | 'female' | 'any' = 'any';
+                if (npc.description) {
+                  const desc = npc.description.toLowerCase();
+                  if (desc.includes('nam') || desc.includes('anh') || desc.includes('ông') || desc.includes('chàng')) {
+                    gender = 'male';
+                  } else if (desc.includes('nữ') || desc.includes('chị') || desc.includes('cô') || desc.includes('bà')) {
+                    gender = 'female';
+                  }
+                }
+
+                // Xác định vai trò dựa trên tags hoặc mô tả
+                let role = 'thường dân';
+                if (npc.tags && Array.isArray(npc.tags)) {
+                  const tagStr = npc.tags.join(' ').toLowerCase();
+                  if (tagStr.includes('thương gia') || tagStr.includes('merchant')) {
+                    role = 'thương gia';
+                  } else if (tagStr.includes('quý tộc') || tagStr.includes('noble')) {
+                    role = 'quý tộc';
+                  } else if (tagStr.includes('chiến binh') || tagStr.includes('warrior')) {
+                    role = 'chiến binh';
+                  } else if (tagStr.includes('pháp sư') || tagStr.includes('mage')) {
+                    role = 'pháp sư';
+                  } else if (tagStr.includes('thầy thuốc') || tagStr.includes('healer')) {
+                    role = 'thầy thuốc';
+                  }
+                }
+
+                // Tạo tên mới
+                const generatedName = nameGenerationService.generateNPCName(role, npc.faction, gender);
+                
+                // Đảm bảo tên không trùng với nhân vật chính
+                let finalName = generatedName.name;
+                if (characterName && finalName.toLowerCase().includes(characterName.toLowerCase())) {
+                  // Tạo tên khác nếu trùng
+                  const alternativeName = nameGenerationService.generateName({
+                    culture: culture as any,
+                    gender,
+                    type: 'full',
+                    length: 'medium'
+                  });
+                  finalName = alternativeName.name;
+                }
+
+                console.log(`🎲 Cải thiện tên NPC: "${npc.name || 'Không có tên'}" → "${finalName}" (${generatedName.culture})`);
+                
+                return {
+                  ...npc,
+                  name: finalName
+                };
+              } catch (nameError) {
+                console.error('Lỗi tạo tên NPC:', nameError);
+                return npc; // Giữ nguyên nếu có lỗi
+              }
+            }
+            
+            return npc; // Giữ nguyên nếu tên đã tốt
+          });
+        } catch (error) {
+          console.error('Lỗi cải thiện tên NPC:', error);
+          // Tiếp tục với kết quả gốc nếu có lỗi
+        }
+      }
 
       return {
         narrative: result.narrative || fallbackResult.narrative,

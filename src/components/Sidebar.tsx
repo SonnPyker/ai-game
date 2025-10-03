@@ -93,15 +93,13 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
             </div>
           </div>
 
-          {/* UI Toggle - Only show on mobile */}
-          {shouldUseMobileLayout() && (
-            <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-300 font-medium">Giao diện</span>
-              </div>
-              <UIToggle />
+          {/* UI Toggle - Always visible */}
+          <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-300 font-medium">Giao diện</span>
             </div>
-          )}
+            <UIToggle />
+          </div>
         
           <ul className="space-y-2 flex-1">
             {menuItems.map((item) => {

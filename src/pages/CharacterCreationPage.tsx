@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Character } from '../types';
 import { geminiService } from '../services/geminiService';
-import { Sparkles, Download, RotateCcw, Check, Globe, Upload } from 'lucide-react';
+import { nameGenerationService, NameGenerationOptions, GeneratedName } from '../services/nameGenerationService';
+import { Sparkles, Download, RotateCcw, Check, Globe, Upload, Shuffle, Star } from 'lucide-react';
 import { HelpTooltip } from '../components/HelpTooltip';
 
 interface CharacterData {
@@ -33,12 +34,8 @@ interface CharacterData {
     current: number;
     max: number;
   };
-  mana?: {
-    current: number;
-    max: number;
-  };
   customStats: { name: string; value: number }[];
-  proficiencies: { name: string; level: number; energyCost?: number; description?: string }[];
+  proficiencies: { name: string; level: number; description?: string }[];
 }
 
 export function CharacterCreationPage() {
@@ -46,8 +43,18 @@ export function CharacterCreationPage() {
   const [currentStep, setCurrentStep] = useState<'description' | 'customize'>('description');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRerolling, setIsRerolling] = useState(false);
+  const [isGeneratingName, setIsGeneratingName] = useState(false);
   const [characterDescription, setCharacterDescription] = useState('');
   const [worldDescription, setWorldDescription] = useState('');
+  const [nameGenerationOptions, setNameGenerationOptions] = useState<NameGenerationOptions>({
+    gender: 'any',
+    culture: 'any',
+    type: 'full',
+    length: 'medium',
+    style: 'traditional'
+  });
+  const [generatedNames, setGeneratedNames] = useState<GeneratedName[]>([]);
+  const [showNameGenerator, setShowNameGenerator] = useState(false);
   const [characterData, setCharacterData] = useState<CharacterData>({
     name: '',
     gender: 'male',
@@ -72,12 +79,8 @@ export function CharacterCreationPage() {
       }
     },
     health: {
-      current: 200, // Sẽ được tính lại dựa trên constitution
-      max: 200
-    },
-    mana: {
-      current: 150, // Sẽ được tính lại dựa trên wisdom
-      max: 150
+      current: 20, // Sẽ được tính lại dựa trên constitution
+      max: 20
     },
     customStats: [],
     proficiencies: []
@@ -91,11 +94,18 @@ export function CharacterCreationPage() {
     }
   }, []);
 
+  // Cập nhật tùy chọn tạo tên khi giới tính thay đổi
+  useEffect(() => {
+    setNameGenerationOptions(prev => ({
+      ...prev,
+      gender: characterData.gender === 'other' ? 'any' : characterData.gender
+    }));
+  }, [characterData.gender]);
 
-  // Cập nhật health và mana khi core stats thay đổi
-  const updateHealthAndMana = (newCoreStats: typeof characterData.coreStats) => {
-    const maxHealth = (Math.floor((newCoreStats.constitution - 10) / 2) + 20) * 10;
-    const maxMana = (Math.floor((newCoreStats.wisdom - 10) / 2) + 15) * 10;
+
+  // Cập nhật health khi core stats thay đổi
+  const updateHealth = (newCoreStats: typeof characterData.coreStats) => {
+    const maxHealth = Math.floor((newCoreStats.constitution - 10) / 2) + 20;
     
     setCharacterData(prev => ({
       ...prev,
@@ -103,12 +113,37 @@ export function CharacterCreationPage() {
       health: {
         current: Math.min(prev.health?.current || maxHealth, maxHealth),
         max: maxHealth
-      },
-      mana: {
-        current: Math.min(prev.mana?.current || maxMana, maxMana),
-        max: maxMana
       }
     }));
+  };
+
+  // Tạo tên ngẫu nhiên
+  const handleGenerateNames = async () => {
+    setIsGeneratingName(true);
+    try {
+      const names = nameGenerationService.generateMultipleNames(6, nameGenerationOptions);
+      setGeneratedNames(names);
+    } catch (error) {
+      console.error('Lỗi tạo tên:', error);
+    } finally {
+      setIsGeneratingName(false);
+    }
+  };
+
+  // Chọn tên từ danh sách đã tạo
+  const handleSelectName = (name: string) => {
+    setCharacterData(prev => ({ ...prev, name }));
+    setShowNameGenerator(false);
+  };
+
+  // Tạo tên nhanh
+  const handleQuickGenerateName = () => {
+    try {
+      const name = nameGenerationService.generateName(nameGenerationOptions);
+      setCharacterData(prev => ({ ...prev, name: name.name }));
+    } catch (error) {
+      console.error('Lỗi tạo tên nhanh:', error);
+    }
   };
 
   const handleAnalyzeDescription = async () => {
@@ -150,18 +185,13 @@ export function CharacterCreationPage() {
           }
         },
         health: {
-          current: (Math.floor(((analysis.coreStats?.con?.score || 10) - 10) / 2) + 20) * 10,
-          max: (Math.floor(((analysis.coreStats?.con?.score || 10) - 10) / 2) + 20) * 10
-        },
-        mana: {
-          current: (Math.floor(((analysis.coreStats?.wis?.score || 10) - 10) / 2) + 15) * 10,
-          max: (Math.floor(((analysis.coreStats?.wis?.score || 10) - 10) / 2) + 15) * 10
+          current: Math.floor(((analysis.coreStats?.con?.score || 10) - 10) / 2) + 20,
+          max: Math.floor(((analysis.coreStats?.con?.score || 10) - 10) / 2) + 20
         },
         customStats: [],
         proficiencies: analysis.skills?.map((skill: any) => ({
           name: skill.name || '',
           level: skill.level || 1,
-          energyCost: calculateManaCost(skill.level || 1), // Use calculated mana cost
           description: skill.description || ''
         })) || []
       };
@@ -221,7 +251,6 @@ export function CharacterCreationPage() {
       proficiencies: [...prev.proficiencies, { 
         name: '', 
         level: 1, 
-        energyCost: calculateManaCost(1), // Use calculated mana cost for level 1
         description: '' 
       }]
     }));
@@ -234,45 +263,13 @@ export function CharacterCreationPage() {
     }));
   };
 
-  // Function to calculate mana cost based on skill level (default for player-created skills)
-  const calculateManaCost = (level: number): number => {
-    const manaCosts = {
-      1: 7,
-      2: 13,
-      3: 20,
-      4: 30,
-      5: 43
-    };
-    return manaCosts[level as keyof typeof manaCosts] || 7;
-  };
 
-  // Function to calculate random mana cost for rerolled skills
-  const calculateRandomManaCost = (level: number): number => {
-    const manaRanges = {
-      1: { min: 5, max: 10 },   // Level 1: 5-10 mana
-      2: { min: 10, max: 16 },  // Level 2: 10-16 mana
-      3: { min: 15, max: 25 },  // Level 3: 15-25 mana
-      4: { min: 25, max: 35 },  // Level 4: 25-35 mana
-      5: { min: 35, max: 50 }   // Level 5: 35-50 mana
-    };
-    
-    const range = manaRanges[level as keyof typeof manaRanges] || manaRanges[1];
-    return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-  };
-
-  const handleUpdateProficiency = (index: number, field: 'name' | 'level' | 'energyCost' | 'description', value: string | number) => {
+  const handleUpdateProficiency = (index: number, field: 'name' | 'level' | 'description', value: string | number) => {
     setCharacterData(prev => ({
       ...prev,
       proficiencies: prev.proficiencies.map((prof, i) => {
         if (i === index) {
-          const updatedProf = { ...prof, [field]: value };
-          
-          // Auto-calculate mana cost when level changes
-          if (field === 'level' && typeof value === 'number') {
-            updatedProf.energyCost = calculateManaCost(value);
-          }
-          
-          return updatedProf;
+          return { ...prof, [field]: value };
         }
         return prof;
       })
@@ -297,8 +294,7 @@ export function CharacterCreationPage() {
       }
     };
     
-    const maxHealth = (Math.floor((defaultCoreStats.constitution - 10) / 2) + 20) * 10;
-    const maxMana = (Math.floor((defaultCoreStats.wisdom - 10) / 2) + 15) * 10;
+    const maxHealth = Math.floor((defaultCoreStats.constitution - 10) / 2) + 20;
     
     setCharacterData({
       name: '',
@@ -311,10 +307,6 @@ export function CharacterCreationPage() {
       health: {
         current: maxHealth,
         max: maxHealth
-      },
-      mana: {
-        current: maxMana,
-        max: maxMana
       },
       customStats: [],
       proficiencies: []
@@ -351,7 +343,6 @@ export function CharacterCreationPage() {
       personalityTraits: characterData.personalityTraits,
       coreStats: characterData.coreStats,
       health: characterData.health,
-      mana: characterData.mana,
       customStats: [],
       proficiencies: characterData.proficiencies
     };
@@ -444,7 +435,6 @@ export function CharacterCreationPage() {
         proficiencies: suggestions.proficiencies?.map((prof: any) => ({
           name: prof.name || '',
           level: prof.level || 1,
-          energyCost: calculateManaCost(prof.level || 1), // Use calculated mana cost
           description: prof.description || ''
         })) || prev.proficiencies
       }));
@@ -470,7 +460,6 @@ export function CharacterCreationPage() {
         proficiencies: newSkills.skills?.map((skill: any) => ({
           name: skill.name || '',
           level: skill.level || 1,
-          energyCost: calculateRandomManaCost(skill.level || 1), // Use random mana cost for rerolled skills
           description: skill.description || ''
         })) || []
       }));
@@ -632,12 +621,31 @@ export function CharacterCreationPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Tên</label>
-                <input
-                  type="text"
-                  value={characterData.name}
-                  onChange={(e) => setCharacterData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={characterData.name}
+                    onChange={(e) => setCharacterData(prev => ({ ...prev, name: e.target.value }))}
+                    className="flex-1 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
+                    placeholder="Nhập tên nhân vật..."
+                  />
+                  <button
+                    type="button"
+                    onClick={handleQuickGenerateName}
+                    className="px-3 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors duration-200 flex items-center gap-1"
+                    title="Tạo tên ngẫu nhiên"
+                  >
+                    <Shuffle className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowNameGenerator(!showNameGenerator)}
+                    className="px-3 py-3 bg-secondary-500 hover:bg-secondary-600 text-white rounded-lg transition-colors duration-200 flex items-center gap-1"
+                    title="Mở trình tạo tên"
+                  >
+                    <Star className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               
               <div>
@@ -654,6 +662,135 @@ export function CharacterCreationPage() {
               </div>
             </div>
           </div>
+
+          {/* Name Generator */}
+          {showNameGenerator && (
+            <div className="glass-effect p-6 rounded-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold-vietnamese text-white uppercase">TRÌNH TẠO TÊN</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowNameGenerator(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Name Generation Options */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Văn hóa</label>
+                  <select
+                    value={nameGenerationOptions.culture}
+                    onChange={(e) => setNameGenerationOptions(prev => ({ ...prev, culture: e.target.value as any }))}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-primary-400 focus:outline-none"
+                  >
+                    <option value="any">Bất kỳ</option>
+                    <option value="vietnamese">Việt Nam</option>
+                    <option value="japanese">Nhật Bản</option>
+                    <option value="chinese">Trung Quốc</option>
+                    <option value="korean">Hàn Quốc</option>
+                    <option value="western">Phương Tây</option>
+                    <option value="fantasy">Fantasy</option>
+                    <option value="sci-fi">Sci-Fi</option>
+                    <option value="medieval">Trung Cổ</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Giới tính</label>
+                  <select
+                    value={nameGenerationOptions.gender}
+                    onChange={(e) => setNameGenerationOptions(prev => ({ ...prev, gender: e.target.value as any }))}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-primary-400 focus:outline-none"
+                  >
+                    <option value="any">Bất kỳ</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                    <option value="neutral">Trung tính</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Loại tên</label>
+                  <select
+                    value={nameGenerationOptions.type}
+                    onChange={(e) => setNameGenerationOptions(prev => ({ ...prev, type: e.target.value as any }))}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-primary-400 focus:outline-none"
+                  >
+                    <option value="full">Họ và tên</option>
+                    <option value="first">Tên</option>
+                    <option value="last">Họ</option>
+                    <option value="nickname">Biệt danh</option>
+                    <option value="title">Danh hiệu</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Độ dài</label>
+                  <select
+                    value={nameGenerationOptions.length}
+                    onChange={(e) => setNameGenerationOptions(prev => ({ ...prev, length: e.target.value as any }))}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-primary-400 focus:outline-none"
+                  >
+                    <option value="short">Ngắn</option>
+                    <option value="medium">Trung bình</option>
+                    <option value="long">Dài</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Generate Button */}
+              <div className="flex justify-center mb-6">
+                <button
+                  type="button"
+                  onClick={handleGenerateNames}
+                  disabled={isGeneratingName}
+                  className="px-6 py-3 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-500 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
+                >
+                  {isGeneratingName ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Đang tạo...
+                    </>
+                  ) : (
+                    <>
+                      <Shuffle className="w-4 h-4" />
+                      Tạo 6 tên ngẫu nhiên
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Generated Names */}
+              {generatedNames.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-medium text-white mb-3">Tên đã tạo:</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {generatedNames.map((nameData, index) => (
+                      <div
+                        key={index}
+                        className="p-3 bg-white/5 border border-white/20 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                        onClick={() => handleSelectName(nameData.name)}
+                      >
+                        <div className="font-medium text-white mb-1">{nameData.name}</div>
+                        <div className="text-sm text-gray-400">
+                          {nameData.culture} • {nameData.gender} • {nameData.type}
+                        </div>
+                        {nameData.meaning && (
+                          <div className="text-xs text-gray-500 mt-1">{nameData.meaning}</div>
+                        )}
+                        {nameData.pronunciation && (
+                          <div className="text-xs text-gray-500">Phát âm: {nameData.pronunciation}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Appearance */}
           <div className="glass-effect p-6 rounded-2xl">
@@ -776,7 +913,7 @@ export function CharacterCreationPage() {
                              [stat]: Math.floor((newValue - 10) / 2)
                            }
                          };
-                         updateHealthAndMana(newCoreStats);
+                         updateHealth(newCoreStats);
                        }}
                        className="w-full px-2 py-1 bg-white/10 border-2 border-white/40 rounded text-white focus:border-primary-400 focus:outline-none text-center text-sm"
                      />
@@ -785,17 +922,11 @@ export function CharacterCreationPage() {
                })}
              </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 text-sm">
+            <div className="grid grid-cols-1 gap-3 lg:gap-4 text-sm">
               <div className="bg-white/5 p-3 rounded-lg">
                 <div className="text-gray-300">Máu (Hiện tại/Tối đa)</div>
                 <div className="text-white font-bold-vietnamese">
                   {characterData.health?.current || 0}/{characterData.health?.max || 0}
-                </div>
-              </div>
-              <div className="bg-white/5 p-3 rounded-lg">
-                <div className="text-gray-300">Mana (Hiện tại/Tối đa)</div>
-                <div className="text-white font-bold-vietnamese">
-                  {characterData.mana?.current || 0}/{characterData.mana?.max || 0}
                 </div>
               </div>
             </div>
@@ -807,11 +938,8 @@ export function CharacterCreationPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-xl font-bold-vietnamese text-white uppercase">THÀNH THẠO (TỐI ĐA 3)</h3>
-                <p className="text-xs text-gray-400 mt-1">
-                  Năng lượng mặc định: Level 1=7, Level 2=13, Level 3=20, Level 4=30, Level 5=43
-                </p>
                 <p className="text-xs text-blue-400 mt-1">
-                  Reroll sẽ tạo mana ngẫu nhiên trong khoảng cho phép
+                  Reroll sẽ tạo kỹ năng ngẫu nhiên level 1
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
@@ -819,7 +947,7 @@ export function CharacterCreationPage() {
                   onClick={handleRerollSkills}
                   disabled={isRerolling}
                   className="px-3 py-1 bg-yellow-500/20 border-2 border-yellow-500/70 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-                  title="Tạo 3 kỹ năng ngẫu nhiên với mana cost ngẫu nhiên"
+                  title="Tạo 3 kỹ năng ngẫu nhiên level 1"
                 >
                   <span>{isRerolling ? 'Đang tạo...' : '🎲 Reroll'}</span>
                 </button>
@@ -865,18 +993,6 @@ export function CharacterCreationPage() {
                       className="w-20 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none text-sm"
                       title="Cấp độ kỹ năng"
                     />
-                    <div className="flex items-center space-x-1">
-                      <span className="text-xs text-gray-400">⚡</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={prof.energyCost || calculateManaCost(prof.level)}
-                        readOnly
-                        className="w-16 px-2 py-2 bg-white/5 border-2 border-white/20 rounded-lg text-white text-sm cursor-not-allowed"
-                        title={`Năng lượng mặc định theo cấp độ (Level ${prof.level} = ${prof.energyCost || calculateManaCost(prof.level)} mana)`}
-                      />
-                    </div>
                     <button
                       onClick={() => handleRemoveProficiency(index)}
                       className="p-2 text-red-400 hover:text-red-300 transition-colors duration-200"

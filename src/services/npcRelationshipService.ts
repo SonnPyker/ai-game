@@ -1439,35 +1439,35 @@ OUTPUT JSON:
     const interactionPatterns = [
       {
         patterns: [/nói.*chuyện.*với/i, /trò chuyện.*với/i, /trao đổi.*với/i],
-        note: (reason: string) => `Đã trò chuyện (${reason})`
+        note: (reason: string) => `Trò chuyện ${reason}`
       },
       {
         patterns: [/giúp.*đỡ/i, /hỗ.*trợ/i, /cứu/i],
-        note: (reason: string) => `Đã được giúp đỡ (${reason})`
+        note: (reason: string) => `Được giúp đỡ ${reason}`
       },
       {
         patterns: [/tặng.*cho/i, /đưa.*cho/i, /biếu.*cho/i],
-        note: (reason: string) => `Đã trao đổi vật phẩm (${reason})`
+        note: (reason: string) => `Trao đổi vật phẩm ${reason}`
       },
       {
         patterns: [/chia.*sẻ/i, /kể.*cho/i, /tiết.*lộ/i],
-        note: (reason: string) => `Đã chia sẻ thông tin (${reason})`
+        note: (reason: string) => `Chia sẻ thông tin ${reason}`
       },
       {
         patterns: [/cùng.*nhau/i, /bên.*cạnh/i, /đồng.*hành/i],
-        note: (reason: string) => `Đã đồng hành (${reason})`
+        note: (reason: string) => `Đồng hành ${reason}`
       },
       {
         patterns: [/từ.*chối/i, /không.*đồng.*ý/i, /phản.*đối/i],
-        note: (reason: string) => `Đã từ chối (${reason})`
+        note: (reason: string) => `Từ chối ${reason}`
       },
       {
         patterns: [/cãi.*nhau/i, /tranh.*cãi/i, /bất.*đồng/i],
-        note: (reason: string) => `Đã có tranh cãi (${reason})`
+        note: (reason: string) => `Có tranh cãi ${reason}`
       },
       {
         patterns: [/nhìn.*âu.*yếm/i, /ôm/i, /hôn/i],
-        note: (reason: string) => `Đã có tương tác thân mật (${reason})`
+        note: (reason: string) => `Tương tác thân mật ${reason}`
       }
     ];
     
@@ -1511,7 +1511,7 @@ OUTPUT JSON:
       for (const pattern of emotion.patterns) {
         if (pattern.test(narrative)) {
           const contextReason = this.extractContextReason(narrative, context);
-          notes.push(`Tâm trạng ${emotion.emotion} (${contextReason})`);
+          notes.push(`Tâm trạng ${emotion.emotion} ${contextReason}`);
           break;
         }
       }
@@ -1520,7 +1520,7 @@ OUTPUT JSON:
     // Extract location context
     const locationMatch = narrative.match(/tại\s+([^,\.]+)/i) || narrative.match(/ở\s+([^,\.]+)/i);
     if (locationMatch) {
-      notes.push(`Gặp tại ${locationMatch[1].trim()} (theo narrative)`);
+      notes.push(`Vị trí ${locationMatch[1].trim()}`);
     }
     
     return notes;
@@ -1869,21 +1869,107 @@ OUTPUT JSON:
     return keyMappings[key] || key.replace(/([A-Z])/g, ' $1').toLowerCase().trim();
   }
 
-  // Consolidated method to add notes to NPC (avoiding duplicates)
+  // Consolidated method to add notes to NPC (appending to existing notes)
   private addNotesToNPC(npc: NPCRelationship, newNotes: string[], maxNotes: number = 15): void {
     npc.notes = npc.notes || [];
     
-    // Add only unique notes
-    newNotes.forEach(note => {
-      if (note && note.trim() && !npc.notes!.includes(note)) {
-        npc.notes!.push(note);
-      }
-    });
+    // If no existing notes, start with first note
+    if (npc.notes.length === 0 && newNotes.length > 0) {
+      npc.notes.push(this.highlightKeywords(newNotes[0]));
+      newNotes = newNotes.slice(1);
+    }
+    
+    // Append new notes to the last existing note
+    if (npc.notes.length > 0 && newNotes.length > 0) {
+      const lastNote = npc.notes[npc.notes.length - 1];
+      const combinedNote = this.combineNotes(lastNote, newNotes);
+      npc.notes[npc.notes.length - 1] = this.highlightKeywords(combinedNote);
+    }
     
     // Limit notes to prevent bloat
     if (npc.notes.length > maxNotes) {
       npc.notes = npc.notes.slice(-maxNotes);
     }
+  }
+
+  // Combine notes intelligently to avoid repetition
+  private combineNotes(existingNote: string, newNotes: string[]): string {
+    let combined = existingNote;
+    
+    for (const newNote of newNotes) {
+      if (!newNote || !newNote.trim()) continue;
+      
+      // Remove HTML tags for comparison
+      const cleanExisting = existingNote.replace(/<[^>]*>/g, '');
+      const cleanNew = newNote.replace(/<[^>]*>/g, '');
+      
+      // Check for similar content to avoid repetition
+      if (this.isSimilarContent(cleanExisting, cleanNew)) {
+        continue; // Skip if too similar
+      }
+      
+      // Add connector based on content
+      const connector = this.getConnector(existingNote, newNote);
+      combined += connector + newNote;
+    }
+    
+    return combined;
+  }
+
+  // Check if two notes are too similar
+  private isSimilarContent(existing: string, newNote: string): boolean {
+    const existingWords = existing.toLowerCase().split(/\s+/);
+    const newWords = newNote.toLowerCase().split(/\s+/);
+    
+    // If more than 70% of words are similar, consider it duplicate
+    const similarWords = newWords.filter(word => 
+      existingWords.some(existingWord => 
+        existingWord.includes(word) || word.includes(existingWord)
+      )
+    );
+    
+    return similarWords.length / newWords.length > 0.7;
+  }
+
+  // Get appropriate connector between notes
+  private getConnector(existingNote: string, newNote: string): string {
+    const lastChar = existingNote.trim().slice(-1);
+    const firstChar = newNote.trim().charAt(0);
+    
+    // If existing note ends with punctuation, add space
+    if (/[.!?]/.test(lastChar)) {
+      return ' ';
+    }
+    
+    // If new note starts with capital letter, add period and space
+    if (/[A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/.test(firstChar)) {
+      return '. ';
+    }
+    
+    // Otherwise add comma and space
+    return ', ';
+  }
+
+  // Highlight important keywords in notes
+  private highlightKeywords(note: string): string {
+    const keywords = [
+      { pattern: /(Trạng thái hiện tại|Tình trạng|Vị trí|Tâm trạng|Cảm xúc|Phản ứng|Hành động|Mục tiêu|Kế hoạch|Quan hệ|Mối quan hệ|Tương tác|Gặp gỡ|Trò chuyện|Giúp đỡ|Tặng|Chia sẻ|Đồng hành|Từ chối|Tranh cãi|Thân mật|Lãng mạn|Hứng tình|Arousal|Responsiveness|Inhibition|Curiosity|Experience|Dominance|Romanticism)/gi, 
+        replacement: '<span class="text-yellow-400 font-semibold">$1</span>' },
+      { pattern: /(Turn \d+|Lần gặp thứ \d+|Gặp tại|Tại|Ở)/gi, 
+        replacement: '<span class="text-blue-400 font-medium">$1</span>' },
+      { pattern: /(vui mừng|hạnh phúc|phấn khích|buồn bã|thất vọng|chán nản|tức giận|phẫn nộ|bực mình|lo lắng|băn khoăn|bối rối|sợ hãi|hoảng sợ|kinh hãi)/gi, 
+        replacement: '<span class="text-green-400 font-medium">$1</span>' },
+      { pattern: /(đã|được|sẽ|đang|vừa|mới)/gi, 
+        replacement: '<span class="text-purple-400 font-medium">$1</span>' }
+    ];
+    
+    let highlightedNote = note;
+    
+    for (const keyword of keywords) {
+      highlightedNote = highlightedNote.replace(keyword.pattern, keyword.replacement);
+    }
+    
+    return highlightedNote;
   }
 
   // Shared status patterns for reuse

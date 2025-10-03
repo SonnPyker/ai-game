@@ -23,116 +23,159 @@ export class QuestDetectionService {
     const completedObjectives: { questId: string; objectiveId: string }[] = [];
     const suggestedActions: string[] = [];
 
+    console.log(`🔍 Analyzing quest completion for input: "${chatInput}"`);
+
     // Phân tích từng quest đang active
     for (const quest of activeQuests) {
       if (quest.status !== 'active') continue;
 
+      console.log(`📋 Checking quest: ${quest.title} (${quest.id})`);
+
       for (const objective of quest.objectives) {
-        if (objective.completed) continue;
+        if (objective.completed) {
+          console.log(`⏭️ Skipping completed objective: ${objective.description}`);
+          continue;
+        }
 
-        // 1. Kiểm tra AI keywords (cải thiện)
+        if (!objective.unlocked) {
+          console.log(`🔒 Skipping locked objective: ${objective.description}`);
+          continue;
+        }
+
+        console.log(`🎯 Analyzing objective: ${objective.description}`);
+
+        // Tạo một array để lưu tất cả các match methods
+        const matchResults: { method: string; confidence: number; details: string }[] = [];
+
+        // 1. Kiểm tra AI keywords (ưu tiên cao nhất)
         if (objective.aiKeywords && objective.aiKeywords.length > 0) {
-          const hasKeyword = this.enhancedKeywordMatching(chatInput, objective.aiKeywords);
-          if (hasKeyword) {
-            completedObjectives.push({
-              questId: quest.id,
-              objectiveId: objective.id
+          const keywordResult = this.enhancedKeywordMatching(chatInput, objective.aiKeywords);
+          if (keywordResult.matched) {
+            matchResults.push({
+              method: 'AI Keywords',
+              confidence: keywordResult.confidence,
+              details: `Matched keywords: ${keywordResult.matchedKeywords?.join(', ')}`
             });
-            continue; // Đã tìm thấy match, không cần kiểm tra thêm
           }
         }
 
-        // 2. Kiểm tra pattern matching cho các loại quest phổ biến (cải thiện)
+        // 2. Kiểm tra pattern matching với validation chặt chẽ hơn
         const patterns = this.getEnhancedQuestPatterns(objective.description);
-        const hasPattern = this.enhancedPatternMatching(chatInput, patterns);
-        if (hasPattern) {
-          completedObjectives.push({
-            questId: quest.id,
-            objectiveId: objective.id
+        const patternResult = this.enhancedPatternMatching(chatInput, patterns, objective.description);
+        if (patternResult.matched) {
+          matchResults.push({
+            method: 'Pattern Matching',
+            confidence: patternResult.confidence,
+            details: `Matched patterns: ${patternResult.matchedPatterns?.join(', ')}`
           });
-          continue;
         }
 
-        // 3. SceneState-based analysis (NHANH HỞN!)
+        // 3. SceneState-based analysis (chỉ khi có context cụ thể)
         if (sceneState) {
-          const sceneMatch = this.analyzeSceneStateForQuestCompletion(chatInput, objective.description, sceneState);
-          if (sceneMatch) {
-            completedObjectives.push({
-              questId: quest.id,
-              objectiveId: objective.id
+          const sceneResult = this.analyzeSceneStateForQuestCompletion(chatInput, objective.description, sceneState);
+          if (sceneResult.matched) {
+            matchResults.push({
+              method: 'Scene State',
+              confidence: sceneResult.confidence,
+              details: sceneResult.details || 'Scene context match'
             });
-            continue;
           }
         }
 
-        // 4. Context-based analysis (NHANH HỞN!)
-        const contextMatch = this.analyzeContextForQuestCompletion(chatInput, objective.description, quest);
-        if (contextMatch) {
-          completedObjectives.push({
-            questId: quest.id,
-            objectiveId: objective.id
+        // 4. Context-based analysis (chỉ khi có context cụ thể)
+        const contextResult = this.analyzeContextForQuestCompletion(chatInput, objective.description, quest);
+        if (contextResult.matched) {
+          matchResults.push({
+            method: 'Quest Context',
+            confidence: contextResult.confidence,
+            details: contextResult.details || 'Quest context match'
           });
-          continue;
         }
 
-        // 5. SCC Context analysis (MỚI!)
+        // 5. SCC Context analysis (chỉ khi có context cụ thể)
         if (additionalContext?.sccContext) {
-          const sccMatch = this.analyzeSCCContextForQuestCompletion(chatInput, objective.description, additionalContext.sccContext);
-          if (sccMatch) {
-            completedObjectives.push({
-              questId: quest.id,
-              objectiveId: objective.id
+          const sccResult = this.analyzeSCCContextForQuestCompletion(chatInput, objective.description, additionalContext.sccContext);
+          if (sccResult.matched) {
+            matchResults.push({
+              method: 'SCC Context',
+              confidence: sccResult.confidence,
+              details: sccResult.details || 'SCC context match'
             });
-            continue;
           }
         }
 
-        // 6. Chat History analysis (MỚI!)
+        // 6. Chat History analysis (chỉ khi có context cụ thể)
         if (additionalContext?.chatHistory) {
-          const historyMatch = this.analyzeChatHistoryForQuestCompletion(chatInput, objective.description, additionalContext.chatHistory);
-          if (historyMatch) {
-            completedObjectives.push({
-              questId: quest.id,
-              objectiveId: objective.id
+          const historyResult = this.analyzeChatHistoryForQuestCompletion(chatInput, objective.description, additionalContext.chatHistory);
+          if (historyResult.matched) {
+            matchResults.push({
+              method: 'Chat History',
+              confidence: historyResult.confidence,
+              details: historyResult.details || 'Chat history match'
             });
-            continue;
           }
         }
 
-        // 7. NPC Relationship analysis (MỚI!)
+        // 7. NPC Relationship analysis (chỉ khi có context cụ thể)
         if (additionalContext?.npcRelationships) {
-          const npcMatch = this.analyzeNPCRelationshipsForQuestCompletion(chatInput, objective.description, additionalContext.npcRelationships);
-          if (npcMatch) {
-            completedObjectives.push({
-              questId: quest.id,
-              objectiveId: objective.id
+          const npcResult = this.analyzeNPCRelationshipsForQuestCompletion(chatInput, objective.description, additionalContext.npcRelationships);
+          if (npcResult.matched) {
+            matchResults.push({
+              method: 'NPC Relationships',
+              confidence: npcResult.confidence,
+              details: npcResult.details || 'NPC relationship match'
             });
-            continue;
           }
         }
 
-        // 8. Story Progress analysis (MỚI!)
+        // 8. Story Progress analysis (chỉ khi có context cụ thể)
         if (additionalContext?.storyProgress) {
-          const storyMatch = this.analyzeStoryProgressForQuestCompletion(chatInput, objective.description, additionalContext.storyProgress);
-          if (storyMatch) {
-            completedObjectives.push({
-              questId: quest.id,
-              objectiveId: objective.id
+          const storyResult = this.analyzeStoryProgressForQuestCompletion(chatInput, objective.description, additionalContext.storyProgress);
+          if (storyResult.matched) {
+            matchResults.push({
+              method: 'Story Progress',
+              confidence: storyResult.confidence,
+              details: storyResult.details || 'Story progress match'
             });
-            continue;
           }
         }
 
-        // 9. Time-based analysis (MỚI!)
+        // 9. Time-based analysis (chỉ khi có context cụ thể)
         if (additionalContext?.worldTime && additionalContext?.turnCounter) {
-          const timeMatch = this.analyzeTimeBasedQuestCompletion(chatInput, objective.description, additionalContext.worldTime, additionalContext.turnCounter, quest);
-          if (timeMatch) {
+          const timeResult = this.analyzeTimeBasedQuestCompletion(chatInput, objective.description, additionalContext.worldTime, additionalContext.turnCounter, quest);
+          if (timeResult.matched) {
+            matchResults.push({
+              method: 'Time-based',
+              confidence: timeResult.confidence,
+              details: timeResult.details || 'Time-based match'
+            });
+          }
+        }
+
+        // Quyết định completion dựa trên kết quả tổng hợp
+        if (matchResults.length > 0) {
+          // Sắp xếp theo confidence giảm dần
+          matchResults.sort((a, b) => b.confidence - a.confidence);
+          
+          const bestMatch = matchResults[0];
+          const minConfidence = 0.6; // Ngưỡng tối thiểu để chấp nhận completion
+          
+          if (bestMatch.confidence >= minConfidence) {
+            console.log(`✅ Objective completed: ${objective.description}`);
+            console.log(`   Best match: ${bestMatch.method} (confidence: ${bestMatch.confidence})`);
+            console.log(`   Details: ${bestMatch.details}`);
+            
             completedObjectives.push({
               questId: quest.id,
               objectiveId: objective.id
             });
-            continue;
+          } else {
+            console.log(`❌ Objective not completed: ${objective.description}`);
+            console.log(`   Best match confidence too low: ${bestMatch.confidence} < ${minConfidence}`);
+            console.log(`   All matches:`, matchResults.map(m => `${m.method}: ${m.confidence}`).join(', '));
           }
+        } else {
+          console.log(`❌ No matches found for objective: ${objective.description}`);
         }
       }
     }
@@ -291,51 +334,158 @@ export class QuestDetectionService {
   /**
    * Enhanced keyword matching với fuzzy matching
    */
-  private enhancedKeywordMatching(chatInput: string, keywords: string[]): boolean {
+  private enhancedKeywordMatching(chatInput: string, keywords: string[]): { matched: boolean; confidence: number; matchedKeywords?: string[] } {
     const input = chatInput.toLowerCase();
+    const matchedKeywords: string[] = [];
+    let maxConfidence = 0;
     
-    return keywords.some(keyword => {
+    for (const keyword of keywords) {
       const keywordLower = keyword.toLowerCase();
+      let confidence = 0;
       
-      // Exact match
-      if (input.includes(keywordLower)) return true;
+      // Exact match - confidence cao nhất
+      if (input.includes(keywordLower)) {
+        confidence = 0.9;
+        matchedKeywords.push(keyword);
+      } else {
+        // Fuzzy matching - tìm từ tương tự
+        const words = input.split(/\s+/);
+        for (const word of words) {
+          const similarity = this.calculateSimilarity(word, keywordLower);
+          if (similarity > 0.7) { // 70% tương đồng
+            confidence = Math.max(confidence, similarity * 0.8); // Giảm confidence cho fuzzy match
+            matchedKeywords.push(keyword);
+            break;
+          }
+        }
+      }
       
-      // Fuzzy matching - tìm từ tương tự
-      const words = input.split(/\s+/);
-      return words.some(word => {
-        // Kiểm tra độ tương đồng đơn giản
-        const similarity = this.calculateSimilarity(word, keywordLower);
-        return similarity > 0.7; // 70% tương đồng
-      });
-    });
+      maxConfidence = Math.max(maxConfidence, confidence);
+    }
+    
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      matchedKeywords: matchedKeywords.length > 0 ? matchedKeywords : undefined
+    };
   }
 
   /**
    * Enhanced pattern matching với context awareness
    */
-  private enhancedPatternMatching(chatInput: string, patterns: string[]): boolean {
+  private enhancedPatternMatching(chatInput: string, patterns: string[], objectiveDescription: string): { matched: boolean; confidence: number; matchedPatterns?: string[] } {
     const input = chatInput.toLowerCase();
+    const objective = objectiveDescription.toLowerCase();
+    const matchedPatterns: string[] = [];
+    let maxConfidence = 0;
     
-    return patterns.some(pattern => {
+    // Kiểm tra xem có cần validation chặt chẽ hơn không
+    const needsStrictValidation = this.needsStrictValidation(objective);
+    
+    for (const pattern of patterns) {
       const patternLower = pattern.toLowerCase();
+      let confidence = 0;
       
       // Exact match
-      if (input.includes(patternLower)) return true;
+      if (input.includes(patternLower)) {
+        confidence = 0.8;
+        matchedPatterns.push(pattern);
+      } else {
+        // Context-aware matching
+        const contextWords = this.extractContextWords(input);
+        for (const word of contextWords) {
+          const similarity = this.calculateSimilarity(word, patternLower);
+          if (similarity > 0.6) {
+            confidence = Math.max(confidence, similarity * 0.7); // Giảm confidence cho context match
+            matchedPatterns.push(pattern);
+            break;
+          }
+        }
+      }
       
-      // Context-aware matching
-      const contextWords = this.extractContextWords(input);
-      return contextWords.some(word => 
-        this.calculateSimilarity(word, patternLower) > 0.6
-      );
-    });
+      // Nếu cần validation chặt chẽ, kiểm tra thêm context
+      if (needsStrictValidation && confidence > 0) {
+        const contextMatch = this.validateContextMatch(input, patternLower, objective);
+        if (!contextMatch) {
+          confidence *= 0.5; // Giảm confidence nếu không match context
+        }
+      }
+      
+      maxConfidence = Math.max(maxConfidence, confidence);
+    }
+    
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      matchedPatterns: matchedPatterns.length > 0 ? matchedPatterns : undefined
+    };
+  }
+
+  /**
+   * Kiểm tra xem objective có cần validation chặt chẽ không
+   */
+  private needsStrictValidation(objective: string): boolean {
+    const strictKeywords = [
+      'đến', 'tới', 'đi đến', 'vào', 'bước vào',
+      'tìm', 'kiểm tra', 'thu thập', 'lấy',
+      'nói chuyện', 'gặp', 'gặp gỡ',
+      'báo cáo', 'thông báo', 'báo tin'
+    ];
+    
+    return strictKeywords.some(keyword => objective.includes(keyword));
+  }
+
+  /**
+   * Validate context match - kiểm tra xem pattern có thực sự liên quan đến objective không
+   */
+  private validateContextMatch(input: string, pattern: string, objective: string): boolean {
+    // Nếu pattern là từ chung chung như "đến", "tìm", cần kiểm tra context cụ thể
+    const genericPatterns = ['đến', 'tới', 'vào', 'tìm', 'kiểm tra', 'nói chuyện', 'gặp'];
+    
+    if (genericPatterns.includes(pattern)) {
+      // Trích xuất đối tượng cụ thể từ objective
+      const objectiveTargets = this.extractTargetsFromObjective(objective);
+      if (objectiveTargets.length > 0) {
+        // Kiểm tra xem input có chứa đối tượng cụ thể không
+        return objectiveTargets.some(target => 
+          input.includes(target.toLowerCase()) || 
+          this.calculateSimilarity(input, target.toLowerCase()) > 0.6
+        );
+      }
+    }
+    
+    return true; // Nếu không phải pattern chung chung, chấp nhận
+  }
+
+  /**
+   * Trích xuất đối tượng cụ thể từ objective description
+   */
+  private extractTargetsFromObjective(objective: string): string[] {
+    const targets: string[] = [];
+    
+    // Trích xuất location
+    const locationMatch = objective.match(/(?:đến|tới|vào)\s+([^,.\s]+)/i);
+    if (locationMatch) targets.push(locationMatch[1]);
+    
+    // Trích xuất NPC
+    const npcMatch = objective.match(/(?:nói chuyện|gặp|gặp gỡ)\s+với\s+([^,.\s]+)/i);
+    if (npcMatch) targets.push(npcMatch[1]);
+    
+    // Trích xuất item
+    const itemMatch = objective.match(/(?:tìm|kiểm tra|thu thập)\s+([^,.\s]+)/i);
+    if (itemMatch) targets.push(itemMatch[1]);
+    
+    return targets;
   }
 
   /**
    * Phân tích SceneState để detect quest completion (NHANH!)
    */
-  private analyzeSceneStateForQuestCompletion(chatInput: string, objectiveDescription: string, sceneState: any): boolean {
+  private analyzeSceneStateForQuestCompletion(chatInput: string, objectiveDescription: string, sceneState: any): { matched: boolean; confidence: number; details?: string } {
     const input = chatInput.toLowerCase();
     const objective = objectiveDescription.toLowerCase();
+    let maxConfidence = 0;
+    let bestMatch = '';
 
     // Kiểm tra location-based quest completion
     if (objective.includes('đến') || objective.includes('đi đến') || objective.includes('tới')) {
@@ -343,8 +493,11 @@ export class QuestDetectionService {
       if (targetLocation && sceneState.location) {
         const currentLocation = sceneState.location.toLowerCase();
         if (this.isLocationMatch(currentLocation, targetLocation)) {
-          console.log(`🎯 Location-based quest completion: ${targetLocation} -> ${currentLocation}`);
-          return true;
+          const confidence = 0.9;
+          if (confidence > maxConfidence) {
+            maxConfidence = confidence;
+            bestMatch = `Location match: ${targetLocation} -> ${currentLocation}`;
+          }
         }
       }
     }
@@ -355,8 +508,11 @@ export class QuestDetectionService {
       if (targetNPC && sceneState.npcs) {
         const mentionedNPCs = sceneState.npcs.map((npc: any) => npc.name?.toLowerCase()).filter(Boolean);
         if (mentionedNPCs.some((npc: string) => this.isNPCMatch(npc, targetNPC))) {
-          console.log(`🎯 NPC-based quest completion: ${targetNPC} found in scene`);
-          return true;
+          const confidence = 0.9;
+          if (confidence > maxConfidence) {
+            maxConfidence = confidence;
+            bestMatch = `NPC match: ${targetNPC} found in scene`;
+          }
         }
       }
     }
@@ -367,8 +523,11 @@ export class QuestDetectionService {
       if (targetItem && sceneState.items) {
         const availableItems = sceneState.items.map((item: any) => item.name?.toLowerCase()).filter(Boolean);
         if (availableItems.some((item: string) => this.isItemMatch(item, targetItem))) {
-          console.log(`🎯 Item-based quest completion: ${targetItem} found in scene`);
-          return true;
+          const confidence = 0.9;
+          if (confidence > maxConfidence) {
+            maxConfidence = confidence;
+            bestMatch = `Item match: ${targetItem} found in scene`;
+          }
         }
       }
     }
@@ -377,48 +536,60 @@ export class QuestDetectionService {
     if (objective.includes('hoàn thành') || objective.includes('xong') || objective.includes('kết thúc')) {
       const actionKeywords = this.extractActionKeywords(objective);
       if (actionKeywords.some(keyword => input.includes(keyword))) {
-        console.log(`🎯 Action-based quest completion: ${actionKeywords.join(', ')}`);
-        return true;
+        const confidence = 0.8;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Action match: ${actionKeywords.join(', ')}`;
+        }
       }
     }
 
-    // Kiểm tra environment-based quest completion (MỚI!)
+    // Kiểm tra environment-based quest completion
     if (sceneState.environment) {
       const environmentKeywords = this.extractEnvironmentKeywords(objective);
       const environmentMatch = environmentKeywords.some(keyword => 
         sceneState.environment.toLowerCase().includes(keyword) || input.includes(keyword)
       );
       if (environmentMatch) {
-        console.log(`🎯 Environment-based quest completion: ${sceneState.environment}`);
-        return true;
+        const confidence = 0.7;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Environment match: ${sceneState.environment}`;
+        }
       }
     }
 
-    // Kiểm tra weather-based quest completion (MỚI!)
+    // Kiểm tra weather-based quest completion
     if (sceneState.weather) {
       const weatherKeywords = this.extractWeatherKeywords(objective);
       const weatherMatch = weatherKeywords.some(keyword => 
         sceneState.weather.toLowerCase().includes(keyword) || input.includes(keyword)
       );
       if (weatherMatch) {
-        console.log(`🎯 Weather-based quest completion: ${sceneState.weather}`);
-        return true;
+        const confidence = 0.7;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Weather match: ${sceneState.weather}`;
+        }
       }
     }
 
-    // Kiểm tra time-based quest completion trong scene (MỚI!)
+    // Kiểm tra time-based quest completion trong scene
     if (sceneState.timeOfDay) {
       const timeKeywords = this.extractTimeKeywords(objective);
       const timeMatch = timeKeywords.some(keyword => 
         sceneState.timeOfDay.toLowerCase().includes(keyword) || input.includes(keyword)
       );
       if (timeMatch) {
-        console.log(`🎯 Time-based quest completion: ${sceneState.timeOfDay}`);
-        return true;
+        const confidence = 0.7;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Time match: ${sceneState.timeOfDay}`;
+        }
       }
     }
 
-    // Kiểm tra mood/atmosphere-based quest completion (MỚI!)
+    // Kiểm tra mood/atmosphere-based quest completion
     if (sceneState.mood || sceneState.atmosphere) {
       const moodKeywords = this.extractMoodKeywords(objective);
       const moodMatch = moodKeywords.some(keyword => 
@@ -426,27 +597,39 @@ export class QuestDetectionService {
         input.includes(keyword)
       );
       if (moodMatch) {
-        console.log(`🎯 Mood-based quest completion: ${sceneState.mood || sceneState.atmosphere}`);
-        return true;
+        const confidence = 0.6;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Mood match: ${sceneState.mood || sceneState.atmosphere}`;
+        }
       }
     }
 
-    return false;
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      details: bestMatch || undefined
+    };
   }
 
   /**
    * Phân tích Context để detect quest completion (NHANH!)
    */
-  private analyzeContextForQuestCompletion(chatInput: string, _objectiveDescription: string, quest: QuestProgress): boolean {
+  private analyzeContextForQuestCompletion(chatInput: string, _objectiveDescription: string, quest: QuestProgress): { matched: boolean; confidence: number; details?: string } {
     const input = chatInput.toLowerCase();
+    let maxConfidence = 0;
+    let bestMatch = '';
 
     // Kiểm tra quest-specific context
     if (quest.title.toLowerCase().includes('kiểm kê') || quest.title.toLowerCase().includes('inventory')) {
       // Quest kiểm kê - kiểm tra từ khóa liên quan
       const inventoryKeywords = ['kiểm tra', 'xem xét', 'quan sát', 'nhìn thấy', 'phát hiện', 'tìm thấy'];
       if (inventoryKeywords.some(keyword => input.includes(keyword))) {
-        console.log(`🎯 Inventory quest completion detected`);
-        return true;
+        const confidence = 0.8;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = 'Inventory quest context match';
+        }
       }
     }
 
@@ -454,8 +637,11 @@ export class QuestDetectionService {
       // Quest khẩn cấp - kiểm tra từ khóa urgency
       const urgencyKeywords = ['khẩn cấp', 'gấp', 'nhanh', 'vội', 'cấp bách', 'urgent'];
       if (urgencyKeywords.some(keyword => input.includes(keyword))) {
-        console.log(`🎯 Emergency quest completion detected`);
-        return true;
+        const confidence = 0.8;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = 'Emergency quest context match';
+        }
       }
     }
 
@@ -464,12 +650,19 @@ export class QuestDetectionService {
       // Side quest thường có context đặc biệt
       const sideQuestKeywords = ['nhiệm vụ', 'quest', 'yêu cầu', 'giúp đỡ', 'hỗ trợ'];
       if (sideQuestKeywords.some(keyword => input.includes(keyword))) {
-        console.log(`🎯 Side quest completion detected`);
-        return true;
+        const confidence = 0.6;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = 'Side quest context match';
+        }
       }
     }
 
-    return false;
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      details: bestMatch || undefined
+    };
   }
 
   /**
@@ -672,19 +865,21 @@ export class QuestDetectionService {
   }
 
   /**
-   * Lấy patterns cho quest objectives (enhanced version)
+   * Lấy patterns cho quest objectives (enhanced version với validation chặt chẽ hơn)
    */
   private getEnhancedQuestPatterns(objectiveDescription: string): string[] {
     const patterns: string[] = [];
     const description = objectiveDescription.toLowerCase();
 
-    // Patterns cho các loại quest phổ biến với nhiều biến thể hơn
+    // Patterns cho các loại quest phổ biến với validation chặt chẽ hơn
     if (description.includes('nói chuyện') || description.includes('gặp') || description.includes('gặp gỡ')) {
-      patterns.push('nói chuyện', 'gặp', 'gặp gỡ', 'thảo luận', 'hỏi', 'trò chuyện', 'tiếp xúc', 'liên lạc');
+      // Chỉ thêm patterns cụ thể, không quá chung chung
+      patterns.push('nói chuyện', 'gặp', 'gặp gỡ', 'thảo luận', 'hỏi', 'trò chuyện');
     }
 
     if (description.includes('tìm') || description.includes('tìm kiếm') || description.includes('kiểm tra')) {
-      patterns.push('tìm thấy', 'tìm được', 'phát hiện', 'khám phá', 'kiểm tra', 'xem xét', 'quan sát', 'nhìn thấy');
+      // Chỉ thêm patterns cụ thể cho việc tìm kiếm
+      patterns.push('tìm thấy', 'tìm được', 'phát hiện', 'khám phá', 'kiểm tra', 'xem xét');
     }
 
     if (description.includes('đánh bại') || description.includes('chiến đấu') || description.includes('đối đầu')) {
@@ -695,8 +890,10 @@ export class QuestDetectionService {
       patterns.push('thu thập', 'lấy được', 'có được', 'sở hữu', 'nhận được', 'tìm thấy', 'cầm', 'mang theo');
     }
 
+    // GIẢM ĐỘ NHẠY cho location patterns - chỉ match khi có context cụ thể
     if (description.includes('đi đến') || description.includes('đến') || description.includes('tới')) {
-      patterns.push('đến', 'đi đến', 'tới', 'vào', 'bước vào', 'tiến vào', 'xuất hiện tại', 'có mặt tại');
+      // Chỉ thêm patterns cơ bản, không quá chung chung
+      patterns.push('đi đến', 'đến', 'tới', 'vào', 'bước vào');
     }
 
     if (description.includes('hoàn thành') || description.includes('xong') || description.includes('kết thúc')) {
@@ -924,8 +1121,10 @@ export class QuestDetectionService {
   /**
    * Phân tích SCC Context để detect quest completion (MỚI!)
    */
-  private analyzeSCCContextForQuestCompletion(_chatInput: string, objectiveDescription: string, sccContext: any): boolean {
+  private analyzeSCCContextForQuestCompletion(_chatInput: string, objectiveDescription: string, sccContext: any): { matched: boolean; confidence: number; details?: string } {
     const objective = objectiveDescription.toLowerCase();
+    let maxConfidence = 0;
+    let bestMatch = '';
 
     // Kiểm tra clues trong SCC
     if (sccContext.clues && Array.isArray(sccContext.clues)) {
@@ -933,8 +1132,11 @@ export class QuestDetectionService {
         this.calculateSimilarity(clue.toLowerCase(), objective) > 0.6
       );
       if (relevantClues.length > 0) {
-        console.log(`🎯 SCC Clue-based quest completion: ${relevantClues[0]}`);
-        return true;
+        const confidence = 0.8;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `SCC Clue match: ${relevantClues[0]}`;
+        }
       }
     }
 
@@ -944,8 +1146,11 @@ export class QuestDetectionService {
         this.calculateSimilarity(thread.toLowerCase(), objective) > 0.6
       );
       if (relevantThreads.length > 0) {
-        console.log(`🎯 SCC Thread-based quest completion: ${relevantThreads[0]}`);
-        return true;
+        const confidence = 0.8;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `SCC Thread match: ${relevantThreads[0]}`;
+        }
       }
     }
 
@@ -956,8 +1161,11 @@ export class QuestDetectionService {
         this.calculateSimilarity(goal.actGoal?.toLowerCase() || '', objective) > 0.6
       );
       if (relevantGoals.length > 0) {
-        console.log(`🎯 SCC Goal-based quest completion: ${relevantGoals[0].pcGoal || relevantGoals[0].actGoal}`);
-        return true;
+        const confidence = 0.8;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `SCC Goal match: ${relevantGoals[0].pcGoal || relevantGoals[0].actGoal}`;
+        }
       }
     }
 
@@ -968,20 +1176,29 @@ export class QuestDetectionService {
         this.calculateSimilarity(rel.status?.toLowerCase() || '', objective) > 0.6
       );
       if (relevantRelationships.length > 0) {
-        console.log(`🎯 SCC Relationship-based quest completion: ${relevantRelationships[0].npc} - ${relevantRelationships[0].status}`);
-        return true;
+        const confidence = 0.7;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `SCC Relationship match: ${relevantRelationships[0].npc} - ${relevantRelationships[0].status}`;
+        }
       }
     }
 
-    return false;
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      details: bestMatch || undefined
+    };
   }
 
   /**
    * Phân tích Chat History để detect quest completion (MỚI!)
    */
-  private analyzeChatHistoryForQuestCompletion(chatInput: string, objectiveDescription: string, chatHistory: Array<{ role: string; content: string; turn?: number }>): boolean {
+  private analyzeChatHistoryForQuestCompletion(chatInput: string, objectiveDescription: string, chatHistory: Array<{ role: string; content: string; turn?: number }>): { matched: boolean; confidence: number; details?: string } {
     const input = chatInput.toLowerCase();
     const objective = objectiveDescription.toLowerCase();
+    let maxConfidence = 0;
+    let bestMatch = '';
 
     // Lấy 5 tin nhắn gần nhất để phân tích context
     const recentMessages = chatHistory.slice(-5);
@@ -1001,8 +1218,11 @@ export class QuestDetectionService {
       );
 
       if (hasObjectiveWords) {
-        console.log(`🎯 Chat History-based quest completion detected`);
-        return true;
+        const confidence = 0.7;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = 'Chat History completion keyword match';
+        }
       }
     }
 
@@ -1013,18 +1233,27 @@ export class QuestDetectionService {
     );
 
     if (hasHistoryPattern) {
-      console.log(`🎯 Chat History pattern-based quest completion detected`);
-      return true;
+      const confidence = 0.6;
+      if (confidence > maxConfidence) {
+        maxConfidence = confidence;
+        bestMatch = 'Chat History pattern match';
+      }
     }
 
-    return false;
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      details: bestMatch || undefined
+    };
   }
 
   /**
    * Phân tích NPC Relationships để detect quest completion (MỚI!)
    */
-  private analyzeNPCRelationshipsForQuestCompletion(_chatInput: string, objectiveDescription: string, npcRelationships: any): boolean {
+  private analyzeNPCRelationshipsForQuestCompletion(_chatInput: string, objectiveDescription: string, npcRelationships: any): { matched: boolean; confidence: number; details?: string } {
     const objective = objectiveDescription.toLowerCase();
+    let maxConfidence = 0;
+    let bestMatch = '';
 
     // Kiểm tra NPC interactions
     if (npcRelationships.encounters && Array.isArray(npcRelationships.encounters)) {
@@ -1044,8 +1273,11 @@ export class QuestDetectionService {
             );
 
             if (hasInteractionKeyword) {
-              console.log(`🎯 NPC Relationship-based quest completion: ${encounter.npcName} - ${encounter.interaction}`);
-              return true;
+              const confidence = 0.8;
+              if (confidence > maxConfidence) {
+                maxConfidence = confidence;
+                bestMatch = `NPC Relationship match: ${encounter.npcName} - ${encounter.interaction}`;
+              }
             }
           }
         }
@@ -1060,20 +1292,29 @@ export class QuestDetectionService {
 
       for (const rep of recentRepChanges) {
         if (rep.factionName && objective.includes(rep.factionName.toLowerCase())) {
-          console.log(`🎯 Faction reputation-based quest completion: ${rep.factionName}`);
-          return true;
+          const confidence = 0.7;
+          if (confidence > maxConfidence) {
+            maxConfidence = confidence;
+            bestMatch = `Faction reputation match: ${rep.factionName}`;
+          }
         }
       }
     }
 
-    return false;
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      details: bestMatch || undefined
+    };
   }
 
   /**
    * Phân tích Story Progress để detect quest completion (MỚI!)
    */
-  private analyzeStoryProgressForQuestCompletion(_chatInput: string, objectiveDescription: string, storyProgress: any): boolean {
+  private analyzeStoryProgressForQuestCompletion(_chatInput: string, objectiveDescription: string, storyProgress: any): { matched: boolean; confidence: number; details?: string } {
     const objective = objectiveDescription.toLowerCase();
+    let maxConfidence = 0;
+    let bestMatch = '';
 
     // Kiểm tra story milestones
     if (storyProgress.milestones && Array.isArray(storyProgress.milestones)) {
@@ -1084,8 +1325,11 @@ export class QuestDetectionService {
 
       for (const milestone of recentMilestones) {
         if (milestone.description && this.calculateSimilarity(milestone.description.toLowerCase(), objective) > 0.6) {
-          console.log(`🎯 Story Progress milestone-based quest completion: ${milestone.description}`);
-          return true;
+          const confidence = 0.8;
+          if (confidence > maxConfidence) {
+            maxConfidence = confidence;
+            bestMatch = `Story Progress milestone match: ${milestone.description}`;
+          }
         }
       }
     }
@@ -1097,8 +1341,11 @@ export class QuestDetectionService {
       );
 
       if (activeFlags.length > 0) {
-        console.log(`🎯 Story Progress flag-based quest completion: ${activeFlags[0][0]}`);
-        return true;
+        const confidence = 0.7;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Story Progress flag match: ${activeFlags[0][0]}`;
+        }
       }
     }
 
@@ -1110,20 +1357,29 @@ export class QuestDetectionService {
 
       for (const event of recentEvents) {
         if (event.description && this.calculateSimilarity(event.description.toLowerCase(), objective) > 0.6) {
-          console.log(`🎯 Story Progress event-based quest completion: ${event.description}`);
-          return true;
+          const confidence = 0.7;
+          if (confidence > maxConfidence) {
+            maxConfidence = confidence;
+            bestMatch = `Story Progress event match: ${event.description}`;
+          }
         }
       }
     }
 
-    return false;
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      details: bestMatch || undefined
+    };
   }
 
   /**
    * Phân tích Time-based quest completion (MỚI!)
    */
-  private analyzeTimeBasedQuestCompletion(_chatInput: string, objectiveDescription: string, worldTime: any, turnCounter: number, quest: QuestProgress): boolean {
+  private analyzeTimeBasedQuestCompletion(_chatInput: string, objectiveDescription: string, worldTime: any, turnCounter: number, quest: QuestProgress): { matched: boolean; confidence: number; details?: string } {
     const objective = objectiveDescription.toLowerCase();
+    let maxConfidence = 0;
+    let bestMatch = '';
 
     // Kiểm tra quest duration
     if (quest.turnStarted && quest.turnCreated) {
@@ -1132,14 +1388,20 @@ export class QuestDetectionService {
 
       // Quest đã chạy quá lâu (có thể auto-complete)
       if (questAge > 20 && (objective.includes('thời gian') || objective.includes('chờ đợi'))) {
-        console.log(`🎯 Time-based quest completion: Quest đã chạy ${questAge} turns`);
-        return true;
+        const confidence = 0.6;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Time-based quest completion: Quest đã chạy ${questAge} turns`;
+        }
       }
 
       // Quest có thời hạn ngắn
       if (questDuration > 5 && (objective.includes('nhanh') || objective.includes('gấp') || objective.includes('khẩn cấp'))) {
-        console.log(`🎯 Time-based quest completion: Quest khẩn cấp đã chạy ${questDuration} turns`);
-        return true;
+        const confidence = 0.7;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Time-based quest completion: Quest khẩn cấp đã chạy ${questDuration} turns`;
+        }
       }
     }
 
@@ -1147,16 +1409,25 @@ export class QuestDetectionService {
     if (worldTime && worldTime.hour !== undefined) {
       // Quest cần thực hiện vào giờ cụ thể
       if (objective.includes('buổi sáng') && worldTime.hour >= 6 && worldTime.hour < 12) {
-        console.log(`🎯 Time-based quest completion: Buổi sáng (${worldTime.hour}:00)`);
-        return true;
+        const confidence = 0.8;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Time-based quest completion: Buổi sáng (${worldTime.hour}:00)`;
+        }
       }
       if (objective.includes('buổi tối') && worldTime.hour >= 18) {
-        console.log(`🎯 Time-based quest completion: Buổi tối (${worldTime.hour}:00)`);
-        return true;
+        const confidence = 0.8;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Time-based quest completion: Buổi tối (${worldTime.hour}:00)`;
+        }
       }
       if (objective.includes('đêm') && (worldTime.hour >= 22 || worldTime.hour < 6)) {
-        console.log(`🎯 Time-based quest completion: Đêm (${worldTime.hour}:00)`);
-        return true;
+        const confidence = 0.8;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Time-based quest completion: Đêm (${worldTime.hour}:00)`;
+        }
       }
     }
 
@@ -1166,12 +1437,19 @@ export class QuestDetectionService {
       const hoursSinceCreation = questAge / (1000 * 60 * 60);
       
       if (hoursSinceCreation > 24 && objective.includes('hoàn thành')) {
-        console.log(`🎯 Time-based quest completion: Quest đã tạo ${hoursSinceCreation.toFixed(1)} giờ trước`);
-        return true;
+        const confidence = 0.6;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Time-based quest completion: Quest đã tạo ${hoursSinceCreation.toFixed(1)} giờ trước`;
+        }
       }
     }
 
-    return false;
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      details: bestMatch || undefined
+    };
   }
 }
 

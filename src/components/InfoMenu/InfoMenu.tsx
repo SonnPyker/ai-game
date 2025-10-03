@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   X, 
   Pin, 
@@ -15,10 +15,15 @@ import {
   Eye,
   Star,
   FileText,
-  Trash2
+  Trash2,
+  Clock,
+  MessageSquare,
+  AlertTriangle,
+  EyeOff
 } from 'lucide-react';
 import { WorldData, Character, WorldTime, QuestSystem, QuestProgress, ContentFlags } from '../../types';
 import { npcRelationshipService } from '../../services/npcRelationshipService';
+import { worldTimeService } from '../../services/worldTimeService';
 import { QuestTracker } from '../QuestTracker/QuestTracker';
 import { SCCJournal } from './SCCJournal';
 import { NPCArousalBar } from '../NPCArousalBar';
@@ -43,6 +48,10 @@ interface InfoMenuProps {
   isAIProcessing?: boolean;
   isNPCAnalysisProcessing?: boolean;
   contentFlags?: ContentFlags;
+  // Game info props
+  turnCounter?: number;
+  onToggleAdultContent?: () => void;
+  onToggleAdultIntensity?: () => void;
 }
 
 interface MenuSection {
@@ -70,7 +79,10 @@ export function InfoMenu({
   onCreateFactionQuest,
   isAIProcessing,
   isNPCAnalysisProcessing,
-  contentFlags
+  contentFlags,
+  turnCounter,
+  onToggleAdultContent,
+  onToggleAdultIntensity
 }: InfoMenuProps) {
   // Responsive design context
   const { shouldUseMobileLayout } = useResponsiveContext();
@@ -78,7 +90,12 @@ export function InfoMenu({
   // Cache localStorage value để tránh gọi mỗi lần render
   const [activeSection, setActiveSection] = useState<string>(() => {
     try {
-      return localStorage.getItem('infoMenuActiveSection') || 'character';
+      const saved = localStorage.getItem('infoMenuActiveSection');
+      // Nếu đang ở gameinfo nhưng không phải mobile, chuyển về character
+      if (saved === 'gameinfo' && !shouldUseMobileLayout()) {
+        return 'character';
+      }
+      return saved || 'character';
     } catch (error) {
       // Fallback nếu localStorage không khả dụng (mobile Safari private mode)
       return 'character';
@@ -87,10 +104,18 @@ export function InfoMenu({
   const [expandedNPCs, setExpandedNPCs] = useState<Set<string>>(new Set());
   const [forceUpdate, setForceUpdate] = useState<number>(0);
   
-  // Chỉ log trong development mode để tránh ảnh hưởng performance
-  if (process.env.NODE_ENV === 'development' && forceUpdate > 0) {
-    console.log('InfoMenu forceUpdate:', forceUpdate);
-  }
+  // Theo dõi thay đổi responsive và chuyển section khi cần
+  useEffect(() => {
+    // Nếu đang ở gameinfo nhưng chuyển sang desktop, chuyển về character
+    if (activeSection === 'gameinfo' && !shouldUseMobileLayout()) {
+      setActiveSection('character');
+      try {
+        localStorage.setItem('infoMenuActiveSection', 'character');
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+    }
+  }, [shouldUseMobileLayout, activeSection]);
 
   // Tối ưu localStorage access cho mobile
   const updateActiveSection = useCallback((sectionId: string) => {
@@ -100,20 +125,17 @@ export function InfoMenu({
       localStorage.setItem('infoMenuActiveSection', sectionId);
     } catch (error) {
       // Ignore localStorage errors on mobile Safari private mode
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('localStorage not available:', error);
-      }
     }
   }, []);
   
-  // Các mục menu chính
+  // Các mục menu chính - chỉ hiện "Thông Tin Game" trên mobile
   const menuSections: MenuSection[] = [
+    ...(shouldUseMobileLayout() ? [{ id: 'gameinfo', title: 'Thông Tin Game', icon: <Clock className="w-4 h-4" />, isActive: true }] : []),
     { id: 'character', title: 'Nhân Vật', icon: <User className="w-4 h-4" />, isActive: true },
     { id: 'quests', title: 'Nhiệm Vụ', icon: <Target className="w-4 h-4" />, isActive: true },
     { id: 'relationships', title: 'Quan Hệ', icon: <Heart className="w-4 h-4" />, isActive: true },
     { id: 'world', title: 'Thế Giới', icon: <MapPin className="w-4 h-4" />, isActive: true },
     { id: 'factions', title: 'Phe Phái', icon: <Users className="w-4 h-4" />, isActive: true },
-    { id: 'entities', title: 'Thực Thể', icon: <Star className="w-4 h-4" />, isActive: true },
     { id: 'journal', title: 'Nhật Ký', icon: <FileText className="w-4 h-4" />, isActive: true }
   ];
 
@@ -121,6 +143,105 @@ export function InfoMenu({
   const formatWorldTime = (time: WorldTime | null) => {
     if (!time) return 'Không có dữ liệu';
     return `Năm ${time.year}, Tháng ${time.month}, Ngày ${time.day}, ${time.hour}:00`;
+  };
+
+  // Render section thông tin game
+  const renderGameInfoSection = () => {
+    return (
+      <div className="space-y-4">
+        {/* Thời gian thế giới */}
+        {worldTime && (
+          <div className="bg-gray-800/50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+              <Clock className="w-5 h-5 mr-2" />
+              Thời Gian Thế Giới
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span className="text-white">{worldTimeService.formatShortTime(worldTime)}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-400">Thời điểm:</span>
+                <span className="text-white">{worldTimeService.getTimeOfDay(worldTime)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bộ đếm lượt */}
+        {turnCounter !== undefined && (
+          <div className="bg-gray-800/50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2" />
+              Tiến Trình Game
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="w-4 h-4 text-gray-400" />
+                <span className="text-white">Lượt {turnCounter}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cài đặt nội dung 18+ */}
+        {contentFlags && (
+          <div className="bg-gray-800/50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+              <Shield className="w-5 h-5 mr-2" />
+              Cài Đặt Nội Dung
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">Nội dung 18+:</span>
+                <button
+                  onClick={onToggleAdultContent}
+                  className="flex items-center space-x-2 hover:bg-white/5 px-3 py-2 rounded transition-colors"
+                >
+                  {contentFlags.adult_enabled ? (
+                    contentFlags.adult_intensity === 'direct' ? (
+                      <AlertTriangle className="w-4 h-4 text-red-400" />
+                    ) : (
+                      <Shield className="w-4 h-4 text-orange-400" />
+                    )
+                  ) : (
+                    <EyeOff className="w-4 h-4 text-gray-400" />
+                  )}
+                  <span className={`text-sm font-medium ${
+                    contentFlags.adult_enabled
+                      ? contentFlags.adult_intensity === 'direct' 
+                        ? 'text-red-300' 
+                        : 'text-orange-300'
+                      : 'text-gray-400'
+                  }`}>
+                    {contentFlags.adult_enabled 
+                      ? `18+ ${contentFlags.adult_intensity === 'direct' ? 'Tả thực' : 'An toàn'}`
+                      : '18+ OFF'
+                    }
+                  </span>
+                </button>
+              </div>
+              
+              {contentFlags.adult_enabled && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Mức độ:</span>
+                  <button
+                    onClick={onToggleAdultIntensity}
+                    className="flex items-center space-x-2 hover:bg-white/5 px-3 py-2 rounded transition-colors"
+                  >
+                    <span className="text-sm text-orange-300">
+                      {contentFlags.adult_intensity === 'direct' ? 'Tả thực' : 'An toàn'}
+                    </span>
+                    <span className="text-xs text-gray-400">(Click để đổi)</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // Render section nhân vật
@@ -232,42 +353,26 @@ export function InfoMenu({
           </div>
         )}
 
-        {/* Máu và Mana */}
-        {(characterData.health || characterData.mana) && (
+        {/* Máu */}
+        {characterData.health && (
           <div className="bg-gray-800/50 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
               <Heart className="w-5 h-5 mr-2" />
               Trạng Thái
             </h3>
             <div className="space-y-3">
-              {characterData.health && (
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-400">Máu</span>
-                    <span className="text-white">{characterData.health.current}/{characterData.health.max}</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-red-500 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${(characterData.health.current / characterData.health.max) * 100}%` }}
-                    ></div>
-                  </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-400">Máu</span>
+                  <span className="text-white">{characterData.health.current}/{characterData.health.max}</span>
                 </div>
-              )}
-              {characterData.mana && (
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-400">Mana</span>
-                    <span className="text-white">{characterData.mana.current}/{characterData.mana.max}</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${(characterData.mana.current / characterData.mana.max) * 100}%` }}
-                    ></div>
-                  </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-red-500 h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${(characterData.health.current / characterData.health.max) * 100}%` }}
+                  ></div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}
@@ -398,6 +503,28 @@ export function InfoMenu({
               {worldData.rules.map((rule: string, index: number) => (
                 <div key={index} className="text-sm text-white">
                   • {rule}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Thực thể chính */}
+        {worldData.keyEntities && worldData.keyEntities.length > 0 && (
+          <div className="bg-gray-800/50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+              <Star className="w-5 h-5 mr-2" />
+              Thực Thể Chính
+            </h3>
+            <div className="space-y-4">
+              {worldData.keyEntities.map((entity: any, index: number) => (
+                <div key={index} className="bg-gray-700/50 rounded-lg p-3">
+                  <h4 className="text-white font-medium mb-2">{typeof entity.name === 'string' ? entity.name : JSON.stringify(entity.name)}</h4>
+                  <div className="space-y-2 text-sm">
+                    <div><span className="text-gray-400">Loại:</span> <span className="text-white">{typeof entity.type === 'string' ? entity.type : JSON.stringify(entity.type)}</span></div>
+                    <div><span className="text-gray-400">Mô tả:</span> <span className="text-white">{typeof entity.description === 'string' ? entity.description : JSON.stringify(entity.description)}</span></div>
+                    <div><span className="text-gray-400">Hook:</span> <span className="text-white">{typeof entity.hook === 'string' ? entity.hook : JSON.stringify(entity.hook)}</span></div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -615,7 +742,6 @@ export function InfoMenu({
 
   // Render section quan hệ NPC - tối ưu với useMemo
   const renderRelationshipsSection = useMemo(() => {
-    // console.log('🔍 Relationships data:', relationships); // Removed excessive logging
     
     const toggleNPC = (npcId: string) => {
       setExpandedNPCs(prev => {
@@ -726,7 +852,6 @@ export function InfoMenu({
               {relationships.map((relationship: any) => {
                 // Validate relationship data
                 if (!relationship || typeof relationship !== 'object') {
-                  console.error('Invalid relationship data:', relationship);
                   return null;
                 }
                 
@@ -877,7 +1002,7 @@ export function InfoMenu({
                             {cleanNotes(relationship.notes).map((note, noteIndex) => (
                               <div key={noteIndex} className="mb-2 last:mb-0 break-words overflow-wrap-anywhere min-w-0 leading-relaxed">
                                 <span className="text-gray-400 mr-2">•</span>
-                                <span>{note}</span>
+                                <span dangerouslySetInnerHTML={{ __html: note }} />
                               </div>
                             ))}
                           </div>
@@ -895,27 +1020,6 @@ export function InfoMenu({
     );
   }, [relationships, expandedNPCs, contentFlags]);
 
-  // Render section thực thể chính
-  const renderEntitiesSection = () => {
-    if (!worldData?.keyEntities || worldData.keyEntities.length === 0) {
-      return <div className="text-gray-400">Không có dữ liệu thực thể</div>;
-    }
-
-    return (
-      <div className="space-y-4">
-        {worldData.keyEntities.map((entity: any, index: number) => (
-          <div key={index} className="bg-gray-800/50 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-white mb-3">{typeof entity.name === 'string' ? entity.name : JSON.stringify(entity.name)}</h3>
-            <div className="space-y-2 text-sm">
-              <div><span className="text-gray-400">Loại:</span> <span className="text-white">{typeof entity.type === 'string' ? entity.type : JSON.stringify(entity.type)}</span></div>
-              <div><span className="text-gray-400">Mô tả:</span> <span className="text-white">{typeof entity.description === 'string' ? entity.description : JSON.stringify(entity.description)}</span></div>
-              <div><span className="text-gray-400">Hook:</span> <span className="text-white">{typeof entity.hook === 'string' ? entity.hook : JSON.stringify(entity.hook)}</span></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   // Render section nhiệm vụ mới với quest system
   const renderQuestsSection = () => {
@@ -946,6 +1050,8 @@ export function InfoMenu({
 
   const renderActiveSection = () => {
     switch (activeSection) {
+      case 'gameinfo':
+        return shouldUseMobileLayout() ? renderGameInfoSection() : renderCharacterSection();
       case 'character':
         return renderCharacterSection();
       case 'quests':
@@ -956,8 +1062,6 @@ export function InfoMenu({
         return renderWorldSection();
       case 'factions':
         return renderFactionsSection();
-      case 'entities':
-        return renderEntitiesSection();
       case 'relationships':
         return renderRelationshipsSection;
       default:
