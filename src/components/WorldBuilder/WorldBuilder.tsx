@@ -154,9 +154,8 @@ export function WorldBuilder() {
     
     try {
       if (field === 'coreIdea') {
-        // Generate complete world data from core idea
-        const [suggestion, genreSetting, principles, entities, worldDetails] = await Promise.all([
-          geminiService.generateCoreIdea(worldData.coreIdea),
+        // Auto hoàn thành tất cả các phần dựa trên ý tưởng cốt lõi (không chi tiết hóa ý tưởng)
+        const [genreSetting, principles, entities, worldDetails] = await Promise.all([
           geminiService.generateGenreAndSetting(worldData.coreIdea),
           geminiService.generateCorePrinciples(worldData.coreIdea),
           geminiService.generateFoundationEntities(worldData.coreIdea),
@@ -202,7 +201,7 @@ export function WorldBuilder() {
         
         setWorldData(prev => ({ 
           ...prev, 
-          coreIdea: suggestion,
+          // Không thay đổi coreIdea, chỉ auto hoàn thành các phần khác
           genre: genreSetting.genre,
           setting: genreSetting.setting,
           storyTone: parsedDetails.storyTone || prev.storyTone,
@@ -695,7 +694,7 @@ export function WorldBuilder() {
                   disabled={isGenerating}
                   className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm disabled:opacity-50"
                 >
-                  {isGenerating && generatingField === 'coreIdea' ? 'Đang tạo...' : 'Chi tiết hóa & Hoàn thành tất cả'}
+                  {isGenerating && generatingField === 'coreIdea' ? 'Đang tạo...' : 'Hoàn thành tất cả'}
                 </button>
               </div>
               <textarea
@@ -1039,14 +1038,14 @@ export function WorldBuilder() {
           content={[
             "🤖 HƯỚNG DẪN SỬ DỤNG AI:",
             "• Gợi ý bằng AI (Nguyên tắc thế giới/Thực thể thế giới): Tạo gợi ý phù hợp với ý tưởng cốt lõi. Cần điền ý tưởng cốt lõi trước.",
-            "• Chi Tiết Hóa bằng AI: Tự động hoàn thành tất cả các mục: ý tưởng, thể loại, bối cảnh, tông truyện, ngôi kể, độ khó, nguyên tắc, thực thể, tiền tệ.",
+            "• Hoàn thành tất cả: Tự động điền các mục: thể loại, bối cảnh, tông truyện, ngôi kể, độ khó, nguyên tắc, thực thể, tiền tệ (không thay đổi ý tưởng cốt lõi).",
             "",
             "📁 NHẬP/XUẤT THẾ GIỚI:",
             "• Xuất thế giới: Lưu thế giới hiện tại thành file JSON để chia sẻ hoặc backup",
             "• Nhập thế giới: Tải file JSON để khôi phục thế giới đã lưu trước đó",
             "",
             "💡 MẸO TẠO THẾ GIỚI:",
-            "• Viết ý tưởng cốt lõi cơ bản, sau đó dùng 'Chi Tiết Hóa bằng AI' để phát triển",
+            "• Viết ý tưởng cốt lõi cơ bản, sau đó dùng 'Hoàn thành tất cả' để AI tự động điền các phần còn lại",
             "• Nguyên tắc thế giới định nghĩa quy luật của thế giới",
             "• Thực thể thế giới là các tổ chức/sức mạnh quan trọng",
             "• Tông truyện ảnh hưởng đến cách AI kể chuyện",

@@ -42,7 +42,9 @@ export class SaveGameService {
     chatData: ChatMessage[],
     turnCounter: number,
     worldTime: WorldTime,
-    uiState?: any
+    questSystemData?: any,
+    uiState?: any,
+    contentFlags?: any
   ): Promise<SaveResult> {
     try {
       if (!this.isInitialized) {
@@ -59,13 +61,11 @@ export class SaveGameService {
         chatData,
         turnCounter,
         worldTime,
-        slotId
+        slotId,
+        questSystemData,
+        uiState,
+        contentFlags
       );
-
-      // Thêm UI state nếu có
-      if (uiState) {
-        saveGame.ui = uiState;
-      }
 
       // Lưu vào storage
       await this.currentAdapter.save(slotId, saveGame);

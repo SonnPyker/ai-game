@@ -86,8 +86,14 @@ class SCCService {
    * Check if it's time to summarize
    */
   shouldSummarize(context: SCCContext): boolean {
-    return context.turnCounter % this.SUMMARY_THRESHOLD === 0 && context.turnCounter > 0;
+    const shouldSum = context.turnCounter % this.SUMMARY_THRESHOLD === 0 && context.turnCounter > 0;
+    
+    // Debug log for SCC
+    console.log(`🔍 SCC Check - Turn: ${context.turnCounter}, Threshold: ${this.SUMMARY_THRESHOLD}, Modulo: ${context.turnCounter % this.SUMMARY_THRESHOLD}, Should Summarize: ${shouldSum}`);
+    
+    return shouldSum;
   }
+
 
   /**
    * Get context for AI prompt (optimized)

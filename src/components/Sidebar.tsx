@@ -70,7 +70,7 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
       <aside className={`fixed left-0 top-0 w-64 sm:w-72 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-50 sidebar-transition ${
         isOpen ? 'sidebar-open' : 'sidebar-closed'
       }`}>
-        <nav className="p-3 sm:p-4 h-full flex flex-col">
+        <nav className="p-3 sm:p-4 h-full flex flex-col mobile-padding">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold-vietnamese text-white uppercase">MENU</h2>
             <div className="flex items-center space-x-2">
@@ -116,7 +116,7 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
                 <li key={item.id}>
                   <a
                     href={item.path}
-                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 border-2 ${
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 border-2 mobile-button ${
                       isDisabled 
                         ? 'bg-gray-500/10 border-gray-500/20 text-gray-500 cursor-not-allowed'
                         : isActiveMenuItem(item)

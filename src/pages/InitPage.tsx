@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Globe, User, ArrowRight, CheckCircle, Circle } from 'lucide-react';
+import { npcRelationshipService } from '../services/npcRelationshipService';
 
 type InitStep = 'world' | 'character' | 'scenario';
 
@@ -121,11 +122,19 @@ export function InitPage() {
       localStorage.removeItem('rp_scenario');
       localStorage.removeItem('rp_chat');
       localStorage.removeItem('game_turn_counter');
+      localStorage.removeItem('faction_quests'); // Xóa faction quests khi reset world
+      localStorage.removeItem('faction_reputations'); // Xóa faction reputations khi reset world
+      // Clear NPC relationship data when starting new world
+      npcRelationshipService.clearAllData();
     } else if (step.id === 'character') {
       // Reset scenario
       localStorage.removeItem('rp_scenario');
       localStorage.removeItem('rp_chat');
       localStorage.removeItem('game_turn_counter');
+      localStorage.removeItem('faction_quests'); // Xóa faction quests khi reset character
+      localStorage.removeItem('faction_reputations'); // Xóa faction reputations khi reset character
+      // Clear NPC relationship data when creating new character
+      npcRelationshipService.clearAllData();
     }
 
     // Chuyển đến trang tương ứng

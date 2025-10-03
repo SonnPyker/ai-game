@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { QuestSystem, QuestProgress } from '../types';
 import { questDetectionService } from '../services/questDetectionService';
+import { factionQuestService } from '../services/factionQuestService';
 
 const QUEST_SYSTEM_KEY = 'quest_system';
 
@@ -107,13 +108,7 @@ const loadQuestsFromWorldData = (): { mainQuests: QuestProgress[], sideQuests: Q
       });
     }
 
-    // Load sideQuests từ world data
-    if (parsed.sideQuests && Array.isArray(parsed.sideQuests)) {
-      parsed.sideQuests.forEach((quest: any) => {
-        const questProgress = convertWorldQuestToQuestProgress(quest);
-        sideQuests.push(questProgress);
-      });
-    }
+    // Không load sideQuests từ world data - sidequest chỉ được tạo khi accept từ chat
 
     console.log('Loaded quests from world data:', { mainQuests: mainQuests.length, sideQuests: sideQuests.length });
     return { mainQuests, sideQuests };
@@ -123,15 +118,49 @@ const loadQuestsFromWorldData = (): { mainQuests: QuestProgress[], sideQuests: Q
   }
 };
 
+// Helper function để load faction quests
+const loadFactionQuests = (): QuestProgress[] => {
+  return factionQuestService.getFactionQuests();
+};
+
 export function useQuestSystem() {
   const [questSystem, setQuestSystem] = useState<QuestSystem>({
     mainQuests: [],
     sideQuests: [],
+    factionQuests: [],
     currentAct: 0, // Bắt đầu từ 0 (quest mở đầu)
     totalActs: 5,
     unlockedActs: [], // Chưa unlock act nào
-    questHistory: []
+    questHistory: [],
+    factionReputations: []
   });
+
+  // Listen for faction reputation changes
+  useEffect(() => {
+    const handleFactionReputationChange = (event: CustomEvent) => {
+      const { factionName, reputation } = event.detail;
+      setQuestSystem(prev => {
+        const newSystem = { ...prev };
+        const existingIndex = newSystem.factionReputations.findIndex(fr => fr.factionName === factionName);
+        
+        if (existingIndex >= 0) {
+          newSystem.factionReputations[existingIndex].reputation = reputation;
+        } else {
+          newSystem.factionReputations.push({ factionName, reputation });
+        }
+        
+        // Save to localStorage
+        localStorage.setItem(QUEST_SYSTEM_KEY, JSON.stringify(newSystem));
+        return newSystem;
+      });
+    };
+
+    window.addEventListener('factionReputationChanged', handleFactionReputationChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('factionReputationChanged', handleFactionReputationChange as EventListener);
+    };
+  }, []);
 
   // Load quest system từ localStorage và world data
   useEffect(() => {
@@ -143,6 +172,7 @@ export function useQuestSystem() {
         // Convert dates back
         const questSystemWithDates = {
           ...parsed,
+          factionReputations: parsed.factionReputations || [],
           mainQuests: parsed.mainQuests.map((quest: any) => ({
             ...quest,
             createdAt: new Date(quest.createdAt),
@@ -171,6 +201,20 @@ export function useQuestSystem() {
               claimedAt: reward.claimedAt ? new Date(reward.claimedAt) : undefined
             }))
           })),
+          factionQuests: (parsed.factionQuests || []).map((quest: any) => ({
+            ...quest,
+            createdAt: new Date(quest.createdAt),
+            completedAt: quest.completedAt ? new Date(quest.completedAt) : undefined,
+            objectives: quest.objectives.map((obj: any) => ({
+              ...obj,
+              completedAt: obj.completedAt ? new Date(obj.completedAt) : undefined,
+              unlocked: obj.unlocked !== undefined ? obj.unlocked : true // Backward compatibility
+            })),
+            rewards: quest.rewards.map((reward: any) => ({
+              ...reward,
+              claimedAt: reward.claimedAt ? new Date(reward.claimedAt) : undefined
+            }))
+          })),
           questHistory: parsed.questHistory.map((quest: any) => ({
             ...quest,
             createdAt: new Date(quest.createdAt),
@@ -184,14 +228,16 @@ export function useQuestSystem() {
     } else {
       // Nếu chưa có quest system, load từ world data
       const worldQuests = loadQuestsFromWorldData();
-      if (worldQuests.mainQuests.length > 0 || worldQuests.sideQuests.length > 0) {
+      if (worldQuests.mainQuests.length > 0) {
         const newQuestSystem: QuestSystem = {
           mainQuests: worldQuests.mainQuests,
-          sideQuests: worldQuests.sideQuests,
+          sideQuests: [], // Không load sidequest từ world data
+          factionQuests: loadFactionQuests(), // Load faction quests
           currentAct: 0, // Bắt đầu từ 0 (quest mở đầu)
           totalActs: 5,
           unlockedActs: [], // Chưa unlock act nào
-          questHistory: []
+          questHistory: [],
+          factionReputations: []
         };
         
         // Starter quest (quest đầu tiên) luôn active
@@ -269,6 +315,22 @@ export function useQuestSystem() {
     });
   }, [saveQuestSystem]);
 
+  // Remove declined quests from UI (xóa quest đã từ chối khỏi hiển thị)
+  const removeDeclinedQuests = useCallback(() => {
+    setQuestSystem(prev => {
+      const newSystem = { ...prev };
+      
+      // Xóa quest đã declined khỏi sideQuests (chỉ giữ lại trong questHistory)
+      newSystem.sideQuests = newSystem.sideQuests.filter(q => q.status !== 'declined');
+      
+      // Xóa quest đã declined khỏi mainQuests (chỉ giữ lại trong questHistory)
+      newSystem.mainQuests = newSystem.mainQuests.filter(q => q.status !== 'declined');
+      
+      saveQuestSystem(newSystem);
+      return newSystem;
+    });
+  }, [saveQuestSystem]);
+
   // Complete objective
   const completeObjective = useCallback((questId: string, objectiveId: string, completed: boolean) => {
     setQuestSystem(prev => {
@@ -324,6 +386,21 @@ export function useQuestSystem() {
             newSystem.mainQuests[questIndex] = updatedQuest;
           } else {
             newSystem.sideQuests[questIndex] = updatedQuest;
+            
+            // Nếu là side quest, kiểm tra xem có cần tạo objective tiếp theo không
+            if (updatedQuest.type === 'side' && updatedQuest._allObjectives) {
+              const currentObjectiveCount = updatedQuest.objectives.length;
+              const totalObjectives = updatedQuest._allObjectives.length;
+              
+              // Nếu vừa hoàn thành objective và còn objectives chưa tạo
+              if (completed && currentObjectiveCount < totalObjectives) {
+                const nextObjective = questDetectionService.generateNextObjective(updatedQuest);
+                if (nextObjective) {
+                  updatedQuest.objectives.push(nextObjective);
+                  newSystem.sideQuests[questIndex] = updatedQuest;
+                }
+              }
+            }
           }
         }
       }
@@ -475,14 +552,21 @@ export function useQuestSystem() {
     });
   }, [saveQuestSystem]);
 
-  // Analyze chat input for quest completion
-  const analyzeChatInput = useCallback(async (chatInput: string) => {
+  // Analyze chat input for quest completion với context đầy đủ
+  const analyzeChatInput = useCallback(async (chatInput: string, sceneState?: any, additionalContext?: {
+    sccContext?: any;
+    storyProgress?: any;
+    chatHistory?: Array<{ role: string; content: string; turn?: number }>;
+    worldTime?: any;
+    turnCounter?: number;
+    npcRelationships?: any;
+  }) => {
     const activeQuests = [
       ...questSystem.mainQuests.filter(q => q.status === 'active'),
       ...questSystem.sideQuests.filter(q => q.status === 'active')
     ];
     
-    const result = await questDetectionService.analyzeQuestCompletion(chatInput, activeQuests);
+    const result = await questDetectionService.analyzeQuestCompletion(chatInput, activeQuests, sceneState, additionalContext);
     
     // Auto-complete objectives
     for (const { questId, objectiveId } of result.completedObjectives) {
@@ -493,8 +577,8 @@ export function useQuestSystem() {
   }, [questSystem, completeObjective]);
 
   // Generate side quest from AI response
-  const generateSideQuestFromAI = useCallback(async (aiResponse: string, storyContext: any) => {
-    const newQuest = await questDetectionService.generateSideQuestFromContext(aiResponse, storyContext);
+  const generateSideQuestFromAI = useCallback(async (aiResponse: string, storyContext: any, turnCounter?: number) => {
+    const newQuest = await questDetectionService.generateSideQuestFromContext(aiResponse, storyContext, turnCounter);
     if (newQuest) {
       addSideQuest(newQuest);
       return newQuest;
@@ -502,16 +586,41 @@ export function useQuestSystem() {
     return null;
   }, [addSideQuest]);
 
+  // Add next objective to side quest
+  const addNextObjectiveToSideQuest = useCallback((questId: string) => {
+    setQuestSystem(prev => {
+      const newSystem = { ...prev };
+      
+      // Tìm side quest
+      const questIndex = newSystem.sideQuests.findIndex(q => q.id === questId);
+      if (questIndex === -1) return prev;
+      
+      const quest = newSystem.sideQuests[questIndex];
+      
+      // Tạo objective tiếp theo
+      const nextObjective = questDetectionService.generateNextObjective(quest);
+      if (!nextObjective) return prev;
+      
+      // Thêm objective mới
+      newSystem.sideQuests[questIndex] = {
+        ...quest,
+        objectives: [...quest.objectives, nextObjective]
+      };
+      
+      saveQuestSystem(newSystem);
+      return newSystem;
+    });
+  }, [saveQuestSystem]);
+
   // Refresh quest system từ world data
   const refreshQuestsFromWorld = useCallback(() => {
     const worldQuests = loadQuestsFromWorldData();
-    if (worldQuests.mainQuests.length > 0 || worldQuests.sideQuests.length > 0) {
+    if (worldQuests.mainQuests.length > 0) {
       setQuestSystem(prev => {
         const newSystem = { ...prev };
         
         // Merge với quest hiện tại, tránh duplicate
         const existingMainIds = new Set(prev.mainQuests.map(q => q.id));
-        const existingSideIds = new Set(prev.sideQuests.map(q => q.id));
         
         // Thêm main quests mới
         worldQuests.mainQuests.forEach(quest => {
@@ -520,12 +629,7 @@ export function useQuestSystem() {
           }
         });
         
-        // Thêm side quests mới
-        worldQuests.sideQuests.forEach(quest => {
-          if (!existingSideIds.has(quest.id)) {
-            newSystem.sideQuests.push(quest);
-          }
-        });
+        // Không thêm side quests từ world data - sidequest chỉ được tạo khi accept từ chat
         
         saveQuestSystem(newSystem);
         return newSystem;
@@ -533,17 +637,81 @@ export function useQuestSystem() {
     }
   }, [saveQuestSystem]);
 
+
+  // Tạo faction quest từ AI
+  const createFactionQuestFromAI = useCallback(async (factionName: string) => {
+    const newQuest = await factionQuestService.createFactionQuestFromAI(factionName);
+    if (newQuest) {
+      setQuestSystem(prev => {
+        const newSystem = { ...prev };
+        newSystem.factionQuests = [...prev.factionQuests, newQuest];
+        saveQuestSystem(newSystem);
+        return newSystem;
+      });
+      return newQuest;
+    }
+    return null;
+  }, [saveQuestSystem]);
+
+  // Cập nhật faction reputation
+  const updateFactionReputation = useCallback((factionName: string, reputation: number) => {
+    setQuestSystem(prev => {
+      const newSystem = { ...prev };
+      const existingIndex = newSystem.factionReputations.findIndex(fr => fr.factionName === factionName);
+      
+      if (existingIndex >= 0) {
+        newSystem.factionReputations[existingIndex].reputation = reputation;
+      } else {
+        newSystem.factionReputations.push({ factionName, reputation });
+      }
+      
+      saveQuestSystem(newSystem);
+      return newSystem;
+    });
+  }, [saveQuestSystem]);
+
+  // Lấy faction reputation
+  const getFactionReputation = useCallback((factionName: string): number => {
+    const factionRep = questSystem.factionReputations.find(fr => fr.factionName === factionName);
+    return factionRep ? factionRep.reputation : 0;
+  }, [questSystem.factionReputations]);
+
+  // Đồng bộ faction reputations từ NPC service
+  const syncFactionReputations = useCallback(() => {
+    // Import npcRelationshipService dynamically to avoid circular dependency
+    import('../services/npcRelationshipService').then(({ npcRelationshipService }) => {
+      const allFactionReputations = npcRelationshipService.getAllFactionReputations();
+      const factionReps = allFactionReputations.map((fr: any) => ({
+        factionName: fr.factionName,
+        reputation: fr.reputation
+      }));
+      
+      setQuestSystem(prev => {
+        const newSystem = { ...prev };
+        newSystem.factionReputations = factionReps;
+        saveQuestSystem(newSystem);
+        return newSystem;
+      });
+    });
+  }, [saveQuestSystem]);
+
   return {
     questSystem,
     acceptQuest,
     declineQuest,
     declineActiveQuest,
+    removeDeclinedQuests,
     completeObjective,
     claimReward,
     addSideQuest,
     analyzeChatInput,
     generateSideQuestFromAI,
+    addNextObjectiveToSideQuest,
     unlockNewQuests,
-    refreshQuestsFromWorld
+    refreshQuestsFromWorld,
+    createFactionQuestFromAI,
+    updateFactionReputation,
+    getFactionReputation,
+    syncFactionReputations
   };
 }

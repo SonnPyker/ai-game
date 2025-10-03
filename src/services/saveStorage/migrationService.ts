@@ -1,6 +1,7 @@
 import { SaveGame } from '../../types/saveGame';
 import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime } from '../../types';
 import { LocalStore } from './localStore';
+import { npcRelationshipService } from '../npcRelationshipService';
 
 export class MigrationService {
   private localStore: LocalStore;
@@ -50,25 +51,31 @@ export class MigrationService {
         ? parseInt(legacyData['game_turn_counter'], 10)
         : 0;
 
-      const summaryData: SCCSummary = legacyData['rp_summary']
-        ? JSON.parse(legacyData['rp_summary'])
-        : {
-            recap: '',
-            timeline: [],
-            clues: [],
-            openThreads: [],
-            relationships: [],
-            goals: [],
-            risks: []
-          };
-
       const sceneStateData: SCCState = legacyData['rp_scene_state']
         ? JSON.parse(legacyData['rp_scene_state'])
         : {};
 
+      const summaryData: SCCSummary = legacyData['rp_summary']
+        ? JSON.parse(legacyData['rp_summary'])
+        : {
+          recap: '',
+          timeline: [],
+          clues: [],
+          openThreads: [],
+          relationships: [],
+          goals: [],
+          risks: []
+        };
+
+      // Cập nhật sceneState vào summary
+      summaryData.sceneState = sceneStateData;
+
       const questSystemData = legacyData['quest_system']
         ? JSON.parse(legacyData['quest_system'])
         : undefined;
+
+      // Get current NPC relationship data
+      const npcRelationshipData = npcRelationshipService.exportForSaveGame();
 
       // Tạo SaveGame từ dữ liệu cũ
       const saveGame: SaveGame = {
@@ -94,7 +101,8 @@ export class MigrationService {
           year: 1,
           dayOfWeek: 1
         },
-        questSystem: questSystemData
+        questSystem: questSystemData,
+        npcRelationships: npcRelationshipData
       };
 
       // Validate dữ liệu trước khi lưu
@@ -169,8 +177,20 @@ export class MigrationService {
     chatData: ChatMessage[],
     turnCounter: number,
     worldTime: WorldTime,
-    slotId: 'slot1' | 'slot2' | 'slot3' = 'slot1'
+    slotId: 'slot1' | 'slot2' | 'slot3' = 'slot1',
+    questSystemData?: any,
+    uiState?: any,
+    contentFlags?: any
   ): SaveGame {
+    // Cập nhật sceneState vào summary
+    const updatedSummary = {
+      ...summaryData,
+      sceneState: sceneStateData
+    };
+
+    // Get current NPC relationship data
+    const npcRelationshipData = npcRelationshipService.exportForSaveGame();
+
     return {
       version: '1.0.0',
       meta: {
@@ -182,11 +202,15 @@ export class MigrationService {
       world: worldData,
       character: characterData,
       scenario: scenarioData,
-      summary: summaryData,
+      summary: updatedSummary,
       sceneState: sceneStateData,
       chat: chatData,
       turnCounter,
-      worldTime
+      worldTime,
+      questSystem: questSystemData,
+      npcRelationships: npcRelationshipData,
+      ui: uiState,
+      contentFlags: contentFlags
     };
   }
 

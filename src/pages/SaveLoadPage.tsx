@@ -16,6 +16,7 @@ import { SaveSlot } from '../types/saveGame';
 import { localSaveService } from '../services/saveStorage/localSaveService';
 import { cloudSyncService } from '../services/saveStorage/cloudSyncService';
 import { authService, AuthState } from '../services/saveStorage/authService';
+import { npcRelationshipService } from '../services/npcRelationshipService';
 
 interface SaveLoadPageProps {
   // No props needed since we handle navigation directly
@@ -104,6 +105,13 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
       }
       
       if (result.success && result.saveGame) {
+        // Clear existing NPC data before loading save
+        npcRelationshipService.clearAllData();
+        
+        // Clear faction data when loading different game
+        localStorage.removeItem('faction_quests');
+        localStorage.removeItem('faction_reputations');
+        
         // Cập nhật localStorage với dữ liệu từ SaveGame
         const saveGame = result.saveGame;
         
@@ -123,6 +131,12 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         if (saveGame.questSystem) {
           localStorage.setItem('quest_system', JSON.stringify(saveGame.questSystem));
           console.log('✅ Đã khôi phục quest system từ save file');
+        }
+        
+        // Khôi phục NPC relationship data nếu có
+        if (saveGame.npcRelationships) {
+          npcRelationshipService.importFromSaveGame(saveGame.npcRelationships);
+          console.log('✅ Đã khôi phục NPC relationship data từ save file');
         }
         
         const source = isCloudSlot ? 'Cloud' : 'Local';

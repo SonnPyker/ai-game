@@ -9,12 +9,12 @@ interface QuestOfferModalProps {
   questOffer: {
     title: string;
     description: string;
-    objectives: Array<{
+    objectives?: Array<{
       id: string;
       description: string;
       aiKeywords: string[];
     }>;
-    rewards: Array<{
+    rewards?: Array<{
       type: string;
       amount: number;
       description: string;
@@ -71,7 +71,7 @@ export function QuestOfferModal({
           </p>
 
           {/* Objectives */}
-          {questOffer.objectives.length > 0 && (
+          {questOffer.objectives && questOffer.objectives.length > 0 ? (
             <div>
               <h4 className="text-sm font-medium text-gray-400 mb-2 flex items-center">
                 <CheckCircle className="w-4 h-4 mr-1" />
@@ -86,10 +86,18 @@ export function QuestOfferModal({
                 ))}
               </ul>
             </div>
+          ) : (
+            <div>
+              <h4 className="text-sm font-medium text-gray-400 mb-2 flex items-center">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Mục tiêu:
+              </h4>
+              <p className="text-sm text-gray-500 italic">Chưa có mục tiêu cụ thể</p>
+            </div>
           )}
 
           {/* Rewards */}
-          {questOffer.rewards.length > 0 && (
+          {questOffer.rewards && questOffer.rewards.length > 0 ? (
             <div>
               <h4 className="text-sm font-medium text-gray-400 mb-2 flex items-center">
                 <Gift className="w-4 h-4 mr-1" />
@@ -102,6 +110,14 @@ export function QuestOfferModal({
                   </div>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div>
+              <h4 className="text-sm font-medium text-gray-400 mb-2 flex items-center">
+                <Gift className="w-4 h-4 mr-1" />
+                Phần thưởng:
+              </h4>
+              <p className="text-sm text-gray-500 italic">Chưa có phần thưởng cụ thể</p>
             </div>
           )}
         </div>

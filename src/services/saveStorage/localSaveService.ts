@@ -1,5 +1,6 @@
 import { SaveGame, SaveSlot } from '../../types/saveGame';
 import { LocalStorageStore } from './localStorageStore';
+import { npcRelationshipService } from '../npcRelationshipService';
 
 export interface SaveResult {
   success: boolean;
@@ -51,6 +52,15 @@ export class LocalSaveService {
     contentFlags?: any
   ): Promise<SaveResult> {
     try {
+      // Cập nhật sceneState vào summary
+      const updatedSummary = {
+        ...summaryData,
+        sceneState: sceneStateData
+      };
+
+      // Get current NPC relationship data
+      const npcRelationshipData = npcRelationshipService.exportForSaveGame();
+
       // Create SaveGame object
       const saveGame: SaveGame = {
         version: '1.0.0',
@@ -63,12 +73,13 @@ export class LocalSaveService {
         world: worldData,
         character: characterData,
         scenario: scenarioData,
-        summary: summaryData,
+        summary: updatedSummary,
         sceneState: sceneStateData,
         chat: chatData,
         turnCounter,
         worldTime,
         questSystem: questSystemData,
+        npcRelationships: npcRelationshipData,
         ui: uiState,
         contentFlags: contentFlags
       };

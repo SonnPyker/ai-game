@@ -38,6 +38,7 @@ interface SaveManagerProps {
     turnCounter: number;
     worldTime: any;
     uiState?: any;
+    contentFlags?: any;
   };
 }
 
@@ -161,7 +162,9 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: Sa
         currentGameData.chatData,
         currentGameData.turnCounter,
         currentGameData.worldTime,
-        currentGameData.uiState
+        undefined, // questSystemData - sẽ được thêm sau
+        currentGameData.uiState,
+        currentGameData.contentFlags
       );
 
       if (result.success) {
@@ -323,7 +326,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: Sa
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="glass-effect rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          className="glass-effect rounded-2xl p-3 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto mobile-padding"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -430,7 +433,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: Sa
           )}
 
           {/* Slots Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
             {['slot1', 'slot2', 'slot3'].map((slotId) => {
               const slot = slots.find(s => s.slotId === slotId) || {
                 slotId: slotId as 'slot1' | 'slot2' | 'slot3',
@@ -524,7 +527,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: Sa
                       <button
                         onClick={() => handleLoad(slotId as 'slot1' | 'slot2' | 'slot3')}
                         disabled={loading}
-                        className="w-full py-2 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                        className="w-full py-2 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 mobile-button"
                       >
                         {loading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -538,7 +541,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: Sa
                     <button
                       onClick={() => handleSave(slotId as 'slot1' | 'slot2' | 'slot3')}
                       disabled={loading || !currentGameData}
-                      className="w-full py-2 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                      className="w-full py-2 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 mobile-button"
                     >
                       {loading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -552,7 +555,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: Sa
                       <button
                         onClick={() => handleDelete(slotId as 'slot1' | 'slot2' | 'slot3')}
                         disabled={loading}
-                        className="w-full py-2 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                        className="w-full py-2 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 mobile-button"
                       >
                         {loading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />

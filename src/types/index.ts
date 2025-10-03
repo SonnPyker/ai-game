@@ -143,11 +143,12 @@ export interface QuestReward {
 // Hệ thống Quest mới với progress tracking
 export interface QuestProgress {
   id: string;
-  type: 'main' | 'side';
+  type: 'main' | 'side' | 'faction';
   title: string;
   description: string;
   status: 'active' | 'completed' | 'failed' | 'locked' | 'available' | 'declined';
   act?: number; // Chỉ cho main quest
+  factionName?: string; // Chỉ cho faction quest
   objectives: QuestObjectiveProgress[];
   rewards: QuestRewardProgress[];
   prerequisites?: string[]; // Quest cần hoàn thành trước
@@ -158,6 +159,15 @@ export interface QuestProgress {
   };
   createdAt: Date;
   completedAt?: Date;
+  turnCreated?: number; // Turn khi quest được tạo
+  turnCompleted?: number; // Turn khi quest được hoàn thành
+  turnStarted?: number; // Turn khi quest được bắt đầu
+  // Lưu trữ toàn bộ objectives để tạo dần sau này (chỉ cho side quest)
+  _allObjectives?: Array<{
+    id: string;
+    description: string;
+    aiKeywords?: string[];
+  }>;
 }
 
 export interface QuestObjectiveProgress {
@@ -181,10 +191,15 @@ export interface QuestRewardProgress {
 export interface QuestSystem {
   mainQuests: QuestProgress[];
   sideQuests: QuestProgress[];
+  factionQuests: QuestProgress[];
   currentAct: number;
   totalActs: number;
   unlockedActs: number[];
   questHistory: QuestProgress[];
+  factionReputations: Array<{
+    factionName: string;
+    reputation: number;
+  }>;
 }
 
 export interface WorldTime {
@@ -261,6 +276,7 @@ export interface SCCSummary {
   relationships: { npc: string; status: string; notes?: string }[];
   goals: { pcGoal: string; actGoal?: string }[];
   risks: string[];              // mối nguy hiện hữu
+  sceneState?: SCCState;        // trạng thái hiện tại của scene
 }
 
 export interface SCCState {
@@ -269,6 +285,93 @@ export interface SCCState {
   inventory?: { name: string; qty?: number }[];
   clocks?: { name: string; value: number; max: number }[];
   flags?: Record<string, boolean>;
+}
+
+// NPC Relationship System
+export interface NPCRelationship {
+  id: string;
+  name: string;
+  description?: string;
+  relationshipLevel: number; // -100 to 100 (hate to love)
+  reputation: number; // -100 to 100 (terrible to excellent)
+  status: 'neutral' | 'friendly' | 'hostile' | 'rival' | 
+          'acquaintance' | 'ally' | 'enemy' | 'suspicious' | 'admiring' | 'respectful' | 
+          'disappointed' | 'cautious' | 'trusting' | 'competitive';
+  lastInteraction: Date;
+  totalInteractions: number;
+  notes?: string[];
+  tags?: string[]; // e.g., ['merchant', 'noble', 'criminal']
+  location?: string; // where they were last seen
+  faction?: string; // if they belong to a faction
+  // Arousal system for 18+ content
+  arousal?: {
+    level: number; // 0 to 100 (not interested to very aroused)
+    lastArousalChange: Date;
+    arousalHistory: ArousalEvent[];
+    personality: ArousalPersonality;
+    preferences: ArousalPreferences;
+  };
+}
+
+// Arousal system types
+export interface ArousalEvent {
+  id: string;
+  timestamp: Date;
+  change: number; // -50 to +50
+  reason: string;
+  context: string;
+  intensity: 'low' | 'medium' | 'high';
+}
+
+export interface ArousalPersonality {
+  responsiveness: number; // 0-100, how easily they get aroused
+  inhibition: number; // 0-100, how much they hold back
+  curiosity: number; // 0-100, how curious about sexual content
+  experience: number; // 0-100, how experienced they are
+  dominance: number; // 0-100, dominant vs submissive tendencies
+  romanticism: number; // 0-100, prefers romantic vs purely sexual
+}
+
+export interface ArousalPreferences {
+  genderPreference?: 'male' | 'female' | 'any' | 'none';
+  agePreference?: 'younger' | 'same' | 'older' | 'any';
+  personalityTypes: string[]; // e.g., ['confident', 'mysterious', 'caring']
+  turnOns: string[]; // e.g., ['intelligence', 'humor', 'kindness']
+  turnOffs: string[]; // e.g., ['rudeness', 'aggression', 'dishonesty']
+  kinks: string[]; // e.g., ['romance', 'adventure', 'intimacy']
+  boundaries: string[]; // e.g., ['no violence', 'no public', 'no drugs']
+}
+
+// Character Status System
+export interface CharacterStatus {
+  id: string;
+  name: string;
+  description: string;
+  severity: 'minor' | 'moderate' | 'severe' | 'critical';
+  duration?: number; // in turns, null for permanent
+  effects?: {
+    healthModifier?: number; // -50 to 50
+    manaModifier?: number; // -50 to 50
+    statModifiers?: Record<string, number>; // e.g., { strength: -2, charisma: 1 }
+  };
+  source?: string; // what caused this status
+  timestamp: Date;
+}
+
+// NPC Encounter System
+export interface NPCEncounter {
+  id: string;
+  npcName: string;
+  location: string;
+  timestamp: Date;
+  turn: number;
+  interactionType: 'meeting' | 'conversation' | 'conflict' | 'trade' | 'quest' | 'romance';
+  description: string;
+  relationshipChange?: number; // how much relationship changed
+  reputationChange?: number; // how much reputation changed
+  itemsExchanged?: { given: string[]; received: string[] };
+  questsOffered?: string[];
+  questsCompleted?: string[];
 }
 
 export interface SCCContext {

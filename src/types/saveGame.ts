@@ -1,4 +1,10 @@
-import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime, ContentFlags, QuestSystem } from './index';
+import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime, ContentFlags, QuestSystem, NPCRelationship } from './index';
+
+// NPC Relationship Data for save games
+export interface NPCRelationshipData {
+  relationships: { [key: string]: NPCRelationship }; // Map as object for JSON serialization
+  encounters: any[]; // NPC encounter history
+}
 
 // SaveGame Schema - Versioned JSON chứa toàn bộ dữ liệu game
 export interface SaveGame {
@@ -13,6 +19,7 @@ export interface SaveGame {
   turnCounter: number; // Số lượt hiện tại
   worldTime: WorldTime; // Thời gian thế giới hiện tại
   questSystem?: QuestSystem; // Hệ thống quest và tiến trình nhiệm vụ
+  npcRelationships?: NPCRelationshipData; // NPC relationship và encounter data
   ui?: SaveGameUI; // Trạng thái UI (không đồng bộ cloud)
   contentFlags?: ContentFlags; // Cờ nội dung 18+
 }

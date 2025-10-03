@@ -5,6 +5,92 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-01-02
+
+### 🚀 Major Mobile Optimization Release
+
+### 🎯 Added
+- **Comprehensive Mobile UI/UX**: Complete mobile-first responsive design overhaul
+- **Touch-Friendly Interactions**: All buttons and interactive elements optimized for touch
+  - Minimum 44px touch targets (iOS standard)
+  - Touch feedback with scale animations
+  - Haptic feedback for mobile interactions
+- **Mobile-Specific CSS Utilities**: New utility classes for mobile optimization
+  - `.mobile-padding`, `.mobile-text`, `.mobile-button`, `.mobile-input`
+  - `.touch-target`, `.touch-feedback`, `.smooth-scroll`
+  - `.gpu-accelerated`, `.will-change-*` for performance
+- **Enhanced Viewport Configuration**: Mobile web app meta tags
+  - `user-scalable=no` to prevent zoom
+  - `apple-mobile-web-app-capable` for iOS
+  - `theme-color` for mobile browsers
+- **Performance Optimizations**: Mobile-specific performance improvements
+  - Hardware acceleration for animations
+  - Optimized repaints and scrolling
+  - Smooth scrolling with `-webkit-overflow-scrolling: touch`
+
+### 🔧 Changed
+- **Responsive Typography**: Font sizes optimized for mobile devices
+  - Base font size: 18px → 16px (desktop), 14px (mobile)
+  - Responsive text utilities for all screen sizes
+- **Layout Improvements**: All components now fully responsive
+  - InfoMenu: Full width on mobile (`w-full sm:w-96`)
+  - SaveManager: Responsive grid layout (`sm:grid-cols-2 lg:grid-cols-3`)
+  - GamePage: Mobile-optimized chat area and input
+  - HomePage: Responsive hero section and features
+- **Touch Interactions**: Enhanced touch experience
+  - All buttons have proper touch targets
+  - Touch feedback on press
+  - Prevented text selection on UI elements
+- **Spacing & Padding**: Mobile-optimized spacing throughout
+  - Consistent mobile padding using utility classes
+  - Responsive spacing for different screen sizes
+- **Input Fields**: Mobile-optimized input experience
+  - 16px font size to prevent zoom on iOS
+  - Proper touch targets for all inputs
+  - Enhanced textarea and button interactions
+
+### 🐛 Fixed
+- **Mobile Layout Issues**: Fixed various mobile layout problems
+  - Sidebar responsive behavior
+  - Modal sizing on small screens
+  - Text overflow and wrapping issues
+- **Touch Interaction Problems**: Resolved touch-related issues
+  - Button press feedback
+  - Scroll behavior on mobile
+  - Input focus and keyboard handling
+- **Performance Issues**: Optimized for mobile performance
+  - Reduced bundle size impact
+  - Smooth animations on mobile devices
+  - Better memory usage
+
+### ✨ Improved
+- **Mobile User Experience**: Significantly enhanced mobile usability
+  - Intuitive touch interactions
+  - Better visual hierarchy on small screens
+  - Improved readability and accessibility
+- **Cross-Platform Compatibility**: Better support across devices
+  - iOS Safari optimizations
+  - Android Chrome improvements
+  - Responsive design for all screen sizes
+- **Performance**: Optimized for mobile devices
+  - Faster loading times
+  - Smoother animations
+  - Better battery life on mobile
+
+### 🔧 Technical Improvements
+- **CSS Architecture**: Enhanced CSS structure for mobile
+  - Mobile-first responsive design
+  - Utility classes for common mobile patterns
+  - Better organization of mobile-specific styles
+- **Build Optimization**: Improved build process
+  - Better chunk splitting
+  - Optimized asset loading
+  - Mobile-specific optimizations
+- **Code Quality**: Enhanced code maintainability
+  - Consistent mobile patterns
+  - Better component organization
+  - Improved TypeScript support
+
 ## [1.4.0] - 2025-01-02
 
 ### 🎯 Added

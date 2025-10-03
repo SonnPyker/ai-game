@@ -47,7 +47,7 @@ export function Layout({ children }: LayoutProps) {
         />
         <main className={`flex-1 main-transition ${
           sidebarOpen ? 'main-with-sidebar' : 'main-full-width'
-        } p-2 sm:p-4 lg:p-6`}>
+        } p-2 sm:p-4 lg:p-6 mobile-padding`}>
           {children}
         </main>
         

@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { multiApiKeyService, ApiKeyInfo, ApiKeyStats } from './multiApiKeyService';
 import { SCCSummary, SCCState, ContentFlags } from '../types';
+import { npcRelationshipService } from './npcRelationshipService';
 
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
@@ -9,6 +10,38 @@ class GeminiService {
 
   constructor() {
     this.initializeGemini();
+  }
+
+  // Robust JSON parser với fallback
+  private parseJsonResponse(responseText: string, fallbackData: any = {}): any {
+    try {
+      // Thử parse toàn bộ response trước
+      return JSON.parse(responseText);
+    } catch {
+      try {
+        // Tìm JSON object đầu tiên trong response
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+      } catch {
+        try {
+          // Tìm JSON array đầu tiên trong response
+          const arrayMatch = responseText.match(/\[[\s\S]*\]/);
+          if (arrayMatch) {
+            return JSON.parse(arrayMatch[0]);
+          }
+        } catch {
+          // Nếu tất cả đều fail, log và return fallback
+          console.warn('⚠️ JSON parse failed, using fallback data');
+          console.log('Raw response:', responseText.substring(0, 500) + '...');
+          return fallbackData;
+        }
+      }
+    }
+    
+    // Fallback cuối cùng
+    return fallbackData;
   }
 
   private initializeGemini() {
@@ -459,23 +492,15 @@ class GeminiService {
     try {
       const text = await this.generateContent(prompt);
       
-      // Cố gắng parse JSON từ response
-      try {
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-      } catch (parseError) {
-        // Fallback: Không thể parse JSON, trả về response thô
-      }
-      
-      // Fallback nếu không parse được JSON
-      return {
+      // Parse JSON với fallback
+      const fallbackData = {
         name: "Nhân vật được đề xuất",
         personality: text.substring(0, 100) + "...",
         backstory: text.substring(100, 300) + "...",
         goals: ["Khám phá thế giới", "Tìm kiếm vinh quang", "Bảo vệ người vô tội"]
       };
+
+      return this.parseJsonResponse(text, fallbackData);
     } catch (error) {
       console.error('Lỗi khi tạo gợi ý nhân vật:', error);
       throw new Error('Không thể tạo gợi ý nhân vật. Vui lòng kiểm tra API key và thử lại.');
@@ -531,17 +556,13 @@ Xuất ra JSON đúng SCHEMA, không thêm văn bản ngoài JSON:
     try {
       const response = await this.generateContent(prompt);
       
-      // Parse JSON response
-      try {
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-        return JSON.parse(response);
-      } catch (parseError) {
-        console.error('Lỗi parse JSON genre and setting:', parseError);
-        throw new Error('Không thể phân tích thể loại và bối cảnh. Vui lòng thử lại.');
-      }
+      // Parse JSON response với fallback
+      const fallbackData = {
+        genre: "Fantasy",
+        setting: "Thế giới fantasy cổ điển với phép thuật và sinh vật huyền bí"
+      };
+
+      return this.parseJsonResponse(response, fallbackData);
     } catch (error) {
       console.error('Lỗi khi tạo thể loại và bối cảnh:', error);
       throw new Error('Không thể tạo thể loại và bối cảnh. Vui lòng thử lại.');
@@ -720,18 +741,8 @@ Yêu cầu bổ sung:
     try {
       const responseText = await this.generateContent(prompt);
       
-      // Try to parse JSON from response
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-      } catch (parseError) {
-        console.error('Error parsing AI response:', parseError);
-      }
-      
-      // Fallback if JSON parsing fails
-      return {
+      // Parse JSON với fallback
+      const fallbackData = {
         name: '',
         gender: '',
         appearance: '',
@@ -753,6 +764,8 @@ Yêu cầu bổ sung:
         },
         customStats: []
       };
+
+      return this.parseJsonResponse(responseText, fallbackData);
     } catch (error) {
       console.error('Lỗi khi phân tích nhân vật:', error);
       throw new Error('Không thể phân tích nhân vật. Vui lòng thử lại.');
@@ -813,18 +826,8 @@ Chỉ trả về JSON, không có text khác.`;
     try {
       const responseText = await this.generateContent(prompt);
       
-      // Try to parse JSON from response
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-      } catch (parseError) {
-        console.error('Error parsing AI response:', parseError);
-      }
-      
-      // Fallback
-      return {
+      // Parse JSON với fallback
+      const fallbackData = {
         coreStats: {
           strength: 12,
           agility: 12,
@@ -836,6 +839,8 @@ Chỉ trả về JSON, không có text khác.`;
         customStats: [],
         proficiencies: []
       };
+
+      return this.parseJsonResponse(responseText, fallbackData);
     } catch (error) {
       console.error('Lỗi khi đề xuất chỉ số:', error);
       throw new Error('Không thể đề xuất chỉ số. Vui lòng thử lại.');
@@ -890,31 +895,23 @@ Rules:
     try {
       const responseText = await this.generateContent(prompt);
       
-      // Try to parse JSON from response
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-      } catch (parseError) {
-        console.error('Error parsing AI response:', parseError);
-      }
-
-      // Fallback if JSON parsing fails
-      return {
+      // Parse JSON với fallback
+      const fallbackData = {
         skills: [
           { name: 'Kỹ năng cơ bản', level: 1, energyCost: 5, description: 'Kỹ năng cơ bản có thể sử dụng trong nhiều tình huống' },
           { name: 'Kỹ năng trung bình', level: 2, energyCost: 12, description: 'Kỹ năng trung bình với hiệu quả tốt hơn' },
           { name: 'Kỹ năng nâng cao', level: 3, energyCost: 20, description: 'Kỹ năng nâng cao với sức mạnh đáng kể' }
         ]
       };
+
+      return this.parseJsonResponse(responseText, fallbackData);
     } catch (error) {
       console.error('Lỗi khi reroll skills:', error);
       throw new Error('Không thể tạo skills mới. Vui lòng thử lại.');
     }
   }
 
-  async generateCompleteWorld(worldData: any): Promise<string> {
+  async generateCompleteWorld(worldData: any, characterData?: any): Promise<string> {
     if (!this.isConfigured()) {
       throw new Error('Gemini API chưa được cấu hình. Vui lòng nhập API key.');
     }
@@ -954,6 +951,16 @@ DỮ LIỆU NGƯỜI CHƠI:
 - Năm bắt đầu (startYear): ${startYear}
 - Độ khó (difficulty): ${difficulty}
 - Sử dụng cấp độ (useLevel): ${useLevel}
+
+${characterData ? `CHARACTER (NHÂN VẬT CHÍNH):
+${JSON.stringify(characterData, null, 2)}
+
+QUAN TRỌNG VỀ CHARACTER:
+- CHARACTER là nhân vật chính (PC) mà người chơi sẽ điều khiển
+- KHÔNG BAO GIỜ tạo NPC có tên giống với CHARACTER
+- Opening message phải mô tả CHARACTER là nhân vật chính, không phải NPC
+- Tất cả quest và cốt truyện phải phù hợp với vai trò và background của CHARACTER
+` : ''}
 
 YÊU CẦU NỘI DUNG:
 1) Tổng quan thế giới ngắn gọn, nhất quán với coreIdea/genres/settings.
@@ -1118,27 +1125,6 @@ SCHEMA JSON (bắt buộc):
       ]
     }
   ],
-  "sideQuests": [
-    {
-      "id": "side_quest_1",
-      "title": "string",
-      "description": "string",
-      "objectives": [
-        {
-          "id": "obj_1",
-          "description": "string",
-          "aiKeywords": ["string"]
-        }
-      ],
-      "rewards": [
-        {
-          "type": "experience",
-          "amount": 200,
-          "description": "string"
-        }
-      ]
-    }
-  ],
   "leveling": {
     "enabled": ${useLevel},
     "progression": "string",
@@ -1164,10 +1150,15 @@ Từ WORLD và CHARACTER dưới đây, hãy tạo một KHUNG SƯỜN CỐT TRU
 Cân bằng: bí ẩn-siêu nhiên + tự do người chơi + tính nhất quán thế giới.
 Chỉ xuất JSON đúng SCHEMA, không thêm văn bản ngoài JSON.
 
+QUAN TRỌNG VỀ CHARACTER:
+- CHARACTER là nhân vật chính (PC) mà người chơi sẽ điều khiển
+- KHÔNG BAO GIỜ tạo NPC có tên giống với CHARACTER
+- Tất cả quest và cốt truyện phải phù hợp với vai trò và background của CHARACTER
+
 WORLD:
 ${worldJson}
 
-CHARACTER:
+CHARACTER (NHÂN VẬT CHÍNH):
 ${characterJson}
 
 SCHEMA:
@@ -1186,9 +1177,9 @@ SCHEMA:
       "obstacles": ["trở ngại"],
       "twist": "plot twist (nếu có)",
       "outcomeHint": "gợi ý kết cục có/không thành",
-      "mainQuest": {
-        "title": "tên quest chính của act",
-        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "mainQuest": {
+          "title": "tên quest chính của act",
+          "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
         "objectives": [
           {
             "id": "obj_1",
@@ -1219,7 +1210,7 @@ SCHEMA:
       "outcomeHint": "gợi ý kết cục có/không thành",
       "mainQuest": {
         "title": "tên quest chính của act 2",
-        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
         "objectives": [
           {
             "id": "obj_1",
@@ -1245,7 +1236,7 @@ SCHEMA:
       "outcomeHint": "gợi ý kết cục có/không thành",
       "mainQuest": {
         "title": "tên quest chính của act 3",
-        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
         "objectives": [
           {
             "id": "obj_1",
@@ -1271,7 +1262,7 @@ SCHEMA:
       "outcomeHint": "gợi ý kết cục có/không thành",
       "mainQuest": {
         "title": "tên quest chính của act 4",
-        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
         "objectives": [
           {
             "id": "obj_1",
@@ -1297,7 +1288,7 @@ SCHEMA:
       "outcomeHint": "gợi ý kết cục có/không thành",
       "mainQuest": {
         "title": "tên quest chính của act 5",
-        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'",
+        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
         "objectives": [
           {
             "id": "obj_1",
@@ -1326,17 +1317,25 @@ SCHEMA:
 
       const response = await this.generateContent(prompt);
       
-      // Parse JSON response
-      try {
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-        return JSON.parse(response);
-      } catch (parseError) {
-        console.error('Lỗi parse JSON scenario:', parseError);
-        throw new Error('Không thể phân tích kịch bản. Vui lòng thử lại.');
-      }
+      // Parse JSON response với fallback
+      const fallbackData = {
+        title: "Cuộc phiêu lưu bí ẩn",
+        logline: "Một câu chuyện phiêu lưu đầy bí ẩn",
+        tone: ["mysterious", "adventure"],
+        themes: ["khám phá", "bí ẩn"],
+        continuityRules: ["Giữ tính nhất quán của thế giới"],
+        mainThreads: ["Cốt truyện chính"],
+        arcs: [],
+        failStates: ["Thất bại trong nhiệm vụ"],
+        endings: {
+          good: "Kết thúc tích cực",
+          neutral: "Kết thúc trung tính", 
+          bad: "Kết thúc tiêu cực"
+        },
+        openingSeed: "Bắt đầu cuộc phiêu lưu"
+      };
+
+      return this.parseJsonResponse(response, fallbackData);
     } catch (error) {
       console.error('Lỗi khi tạo scenario skeleton:', error);
       throw new Error('Không thể tạo kịch bản. Vui lòng thử lại.');
@@ -1430,24 +1429,25 @@ SCHEMA:
     try {
       const responseText = await this.generateContent(prompt);
       
-      // Parse JSON response
-      let result;
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          result = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('No JSON found in response');
-        }
-      } catch (parseError) {
-        console.error('Failed to parse summary JSON:', parseError);
-        console.log('Raw response:', responseText);
-        throw new Error('Không thể phân tích kết quả tóm tắt từ AI.');
-      }
+      // Parse JSON response với fallback
+      const fallbackData = {
+        summary: {
+          recap: "Tóm tắt không khả dụng do lỗi parse JSON.",
+          timeline: [],
+          clues: [],
+          openThreads: [],
+          relationships: [],
+          goals: [],
+          risks: []
+        },
+        sceneState: sceneState // Giữ nguyên sceneState hiện tại
+      };
+
+      const result = this.parseJsonResponse(responseText, fallbackData);
 
       return {
-        summary: result.summary,
-        sceneState: result.sceneState
+        summary: result.summary || fallbackData.summary,
+        sceneState: result.sceneState || fallbackData.sceneState
       };
     } catch (error) {
       console.error('Error summarizing chat context:', error);
@@ -1455,115 +1455,6 @@ SCHEMA:
     }
   }
 
-  async generateTurnResponse(
-    chatHistory: Array<{role: string, content: string}>,
-    playerAction: string,
-    worldJson: string,
-    characterJson: string,
-    scenarioJson: string,
-    sceneState: any = {},
-    contentFlags?: ContentFlags,
-    questSystem?: any
-  ): Promise<any> {
-    try {
-      const chatHistorySnippet = chatHistory.slice(-10).map(msg => 
-        `${msg.role}: ${msg.content}`
-      ).join('\n');
-
-      const contentGuidance = this.getContentGuidance(contentFlags);
-
-      // Quest system context
-      const questContext = questSystem ? `
-QUEST SYSTEM CONTEXT:
-- Current Act: ${questSystem.currentAct}
-- Active Main Quests: ${questSystem.mainQuests?.filter((q: any) => q.status === 'active').length || 0}
-- Active Side Quests: ${questSystem.sideQuests?.filter((q: any) => q.status === 'active').length || 0}
-- Quest History: ${questSystem.questHistory?.length || 0} completed quests
-` : '';
-
-      const prompt = `Bạn là AI Storyteller trong box chat roleplay. Vai trò:
-- Đọc lịch sử chat gần đây, hành động mới của người chơi, world/character và scenarioSkeleton.
-- Kể tiếp bằng văn xuôi (không bullet/emoji), mô tả hệ quả và cảm giác, đưa chi tiết cảm quan.
-- GIỮ NHẤT QUÁN theo continuityRules, tone, mainThreads.
-- Định hướng mềm (soft guidance) để tiến tới các keyBeats/twist/kết thúc, nhưng KHÔNG tước tự do người chơi.
-- Nếu hành động của người chơi lệch xa kịch bản, hãy uốn nhẹ bằng cảnh vật, NPC, thông tin, rủi ro — không ép buộc.
-- QUAN TRỌNG: Sử dụng đúng ngôi kể đã được cài đặt trong WORLD (narration field). Nếu narration là "Ngôi thứ hai", hãy kể bằng "Bạn" thay vì "Anh ấy/Cô ấy". Nếu narration là "Ngôi thứ nhất", hãy kể bằng "Tôi". Nếu narration là "Ngôi thứ ba", hãy kể bằng "Anh ấy/Cô ấy".
-- QUAN TRỌNG: KHÔNG BAO GIỜ nói trực tiếp "nhiệm vụ của bạn là", "bạn phải làm", "mục tiêu là" hay các từ tương tự. Hãy để câu chuyện tự nhiên dẫn dắt người chơi.
-
-${contentGuidance}
-${questContext}
-
-QUEST SYSTEM RULES:
-- Chỉ tạo side quest khi có cơ hội tự nhiên trong câu chuyện (không ép buộc)
-- Tránh tạo quá nhiều side quest cùng lúc (tối đa 1 side quest mỗi 3-5 turn)
-- Side quest phải liên quan đến context hiện tại và có ý nghĩa với story
-- Nếu có quest system data, hãy tham khảo để tạo response phù hợp với quest progress
-- QUAN TRỌNG: Khi tích hợp quest vào narrative, hãy mô tả tình huống và bối cảnh một cách tự nhiên, để người chơi tự hiểu và quyết định hành động. KHÔNG nói "Bây giờ bạn có nhiệm vụ..." hay "Mục tiêu của bạn là..."
-
-Đầu vào:
-- CHAT_HISTORY (tối đa 10 lượt gần nhất): 
-${chatHistorySnippet}
-- PLAYER_ACTION (câu người chơi vừa gửi): 
-"${playerAction}"
-- WORLD:
-${worldJson}
-- CHARACTER:
-${characterJson}
-- SCENARIO_SKELETON:
-${scenarioJson}
-- SCENE_STATE hiện tại (nếu có, có thể rỗng):
-${JSON.stringify(sceneState)}
-
-Đầu ra: JSON đúng SCHEMA sau, không thêm chữ khác:
-{
-  "narrative": "văn bản kể chuyện ~120–220 từ, không bullet/emoji",
-  "softGuidance": "1–2 câu gợi hướng đi kín đáo (có thể rỗng)",
-  "sceneState": { "keys/values cần cập nhật (vị trí, NPC, manh mối, nguy cơ, đồng hồ căng thẳng...)" },
-  "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện tiến lên" },
-  "sideQuestOffer": {
-    "title": "tên quest phụ (chỉ có khi có cơ hội tự nhiên)",
-    "description": "mô tả quest phụ",
-    "objectives": [
-      {
-        "id": "obj_1",
-        "description": "mục tiêu quest phụ",
-        "aiKeywords": ["từ khóa AI cần nhận diện"]
-      }
-    ],
-    "rewards": [
-      {
-        "type": "experience",
-        "amount": 200,
-        "description": "Kinh nghiệm +200"
-      }
-    ]
-  }
-}
-
-Quy tắc thêm:
-- Mọi miêu tả phải phù hợp world + rules; nếu người chơi làm điều phá vỡ luật, mô tả hậu quả logic chứ không phủ nhận.
-- Ưu tiên tiến độ: mỗi lượt nên hé mở một manh mối, tăng/giảm rủi ro, hoặc dịch chuyển sang beat tiếp theo.
-- Không nhắc đến "prompt", "JSON", hay meta thông tin trong narrative.
-- LƯU Ý VỀ NGÔI KỂ: Kiểm tra trường "narration" trong WORLD để xác định ngôi kể. Nếu narration = "Ngôi thứ hai": sử dụng "Bạn" khi nói về nhân vật chính. Nếu narration = "Ngôi thứ nhất": sử dụng "Tôi" khi nói về nhân vật chính. Nếu narration = "Ngôi thứ ba": sử dụng "Anh ấy/Cô ấy" khi nói về nhân vật chính.`;
-
-      const response = await this.generateContent(prompt);
-      
-      // Parse JSON response
-      try {
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-        return JSON.parse(response);
-      } catch (parseError) {
-        console.error('Lỗi parse JSON turn response:', parseError);
-        throw new Error('Không thể phân tích phản hồi. Vui lòng thử lại.');
-      }
-    } catch (error) {
-      console.error('Lỗi khi tạo turn response:', error);
-      throw new Error('Không thể tạo phản hồi. Vui lòng thử lại.');
-    }
-  }
 
   /**
    * Generate turn response using SCC Delta Context
@@ -1577,7 +1468,8 @@ Quy tắc thêm:
     chatDelta: Array<{ role: string; content: string; turn: number }>,
     playerAction: string,
     contentFlags?: ContentFlags,
-    questSystem?: any
+    questSystem?: any,
+    turnCounter?: number
   ): Promise<{
     narrative: string;
     softGuidance: string;
@@ -1591,8 +1483,13 @@ Quy tắc thêm:
 
     const contentGuidance = this.getContentGuidance(contentFlags);
 
-    // Quest system context
-    const questContext = questSystem ? `
+    // Quest system context - chỉ thêm khi có quest active và trong vòng 2 turn gần đây
+    const shouldIncludeQuestContext = questSystem && turnCounter && (
+      (questSystem.mainQuests?.some((q: any) => q.status === 'active' && q.turnStarted && (turnCounter - q.turnStarted) <= 2)) ||
+      (questSystem.sideQuests?.some((q: any) => q.status === 'active' && q.turnStarted && (turnCounter - q.turnStarted) <= 2))
+    );
+
+    const questContext = shouldIncludeQuestContext ? `
 QUEST SYSTEM CONTEXT:
 - Current Act: ${questSystem.currentAct}
 - Active Main Quests: ${questSystem.mainQuests?.filter((q: any) => q.status === 'active').length || 0}
@@ -1600,6 +1497,14 @@ QUEST SYSTEM CONTEXT:
 - Quest History: ${questSystem.questHistory?.length || 0} completed quests
 - Declined Side Quests: ${questSystem.questHistory?.filter((q: any) => q.status === 'declined').map((q: any) => q.title).join(', ') || 'None'}
 ` : '';
+
+    // Get NPC relationship context
+    const relationshipContext = npcRelationshipService.getRelationshipContext(sceneState.location);
+    
+    // Get arousal context for 18+ content
+    const arousalContext = contentFlags?.adult_enabled && contentFlags.adult_intensity === 'direct' 
+      ? npcRelationshipService.getArousalContext(sceneState.location)
+      : '';
 
     const prompt = `Bạn là AI Storyteller trong box chat roleplay. 
 Hãy kể tiếp câu chuyện dựa trên:
@@ -1611,8 +1516,227 @@ Hãy kể tiếp câu chuyện dựa trên:
 
 QUAN TRỌNG: KHÔNG BAO GIỜ nói trực tiếp "nhiệm vụ của bạn là", "bạn phải làm", "mục tiêu là" hay các từ tương tự. Hãy để câu chuyện tự nhiên dẫn dắt người chơi.
 
+QUAN TRỌNG VỀ ĐỐI THOẠI: TẤT CẢ lời nói trực tiếp PHẢI được viết trong dấu ngoặc kép ("..."). KHÔNG BAO GIỜ viết lời nói trực tiếp mà không có dấu ngoặc kép.
+
 ${contentGuidance}
 ${questContext}
+
+${relationshipContext}
+
+${arousalContext}
+
+HƯỚNG DẪN VỀ QUAN HỆ NPC:
+- Sử dụng thông tin quan hệ để định hình cách NPCs phản ứng với nhân vật chính
+- NPCs thân thiện sẽ giúp đỡ nhiều hơn, NPCs thù địch sẽ gây khó khăn
+- Danh tiếng ảnh hưởng đến cách NPCs khác trong khu vực đối xử
+- Quan hệ lãng mạn cần được xử lý tinh tế và phù hợp với bối cảnh
+- Ghi chú NPC chứa thông tin quan trọng về trạng thái và tương tác gần đây
+
+HƯỚNG DẪN VỀ HỆ THỐNG HỨNG TÌNH (18+):
+- Chỉ áp dụng khi nội dung 18+ được bật và ở chế độ tả thực
+- Sử dụng thông tin hứng tình để định hình phản ứng của NPCs
+- NPCs có mức hứng tình cao sẽ phản ứng tích cực hơn với hành động thân mật
+- NPCs có mức hứng tình thấp sẽ tỏ ra lạnh nhạt hoặc từ chối
+- Tôn trọng tính cách và sở thích của từng NPC
+- Mô tả phản ứng một cách chân thực và nhất quán với mức hứng tình hiện tại
+
+HƯỚNG DẪN TẠO CÁC CHỈ SỐ AROUSAL CHO NPC (THỰC TẾ VÀ PHỤ THUỘC NGỮ CẢNH):
+
+QUAN TRỌNG: Các chỉ số arousal phải THỰC TẾ và phụ thuộc vào:
+- Giới tính, độ tuổi, tầng lớp xã hội
+- Bối cảnh câu chuyện (hiện đại, trung cổ, tương lai, etc.)
+- Văn hóa và xã hội trong thế giới game
+- Tính cách và background của NPC
+- Mối quan hệ hiện tại với người chơi
+
+- Responsiveness (Phản ứng): 0-100, mức độ dễ bị kích thích
+  * HƯỚNG DẪN: Phụ nữ trẻ (16-25) thường có responsiveness 40-70
+  * HƯỚNG DẪN: Nam giới trẻ (16-25) thường có responsiveness 50-80
+  * HƯỚNG DẪN: Người lớn tuổi (40+) thường có responsiveness 30-60
+  * HƯỚNG DẪN: Trung cổ: responsiveness thấp hơn (30-60) do văn hóa bảo thủ
+  * HƯỚNG DẪN: Hiện đại: responsiveness cao hơn (50-85) do văn hóa cởi mở
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- Inhibition (Ức chế): 0-100, mức độ kiềm chế cảm xúc
+  * HƯỚNG DẪN: Phụ nữ thường có inhibition cao hơn (50-80) do văn hóa
+  * HƯỚNG DẪN: Nam giới thường có inhibition thấp hơn (40-70)
+  * HƯỚNG DẪN: Trung cổ: inhibition cao (70-90) do văn hóa nghiêm khắc
+  * HƯỚNG DẪN: Hiện đại: inhibition thấp hơn (30-70)
+  * HƯỚNG DẪN: Tầng lớp cao: inhibition cao hơn (60-85)
+  * HƯỚNG DẪN: Tầng lớp thấp: inhibition thấp hơn (30-60)
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- Curiosity (Tò mò): 0-100, mức độ tò mò về nội dung thân mật
+  * HƯỚNG DẪN: Tuổi teen (16-19): curiosity cao (60-85)
+  * HƯỚNG DẪN: Tuổi 20-30: curiosity trung bình (50-75)
+  * HƯỚNG DẪN: Tuổi 40+: curiosity thấp (30-60)
+  * HƯỚNG DẪN: Trung cổ: curiosity thấp (20-50) do giáo dục hạn chế
+  * HƯỚNG DẪN: Hiện đại: curiosity cao hơn (60-85)
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- Experience (Kinh nghiệm): 0-100, mức độ kinh nghiệm thân mật
+  * HƯỚNG DẪN: Tuổi 16-20: experience thấp (20-50)
+  * HƯỚNG DẪN: Tuổi 21-30: experience trung bình (40-75)
+  * HƯỚNG DẪN: Tuổi 31-40: experience cao (60-85)
+  * HƯỚNG DẪN: Tuổi 40+: experience rất cao (70-90)
+  * HƯỚNG DẪN: Trung cổ: experience thấp hơn do kết hôn sớm
+  * HƯỚNG DẪN: Hiện đại: experience cao hơn do giáo dục tình dục
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- Dominance (Thống trị): 0-100, xu hướng thống trị hoặc phục tùng
+  * HƯỚNG DẪN: Nam giới thường có dominance cao hơn (45-75)
+  * HƯỚNG DẪN: Phụ nữ thường có dominance thấp hơn (25-65)
+  * HƯỚNG DẪN: Trung cổ: Nam giới dominance cao (70-90), Nữ giới thấp (10-40)
+  * HƯỚNG DẪN: Hiện đại: Cân bằng hơn, phụ thuộc tính cách cá nhân
+  * HƯỚNG DẪN: Tầng lớp cao: dominance cao hơn (55-85)
+  * HƯỚNG DẪN: Tầng lớp thấp: dominance thấp hơn (25-65)
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- Romanticism (Lãng mạn): 0-100, mức độ ưa thích lãng mạn
+  * HƯỚNG DẪN: Phụ nữ thường có romanticism cao hơn (55-85)
+  * HƯỚNG DẪN: Nam giới thường có romanticism thấp hơn (35-70)
+  * HƯỚNG DẪN: Tuổi teen: romanticism rất cao (70-90)
+  * HƯỚNG DẪN: Tuổi 30+: romanticism thấp hơn (45-70)
+  * HƯỚNG DẪN: Trung cổ: romanticism cao (65-90) do văn hóa lãng mạn
+  * HƯỚNG DẪN: Hiện đại: romanticism trung bình (50-80)
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+SỞ THÍCH VÀ RANH GIỚI (THỰC TẾ VÀ PHỤ THUỘC NGỮ CẢNH):
+
+- GenderPreference: Sở thích giới tính
+  * HƯỚNG DẪN: Phụ nữ thường thích nam giới (70-85%)
+  * HƯỚNG DẪN: Nam giới thường thích phụ nữ (75-90%)
+  * HƯỚNG DẪN: Trung cổ: 95% heterosexual do văn hóa nghiêm khắc
+  * HƯỚNG DẪN: Hiện đại: đa dạng hơn, phụ thuộc cá nhân
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- AgePreference: Sở thích tuổi tác
+  * HƯỚNG DẪN: Nam giới thường thích phụ nữ trẻ hơn (younger)
+  * HƯỚNG DẪN: Phụ nữ thường thích nam giới cùng tuổi hoặc lớn hơn (same/older)
+  * HƯỚNG DẪN: Trung cổ: nam giới thích phụ nữ trẻ hơn nhiều (15-20 tuổi)
+  * HƯỚNG DẪN: Hiện đại: cân bằng hơn, phụ thuộc cá nhân
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- PersonalityTypes: Loại tính cách hấp dẫn
+  * HƯỚNG DẪN: Phụ nữ thích: confident, caring, intelligent, mysterious
+  * HƯỚNG DẪN: Nam giới thích: gentle, caring, intelligent, beautiful
+  * HƯỚNG DẪN: Trung cổ: nam giới thích submissive, obedient
+  * HƯỚNG DẪN: Hiện đại: đa dạng, phụ thuộc cá nhân
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- TurnOns: Điều kích thích
+  * HƯỚNG DẪN: Phụ nữ: intelligence, humor, kindness, romance, respect
+  * HƯỚNG DẪN: Nam giới: beauty, youth, submission, loyalty
+  * HƯỚNG DẪN: Trung cổ: obedience, purity, loyalty, wealth
+  * HƯỚNG DẪN: Hiện đại: intelligence, humor, kindness, confidence
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- TurnOffs: Điều không thích
+  * HƯỚNG DẪN: Phụ nữ: arrogance, violence, disrespect, immaturity
+  * HƯỚNG DẪN: Nam giới: aggression, dominance, promiscuity
+  * HƯỚNG DẪN: Trung cổ: disobedience, promiscuity, independence
+  * HƯỚNG DẪN: Hiện đại: disrespect, violence, dishonesty
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- Kinks: Sở thích đặc biệt
+  * HƯỚNG DẪN: Phụ nữ: romance, intimacy, emotional connection
+  * HƯỚNG DẪN: Nam giới: physical attraction, submission, variety
+  * HƯỚNG DẪN: Trung cổ: submission, obedience, traditional roles
+  * HƯỚNG DẪN: Hiện đại: đa dạng, phụ thuộc cá nhân
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+- Boundaries: Ranh giới không được vi phạm
+  * HƯỚNG DẪN: Phụ nữ: no violence, no humiliation, no disrespect
+  * HƯỚNG DẪN: Nam giới: no dominance, no aggression, no betrayal
+  * HƯỚNG DẪN: Trung cổ: no disobedience, no independence, no promiscuity
+  * HƯỚNG DẪN: Hiện đại: no violence, no disrespect, no betrayal
+  * LƯU Ý: Có thể có ngoại lệ dựa trên tính cách cá nhân
+
+CÁCH SỬ DỤNG TRONG NARRATIVE (THỰC TẾ VÀ PHỤ THUỘC NGỮ CẢNH):
+
+QUAN TRỌNG: Luôn xem xét giới tính, độ tuổi, bối cảnh và văn hóa khi tạo phản ứng:
+
+- Responsiveness (Phản ứng):
+  * Phụ nữ trẻ: phản ứng nhẹ nhàng, e thẹn nhưng có dấu hiệu quan tâm
+  * Nam giới trẻ: phản ứng mạnh mẽ hơn, dễ bộc lộ cảm xúc
+  * Người lớn tuổi: phản ứng chậm rãi, thận trọng
+  * Trung cổ: phản ứng rất hạn chế, e dè do văn hóa
+
+- Inhibition (Ức chế):
+  * Phụ nữ: kiềm chế mạnh, ít biểu lộ trực tiếp
+  * Nam giới: ít kiềm chế hơn, dễ bộc lộ
+  * Trung cổ: ức chế rất cao, đặc biệt với phụ nữ
+  * Hiện đại: ức chế thấp hơn, cởi mở hơn
+
+- Curiosity (Tò mò):
+  * Tuổi teen: tò mò cao, nhưng ngại ngùng
+  * Tuổi 20-30: tò mò vừa phải, cân bằng
+  * Tuổi 40+: tò mò thấp, thích sự quen thuộc
+  * Trung cổ: tò mò rất thấp do giáo dục hạn chế
+
+- Experience (Kinh nghiệm):
+  * Tuổi trẻ: ngại ngùng, cần hướng dẫn
+  * Tuổi trung niên: tự tin, biết cách
+  * Tuổi cao: rất có kinh nghiệm, thông thái
+  * Trung cổ: kinh nghiệm thấp do kết hôn sớm
+
+- Dominance (Thống trị):
+  * Nam giới: thích kiểm soát, dẫn dắt
+  * Phụ nữ: thích phục tùng, được dẫn dắt
+  * Trung cổ: nam giới thống trị tuyệt đối
+  * Hiện đại: cân bằng hơn, phụ thuộc cá nhân
+
+- Romanticism (Lãng mạn):
+  * Phụ nữ: thích sự lãng mạn, ngọt ngào
+  * Nam giới: ít lãng mạn hơn, thực tế hơn
+  * Tuổi teen: lãng mạn rất cao
+  * Trung cổ: lãng mạn cao do văn hóa
+
+SỞ THÍCH VÀ RANH GIỚI:
+- Tôn trọng turnOns, turnOffs, kinks và boundaries của NPC
+- Vi phạm boundaries sẽ làm giảm hứng tình và có thể gây phản ứng tiêu cực
+- Phụ nữ thường thích sự tôn trọng, lãng mạn, tình cảm
+- Nam giới thường thích sự phục tùng, vẻ đẹp, sự trẻ trung
+- Trung cổ: tuân thủ nghiêm ngặt các quy tắc xã hội
+- Hiện đại: linh hoạt hơn, phụ thuộc cá nhân
+
+VÍ DỤ HƯỚNG DẪN (CÓ THỂ CÓ NGOẠI LỆ):
+- Phụ nữ 18 tuổi trong thế giới hiện đại: responsiveness 50-70, inhibition 60-80, curiosity 70-90, experience 20-40, dominance 25-45, romanticism 80-95
+- Nam giới 25 tuổi trong thế giới trung cổ: responsiveness 50-70, inhibition 30-50, curiosity 20-40, experience 40-60, dominance 75-90, romanticism 60-80
+- Phụ nữ 35 tuổi trong thế giới hiện đại: responsiveness 40-60, inhibition 50-70, curiosity 30-50, experience 70-90, dominance 30-50, romanticism 50-70
+- Nam giới 40 tuổi trong thế giới hiện đại: responsiveness 40-60, inhibition 40-60, curiosity 30-50, experience 80-95, dominance 50-70, romanticism 40-60
+- Phụ nữ 22 tuổi trong thế giới trung cổ: responsiveness 30-50, inhibition 70-90, curiosity 20-40, experience 10-30, dominance 10-30, romanticism 70-90
+
+HƯỚNG DẪN VỀ ĐỐI THOẠI:
+- Khi người chơi sử dụng dấu ngoặc kép ("..."), đó là câu đối thoại trực tiếp
+- Hãy phản hồi một cách tự nhiên và phù hợp với ngữ cảnh
+- NPCs nên phản ứng phù hợp với nội dung đối thoại và mối quan hệ hiện tại
+
+QUY TẮC THỐNG NHẤT VỀ ĐỐI THOẠI:
+- BẮT BUỘC: Tất cả lời nói trực tiếp của NPCs PHẢI được viết trong dấu ngoặc kép ("...")
+- BẮT BUỘC: Tất cả lời nói trực tiếp của nhân vật chính PHẢI được viết trong dấu ngoặc kép ("...")
+- BẮT BUỘC: Tất cả câu đối thoại trong game PHẢI được viết trong dấu ngoặc kép ("...")
+- KHÔNG BAO GIỜ viết lời nói trực tiếp mà không có dấu ngoặc kép
+- KHÔNG BAO GIỜ sử dụng dấu ngoặc đơn ('...') cho đối thoại
+- KHÔNG BAO GIỜ sử dụng dấu gạch ngang (-) cho đối thoại
+- KHÔNG BAO GIỜ sử dụng dấu hai chấm (:) mà không có dấu ngoặc kép
+
+VÍ DỤ ĐÚNG:
+- "Xin chào! Tôi là Satoru Gojo."
+- Satoru nói: "Bạn có khỏe không?"
+- "Tôi cảm ơn bạn rất nhiều!" cô ấy thốt lên.
+
+VÍ DỤ SAI:
+- Xin chào! Tôi là Satoru Gojo. (thiếu dấu ngoặc kép)
+- Satoru nói: Xin chào! (thiếu dấu ngoặc kép)
+- 'Cảm ơn bạn!' (sai dấu ngoặc)
+
+ĐỊNH DẠNG TÊN NGƯỜI NÓI:
+- Khi có nhiều người nói, hãy thêm tên trước câu đối thoại
+- Ví dụ: "Satoru nói: 'Xin chào!'"
+- Ví dụ: "Megumi thốt lên: 'Tôi không tin được!'"
+- Đối thoại nên phù hợp với tính cách và background của NPC
+- Khi người chơi nói chuyện, hãy tạo ra cuộc đối thoại sinh động và có ý nghĩa
 
 Quy tắc:
 - Nếu có xung đột thông tin: ưu tiên SCENE_STATE, sau đó đến SUMMARY, cuối cùng mới tới CHAT_DELTA.
@@ -1626,10 +1750,12 @@ QUEST SYSTEM RULES:
 - Chỉ tạo side quest khi có cơ hội tự nhiên trong câu chuyện (không ép buộc)
 - Tránh tạo quá nhiều side quest cùng lúc (tối đa 1 side quest mỗi 3-5 turn)
 - Side quest phải liên quan đến context hiện tại và có ý nghĩa với story
-- Nếu có quest system data, hãy tham khảo để tạo response phù hợp với quest progress
+- QUAN TRỌNG: Chỉ nhắc đến quest khi người chơi đang thực sự làm quest đó (trong vòng 1-2 turn gần đây)
+- QUAN TRỌNG: KHÔNG nhắc lại quest cũ nếu người chơi đã chuyển sang làm việc khác
 - QUAN TRỌNG: Khi tích hợp quest vào narrative, hãy mô tả tình huống và bối cảnh một cách tự nhiên, để người chơi tự hiểu và quyết định hành động. KHÔNG nói "Bây giờ bạn có nhiệm vụ..." hay "Mục tiêu của bạn là..."
 - QUAN TRỌNG: KHÔNG BAO GIỜ nhắc lại hoặc đề xuất lại các side quest đã bị từ chối (xem danh sách "Declined Side Quests")
 - Nếu người chơi đã từ chối một quest, hãy tôn trọng quyết định đó và không đề cập đến quest đó nữa
+- Nếu người chơi đang làm việc khác (không liên quan quest), hãy tập trung vào hành động hiện tại thay vì nhắc quest
 
 ĐẦU VÀO:
 - WORLD: ${worldJson}
@@ -1645,6 +1771,32 @@ LƯU Ý VỀ NGÔI KỂ:
 - Nếu narration = "Ngôi thứ hai": sử dụng "Bạn" khi nói về nhân vật chính
 - Nếu narration = "Ngôi thứ nhất": sử dụng "Tôi" khi nói về nhân vật chính  
 - Nếu narration = "Ngôi thứ ba": sử dụng "Anh ấy/Cô ấy" khi nói về nhân vật chính
+
+QUAN TRỌNG VỀ TÊN NHÂN VẬT:
+- KHÔNG BAO GIỜ tạo NPC có tên giống với nhân vật chính (PC)
+- Kiểm tra tên nhân vật chính trong CHARACTER data và đảm bảo tất cả NPC có tên khác biệt
+- Nếu cần tạo NPC, hãy sử dụng tên hoàn toàn khác với PC
+- Ví dụ: Nếu PC tên "Ren Tanaka", NPC phải có tên khác như "Satoru Gojo", "Megumi Fushiguro", "Yuji Itadori", etc.
+
+QUAN TRỌNG VỀ NPCs:
+- Khi tạo NPC trong sceneState.npcs, hãy mô tả chi tiết về họ trong narrative
+- Bao gồm tên, trạng thái hiện tại, mô tả ngắn, tags (thương gia, quý tộc, tội phạm, v.v.), và faction nếu có
+- QUAN TRỌNG: Tags phải bằng tiếng Việt (ví dụ: "thương gia", "quý tộc", "học giả", "chiến binh", "nông dân", "thợ thủ công", "tội phạm", "quan chức", "pháp sư", "thầy thuốc")
+- QUAN TRỌNG VỀ FACTION: 
+  * KHÔNG phải tất cả NPC đều có faction
+  * CHỈ gán faction khi NPC có lý do cụ thể và phù hợp với faction đó
+  * NPCs thông thường như nhân viên, dân thường, nông dân, thương gia thường KHÔNG thuộc faction
+  * CHỈ gán faction cho NPCs có vai trò quan trọng, quyền lực, hoặc liên quan trực tiếp đến faction:
+    - Lãnh đạo, quan chức cấp cao
+    - Chiến binh, binh lính chính thức
+    - Thành viên tổ chức bí mật
+    - Người có quyền lực chính trị/quân sự
+    - Người có mối liên hệ đặc biệt với faction
+  * Nếu không chắc chắn, KHÔNG gán faction cho NPC
+- ĐẢM BẢO tên NPC khác hoàn toàn với tên PC
+- CHỈ TẠO NPC CÁ THỂ RIÊNG BIỆT, KHÔNG TẠO NHÓM:
+  * Tên phải là tên riêng cụ thể (ví dụ: "Satoru Gojo", "Megumi Fushiguro", "Nobara Kugisaki")
+  * KHÔNG tạo NPC với tên như "học viên", "nhiều người", "nhóm người", "đám đông"
 
 ĐẦU RA (JSON, không thêm chữ khác):
 {
@@ -1675,23 +1827,19 @@ LƯU Ý VỀ NGÔI KỂ:
     try {
       const responseText = await this.generateContent(prompt);
       
-      // Parse JSON response
-      let result;
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          result = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('No JSON found in response');
-        }
-      } catch (parseError) {
-        console.error('Failed to parse turn response JSON:', parseError);
-        console.log('Raw response:', responseText);
-        throw new Error('Không thể phân tích kết quả từ AI.');
-      }
+      // Parse JSON response với fallback
+      const fallbackResult = {
+        narrative: 'Xin lỗi, có lỗi xảy ra khi xử lý phản hồi từ AI. Vui lòng thử lại.',
+        softGuidance: '',
+        sceneState: {},
+        storyProgress: {},
+        sideQuestOffer: null
+      };
+
+      const result = this.parseJsonResponse(responseText, fallbackResult);
 
       return {
-        narrative: result.narrative || '',
+        narrative: result.narrative || fallbackResult.narrative,
         softGuidance: result.softGuidance || '',
         sceneState: result.sceneState || {},
         storyProgress: result.storyProgress || {},
