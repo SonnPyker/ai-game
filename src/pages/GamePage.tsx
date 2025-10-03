@@ -63,7 +63,7 @@ export function GamePage() {
   const [isNPCAnalysisProcessing, setIsNPCAnalysisProcessing] = useState(false);
   
   // Responsive design context
-  const { shouldUseMobileLayout, shouldUseDesktopLayout } = useResponsiveContext();
+  const { shouldUseMobileLayout } = useResponsiveContext();
   const [gameState, setGameState] = useState<GameState>({
     scenarioSkeleton: null,
     sceneState: {},
