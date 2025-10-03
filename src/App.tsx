@@ -8,6 +8,7 @@ import { SaveLoadPage } from './pages/SaveLoadPage';
 import { InitPage } from './pages/InitPage';
 import { WorldBuilder } from './components/WorldBuilder/WorldBuilder';
 import { Layout } from './components/Layout';
+import { ResponsiveProvider } from './contexts/ResponsiveContext';
 // import { useRefreshHandler } from './hooks/useRefreshHandler';
 
 function App() {
@@ -15,18 +16,20 @@ function App() {
   // useRefreshHandler();
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/init" element={<InitPage />} />
-        <Route path="/create-character" element={<CharacterCreationPage />} />
-        <Route path="/world-builder" element={<WorldBuilder />} />
-        <Route path="/game" element={<GamePage />} />
-        <Route path="/saveload" element={<SaveLoadPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-      </Routes>
-      <SpeedInsights />
-    </Layout>
+    <ResponsiveProvider>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/init" element={<InitPage />} />
+          <Route path="/create-character" element={<CharacterCreationPage />} />
+          <Route path="/world-builder" element={<WorldBuilder />} />
+          <Route path="/game" element={<GamePage />} />
+          <Route path="/saveload" element={<SaveLoadPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Routes>
+        <SpeedInsights />
+      </Layout>
+    </ResponsiveProvider>
   );
 }
 

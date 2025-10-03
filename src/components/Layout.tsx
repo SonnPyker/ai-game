@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { AuthModal } from './Auth/AuthModal';
+import { useResponsiveContext } from '../contexts/ResponsiveContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,7 +10,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  
+  const { shouldUseMobileLayout } = useResponsiveContext();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -27,13 +28,19 @@ export function Layout({ children }: LayoutProps) {
     setShowAuthModal(false);
   };
 
+  // Auto-close sidebar on mobile when navigating
+  const handleSidebarClose = () => {
+    if (shouldUseMobileLayout()) {
+      setSidebarOpen(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black">
       {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
+      {sidebarOpen && shouldUseMobileLayout() && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40"
           onClick={closeSidebar}
         />
       )}
@@ -41,13 +48,13 @@ export function Layout({ children }: LayoutProps) {
       <div className="flex">
         <Sidebar 
           isOpen={sidebarOpen} 
-          onClose={closeSidebar}
+          onClose={handleSidebarClose}
           onToggle={toggleSidebar}
           onOpenAuthModal={handleOpenAuthModal}
         />
         <main className={`flex-1 main-transition ${
-          sidebarOpen ? 'main-with-sidebar' : 'main-full-width'
-        } p-2 sm:p-4 lg:p-6 mobile-padding`}>
+          sidebarOpen && !shouldUseMobileLayout() ? 'main-with-sidebar' : 'main-full-width'
+        } p-2 sm:p-4 lg:p-6`}>
           {children}
         </main>
         

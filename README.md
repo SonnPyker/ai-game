@@ -1,26 +1,6 @@
-# 🎮 AI Roleplay Game v2.0
+# 🎮 AI Roleplay Game
 
-Một trò chơi roleplay được hỗ trợ bởi AI với khả năng tạo thế giới và nhân vật động, sử dụng Google Gemini API. **Phiên bản 2.0 với tối ưu hóa mobile hoàn toàn mới!**
-
-## 🚀 What's New in v2.0
-
-### 📱 **Major Mobile Optimization**
-- **Complete Mobile-First Design**: Responsive design hoàn toàn mới cho mobile
-- **Touch-Friendly Interactions**: Tất cả buttons và elements được tối ưu cho touch
-- **44px Touch Targets**: Đạt chuẩn iOS cho touch targets
-- **Touch Feedback**: Hiệu ứng scale khi nhấn
-- **Haptic Feedback**: Rung phản hồi trên mobile
-- **Mobile-Specific CSS**: Utility classes chuyên dụng cho mobile
-- **Performance Optimizations**: Tối ưu hiệu suất cho mobile devices
-- **Hardware Acceleration**: Smooth animations với GPU acceleration
-- **Responsive Typography**: Font sizes tối ưu cho mọi screen size
-- **Enhanced UX**: Trải nghiệm người dùng mobile được cải thiện đáng kể
-
-### 🎯 **Cross-Platform Compatibility**
-- **iOS Safari**: Tối ưu hoàn toàn cho iOS Safari
-- **Android Chrome**: Cải thiện trải nghiệm trên Android
-- **Responsive Design**: Hỗ trợ mọi kích thước màn hình
-- **Mobile Web App**: Meta tags cho mobile web app experience
+Một trò chơi roleplay được hỗ trợ bởi AI với khả năng tạo thế giới và nhân vật động, sử dụng Google Gemini API.
 
 ## ✨ Tính năng chính
 
@@ -148,11 +128,9 @@ npm run build
 ### 🎨 Design System
 - **Dark Theme**: Giao diện tối với gradient backgrounds
 - **Glass Effect**: Hiệu ứng kính mờ cho cards
-- **Mobile-First Responsive**: Tối ưu hoàn toàn cho mobile, tương thích desktop
-- **Touch-Optimized**: Tất cả interactions được tối ưu cho touch
-- **Smooth Animations**: Chuyển động mượt mà với Framer Motion + GPU acceleration
-- **Clear Typography**: Font rõ ràng, dễ đọc với responsive sizing
-- **Mobile Web App**: Meta tags và configuration cho mobile web app experience
+- **Responsive**: Tương thích mobile và desktop
+- **Smooth Animations**: Chuyển động mượt mà với Framer Motion
+- **Clear Typography**: Font rõ ràng, dễ đọc
 
 ### 🎯 User Experience
 - **Intuitive Navigation**: Điều hướng trực quan

@@ -22,6 +22,7 @@ import { npcRelationshipService } from '../../services/npcRelationshipService';
 import { QuestTracker } from '../QuestTracker/QuestTracker';
 import { SCCJournal } from './SCCJournal';
 import { NPCArousalBar } from '../NPCArousalBar';
+import { useResponsiveContext } from '../../contexts/ResponsiveContext';
 
 interface InfoMenuProps {
   isOpen: boolean;
@@ -71,6 +72,9 @@ export function InfoMenu({
   isNPCAnalysisProcessing,
   contentFlags
 }: InfoMenuProps) {
+  // Responsive design context
+  const { shouldUseMobileLayout } = useResponsiveContext();
+  
   // Cache localStorage value để tránh gọi mỗi lần render
   const [activeSection, setActiveSection] = useState<string>(() => {
     try {
@@ -962,11 +966,15 @@ export function InfoMenu({
   };
 
   return (
-    <div className={`fixed top-0 right-0 h-screen w-full sm:w-96 bg-black/95 backdrop-blur-sm border-l border-gray-700/50 z-50 flex flex-col transition-all duration-300 ${
+    <div className={`fixed top-0 right-0 h-screen bg-black/95 backdrop-blur-sm border-l border-gray-700/50 z-50 flex flex-col transition-all duration-300 ${
+      shouldUseMobileLayout() 
+        ? 'w-full max-w-sm' // Full width on mobile with max constraint
+        : 'w-96' // Fixed width on desktop
+    } ${
       isOpen ? 'translate-x-0' : 'translate-x-full'
     }`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-700/50 mobile-padding">
+      <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
         <h2 className="text-lg font-semibold text-white">Thông Tin Game</h2>
         <div className="flex items-center space-x-2">
           <button
@@ -993,12 +1001,12 @@ export function InfoMenu({
       </div>
 
       {/* Menu Navigation */}
-      <div className="flex border-b border-gray-700/50 overflow-x-auto scrollbar-hide">
+      <div className="flex border-b border-gray-700/50 overflow-x-auto">
         {menuSections.map((section) => (
           <button
             key={section.id}
             onClick={() => updateActiveSection(section.id)}
-            className={`flex items-center space-x-2 px-3 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap transition-colors duration-200 mobile-button ${
+            className={`flex items-center space-x-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-200 ${
               activeSection === section.id
                 ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
@@ -1011,7 +1019,7 @@ export function InfoMenu({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 mobile-padding">
+      <div className="flex-1 overflow-y-auto p-4">
         {renderActiveSection()}
       </div>
     </div>

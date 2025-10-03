@@ -17,6 +17,9 @@ import { QuestOfferModal } from '../components/QuestOfferModal/QuestOfferModal';
 import { npcRelationshipService } from '../services/npcRelationshipService';
 import { DialogueRenderer } from '../components/DialogueRenderer';
 import { detectPlayerDialogue, enhanceDialogueForAI } from '../utils/dialogueProcessor';
+import { useResponsiveContext } from '../contexts/ResponsiveContext';
+import { UIToggle } from '../components/UIToggle';
+import { UIModeIndicator } from '../components/UIModeIndicator';
 
 interface GameState {
   scenarioSkeleton: any;
@@ -58,6 +61,9 @@ export function GamePage() {
   // AI processing states
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [isNPCAnalysisProcessing, setIsNPCAnalysisProcessing] = useState(false);
+  
+  // Responsive design context
+  const { shouldUseMobileLayout, shouldUseDesktopLayout } = useResponsiveContext();
   const [gameState, setGameState] = useState<GameState>({
     scenarioSkeleton: null,
     sceneState: {},
@@ -1293,10 +1299,24 @@ export function GamePage() {
               )}
             </div>
             
+            {/* UI Mode Indicator - Only show on desktop */}
+            {!shouldUseMobileLayout() && (
+              <div className="flex items-center space-x-2">
+                <UIModeIndicator />
+                <span className="text-gray-500">•</span>
+              </div>
+            )}
+            
             {/* Action Buttons */}
             <div className={`flex items-center space-x-1 sm:space-x-2 transition-all duration-300 ${
-              isInfoMenuPinned ? 'mr-96' : ''
+              isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
             }`}>
+              {/* UI Toggle - Only show on mobile */}
+              {shouldUseMobileLayout() && (
+                <div className="mr-2">
+                  <UIToggle />
+                </div>
+              )}
               {/* Info Menu Button */}
               <button
                 onClick={() => {
@@ -1342,7 +1362,7 @@ export function GamePage() {
       <div className="flex-1 flex flex-col pt-20 pb-32">
         {/* Messages */}
         <div className={`flex-1 overflow-y-auto p-2 sm:p-4 space-y-4 transition-all duration-300 mobile-padding smooth-scroll will-change-scroll ${
-          isInfoMenuPinned ? 'mr-96' : ''
+          isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
         }`}>
           {chatHistory.map((message, index) => (
             <motion.div
@@ -1453,7 +1473,7 @@ export function GamePage() {
         {/* Error Display */}
         {error && (
           <div className={`mx-4 mb-2 p-3 bg-red-500/20 border border-red-500/50 rounded-lg transition-all duration-300 ${
-            isInfoMenuPinned ? 'mr-96' : ''
+            isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
           }`}>
             <div className="flex items-center space-x-2 text-red-300">
               <AlertCircle className="w-4 h-4" />
@@ -1465,7 +1485,7 @@ export function GamePage() {
         {/* Save Message Display */}
         {saveMessage && (
           <div className={`mx-4 mb-2 p-3 bg-green-500/20 border border-green-500/50 rounded-lg transition-all duration-300 ${
-            isInfoMenuPinned ? 'mr-96' : ''
+            isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
           }`}>
             <div className="flex items-center space-x-2 text-green-300">
               <Save className="w-4 h-4" />
@@ -1484,8 +1504,8 @@ export function GamePage() {
             </div>
           )}
           
-          <div className={`flex space-x-2 sm:space-x-3 transition-all duration-300 ${
-            isInfoMenuPinned ? 'mr-96' : ''
+          <div className={`${shouldUseMobileLayout() ? 'flex-col space-y-2' : 'flex space-x-2 sm:space-x-3'} transition-all duration-300 ${
+            isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
           }`}>
             <textarea
               ref={textareaRef}
@@ -1497,7 +1517,9 @@ export function GamePage() {
                   ? "AI đang xử lý, vui lòng đợi..." 
                   : "Mô tả hành động của bạn..."
               }
-              className={`flex-1 px-3 sm:px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none resize-none transition-colors mobile-input ${
+              className={`flex-1 px-3 sm:px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none resize-none transition-colors ${
+                shouldUseMobileLayout() ? 'text-sm' : 'text-base'
+              } ${
                 resendingMessageIndex !== null 
                   ? 'border-green-500/50 focus:border-green-500' 
                   : (isAIProcessing || isNPCAnalysisProcessing)
@@ -1510,7 +1532,7 @@ export function GamePage() {
             <button
               onClick={sendMessage}
               disabled={!currentMessage.trim() || isLoading || isAIProcessing || isNPCAnalysisProcessing}
-              className={`px-3 sm:px-4 py-3 border rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mobile-button touch-feedback ${
+              className={`${shouldUseMobileLayout() ? 'w-full px-4 py-3' : 'px-3 sm:px-4 py-3'} border rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mobile-button touch-feedback ${
                 isAIProcessing || isNPCAnalysisProcessing
                   ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300'
                   : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30'

@@ -2,35 +2,15 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "2.0.0";
+  const version = "1.4.0";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
 const updateLog = [
     {
-      version: "2.0.0",
-      date: now.toISOString().split('T')[0],
-      changes: [
-        "🚀 Major Mobile Optimization Release",
-        "📱 Complete mobile-first responsive design overhaul",
-        "👆 Touch-friendly interactions with 44px minimum targets",
-        "🎯 Touch feedback with scale animations",
-        "📳 Haptic feedback for mobile interactions",
-        "🎨 Mobile-specific CSS utilities and classes",
-        "⚡ Performance optimizations for mobile devices",
-        "🔄 Hardware acceleration for smooth animations",
-        "📐 Responsive typography and spacing",
-        "🎮 Enhanced mobile user experience",
-        "🔧 Improved cross-platform compatibility",
-        "📊 Better mobile layout and navigation",
-        "✨ Optimized touch interactions throughout",
-        "🎯 Mobile web app meta tags and configuration"
-      ]
-    },
-    {
       version: "1.4.0",
-      date: "2025-01-02",
+      date: now.toISOString().split('T')[0],
       changes: [
         "💾 Tích hợp Quest System vào Save System",
         "🔄 Lưu và khôi phục tiến trình quest hoàn chỉnh",
