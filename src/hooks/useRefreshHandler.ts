@@ -27,6 +27,8 @@ export function useRefreshHandler() {
             localStorage.removeItem('currentWorldData');
             localStorage.removeItem('currentWorldDescription');
             localStorage.removeItem('completeWorldData');
+            localStorage.removeItem('action_suggestions');
+            localStorage.removeItem('action_log');
             // Không redirect, vẫn ở trang world-builder
           } else if (lastPath === '/create-character') {
             // Ở mục tạo nhân vật - quay lại mục mô tả nhân vật

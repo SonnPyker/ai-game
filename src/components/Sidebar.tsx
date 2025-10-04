@@ -33,7 +33,7 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
 
   const menuItems = [
     { id: 'home', label: 'TRANG CHỦ', icon: Home, path: '/', action: 'home' },
-    { id: 'init', label: 'KHỞI TẠO', icon: Play, path: '/init', action: 'init' },
+    { id: 'init', label: 'TIẾP TỤC', icon: Play, path: '/init', action: 'init' },
     { id: 'saveload', label: 'TẢI GAME', icon: Download, path: '/saveload', action: 'saveload' },
     { id: 'settings', label: 'CÀI ĐẶT', icon: Settings, path: '/settings' },
   ];
@@ -104,7 +104,7 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
           <ul className="space-y-2 flex-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              // Disable "Khởi tạo" tab when in game creation process
+              // Disable "Tiếp tục" tab when in game creation process
               const isDisabled = item.id === 'init' && isInGameCreationProcess();
               
               const handleClick = (e: React.MouseEvent) => {
@@ -118,7 +118,7 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
                 // Chuyển đến trang chủ
                 window.location.href = '/';
               } else if (item.action === 'init') {
-                // Chuyển đến trang khởi tạo
+                // Chuyển đến trang tiếp tục
                 window.location.href = '/init';
               } else if (item.action === 'saveload') {
                 // Chuyển đến trang save/load

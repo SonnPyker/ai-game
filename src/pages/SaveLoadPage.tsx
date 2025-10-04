@@ -111,6 +111,8 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         // Clear faction data when loading different game
         localStorage.removeItem('faction_quests');
         localStorage.removeItem('faction_reputations');
+        localStorage.removeItem('action_suggestions');
+        localStorage.removeItem('action_log');
         
         // Cập nhật localStorage với dữ liệu từ SaveGame
         const saveGame = result.saveGame;
@@ -132,11 +134,33 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
           localStorage.setItem('quest_system', JSON.stringify(saveGame.questSystem));
           console.log('✅ Đã khôi phục quest system từ save file');
         }
+
+        // Khôi phục action suggestions và action log nếu có
+        if (saveGame.actionSuggestions) {
+          localStorage.setItem('action_suggestions', JSON.stringify(saveGame.actionSuggestions));
+          console.log('✅ Đã khôi phục action suggestions từ save file');
+        }
+        
+        if (saveGame.actionLog) {
+          localStorage.setItem('action_log', JSON.stringify(saveGame.actionLog));
+          console.log('✅ Đã khôi phục action log từ save file');
+        }
         
         // Khôi phục NPC relationship data nếu có
         if (saveGame.npcRelationships) {
           npcRelationshipService.importFromSaveGame(saveGame.npcRelationships);
           console.log('✅ Đã khôi phục NPC relationship data từ save file');
+        }
+        
+        // Khôi phục action suggestions và action log nếu có
+        if (saveGame.actionSuggestions) {
+          localStorage.setItem('action_suggestions', JSON.stringify(saveGame.actionSuggestions));
+          console.log('✅ Đã khôi phục action suggestions từ save file');
+        }
+        
+        if (saveGame.actionLog) {
+          localStorage.setItem('action_log', JSON.stringify(saveGame.actionLog));
+          console.log('✅ Đã khôi phục action log từ save file');
         }
         
         const source = isCloudSlot ? 'Cloud' : 'Local';

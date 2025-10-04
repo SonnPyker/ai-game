@@ -535,14 +535,6 @@ export function InfoMenu({
   };
 
   // Render section phe phái
-  // Function to adjust faction reputation for testing
-  const adjustFactionReputation = (factionName: string, amount: number) => {
-    // Adjust faction reputation directly
-    npcRelationshipService.adjustFactionReputation(factionName, amount);
-    
-    // Force re-render
-    window.location.reload();
-  };
 
   const renderFactionsSection = () => {
     if (!worldData?.factions || worldData.factions.length === 0) {
@@ -607,34 +599,6 @@ export function InfoMenu({
                     )}
                   </div>
                   
-                  {/* Debug buttons for testing */}
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      onClick={() => adjustFactionReputation(faction.name, 50)}
-                      className="px-2 py-1 bg-green-600/20 border border-green-500/50 text-green-300 rounded text-xs hover:bg-green-600/30 transition-colors"
-                    >
-                      +50
-                    </button>
-                    <button
-                      onClick={() => adjustFactionReputation(faction.name, 100)}
-                      className="px-2 py-1 bg-blue-600/20 border border-blue-500/50 text-blue-300 rounded text-xs hover:bg-blue-600/30 transition-colors"
-                    >
-                      +100
-                    </button>
-                    <button
-                      onClick={() => adjustFactionReputation(faction.name, -50)}
-                      className="px-2 py-1 bg-red-600/20 border border-red-500/50 text-red-300 rounded text-xs hover:bg-red-600/30 transition-colors"
-                    >
-                      -50
-                    </button>
-                    <button
-                      onClick={() => adjustFactionReputation(faction.name, -100)}
-                      className="px-2 py-1 bg-orange-600/20 border border-orange-500/50 text-orange-300 rounded text-xs hover:bg-orange-600/30 transition-colors"
-                    >
-                      -100
-                    </button>
-                  </div>
-                  
                   {/* Member list */}
                   {reputationData.members.length > 0 && (
                     <div className="mt-3">
@@ -667,33 +631,6 @@ export function InfoMenu({
                   <div className="space-y-2">
                     <div className="text-xs text-gray-500 italic">
                       Chưa gặp thành viên nào của phe phái này
-                    </div>
-                    {/* Debug buttons for factions without members */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => adjustFactionReputation(faction.name, 50)}
-                        className="px-2 py-1 bg-green-600/20 border border-green-500/50 text-green-300 rounded text-xs hover:bg-green-600/30 transition-colors"
-                      >
-                        +50
-                      </button>
-                      <button
-                        onClick={() => adjustFactionReputation(faction.name, 100)}
-                        className="px-2 py-1 bg-blue-600/20 border border-blue-500/50 text-blue-300 rounded text-xs hover:bg-blue-600/30 transition-colors"
-                      >
-                        +100
-                      </button>
-                      <button
-                        onClick={() => adjustFactionReputation(faction.name, -50)}
-                        className="px-2 py-1 bg-red-600/20 border border-red-500/50 text-red-300 rounded text-xs hover:bg-red-600/30 transition-colors"
-                      >
-                        -50
-                      </button>
-                      <button
-                        onClick={() => adjustFactionReputation(faction.name, -100)}
-                        className="px-2 py-1 bg-orange-600/20 border border-orange-500/50 text-orange-300 rounded text-xs hover:bg-orange-600/30 transition-colors"
-                      >
-                        -100
-                      </button>
                     </div>
                   </div>
                 )}

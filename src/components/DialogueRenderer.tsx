@@ -12,7 +12,43 @@ interface DialogueSegment {
 }
 
 export function DialogueRenderer({ content, className = '', isPlayer = false }: DialogueRendererProps) {
-  // Parse content to identify dialogue segments
+  // Function to highlight names and locations with /.../ syntax
+  const highlightNames = (text: string) => {
+    const nameRegex = /\/([^\/]+)\//g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = nameRegex.exec(text)) !== null) {
+      // Add text before the name
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'text',
+          content: text.slice(lastIndex, match.index)
+        });
+      }
+
+      // Add highlighted name
+      parts.push({
+        type: 'highlight',
+        content: match[1]
+      });
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push({
+        type: 'text',
+        content: text.slice(lastIndex)
+      });
+    }
+
+    return parts;
+  };
+
+  // Parse content to identify dialogue segments and highlight names
   const parseDialogue = (text: string): DialogueSegment[] => {
     const segments: DialogueSegment[] = [];
     const dialogueRegex = /"([^"]+)"/g;
@@ -109,7 +145,22 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
                   <span className={`${
                     isPlayer ? 'text-green-300' : 'text-blue-300'
                   } mr-2 text-lg leading-none`}>"</span>
-                  <span className="flex-1 leading-relaxed">{segment.content}</span>
+                  <span className="flex-1 leading-relaxed">
+                    {highlightNames(segment.content).map((part, partIndex) => {
+                      if (part.type === 'highlight') {
+                        return (
+                          <span 
+                            key={partIndex}
+                            className="text-yellow-300 font-semibold bg-yellow-500/20 px-1 rounded"
+                          >
+                            {part.content}
+                          </span>
+                        );
+                      } else {
+                        return part.content;
+                      }
+                    })}
+                  </span>
                   <span className={`${
                     isPlayer ? 'text-green-300' : 'text-blue-300'
                   } ml-2 text-lg leading-none`}>"</span>
@@ -118,9 +169,23 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
             </div>
           );
         } else {
+          const highlightedParts = highlightNames(segment.content);
           return (
             <span key={index} className="whitespace-pre-wrap leading-relaxed">
-              {segment.content}
+              {highlightedParts.map((part, partIndex) => {
+                if (part.type === 'highlight') {
+                  return (
+                    <span 
+                      key={partIndex}
+                      className="text-yellow-300 font-semibold bg-yellow-500/20 px-1 rounded"
+                    >
+                      {part.content}
+                    </span>
+                  );
+                } else {
+                  return part.content;
+                }
+              })}
             </span>
           );
         }

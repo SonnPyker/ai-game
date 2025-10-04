@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw } from 'lucide-react';
+import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History } from 'lucide-react';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
 import { WorldTime, SCCContext, ChatMessage, ContentFlags } from '../types';
@@ -10,6 +10,7 @@ import { useQuestSystem } from '../hooks/useQuestSystem';
 import { DialogueRenderer } from '../components/DialogueRenderer';
 import { detectPlayerDialogue, enhanceDialogueForAI } from '../utils/dialogueProcessor';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
+import { actionSuggestionService, SuggestedAction, ActionLogEntry } from '../services/actionSuggestionService';
 
 // Lazy load các services lớn để giảm kích thước bundle chính
 let geminiService: any;
@@ -42,6 +43,8 @@ const InfoMenu = lazy(() => import('../components/InfoMenu/InfoMenu').then(modul
 const SaveManager = lazy(() => import('../components/SaveManager/SaveManager').then(module => ({ default: module.SaveManager })));
 const SavePopup = lazy(() => import('../components/SaveManager/SavePopup').then(module => ({ default: module.SavePopup })));
 const QuestOfferModal = lazy(() => import('../components/QuestOfferModal/QuestOfferModal').then(module => ({ default: module.QuestOfferModal })));
+const ActionSuggestions = lazy(() => import('../components/ActionSuggestions/ActionSuggestions').then(module => ({ default: module.ActionSuggestions })));
+const ActionLog = lazy(() => import('../components/ActionSuggestions/ActionLog').then(module => ({ default: module.ActionLog })));
 
 interface GameState {
   scenarioSkeleton: any;
@@ -83,6 +86,15 @@ export function GamePage() {
   // AI processing states
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [isNPCAnalysisProcessing, setIsNPCAnalysisProcessing] = useState(false);
+  
+  // Action suggestions state
+  const [actionSuggestions, setActionSuggestions] = useState<SuggestedAction[]>([]);
+  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
+  const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null);
+  const [showActionLog, setShowActionLog] = useState(false);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [isSuggestionsCollapsed, setIsSuggestionsCollapsed] = useState(false);
+  const [hasLoadedSuggestions, setHasLoadedSuggestions] = useState(false);
   
   // Responsive design context
   const { shouldUseMobileLayout } = useResponsiveContext();
@@ -259,6 +271,167 @@ export function GamePage() {
     }
   }, [chatHistory]);
 
+  // Ensure suggestions are loaded on mount
+  useEffect(() => {
+    if (gameState.isInitialized && !hasLoadedSuggestions) {
+      console.log('🔄 Loading suggestions on mount...');
+      
+      // Check if suggestions already exist in localStorage
+      const savedSuggestions = localStorage.getItem('action_suggestions');
+      if (savedSuggestions) {
+        try {
+          const suggestions = JSON.parse(savedSuggestions);
+          if (suggestions && suggestions.length > 0) {
+            setActionSuggestions(suggestions);
+            setHasLoadedSuggestions(true);
+            console.log('✅ Loaded existing suggestions from localStorage:', suggestions.length);
+            return; // Don't generate new ones
+          }
+        } catch (error) {
+          console.error('Error parsing saved suggestions:', error);
+        }
+      }
+      
+      // Only generate new suggestions if none exist
+      console.log('📝 No existing suggestions found, generating new ones...');
+      setHasLoadedSuggestions(true);
+      
+      // Set immediate fallback suggestions
+      const immediateSuggestions = [
+        {
+          id: 'immediate_1',
+          text: 'Khám phá khu vực xung quanh',
+          summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
+          pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
+          cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
+          durationMinutes: 30,
+          impactTags: ['exploration'],
+          source: 'heuristic' as const
+        },
+        {
+          id: 'immediate_2', 
+          text: 'Nghỉ ngơi và suy nghĩ',
+          summary: 'Dành thời gian để lên kế hoạch tiếp theo',
+          pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
+          cons: ['Mất thời gian'],
+          durationMinutes: 20,
+          impactTags: ['planning'],
+          source: 'heuristic' as const
+        },
+        {
+          id: 'immediate_3',
+          text: 'Tìm kiếm thông tin từ người dân địa phương',
+          summary: 'Hỏi thăm thông tin từ NPC',
+          pros: ['Thu thập thông tin', 'Xây dựng mối quan hệ'],
+          cons: ['Có thể bị lừa', 'Mất tiền'],
+          durationMinutes: 60,
+          impactTags: ['social'],
+          source: 'heuristic' as const
+        },
+        {
+          id: 'immediate_4',
+          text: 'Kiểm tra khu vực nguy hiểm',
+          summary: 'Thăm dò những nơi có thể có rủi ro',
+          pros: ['Phát hiện mối nguy', 'Chuẩn bị tốt hơn'],
+          cons: ['Rất nguy hiểm', 'Có thể bị thương'],
+          durationMinutes: 45,
+          impactTags: ['risk'],
+          source: 'heuristic' as const
+        }
+      ];
+      setActionSuggestions(immediateSuggestions);
+      console.log('✅ Immediate suggestions set:', immediateSuggestions.length);
+      
+      // Then try to load AI suggestions
+      loadActionSuggestions();
+    }
+  }, [gameState.isInitialized, hasLoadedSuggestions]);
+
+  // Auto-collapse suggestions when chat history gets long
+  useEffect(() => {
+    if (chatHistory.length > 10 && !isSuggestionsCollapsed) {
+      setIsSuggestionsCollapsed(true);
+    }
+  }, [chatHistory.length, isSuggestionsCollapsed]);
+
+  // Load action log on mount
+  useEffect(() => {
+    console.log('🔄 Loading action log on mount...');
+    loadActionLog();
+  }, []);
+
+  // Load action suggestions
+  const loadActionSuggestions = async () => {
+    try {
+      setIsGeneratingSuggestions(true);
+      console.log('🔄 Loading action suggestions...');
+      
+      const context = actionSuggestionService.buildContextFromStorage();
+      console.log('📊 Context built:', context);
+      
+      const suggestions = await actionSuggestionService.generateSuggestions(context, context.contentFlags);
+      console.log('💡 Generated suggestions:', suggestions);
+      
+      setActionSuggestions(suggestions);
+      actionSuggestionService.saveCurrentSuggestions(suggestions);
+      setHasLoadedSuggestions(true);
+    } catch (error) {
+      console.error('Error loading action suggestions:', error);
+      // Fallback suggestions
+      const fallbackSuggestions = [
+        {
+          id: 'fallback_1',
+          text: 'Khám phá khu vực xung quanh',
+          summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
+          pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
+          cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
+          durationMinutes: 30,
+          impactTags: ['exploration'],
+          source: 'heuristic' as const
+        },
+        {
+          id: 'fallback_2', 
+          text: 'Nghỉ ngơi và suy nghĩ',
+          summary: 'Dành thời gian để lên kế hoạch tiếp theo',
+          pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
+          cons: ['Mất thời gian'],
+          durationMinutes: 20,
+          impactTags: ['planning'],
+          source: 'heuristic' as const
+        }
+      ];
+      setActionSuggestions(fallbackSuggestions);
+      setHasLoadedSuggestions(true);
+    } finally {
+      setIsGeneratingSuggestions(false);
+    }
+  };
+
+  // Load action log
+  const loadActionLog = () => {
+    try {
+      const log = actionSuggestionService.getActionLog();
+      console.log('📋 Raw action log from service:', log);
+      console.log('📋 Action log length:', log?.length || 0);
+      setActionLog(log || []);
+      console.log('📋 Action log state set:', log?.length || 0, 'entries');
+    } catch (error) {
+      console.error('Error loading action log:', error);
+      setActionLog([]);
+    }
+  };
+
+  // Handle suggestion pick
+  const handleSuggestionPick = (suggestion: SuggestedAction) => {
+    setCurrentMessage(suggestion.text);
+    setSelectedSuggestionId(suggestion.id);
+  };
+
+  // Toggle suggestions collapse
+  const toggleSuggestionsCollapse = () => {
+    setIsSuggestionsCollapsed(!isSuggestionsCollapsed);
+  };
+
   const initializeGame = async () => {
     try {
       setIsLoading(true);
@@ -357,6 +530,80 @@ export function GamePage() {
 
       // Save SCC context
       sccService.saveSCCContext(updatedSccContext);
+
+      // Load action suggestions and log
+      try {
+        loadActionLog();
+        // Check localStorage first before using service
+        const savedSuggestions = localStorage.getItem('action_suggestions');
+        if (savedSuggestions) {
+          try {
+            const suggestions = JSON.parse(savedSuggestions);
+            if (suggestions && suggestions.length > 0) {
+              setActionSuggestions(suggestions);
+              setHasLoadedSuggestions(true);
+              console.log('✅ Loaded suggestions from localStorage in initializeGame:', suggestions.length);
+            } else {
+              // Only generate if no valid suggestions exist
+              await loadActionSuggestions();
+            }
+          } catch (error) {
+            console.error('Error parsing saved suggestions in initializeGame:', error);
+            await loadActionSuggestions();
+          }
+        } else {
+          // No saved suggestions, generate new ones
+          await loadActionSuggestions();
+        }
+      } catch (suggestionError) {
+        console.error('Error loading action suggestions:', suggestionError);
+        // Fallback: generate basic suggestions
+        const fallbackSuggestions = [
+          {
+            id: 'fallback_1',
+            text: 'Khám phá khu vực xung quanh',
+            summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
+            pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
+            cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
+            durationMinutes: 30,
+            impactTags: ['exploration'],
+            source: 'heuristic' as const
+          },
+          {
+            id: 'fallback_2', 
+            text: 'Nghỉ ngơi và suy nghĩ',
+            summary: 'Dành thời gian để lên kế hoạch tiếp theo',
+            pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
+            cons: ['Mất thời gian'],
+            durationMinutes: 20,
+            impactTags: ['planning'],
+            source: 'heuristic' as const
+          },
+          {
+            id: 'fallback_3',
+            text: 'Tìm kiếm thông tin từ người dân địa phương',
+            summary: 'Hỏi thăm thông tin từ NPC',
+            pros: ['Thu thập thông tin', 'Xây dựng mối quan hệ'],
+            cons: ['Có thể bị lừa', 'Mất tiền'],
+            durationMinutes: 60,
+            impactTags: ['social'],
+            source: 'heuristic' as const
+          },
+          {
+            id: 'fallback_4',
+            text: 'Kiểm tra khu vực nguy hiểm',
+            summary: 'Thăm dò những nơi có thể có rủi ro',
+            pros: ['Phát hiện mối nguy', 'Chuẩn bị tốt hơn'],
+            cons: ['Rất nguy hiểm', 'Có thể bị thương'],
+            durationMinutes: 45,
+            impactTags: ['risk'],
+            source: 'heuristic' as const
+          }
+        ];
+        setActionSuggestions(fallbackSuggestions);
+        setHasLoadedSuggestions(true);
+        console.log('✅ Fallback suggestions set:', fallbackSuggestions.length);
+      }
 
     } catch (error) {
       console.error('Lỗi khởi tạo game:', error);
@@ -529,10 +776,26 @@ export function GamePage() {
           updatedSccContext = sccService.addTurn(updatedSccContext, aiMessage);
         }
 
-        // Advance world time (1-3 hours per action)
-        const timeAdvancement = Math.floor(Math.random() * 3) + 1; // 1-3 hours
+        // Determine action duration
+        let durationMinutes = 30; // Default
+        if (selectedSuggestionId) {
+          const selectedSuggestion = actionSuggestions.find(s => s.id === selectedSuggestionId);
+          if (selectedSuggestion) {
+            durationMinutes = selectedSuggestion.durationMinutes;
+          }
+        } else {
+          // Estimate duration from message content
+          try {
+            const context = actionSuggestionService.buildContextFromStorage();
+            durationMinutes = await actionSuggestionService.estimateActionDuration(currentMessage.trim(), context, gameState.contentFlags || { adult_enabled: false, adult_intensity: 'fade' });
+          } catch (error) {
+            console.error('Error estimating action duration:', error);
+          }
+        }
+
+        // Advance world time by minutes
         const newTime = gameState.worldTime ? 
-          worldTimeService.advanceTime(gameState.worldTime, timeAdvancement) : 
+          worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes) : 
           null;
 
         // Increment turn counter after AI response
@@ -567,6 +830,31 @@ export function GamePage() {
 
         // Save sceneState to localStorage
         localStorage.setItem('rp_scene_state', JSON.stringify(newSceneState));
+
+        // Log action if it was from a suggestion
+        if (selectedSuggestionId && gameState.worldTime && newTime) {
+          const selectedSuggestion = actionSuggestions.find(s => s.id === selectedSuggestionId);
+          if (selectedSuggestion) {
+            const actionLogEntry: ActionLogEntry = {
+              id: `action_${Date.now()}`,
+              actionId: selectedSuggestionId,
+              text: currentMessage.trim(),
+              summary: selectedSuggestion.summary,
+              pros: selectedSuggestion.pros,
+              cons: selectedSuggestion.cons,
+              durationMinutes: durationMinutes,
+              startedAt: gameState.worldTime,
+              endedAt: newTime,
+              turn: turnCounter + 1,
+              impactTags: selectedSuggestion.impactTags
+            };
+            actionSuggestionService.saveActionLog(actionLogEntry);
+            setActionLog(prev => [actionLogEntry, ...prev.slice(0, 99)]); // Keep last 100 entries
+          }
+        }
+
+        // Clear selected suggestion
+        setSelectedSuggestionId(null);
 
         // Process NPC relationships and character status from AI response
         try {
@@ -609,6 +897,9 @@ export function GamePage() {
         if (shouldSummarize && updatedSccContext) {
           await handleSummarization(updatedSccContext, worldData, characterData, scenarioData);
         }
+
+        // Generate new action suggestions after AI response
+        await loadActionSuggestions();
       } else {
         console.log('🚫 AI response failed - skipping all game updates to prevent corruption');
       }
@@ -783,7 +1074,7 @@ export function GamePage() {
       const npcRelationshipData = npcRelationshipService.exportForSaveGame();
 
       const saveGame: SaveGame = {
-        version: '1.0.0',
+        version: '2.5.0',
         meta: {
           slotId,
           updatedAt: Date.now(),
@@ -797,11 +1088,13 @@ export function GamePage() {
         sceneState: sceneState ? JSON.parse(sceneState) : {},
         chat: chatHistory,
         turnCounter: savedTurnCounter,
-        worldTime: gameState.worldTime || { day: 1, hour: 12, month: 1, year: 1, dayOfWeek: 1 },
+        worldTime: gameState.worldTime || { day: 1, hour: 12, minute: 0, month: 1, year: 1, dayOfWeek: 1 },
         questSystem: questSystemData ? JSON.parse(questSystemData) : undefined,
         npcRelationships: npcRelationshipData,
         ui: { showSummaryBanner: gameState.showSummaryBanner, lastSummaryTurn: gameState.lastSummaryTurn },
-        contentFlags: gameState.contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true }
+        contentFlags: gameState.contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true },
+        actionSuggestions: actionSuggestions,
+        actionLog: actionLog
       };
 
       // Determine if it's a local or cloud slot
@@ -835,7 +1128,9 @@ export function GamePage() {
           updatedSaveGame.worldTime,
           updatedSaveGame.questSystem,
           updatedSaveGame.ui,
-          updatedSaveGame.contentFlags
+          updatedSaveGame.contentFlags,
+          actionSuggestions,
+          actionLog
         );
       } else {
         // Save to cloud
@@ -1364,6 +1659,14 @@ export function GamePage() {
               >
                 <Info className="w-4 h-4" />
               </button>
+              {/* Action Log Button */}
+              <button
+                onClick={() => setShowActionLog(true)}
+                className="p-2 bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-600/30 transition-colors duration-200 mobile-button touch-feedback"
+                title="Lịch sử hành động"
+              >
+                <History className="w-4 h-4" />
+              </button>
               {/* Save Button */}
               <button
                 onClick={() => setShowSavePopup(true)}
@@ -1521,18 +1824,31 @@ export function GamePage() {
         )}
 
         {/* Input Area */}
-        <div className="glass-effect border-t border-gray-700/50 p-2 sm:p-4 mobile-padding">
+        <div className={`glass-effect border-t border-gray-700/50 p-3 sm:p-4 mobile-padding transition-all duration-300 ${
+          isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
+        }`}>
+          {/* Action Suggestions */}
+          <Suspense fallback={<div className="mb-4 h-20 bg-gray-800/30 rounded-lg animate-pulse"></div>}>
+            <ActionSuggestions
+              suggestions={actionSuggestions}
+              onPick={handleSuggestionPick}
+              isLoading={isGeneratingSuggestions}
+              isMobile={shouldUseMobileLayout()}
+              isCollapsed={isSuggestionsCollapsed}
+              onToggleCollapse={toggleSuggestionsCollapse}
+            />
+          </Suspense>
+          
+
           {/* Resend indicator */}
           {resendingMessageIndex !== null && (
-            <div className="mb-2 text-xs text-green-400 flex items-center space-x-1">
+            <div className="mb-1.5 text-xs text-green-400 flex items-center space-x-1">
               <RefreshCw className="w-3 h-3" />
               <span>Đã copy tin nhắn vào ô chat - bạn có thể chỉnh sửa trước khi gửi</span>
             </div>
           )}
           
-          <div className={`${shouldUseMobileLayout() ? 'flex space-x-2' : 'flex space-x-2 sm:space-x-3'} transition-all duration-300 ${
-            isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
-          }`}>
+          <div className={`${shouldUseMobileLayout() ? 'flex space-x-2' : 'flex space-x-2 sm:space-x-3'} transition-all duration-300`}>
             <textarea
               ref={textareaRef}
               value={currentMessage}
@@ -1543,7 +1859,7 @@ export function GamePage() {
                   ? "AI đang xử lý, vui lòng đợi..." 
                   : "Mô tả hành động của bạn..."
               }
-              className={`flex-1 px-3 sm:px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none resize-none transition-colors ${
+              className={`flex-1 px-3 sm:px-4 py-2.5 bg-gray-800/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none resize-none transition-colors ${
                 shouldUseMobileLayout() ? 'text-sm' : 'text-base'
               } ${
                 resendingMessageIndex !== null 
@@ -1637,6 +1953,15 @@ export function GamePage() {
           onAccept={handleAcceptQuestOffer}
           onDecline={handleDeclineQuestOffer}
           questOffer={pendingQuestOffer}
+        />
+      </Suspense>
+
+      {/* Action Log Modal */}
+      <Suspense fallback={null}>
+        <ActionLog
+          isOpen={showActionLog}
+          onClose={() => setShowActionLog(false)}
+          entries={actionLog}
         />
       </Suspense>
     </div>

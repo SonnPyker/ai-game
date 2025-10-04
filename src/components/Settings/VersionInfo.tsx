@@ -2,18 +2,20 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "1.4.0";
+  const version = "2.5.0";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
 const updateLog = [
     {
-      version: "1.4.0",
+      version: "2.5.0",
       date: now.toISOString().split('T')[0],
       changes: [
-        "💾 Tích hợp Quest System vào Save System",
-        "🔄 Lưu và khôi phục tiến trình quest hoàn chỉnh",
+        "🤖 Hệ thống gợi ý hành động AI thông minh",
+        "📋 Lịch sử hành động với thu/mở từng mục",
+        "💾 Tích hợp Action Suggestions & Log vào Save System",
+        "🔄 Lưu và khôi phục gợi ý hành động và lịch sử",
         "📜 SCC Journal với lịch sử tóm tắt có thể thu gọn",
         "🎯 Cải thiện hệ thống từ chối side quest",
         "🤖 AI không nhắc lại quest đã từ chối",

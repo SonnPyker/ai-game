@@ -20,6 +20,7 @@ class WorldTimeService {
   initializeWorldTime(startYear: number): WorldTime {
     return {
       hour: 0,
+      minute: 0,
       day: 1,
       month: 1,
       year: startYear,
@@ -57,15 +58,51 @@ class WorldTimeService {
   }
 
   /**
+   * Advance time by minutes
+   */
+  advanceMinutes(currentTime: WorldTime, minutes: number): WorldTime {
+    let newTime = { ...currentTime };
+    newTime.minute += minutes;
+
+    // Handle minute overflow
+    while (newTime.minute >= 60) {
+      newTime.minute -= 60;
+      newTime.hour++;
+    }
+
+    // Handle hour overflow
+    while (newTime.hour >= 24) {
+      newTime.hour -= 24;
+      newTime.day++;
+      newTime.dayOfWeek = (newTime.dayOfWeek + 1) % 7;
+    }
+
+    // Handle day overflow (simplified - assuming all months have 30 days)
+    while (newTime.day > 30) {
+      newTime.day -= 30;
+      newTime.month++;
+    }
+
+    // Handle month overflow
+    while (newTime.month > 12) {
+      newTime.month -= 12;
+      newTime.year++;
+    }
+
+    return newTime;
+  }
+
+  /**
    * Format time for display
    */
   formatTime(time: WorldTime): string {
     const hourStr = time.hour.toString().padStart(2, '0');
+    const minuteStr = time.minute.toString().padStart(2, '0');
     const dayStr = time.day.toString().padStart(2, '0');
     const monthStr = time.month.toString().padStart(2, '0');
     const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
     
-    return `${hourStr}:00 - ${dayNames[time.dayOfWeek]}, ${dayStr}/${monthStr}/${time.year}`;
+    return `${hourStr}:${minuteStr} - ${dayNames[time.dayOfWeek]}, ${dayStr}/${monthStr}/${time.year}`;
   }
 
   /**
@@ -73,10 +110,11 @@ class WorldTimeService {
    */
   formatShortTime(time: WorldTime): string {
     const hourStr = time.hour.toString().padStart(2, '0');
+    const minuteStr = time.minute.toString().padStart(2, '0');
     const dayStr = time.day.toString().padStart(2, '0');
     const monthStr = time.month.toString().padStart(2, '0');
     
-    return `${hourStr}:00 ${dayStr}/${monthStr}/${time.year}`;
+    return `${hourStr}:${minuteStr} ${dayStr}/${monthStr}/${time.year}`;
   }
 
   /**

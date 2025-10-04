@@ -8,7 +8,7 @@ export interface NPCRelationshipData {
 
 // SaveGame Schema - Versioned JSON chứa toàn bộ dữ liệu game
 export interface SaveGame {
-  version: string; // Phiên bản schema để migration
+  version: string; // Phiên bản schema để migration (2.5.0)
   meta: SaveGameMeta;
   world: WorldData;
   character: Character;
@@ -22,6 +22,8 @@ export interface SaveGame {
   npcRelationships?: NPCRelationshipData; // NPC relationship và encounter data
   ui?: SaveGameUI; // Trạng thái UI (không đồng bộ cloud)
   contentFlags?: ContentFlags; // Cờ nội dung 18+
+  actionSuggestions?: any[]; // Gợi ý hành động hiện tại
+  actionLog?: any[]; // Lịch sử hành động đã thực hiện
 }
 
 // Metadata của save game

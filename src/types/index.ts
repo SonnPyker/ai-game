@@ -199,6 +199,7 @@ export interface QuestSystem {
 
 export interface WorldTime {
   hour: number;    // 0-23
+  minute: number;  // 0-59
   day: number;     // 1-31
   month: number;   // 1-12
   year: number;    // Start year from world creation

@@ -198,6 +198,8 @@ class SCCService {
     localStorage.removeItem('rp_chat');
     localStorage.removeItem('game_turn_counter');
     localStorage.removeItem('rp_summary_backup');
+    localStorage.removeItem('action_suggestions');
+    localStorage.removeItem('action_log');
   }
 
   // Private helper methods for localStorage

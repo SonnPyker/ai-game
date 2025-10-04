@@ -957,7 +957,7 @@ Rules:
     }
   }
 
-  async generateCompleteWorld(worldData: any, characterData?: any): Promise<string> {
+  async generateCompleteWorld(worldData: any): Promise<string> {
     if (!this.isConfigured()) {
       throw new Error('Gemini API chưa được cấu hình. Vui lòng nhập API key.');
     }
@@ -998,21 +998,24 @@ DỮ LIỆU NGƯỜI CHƠI:
 - Độ khó (difficulty): ${difficulty}
 - Sử dụng cấp độ (useLevel): ${useLevel}
 
-${characterData ? `CHARACTER (NHÂN VẬT CHÍNH):
-${JSON.stringify(characterData, null, 2)}
+QUAN TRỌNG VỀ NARRATIVE OPENING:
+- narrativeOpening phải chỉ mô tả thế giới, không nhắc đến nhân vật cụ thể nào
+- Tập trung vào khí quyển, bối cảnh, và tình hình chung của thế giới
+- Không sử dụng "bạn" hay "người chơi" trong mô tả
+- Viết như một đoạn tiểu thuyết miêu tả thế giới
 
 QUAN TRỌNG VỀ CHARACTER:
 - CHARACTER là nhân vật chính (PC) mà người chơi sẽ điều khiển
 - KHÔNG BAO GIỜ tạo NPC có tên giống với CHARACTER
 - Opening message phải mô tả CHARACTER là nhân vật chính, không phải NPC
 - Tất cả quest và cốt truyện phải phù hợp với vai trò và background của CHARACTER
-` : ''}
 
 YÊU CẦU NỘI DUNG:
 1) Tổng quan thế giới ngắn gọn, nhất quán với coreIdea/genres/settings.
 2) Mô tả hệ thống cốt lõi: công nghệ/phép thuật/sức mạnh, quy tắc siêu nhiên (nếu có).
 3) Ẩn hoạ & xung đột chủ đạo.
 4) Tạo main quest cho tất cả 5 Acts - mỗi Act phải có main quest riêng với độ khó tăng dần.
+5) Quest phải mang tính tổng quát, phù hợp với nhiều loại nhân vật khác nhau.
 
 TỰ SUY LUẬN KHI THIẾU:
 - Nếu trường trống, hãy chọn giá trị hợp lý dựa theo thể loại/bối cảnh.
@@ -1560,6 +1563,14 @@ Hãy kể tiếp câu chuyện dựa trên:
 - CHAT_DELTA: chỉ các lượt chat kể từ snapshot tới trước hành động hiện tại,
 - PLAYER_ACTION: hành động người chơi vừa nêu.
 
+QUAN TRỌNG VỀ HÀNH ĐỘNG NGƯỜI CHƠI:
+- ƯU TIÊN: Hành động của người chơi (PLAYER_ACTION) là yếu tố quan trọng nhất
+- PHẢI phản hồi trực tiếp và cụ thể với hành động mà người chơi vừa thực hiện
+- KHÔNG được bỏ qua hoặc làm lơ hành động của người chơi
+- Mô tả kết quả, phản ứng, và hệ quả của hành động đó một cách chi tiết
+- Nếu hành động của người chơi thay đổi tình huống, hãy phản ánh sự thay đổi đó
+- Luôn bắt đầu narrative bằng việc phản hồi hành động của người chơi trước, sau đó mới mở rộng câu chuyện
+
 QUAN TRỌNG: KHÔNG BAO GIỜ nói trực tiếp "nhiệm vụ của bạn là", "bạn phải làm", "mục tiêu là" hay các từ tương tự. Hãy để câu chuyện tự nhiên dẫn dắt người chơi.
 
 QUAN TRỌNG VỀ ĐỐI THOẠI: TẤT CẢ lời nói trực tiếp PHẢI được viết trong dấu ngoặc kép ("..."). KHÔNG BAO GIỜ viết lời nói trực tiếp mà không có dấu ngoặc kép.
@@ -1785,12 +1796,22 @@ VÍ DỤ SAI:
 - Khi người chơi nói chuyện, hãy tạo ra cuộc đối thoại sinh động và có ý nghĩa
 
 Quy tắc:
-- Nếu có xung đột thông tin: ưu tiên SCENE_STATE, sau đó đến SUMMARY, cuối cùng mới tới CHAT_DELTA.
+- Nếu có xung đột thông tin: ưu tiên PLAYER_ACTION trước tiên, sau đó đến SCENE_STATE, rồi SUMMARY, cuối cùng mới tới CHAT_DELTA.
 - Văn xuôi 120–220 từ, không bullet/emoji/markdown, mô tả hệ quả cụ thể, cảm quan, và tiến độ cốt truyện.
 - Tôn trọng continuityRules, tone, mainThreads trong SCENARIO; định hướng mềm tới các keyBeats/twist/kết thúc, nhưng không ép buộc tự do người chơi.
 - KHÔNG nhắc đến "prompt/JSON/meta".
 - QUAN TRỌNG: Sử dụng đúng ngôi kể đã được cài đặt trong WORLD (narration field). Nếu narration là "Ngôi thứ hai", hãy kể bằng "Bạn" thay vì "Anh ấy/Cô ấy". Nếu narration là "Ngôi thứ nhất", hãy kể bằng "Tôi". Nếu narration là "Ngôi thứ ba", hãy kể bằng "Anh ấy/Cô ấy".
 - Nếu hành động của người chơi vi phạm chính sách nội dung, hãy từ chối lịch sự và đề xuất hướng thay thế an toàn.
+
+CẤU TRÚC NARRATIVE:
+1. BẮT ĐẦU: Phản hồi trực tiếp với hành động của người chơi (PLAYER_ACTION)
+2. PHÁT TRIỂN: Mô tả kết quả, phản ứng của thế giới, NPCs, hoặc tình huống
+3. MỞ RỘNG: Tiếp tục câu chuyện dựa trên hành động đó, có thể gợi ý bước tiếp theo
+4. KẾT THÚC: Để lại câu hỏi mở hoặc tình huống cho người chơi quyết định tiếp theo
+
+VÍ DỤ CẤU TRÚC NARRATIVE:
+- Người chơi: "Tôi mở cửa phòng"
+- AI phản hồi: "Bạn đẩy cánh cửa gỗ cũ kỹ, tiếng kẽo kẹt vang lên trong không gian yên tĩnh. Ánh sáng từ bên ngoài chiếu vào, làm lộ ra một căn phòng bụi bặm với những đồ vật kỳ lạ. [Tiếp tục mô tả phòng và gợi ý bước tiếp theo]"
 
 QUEST SYSTEM RULES:
 - Chỉ tạo side quest khi có cơ hội tự nhiên trong câu chuyện (không ép buộc)
@@ -1812,6 +1833,8 @@ QUEST SYSTEM RULES:
 - CHAT_DELTA (sau snapshot, ≤ ${chatDelta.length} lượt): ${JSON.stringify(chatDelta)}
 - PLAYER_ACTION: "${playerAction}"
 
+⚠️ QUAN TRỌNG: PLAYER_ACTION là hành động người chơi vừa thực hiện. BẮT BUỘC phải phản hồi trực tiếp với hành động này. KHÔNG được bỏ qua hoặc làm lơ.
+
 LƯU Ý VỀ NGÔI KỂ:
 - Kiểm tra trường "narration" trong WORLD để xác định ngôi kể
 - Nếu narration = "Ngôi thứ hai": sử dụng "Bạn" khi nói về nhân vật chính
@@ -1823,6 +1846,25 @@ QUAN TRỌNG VỀ TÊN NHÂN VẬT:
 - Kiểm tra tên nhân vật chính trong CHARACTER data và đảm bảo tất cả NPC có tên khác biệt
 - Nếu cần tạo NPC, hãy sử dụng tên hoàn toàn khác với PC
 - Ví dụ: Nếu PC tên "Ren Tanaka", NPC phải có tên khác như "Satoru Gojo", "Megumi Fushiguro", "Yuji Itadori", etc.
+
+QUAN TRỌNG VỀ TÊN ĐỊA ĐIỂM VÀ TÊN RIÊNG:
+- KHÔNG BAO GIỜ đặt tên địa điểm, tên người, tên tổ chức trong dấu ngoặc kép ("...")
+- Để làm nổi bật tên địa điểm và tên riêng, sử dụng dấu gạch chéo đơn /.../ thay vì dấu ngoặc kép
+- Ví dụ: /Thành phố Atlantis/, /Satoru Gojo/, /Học viện Hogwarts/
+- Điều này giúp phân biệt rõ ràng giữa tên riêng và đối thoại
+- KHÔNG BAO GIỜ sử dụng dấu ngoặc kép cho tên địa điểm vì sẽ gây nhầm lẫn với đối thoại
+
+VÍ DỤ ĐÚNG:
+- "Xin chào! Tôi là /Satoru Gojo/."
+- /Satoru/ nói: "Bạn có khỏe không?"
+- "Tôi cảm ơn bạn rất nhiều!" cô ấy thốt lên.
+- Bạn bước vào /Thành phố Atlantis/ và nhìn thấy /Học viện Hogwarts/ ở phía xa.
+
+VÍ DỤ SAI:
+- Xin chào! Tôi là Satoru Gojo. (thiếu dấu ngoặc kép cho đối thoại)
+- Satoru nói: Xin chào! (thiếu dấu ngoặc kép cho đối thoại)
+- 'Cảm ơn bạn!' (sai dấu ngoặc cho đối thoại)
+- "Thành phố Atlantis" (sai: tên địa điểm không nên dùng dấu ngoặc kép)
 
 QUAN TRỌNG VỀ NPCs:
 - Khi tạo NPC trong sceneState.npcs, hãy mô tả chi tiết về họ trong narrative

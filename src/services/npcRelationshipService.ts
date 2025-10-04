@@ -2278,7 +2278,9 @@ OUTPUT JSON:
     localStorage.removeItem('rp_summary_backup');
     localStorage.removeItem('faction_quests');
     localStorage.removeItem('faction_reputations');
-    console.log('🗑️ Cleared all NPC relationship data, encounters, faction data, and summary backup JSON files');
+    localStorage.removeItem('action_suggestions');
+    localStorage.removeItem('action_log');
+    console.log('🗑️ Cleared all NPC relationship data, encounters, faction data, summary backup, action suggestions, and action log JSON files');
   }
 
   // Get faction reputation (from stored value + NPC contributions)

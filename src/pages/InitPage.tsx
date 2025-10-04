@@ -124,6 +124,8 @@ export function InitPage() {
       localStorage.removeItem('game_turn_counter');
       localStorage.removeItem('faction_quests'); // Xóa faction quests khi reset world
       localStorage.removeItem('faction_reputations'); // Xóa faction reputations khi reset world
+      localStorage.removeItem('action_suggestions'); // Xóa action suggestions khi reset world
+      localStorage.removeItem('action_log'); // Xóa action log khi reset world
       // Clear NPC relationship data when starting new world
       npcRelationshipService.clearAllData();
     } else if (step.id === 'character') {
@@ -133,6 +135,8 @@ export function InitPage() {
       localStorage.removeItem('game_turn_counter');
       localStorage.removeItem('faction_quests'); // Xóa faction quests khi reset character
       localStorage.removeItem('faction_reputations'); // Xóa faction reputations khi reset character
+      localStorage.removeItem('action_suggestions'); // Xóa action suggestions khi reset character
+      localStorage.removeItem('action_log'); // Xóa action log khi reset character
       // Clear NPC relationship data when creating new character
       npcRelationshipService.clearAllData();
     }
@@ -260,8 +264,15 @@ export function InitPage() {
                     </span>
                   )}
                   {getStepStatus(step) === 'completed' && (
-                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/50 text-green-300 rounded-full text-xs font-medium">
-                      HOÀN THÀNH
+                    <span className={`px-3 py-1 bg-green-500/20 border border-green-500/50 text-green-300 rounded-full font-medium ${
+                      step.id === 'scenario' && initState.worldCompleted && initState.characterCompleted && initState.scenarioCompleted 
+                        ? 'text-sm px-4 py-2 bg-green-500/30 border-green-400 text-green-200 font-bold' 
+                        : 'text-xs'
+                    }`}>
+                      {step.id === 'scenario' && initState.worldCompleted && initState.characterCompleted && initState.scenarioCompleted 
+                        ? 'CHƠI TIẾP' 
+                        : 'HOÀN THÀNH'
+                      }
                     </span>
                   )}
                   {getStepStatus(step) === 'disabled' && (

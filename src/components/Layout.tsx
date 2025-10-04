@@ -1,4 +1,5 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { AuthModal } from './Auth/AuthModal';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
@@ -8,9 +9,19 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { shouldUseMobileLayout } = useResponsiveContext();
+
+  // Mở sidebar mặc định khi ở homepage, đóng ở các trang khác
+  useEffect(() => {
+    if (location.pathname === '/') {
+      setSidebarOpen(true);
+    } else {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
