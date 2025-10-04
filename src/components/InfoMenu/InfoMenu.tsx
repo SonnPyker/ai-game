@@ -87,6 +87,81 @@ export function InfoMenu({
   // Responsive design context
   const { shouldUseMobileLayout } = useResponsiveContext();
   
+  // Function to highlight names and locations with /.../ syntax
+  const highlightNames = (text: string) => {
+    const nameRegex = /\/([^\/]+)\//g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = nameRegex.exec(text)) !== null) {
+      // Add text before the name
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'text',
+          content: text.slice(lastIndex, match.index)
+        });
+      }
+
+      // Add highlighted name
+      parts.push({
+        type: 'highlight',
+        content: match[1]
+      });
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push({
+        type: 'text',
+        content: text.slice(lastIndex)
+      });
+    }
+
+    return parts;
+  };
+
+  // Function to highlight only location names (not keywords) with /.../ syntax
+  const highlightLocationNames = (text: string) => {
+    // First, clean HTML tags
+    const cleanText = text.replace(/<[^>]*>/g, '');
+    
+    const nameRegex = /\/([^\/]+)\//g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = nameRegex.exec(cleanText)) !== null) {
+      // Add text before the name
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'text',
+          content: cleanText.slice(lastIndex, match.index)
+        });
+      }
+
+      // Add highlighted name
+      parts.push({
+        type: 'highlight',
+        content: match[1]
+      });
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < cleanText.length) {
+      parts.push({
+        type: 'text',
+        content: cleanText.slice(lastIndex)
+      });
+    }
+
+    return parts;
+  };
+  
   // Cache localStorage value để tránh gọi mỗi lần render
   const [activeSection, setActiveSection] = useState<string>(() => {
     try {
@@ -385,13 +460,49 @@ export function InfoMenu({
               {characterData.personality && (
                 <div>
                   <span className="text-gray-400">Tính cách:</span>
-                  <p className="text-white mt-1">{characterData.personality}</p>
+                  <p className="text-white mt-1">
+                    {(() => {
+                      const highlightedParts = highlightNames(characterData.personality);
+                      return highlightedParts.map((part, partIndex) => {
+                        if (part.type === 'highlight') {
+                          return (
+                            <span 
+                              key={partIndex}
+                              className="text-yellow-300 font-semibold"
+                            >
+                              {part.content}
+                            </span>
+                          );
+                        } else {
+                          return part.content;
+                        }
+                      });
+                    })()}
+                  </p>
                 </div>
               )}
               {characterData.backstory && (
                 <div>
                   <span className="text-gray-400">Tiểu sử:</span>
-                  <p className="text-white mt-1">{characterData.backstory}</p>
+                  <p className="text-white mt-1">
+                    {(() => {
+                      const highlightedParts = highlightNames(characterData.backstory);
+                      return highlightedParts.map((part, partIndex) => {
+                        if (part.type === 'highlight') {
+                          return (
+                            <span 
+                              key={partIndex}
+                              className="text-yellow-300 font-semibold"
+                            >
+                              {part.content}
+                            </span>
+                          );
+                        } else {
+                          return part.content;
+                        }
+                      });
+                    })()}
+                  </p>
                 </div>
               )}
             </div>
@@ -442,7 +553,25 @@ export function InfoMenu({
         {worldData.description && (
           <div className="bg-gray-800/50 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-white mb-3">Mô Tả</h3>
-            <p className="text-sm text-white">{worldData.description}</p>
+            <p className="text-sm text-white">
+              {(() => {
+                const highlightedParts = highlightNames(worldData.description);
+                return highlightedParts.map((part, partIndex) => {
+                  if (part.type === 'highlight') {
+                    return (
+                      <span 
+                        key={partIndex}
+                        className="text-yellow-300 font-semibold"
+                      >
+                        {part.content}
+                      </span>
+                    );
+                  } else {
+                    return part.content;
+                  }
+                });
+              })()}
+            </p>
           </div>
         )}
 
@@ -469,7 +598,26 @@ export function InfoMenu({
               {worldData.foundationEntities.map((entity, index) => (
                 <div key={index} className="text-sm">
                   <div className="text-white font-medium">{typeof entity.name === 'string' ? entity.name : JSON.stringify(entity.name)}</div>
-                  <div className="text-gray-400">{typeof entity.description === 'string' ? entity.description : JSON.stringify(entity.description)}</div>
+                  <div className="text-gray-400">
+                    {(() => {
+                      const description = typeof entity.description === 'string' ? entity.description : JSON.stringify(entity.description);
+                      const highlightedParts = highlightNames(description);
+                      return highlightedParts.map((part, partIndex) => {
+                        if (part.type === 'highlight') {
+                          return (
+                            <span 
+                              key={partIndex}
+                              className="text-yellow-300 font-semibold"
+                            >
+                              {part.content}
+                            </span>
+                          );
+                        } else {
+                          return part.content;
+                        }
+                      });
+                    })()}
+                  </div>
                   {entity.classification && (
                     <div className="text-xs text-gray-500">({typeof entity.classification === 'string' ? entity.classification : JSON.stringify(entity.classification)})</div>
                   )}
@@ -487,7 +635,26 @@ export function InfoMenu({
               {worldData.locations.map((location: any, index: number) => (
                 <div key={index} className="text-sm">
                   <div className="text-white font-medium">{typeof location.name === 'string' ? location.name : JSON.stringify(location.name)}</div>
-                  <div className="text-gray-400">{typeof location.description === 'string' ? location.description : JSON.stringify(location.description)}</div>
+                  <div className="text-gray-400">
+                    {(() => {
+                      const description = typeof location.description === 'string' ? location.description : JSON.stringify(location.description);
+                      const highlightedParts = highlightNames(description);
+                      return highlightedParts.map((part, partIndex) => {
+                        if (part.type === 'highlight') {
+                          return (
+                            <span 
+                              key={partIndex}
+                              className="text-yellow-300 font-semibold"
+                            >
+                              {part.content}
+                            </span>
+                          );
+                        } else {
+                          return part.content;
+                        }
+                      });
+                    })()}
+                  </div>
                   <div className="text-xs text-gray-500">Vai trò: {typeof location.role === 'string' ? location.role : JSON.stringify(location.role)}</div>
                 </div>
               ))}
@@ -522,7 +689,26 @@ export function InfoMenu({
                   <h4 className="text-white font-medium mb-2">{typeof entity.name === 'string' ? entity.name : JSON.stringify(entity.name)}</h4>
                   <div className="space-y-2 text-sm">
                     <div><span className="text-gray-400">Loại:</span> <span className="text-white">{typeof entity.type === 'string' ? entity.type : JSON.stringify(entity.type)}</span></div>
-                    <div><span className="text-gray-400">Mô tả:</span> <span className="text-white">{typeof entity.description === 'string' ? entity.description : JSON.stringify(entity.description)}</span></div>
+                    <div><span className="text-gray-400">Mô tả:</span> <span className="text-white">
+                      {(() => {
+                        const description = typeof entity.description === 'string' ? entity.description : JSON.stringify(entity.description);
+                        const highlightedParts = highlightNames(description);
+                        return highlightedParts.map((part, partIndex) => {
+                          if (part.type === 'highlight') {
+                            return (
+                              <span 
+                                key={partIndex}
+                                className="text-yellow-300 font-semibold"
+                              >
+                                {part.content}
+                              </span>
+                            );
+                          } else {
+                            return part.content;
+                          }
+                        });
+                      })()}
+                    </span></div>
                     <div><span className="text-gray-400">Hook:</span> <span className="text-white">{typeof entity.hook === 'string' ? entity.hook : JSON.stringify(entity.hook)}</span></div>
                   </div>
                 </div>
@@ -577,7 +763,7 @@ export function InfoMenu({
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-400">Danh tiếng phe phái</span>
                     <span className="text-sm text-white font-medium">
-                      {reputationData.reputation} ({reputationData.memberCount} thành viên)
+                      {Math.round(reputationData.reputation)} ({reputationData.memberCount} thành viên)
                     </span>
                   </div>
                   <div className="w-full bg-gray-600 rounded-full h-3 mb-2">
@@ -594,7 +780,7 @@ export function InfoMenu({
                     {getReputationDescription(reputationData.reputation)} 
                     {reputationData.averageReputation !== 0 && (
                       <span className="ml-2">
-                        (Trung bình: {reputationData.averageReputation})
+                        (Trung bình: {Math.round(reputationData.averageReputation)})
                       </span>
                     )}
                   </div>
@@ -611,7 +797,7 @@ export function InfoMenu({
                               <span className={`px-2 py-1 rounded text-xs ${
                                 member.reputation > 0 ? 'bg-green-600/20 text-green-300' : 'bg-red-600/20 text-red-300'
                               }`}>
-                                {member.reputation}
+                                {Math.round(member.reputation)}
                               </span>
                             </div>
                           </div>
@@ -862,7 +1048,26 @@ export function InfoMenu({
                   <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="mt-3 space-y-3 min-w-0">
                       {relationship.description && (
-                        <p className="text-gray-300 text-sm break-words overflow-wrap-anywhere">{typeof relationship.description === 'string' ? relationship.description : JSON.stringify(relationship.description)}</p>
+                        <p className="text-gray-300 text-sm break-words overflow-wrap-anywhere">
+                          {(() => {
+                            const description = typeof relationship.description === 'string' ? relationship.description : JSON.stringify(relationship.description);
+                            const highlightedParts = highlightNames(description);
+                            return highlightedParts.map((part, partIndex) => {
+                              if (part.type === 'highlight') {
+                                return (
+                                  <span 
+                                    key={partIndex}
+                                    className="text-yellow-300 font-semibold"
+                                  >
+                                    {part.content}
+                                  </span>
+                                );
+                              } else {
+                                return part.content;
+                              }
+                            });
+                          })()}
+                        </p>
                       )}
 
                       <div className="grid grid-cols-2 gap-2 text-xs">
@@ -877,7 +1082,7 @@ export function InfoMenu({
                                 style={{ width: `${Math.abs(relationship.relationshipLevel)}%` }}
                               ></div>
                             </div>
-                            <span className="text-white">{relationship.relationshipLevel}</span>
+                            <span className="text-white">{Math.round(relationship.relationshipLevel)}</span>
                           </div>
                         </div>
                         <div>
@@ -891,7 +1096,7 @@ export function InfoMenu({
                                 style={{ width: `${Math.abs(relationship.reputation)}%` }}
                               ></div>
                             </div>
-                            <span className="text-white">{relationship.reputation}</span>
+                            <span className="text-white">{Math.round(relationship.reputation)}</span>
                           </div>
                         </div>
                       </div>
@@ -906,15 +1111,23 @@ export function InfoMenu({
                       <div className="text-xs text-gray-400 break-words overflow-wrap-anywhere">
                         {relationship.location && (
                           <div>
-                            Vị trí: {typeof relationship.location === 'string' 
-                              ? relationship.location 
-                              : (typeof relationship.location === 'object' && relationship.location.name 
-                                ? relationship.location.name 
-                                : JSON.stringify(relationship.location))}
+                            Vị trí: {(() => {
+                              const location = typeof relationship.location === 'string' 
+                                ? relationship.location 
+                                : (typeof relationship.location === 'object' && relationship.location.name 
+                                  ? relationship.location.name 
+                                  : JSON.stringify(relationship.location));
+                              // Remove /.../ wrapper if present
+                              return location.replace(/^\/|\/$/g, '');
+                            })()}
                           </div>
                         )}
                         {relationship.faction ? (
-                          <div>Phe phái: {typeof relationship.faction === 'string' ? relationship.faction : JSON.stringify(relationship.faction)}</div>
+                          <div>Phe phái: {(() => {
+                            const faction = typeof relationship.faction === 'string' ? relationship.faction : JSON.stringify(relationship.faction);
+                            // Remove /.../ wrapper if present
+                            return faction.replace(/^\/|\/$/g, '');
+                          })()}</div>
                         ) : (
                           <div className="text-gray-500 italic">Không thuộc phe phái nào</div>
                         )}
@@ -936,12 +1149,30 @@ export function InfoMenu({
                             Ghi chú ({relationship.notes.length}):
                           </div>
                           <div className="text-gray-300 text-xs bg-gray-600/50 p-3 rounded max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-700 min-w-0 break-words border border-gray-500/30">
-                            {cleanNotes(relationship.notes).map((note, noteIndex) => (
-                              <div key={noteIndex} className="mb-2 last:mb-0 break-words overflow-wrap-anywhere min-w-0 leading-relaxed">
-                                <span className="text-gray-400 mr-2">•</span>
-                                <span dangerouslySetInnerHTML={{ __html: note }} />
-                              </div>
-                            ))}
+                            {cleanNotes(relationship.notes).map((note, noteIndex) => {
+                              const highlightedParts = highlightLocationNames(note);
+                              return (
+                                <div key={noteIndex} className="mb-2 last:mb-0 break-words overflow-wrap-anywhere min-w-0 leading-relaxed">
+                                  <span className="text-gray-400 mr-2">•</span>
+                                  <span>
+                                    {highlightedParts.map((part, partIndex) => {
+                                      if (part.type === 'highlight') {
+                                        return (
+                                          <span 
+                                            key={partIndex}
+                                            className="text-yellow-300 font-semibold"
+                                          >
+                                            {part.content}
+                                          </span>
+                                        );
+                                      } else {
+                                        return part.content;
+                                      }
+                                    })}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

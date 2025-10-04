@@ -35,7 +35,6 @@ class GeminiService {
         } catch {
           // Nếu tất cả đều fail, log và return fallback
           console.warn('⚠️ JSON parse failed, using fallback data');
-          console.log('Raw response:', responseText.substring(0, 500) + '...');
           return fallbackData;
         }
       }
@@ -108,17 +107,12 @@ class GeminiService {
     const startTime = Date.now();
     
     try {
-      console.log('🔍 Testing single API key...');
-      
       const result = await this.generateContent('Xin chào, hãy trả lời "OK"');
       const duration = Date.now() - startTime;
       
       const success = result.length > 0;
       
-      console.log(`✅ Single API test ${success ? 'PASSED' : 'FAILED'}:`, {
-        duration: `${duration}ms`,
-        responseLength: result.length
-      });
+      // API test completed
       
       return { 
         success, 
@@ -324,11 +318,9 @@ class GeminiService {
         console.error('Multi-key service error:', error);
         
         // Thử auto-switch khi có lỗi
-        console.log('🔄 Attempting auto-switch due to error...');
         try {
           const switchSuccess = await this.autoSwitchOnError();
           if (switchSuccess) {
-            console.log('✅ Auto-switch successful, retrying...');
             return await multiApiKeyService.generateContent(prompt);
           }
         } catch (switchError) {
@@ -804,7 +796,6 @@ Yêu cầu bổ sung:
           });
           
           result.name = generatedName.name;
-          console.log(`🎲 Tạo tên tự động: ${generatedName.name} (${generatedName.culture})`);
         } catch (nameError) {
           console.error('Lỗi tạo tên tự động:', nameError);
           // Fallback tên mặc định
@@ -1518,7 +1509,8 @@ SCHEMA:
     playerAction: string,
     contentFlags?: ContentFlags,
     questSystem?: any,
-    turnCounter?: number
+    turnCounter?: number,
+    worldTime?: any
   ): Promise<{
     narrative: string;
     softGuidance: string;
@@ -1562,6 +1554,7 @@ Hãy kể tiếp câu chuyện dựa trên:
 - SCENE_STATE hiện tại (ưu tiên state này),
 - CHAT_DELTA: chỉ các lượt chat kể từ snapshot tới trước hành động hiện tại,
 - PLAYER_ACTION: hành động người chơi vừa nêu.
+- GAME_TIME: thời gian trong game (ảnh hưởng đến phản ứng của thế giới và NPC).
 
 QUAN TRỌNG VỀ HÀNH ĐỘNG NGƯỜI CHƠI:
 - ƯU TIÊN: Hành động của người chơi (PLAYER_ACTION) là yếu tố quan trọng nhất
@@ -1570,6 +1563,42 @@ QUAN TRỌNG VỀ HÀNH ĐỘNG NGƯỜI CHƠI:
 - Mô tả kết quả, phản ứng, và hệ quả của hành động đó một cách chi tiết
 - Nếu hành động của người chơi thay đổi tình huống, hãy phản ánh sự thay đổi đó
 - Luôn bắt đầu narrative bằng việc phản hồi hành động của người chơi trước, sau đó mới mở rộng câu chuyện
+
+QUAN TRỌNG VỀ GAME TIME:
+- Game time ảnh hưởng trực tiếp đến phản ứng của thế giới và NPC
+- Sử dụng thời gian để tạo khí quyển và phản ứng phù hợp:
+  * 12h đêm - 5h sáng: Thế giới tĩnh lặng, NPCs buồn ngủ, ít hoạt động, khí quyển bí ẩn
+  * 6h - 8h sáng: Bình minh, NPCs thức dậy, bắt đầu hoạt động, khí quyển tươi mới
+  * 9h - 11h sáng: Hoạt động sôi nổi, NPCs năng động, thương mại nhộn nhịp
+  * 12h - 13h: Giờ ăn trưa, NPCs nghỉ ngơi, ít hoạt động
+  * 14h - 17h: Hoạt động buổi chiều, NPCs làm việc, thương mại tiếp tục
+  * 18h - 19h: Chiều tối, NPCs mệt mỏi đi làm về, khí quyển ấm áp
+  * 20h - 22h: Tối, NPCs nghỉ ngơi, ít hoạt động, khí quyển yên tĩnh
+  * 23h - 24h: Đêm khuya, thế giới tĩnh lặng, NPCs ngủ, khí quyển bí ẩn
+- NPCs sẽ phản ứng khác nhau tùy theo thời gian:
+  * Buổi sáng: năng động, tích cực, sẵn sàng giúp đỡ
+  * Buổi trưa: mệt mỏi, ít kiên nhẫn, muốn nghỉ ngơi
+  * Buổi chiều: bình thường, cân bằng
+  * Buổi tối: thư giãn, ít hoạt động, muốn về nhà
+  * Đêm khuya: buồn ngủ, ít phản ứng, muốn ngủ
+- Môi trường cũng thay đổi theo thời gian:
+  * Sáng: ánh sáng rực rỡ, không khí trong lành
+  * Trưa: nắng gắt, nóng nực
+  * Chiều: ánh sáng vàng ấm, bóng dài
+  * Tối: ánh sáng yếu, bóng tối bao phủ
+  * Đêm: tối đen, chỉ có ánh sáng nhân tạo
+
+QUAN TRỌNG VỀ THỜI GIAN TRONG NARRATIVE:
+- KHÔNG BAO GIỜ sử dụng thời gian cụ thể trong narrative (7h30, 8 giờ, 11 giờ 30 phút, etc.)
+- KHÔNG BAO GIỜ nhắc đến giờ, phút, hoặc thời gian chính xác
+- Thay vào đó, sử dụng các mô tả thời gian tự nhiên:
+  * "Sáng sớm", "Bình minh", "Mặt trời mọc"
+  * "Giữa trưa", "Trưa nắng", "Giờ ăn trưa"
+  * "Chiều tà", "Hoàng hôn", "Mặt trời lặn"
+  * "Tối muộn", "Đêm khuya", "Khuya khoắt"
+  * "Lúc này", "Bây giờ", "Hiện tại"
+- Mô tả khí quyển và cảm giác thời gian thay vì số giờ cụ thể
+- Ví dụ: "Ánh sáng ban mai chiếu qua cửa sổ" thay vì "Lúc 7h30 sáng"
 
 QUAN TRỌNG: KHÔNG BAO GIỜ nói trực tiếp "nhiệm vụ của bạn là", "bạn phải làm", "mục tiêu là" hay các từ tương tự. Hãy để câu chuyện tự nhiên dẫn dắt người chơi.
 
@@ -1832,6 +1861,7 @@ QUEST SYSTEM RULES:
 - SCENE_STATE: ${JSON.stringify(sceneState)}
 - CHAT_DELTA (sau snapshot, ≤ ${chatDelta.length} lượt): ${JSON.stringify(chatDelta)}
 - PLAYER_ACTION: "${playerAction}"
+- GAME_TIME: ${JSON.stringify(worldTime || sceneState.worldTime || { hour: 12, minute: 0, day: 1, month: 1, year: 1 })}
 
 ⚠️ QUAN TRỌNG: PLAYER_ACTION là hành động người chơi vừa thực hiện. BẮT BUỘC phải phản hồi trực tiếp với hành động này. KHÔNG được bỏ qua hoặc làm lơ.
 
@@ -1854,17 +1884,29 @@ QUAN TRỌNG VỀ TÊN ĐỊA ĐIỂM VÀ TÊN RIÊNG:
 - Điều này giúp phân biệt rõ ràng giữa tên riêng và đối thoại
 - KHÔNG BAO GIỜ sử dụng dấu ngoặc kép cho tên địa điểm vì sẽ gây nhầm lẫn với đối thoại
 
+QUAN TRỌNG VỀ TÊN VẬT THỂ, THỰC THỂ VÀ KHÁI NIỆM:
+- KHÔNG BAO GIỜ đặt tên vật thể, thực thể, khái niệm, thuật ngữ trong dấu ngoặc kép ("...") hoặc dấu ngoặc đơn ('...')
+- Để làm nổi bật tên vật thể, thực thể, khái niệm, sử dụng dấu gạch chéo đơn /.../ thay vì dấu ngoặc kép
+- Ví dụ: /di vật cảm ứng/, /Tiếng Gọi Của Vực Sâu/, /Tĩnh Lặng Vực Sâu/, /Bản Ghi Chép Về Sự Suy Thoái Tinh Thần/
+- Điều này giúp phân biệt rõ ràng giữa tên vật thể/thực thể và đối thoại
+- KHÔNG BAO GIỜ sử dụng dấu ngoặc kép hoặc dấu ngoặc đơn cho tên vật thể vì sẽ gây nhầm lẫn với đối thoại
+
 VÍ DỤ ĐÚNG:
 - "Xin chào! Tôi là /Satoru Gojo/."
 - /Satoru/ nói: "Bạn có khỏe không?"
 - "Tôi cảm ơn bạn rất nhiều!" cô ấy thốt lên.
 - Bạn bước vào /Thành phố Atlantis/ và nhìn thấy /Học viện Hogwarts/ ở phía xa.
+- Bạn tìm thấy cuốn sách /Bản Ghi Chép Về Sự Suy Thoái Tinh Thần/ trên kệ.
+- Gideon đang nghiên cứu về /di vật cảm ứng/ và /Tiếng Gọi Của Vực Sâu/.
 
 VÍ DỤ SAI:
 - Xin chào! Tôi là Satoru Gojo. (thiếu dấu ngoặc kép cho đối thoại)
 - Satoru nói: Xin chào! (thiếu dấu ngoặc kép cho đối thoại)
 - 'Cảm ơn bạn!' (sai dấu ngoặc cho đối thoại)
 - "Thành phố Atlantis" (sai: tên địa điểm không nên dùng dấu ngoặc kép)
+- "di vật cảm ứng" (sai: tên vật thể không nên dùng dấu ngoặc kép)
+- 'Tiếng Gọi Của Vực Sâu' (sai: tên khái niệm không nên dùng dấu ngoặc đơn)
+- "Bản Ghi Chép Về Sự Suy Thoái Tinh Thần" (sai: tên tài liệu không nên dùng dấu ngoặc kép)
 
 QUAN TRỌNG VỀ NPCs:
 - Khi tạo NPC trong sceneState.npcs, hãy mô tả chi tiết về họ trong narrative
@@ -2025,7 +2067,6 @@ QUAN TRỌNG VỀ NPCs:
                   finalName = alternativeName.name;
                 }
 
-                console.log(`🎲 Cải thiện tên NPC: "${npc.name || 'Không có tên'}" → "${finalName}" (${generatedName.culture})`);
                 
                 return {
                   ...npc,

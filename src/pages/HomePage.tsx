@@ -44,7 +44,6 @@ export function HomePage() {
     // Clear NPC relationship data
     npcRelationshipService.clearAllData();
     
-    console.log('✅ Đã reset game data, giữ lại save slots và API keys');
     
     // Bắt đầu flow game: Init Page → World Builder → Character Creation → Game
     navigate('/init');

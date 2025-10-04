@@ -23,26 +23,18 @@ export class QuestDetectionService {
     const completedObjectives: { questId: string; objectiveId: string }[] = [];
     const suggestedActions: string[] = [];
 
-    console.log(`🔍 Analyzing quest completion for input: "${chatInput}"`);
-
     // Phân tích từng quest đang active
     for (const quest of activeQuests) {
       if (quest.status !== 'active') continue;
 
-      console.log(`📋 Checking quest: ${quest.title} (${quest.id})`);
-
       for (const objective of quest.objectives) {
         if (objective.completed) {
-          console.log(`⏭️ Skipping completed objective: ${objective.description}`);
           continue;
         }
 
         if (!objective.unlocked) {
-          console.log(`🔒 Skipping locked objective: ${objective.description}`);
           continue;
         }
-
-        console.log(`🎯 Analyzing objective: ${objective.description}`);
 
         // Tạo một array để lưu tất cả các match methods
         const matchResults: { method: string; confidence: number; details: string }[] = [];
@@ -92,7 +84,19 @@ export class QuestDetectionService {
           });
         }
 
-        // 5. SCC Context analysis (chỉ khi có context cụ thể)
+        // 5. Side Quest specific analysis (ưu tiên cao cho side quest)
+        if (quest.type === 'side') {
+          const sideQuestResult = this.analyzeSideQuestCompletion(chatInput, objective.description, quest, additionalContext);
+          if (sideQuestResult.matched) {
+            matchResults.push({
+              method: 'Side Quest Specific',
+              confidence: sideQuestResult.confidence,
+              details: sideQuestResult.details || 'Side quest specific match'
+            });
+          }
+        }
+
+        // 6. SCC Context analysis (chỉ khi có context cụ thể)
         if (additionalContext?.sccContext) {
           const sccResult = this.analyzeSCCContextForQuestCompletion(chatInput, objective.description, additionalContext.sccContext);
           if (sccResult.matched) {
@@ -104,7 +108,7 @@ export class QuestDetectionService {
           }
         }
 
-        // 6. Chat History analysis (chỉ khi có context cụ thể)
+        // 7. Chat History analysis (chỉ khi có context cụ thể)
         if (additionalContext?.chatHistory) {
           const historyResult = this.analyzeChatHistoryForQuestCompletion(chatInput, objective.description, additionalContext.chatHistory);
           if (historyResult.matched) {
@@ -116,7 +120,7 @@ export class QuestDetectionService {
           }
         }
 
-        // 7. NPC Relationship analysis (chỉ khi có context cụ thể)
+        // 8. NPC Relationship analysis (chỉ khi có context cụ thể)
         if (additionalContext?.npcRelationships) {
           const npcResult = this.analyzeNPCRelationshipsForQuestCompletion(chatInput, objective.description, additionalContext.npcRelationships);
           if (npcResult.matched) {
@@ -128,7 +132,7 @@ export class QuestDetectionService {
           }
         }
 
-        // 8. Story Progress analysis (chỉ khi có context cụ thể)
+        // 9. Story Progress analysis (chỉ khi có context cụ thể)
         if (additionalContext?.storyProgress) {
           const storyResult = this.analyzeStoryProgressForQuestCompletion(chatInput, objective.description, additionalContext.storyProgress);
           if (storyResult.matched) {
@@ -140,7 +144,7 @@ export class QuestDetectionService {
           }
         }
 
-        // 9. Time-based analysis (chỉ khi có context cụ thể)
+        // 10. Time-based analysis (chỉ khi có context cụ thể)
         if (additionalContext?.worldTime && additionalContext?.turnCounter) {
           const timeResult = this.analyzeTimeBasedQuestCompletion(chatInput, objective.description, additionalContext.worldTime, additionalContext.turnCounter, quest);
           if (timeResult.matched) {
@@ -152,30 +156,56 @@ export class QuestDetectionService {
           }
         }
 
-        // Quyết định completion dựa trên kết quả tổng hợp
+        // Quyết định completion dựa trên kết quả tổng hợp với validation chặt chẽ hơn
         if (matchResults.length > 0) {
           // Sắp xếp theo confidence giảm dần
           matchResults.sort((a, b) => b.confidence - a.confidence);
           
           const bestMatch = matchResults[0];
-          const minConfidence = 0.6; // Ngưỡng tối thiểu để chấp nhận completion
           
-          if (bestMatch.confidence >= minConfidence) {
-            console.log(`✅ Objective completed: ${objective.description}`);
-            console.log(`   Best match: ${bestMatch.method} (confidence: ${bestMatch.confidence})`);
-            console.log(`   Details: ${bestMatch.details}`);
+          // Validation chặt chẽ hơn để giảm false positive
+          const validationResult = this.validateQuestCompletion(chatInput, objective.description, quest, matchResults, additionalContext);
+          
+          if (!validationResult.isValid) {
+            continue; // Skip this objective
+          }
+          
+          // Confidence calculation với validation chặt chẽ hơn
+          let minConfidence = 0.7; // Tăng ngưỡng mặc định
+          let confidenceBoost = 0;
+          
+          if (quest.type === 'side') {
+            minConfidence = 0.65; // Vẫn thấp hơn cho side quest nhưng không quá thấp
             
+            // Chỉ boost nếu có multiple strong matches
+            if (matchResults.length > 1) {
+              const secondBest = matchResults[1];
+              if (secondBest.confidence > 0.5) { // Tăng threshold
+                confidenceBoost = 0.05; // Giảm boost
+              }
+            }
+            
+            // Chỉ boost nếu có Side Quest Specific match với confidence cao
+            const sideQuestMatch = matchResults.find(m => m.method === 'Side Quest Specific');
+            if (sideQuestMatch && sideQuestMatch.confidence > 0.6) {
+              confidenceBoost += 0.03; // Giảm boost
+            }
+            
+            // Chỉ boost nếu có AI Keywords match với confidence cao
+            const aiKeywordMatch = matchResults.find(m => m.method === 'AI Keywords');
+            if (aiKeywordMatch && aiKeywordMatch.confidence > 0.7) {
+              confidenceBoost += 0.02; // Giảm boost
+            }
+          }
+          
+          const finalConfidence = Math.min(1.0, bestMatch.confidence + confidenceBoost);
+          
+          if (finalConfidence >= minConfidence) {
             completedObjectives.push({
               questId: quest.id,
               objectiveId: objective.id
             });
-          } else {
-            console.log(`❌ Objective not completed: ${objective.description}`);
-            console.log(`   Best match confidence too low: ${bestMatch.confidence} < ${minConfidence}`);
-            console.log(`   All matches:`, matchResults.map(m => `${m.method}: ${m.confidence}`).join(', '));
           }
-        } else {
-          console.log(`❌ No matches found for objective: ${objective.description}`);
         }
       }
     }
@@ -332,7 +362,7 @@ export class QuestDetectionService {
   }
 
   /**
-   * Enhanced keyword matching với fuzzy matching
+   * Enhanced keyword matching với fuzzy matching và validation chặt chẽ hơn
    */
   private enhancedKeywordMatching(chatInput: string, keywords: string[]): { matched: boolean; confidence: number; matchedKeywords?: string[] } {
     const input = chatInput.toLowerCase();
@@ -343,24 +373,43 @@ export class QuestDetectionService {
       const keywordLower = keyword.toLowerCase();
       let confidence = 0;
       
-      // Exact match - confidence cao nhất
+      // Exact match - confidence cao nhất nhưng cần validation
       if (input.includes(keywordLower)) {
-        confidence = 0.9;
-        matchedKeywords.push(keyword);
+        // Kiểm tra context trước khi gán confidence cao
+        const contextValidation = this.validateKeywordContext(input, keywordLower);
+        if (contextValidation.isValid) {
+          confidence = 0.9;
+          matchedKeywords.push(keyword);
+        } else {
+          // Nếu context không hợp lệ, giảm confidence
+          confidence = 0.5;
+          matchedKeywords.push(keyword);
+        }
       } else {
-        // Fuzzy matching - tìm từ tương tự
+        // Fuzzy matching - tìm từ tương tự với validation chặt chẽ hơn
         const words = input.split(/\s+/);
         for (const word of words) {
           const similarity = this.calculateSimilarity(word, keywordLower);
-          if (similarity > 0.7) { // 70% tương đồng
-            confidence = Math.max(confidence, similarity * 0.8); // Giảm confidence cho fuzzy match
-            matchedKeywords.push(keyword);
-            break;
+          if (similarity > 0.8) { // Tăng threshold từ 0.7 lên 0.8
+            const contextValidation = this.validateKeywordContext(input, word);
+            if (contextValidation.isValid) {
+              confidence = Math.max(confidence, similarity * 0.7); // Giảm confidence cho fuzzy match
+              matchedKeywords.push(keyword);
+              break;
+            }
           }
         }
       }
       
       maxConfidence = Math.max(maxConfidence, confidence);
+    }
+    
+    // Validation cuối cùng - từ chối nếu chỉ có generic keywords
+    if (maxConfidence > 0) {
+      const hasGenericKeywords = this.hasGenericKeywords(matchedKeywords);
+      if (hasGenericKeywords && matchedKeywords.length === 1) {
+        maxConfidence *= 0.5; // Giảm confidence cho generic keywords đơn lẻ
+      }
     }
     
     return {
@@ -371,7 +420,43 @@ export class QuestDetectionService {
   }
 
   /**
-   * Enhanced pattern matching với context awareness
+   * Validate keyword context để tránh false positive
+   */
+  private validateKeywordContext(input: string, keyword: string): { isValid: boolean } {
+    // Kiểm tra xem keyword có quá chung chung không
+    const genericKeywords = ['đến', 'tới', 'vào', 'tìm', 'kiểm tra', 'nói chuyện', 'gặp', 'hoàn thành', 'xong'];
+    
+    if (genericKeywords.includes(keyword)) {
+      // Cần có context cụ thể hơn
+      const inputWords = input.split(/\s+/).filter(word => word.length > 3);
+      const hasSpecificWords = inputWords.some(word => 
+        !genericKeywords.includes(word) && 
+        !['của', 'với', 'trong', 'từ', 'và', 'hoặc', 'đã', 'được', 'là', 'có'].includes(word)
+      );
+      
+      if (!hasSpecificWords) {
+        return { isValid: false };
+      }
+    }
+    
+    // Kiểm tra xem input có quá ngắn không
+    if (input.length < 15 && genericKeywords.includes(keyword)) {
+      return { isValid: false };
+    }
+    
+    return { isValid: true };
+  }
+
+  /**
+   * Kiểm tra xem có generic keywords không
+   */
+  private hasGenericKeywords(keywords: string[]): boolean {
+    const genericKeywords = ['đến', 'tới', 'vào', 'tìm', 'kiểm tra', 'nói chuyện', 'gặp', 'hoàn thành', 'xong'];
+    return keywords.some(keyword => genericKeywords.includes(keyword.toLowerCase()));
+  }
+
+  /**
+   * Enhanced pattern matching với context awareness và validation chặt chẽ hơn
    */
   private enhancedPatternMatching(chatInput: string, patterns: string[], objectiveDescription: string): { matched: boolean; confidence: number; matchedPatterns?: string[] } {
     const input = chatInput.toLowerCase();
@@ -386,19 +471,30 @@ export class QuestDetectionService {
       const patternLower = pattern.toLowerCase();
       let confidence = 0;
       
-      // Exact match
+      // Exact match với validation chặt chẽ hơn
       if (input.includes(patternLower)) {
-        confidence = 0.8;
-        matchedPatterns.push(pattern);
+        // Kiểm tra context trước khi gán confidence
+        const contextValidation = this.validatePatternContext(input, patternLower, objective);
+        if (contextValidation.isValid) {
+          confidence = contextValidation.confidence;
+          matchedPatterns.push(pattern);
+        } else {
+          // Nếu context không hợp lệ, giảm confidence đáng kể
+          confidence = 0.3;
+          matchedPatterns.push(pattern);
+        }
       } else {
-        // Context-aware matching
+        // Context-aware matching với validation chặt chẽ hơn
         const contextWords = this.extractContextWords(input);
         for (const word of contextWords) {
           const similarity = this.calculateSimilarity(word, patternLower);
-          if (similarity > 0.6) {
-            confidence = Math.max(confidence, similarity * 0.7); // Giảm confidence cho context match
-            matchedPatterns.push(pattern);
-            break;
+          if (similarity > 0.7) { // Tăng threshold từ 0.6 lên 0.7
+            const contextValidation = this.validatePatternContext(input, word, objective);
+            if (contextValidation.isValid) {
+              confidence = Math.max(confidence, similarity * contextValidation.confidence);
+              matchedPatterns.push(pattern);
+              break;
+            }
           }
         }
       }
@@ -407,11 +503,19 @@ export class QuestDetectionService {
       if (needsStrictValidation && confidence > 0) {
         const contextMatch = this.validateContextMatch(input, patternLower, objective);
         if (!contextMatch) {
-          confidence *= 0.5; // Giảm confidence nếu không match context
+          confidence *= 0.3; // Giảm confidence mạnh hơn nếu không match context
         }
       }
       
       maxConfidence = Math.max(maxConfidence, confidence);
+    }
+    
+    // Validation cuối cùng - từ chối nếu chỉ có generic patterns
+    if (maxConfidence > 0) {
+      const hasGenericOnly = this.hasOnlyGenericPatterns(matchedPatterns, objective);
+      if (hasGenericOnly) {
+        maxConfidence *= 0.4; // Giảm confidence mạnh cho generic patterns
+      }
     }
     
     return {
@@ -419,6 +523,58 @@ export class QuestDetectionService {
       confidence: maxConfidence,
       matchedPatterns: matchedPatterns.length > 0 ? matchedPatterns : undefined
     };
+  }
+
+  /**
+   * Validate pattern context để tránh false positive
+   */
+  private validatePatternContext(input: string, pattern: string, objective: string): { isValid: boolean; confidence: number } {
+    // Kiểm tra xem pattern có phù hợp với objective không
+    const objectiveWords = objective.split(/\s+/).filter(word => word.length > 3);
+    const hasObjectiveContext = objectiveWords.some(word => 
+      input.includes(word) || this.calculateSimilarity(input, word) > 0.6
+    );
+    
+    if (!hasObjectiveContext) {
+      return {
+        isValid: false,
+        confidence: 0.2
+      };
+    }
+    
+    // Kiểm tra xem pattern có quá chung chung không
+    const genericPatterns = ['đến', 'tới', 'vào', 'tìm', 'kiểm tra', 'nói chuyện', 'gặp'];
+    if (genericPatterns.includes(pattern)) {
+      // Cần có context cụ thể hơn
+      const specificContext = this.hasSpecificContext(input, objective, { title: '' } as QuestProgress);
+      if (!specificContext) {
+        return {
+          isValid: false,
+          confidence: 0.3
+        };
+      }
+    }
+    
+    return {
+      isValid: true,
+      confidence: 0.8
+    };
+  }
+
+  /**
+   * Kiểm tra xem chỉ có generic patterns không
+   */
+  private hasOnlyGenericPatterns(matchedPatterns: string[], objective: string): boolean {
+    const genericPatterns = ['đến', 'tới', 'vào', 'tìm', 'kiểm tra', 'nói chuyện', 'gặp', 'hoàn thành', 'xong'];
+    const objectiveWords = objective.split(/\s+/).filter(word => word.length > 3);
+    
+    // Nếu tất cả patterns đều là generic và không có context cụ thể
+    const allGeneric = matchedPatterns.every(pattern => genericPatterns.includes(pattern.toLowerCase()));
+    const hasSpecificContext = objectiveWords.some(word => 
+      matchedPatterns.some(pattern => pattern.toLowerCase().includes(word))
+    );
+    
+    return allGeneric && !hasSpecificContext;
   }
 
   /**
@@ -601,6 +757,500 @@ export class QuestDetectionService {
         if (confidence > maxConfidence) {
           maxConfidence = confidence;
           bestMatch = `Mood match: ${sceneState.mood || sceneState.atmosphere}`;
+        }
+      }
+    }
+
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      details: bestMatch || undefined
+    };
+  }
+
+  /**
+   * Validation chặt chẽ cho quest completion để giảm false positive (MỚI!)
+   */
+  private validateQuestCompletion(
+    chatInput: string,
+    objectiveDescription: string,
+    quest: QuestProgress,
+    matchResults: { method: string; confidence: number; details: string }[],
+    additionalContext?: any
+  ): { isValid: boolean; reason: string } {
+    const input = chatInput.toLowerCase();
+    const objective = objectiveDescription.toLowerCase();
+    
+    // 1. Kiểm tra generic patterns - từ chối nếu quá chung chung
+    const genericPatterns = ['đến', 'tới', 'vào', 'tìm', 'kiểm tra', 'nói chuyện', 'gặp', 'hoàn thành', 'xong'];
+    const hasGenericPattern = genericPatterns.some(pattern => input.includes(pattern));
+    
+    if (hasGenericPattern) {
+      // Kiểm tra xem có context cụ thể không
+      const hasSpecificContext = this.hasSpecificContext(input, objective, quest);
+      if (!hasSpecificContext) {
+        return {
+          isValid: false,
+          reason: 'Generic pattern without specific context'
+        };
+      }
+    }
+    
+    // 2. Kiểm tra confidence distribution - từ chối nếu chỉ có 1 match yếu
+    if (matchResults.length === 1 && matchResults[0].confidence < 0.8) {
+      return {
+        isValid: false,
+        reason: 'Single weak match'
+      };
+    }
+    
+    // 3. Kiểm tra context consistency
+    const contextConsistency = this.checkContextConsistency(input, objective, quest, additionalContext);
+    if (!contextConsistency.isValid) {
+      return {
+        isValid: false,
+        reason: contextConsistency.reason
+      };
+    }
+    
+    // 4. Kiểm tra quest-specific validation
+    if (quest.type === 'side') {
+      const sideQuestValidation = this.validateSideQuestSpecific(input, objective, quest, matchResults);
+      if (!sideQuestValidation.isValid) {
+        return {
+          isValid: false,
+          reason: sideQuestValidation.reason
+        };
+      }
+    }
+    
+    // 5. Kiểm tra false positive patterns
+    const falsePositivePatterns = this.checkFalsePositivePatterns(input, objective);
+    if (falsePositivePatterns.isFalsePositive) {
+      return {
+        isValid: false,
+        reason: falsePositivePatterns.reason
+      };
+    }
+    
+    return {
+      isValid: true,
+      reason: 'All validations passed'
+    };
+  }
+
+  /**
+   * Kiểm tra có context cụ thể không
+   */
+  private hasSpecificContext(input: string, objective: string, quest: QuestProgress): boolean {
+    // Trích xuất keywords cụ thể từ objective
+    const objectiveKeywords = this.extractSpecificKeywords(objective);
+    const questKeywords = this.extractSpecificKeywords(quest.title);
+    
+    // Kiểm tra xem input có chứa keywords cụ thể không
+    const hasObjectiveKeywords = objectiveKeywords.some(keyword => 
+      input.includes(keyword.toLowerCase()) || 
+      this.calculateSimilarity(input, keyword.toLowerCase()) > 0.7
+    );
+    
+    const hasQuestKeywords = questKeywords.some(keyword => 
+      input.includes(keyword.toLowerCase()) || 
+      this.calculateSimilarity(input, keyword.toLowerCase()) > 0.7
+    );
+    
+    return hasObjectiveKeywords || hasQuestKeywords;
+  }
+
+  /**
+   * Trích xuất keywords cụ thể (loại bỏ generic words)
+   */
+  private extractSpecificKeywords(text: string): string[] {
+    const genericWords = ['đến', 'tới', 'vào', 'tìm', 'kiểm tra', 'nói chuyện', 'gặp', 'hoàn thành', 'xong', 'làm', 'thực hiện'];
+    
+    return text.toLowerCase()
+      .split(/\s+/)
+      .filter(word => 
+        word.length > 3 && 
+        !genericWords.includes(word) &&
+        !['của', 'với', 'trong', 'từ', 'và', 'hoặc', 'đã', 'được', 'là', 'có'].includes(word)
+      );
+  }
+
+  /**
+   * Kiểm tra context consistency
+   */
+  private checkContextConsistency(
+    input: string, 
+    objective: string, 
+    quest: QuestProgress, 
+    additionalContext?: any
+  ): { isValid: boolean; reason: string } {
+    // Kiểm tra xem input có phù hợp với quest context không
+    if (quest.title.toLowerCase().includes('giao hàng') && !input.includes('giao') && !input.includes('chuyển')) {
+      return {
+        isValid: false,
+        reason: 'Delivery quest context mismatch'
+      };
+    }
+    
+    if (quest.title.toLowerCase().includes('tìm kiếm') && !input.includes('tìm') && !input.includes('phát hiện')) {
+      return {
+        isValid: false,
+        reason: 'Search quest context mismatch'
+      };
+    }
+    
+    // Kiểm tra scene state consistency
+    if (additionalContext?.sceneState) {
+      const sceneConsistency = this.checkSceneConsistency(input, objective, additionalContext.sceneState);
+      if (!sceneConsistency.isValid) {
+        return {
+          isValid: false,
+          reason: sceneConsistency.reason
+        };
+      }
+    }
+    
+    return {
+      isValid: true,
+      reason: 'Context consistent'
+    };
+  }
+
+  /**
+   * Kiểm tra scene consistency
+   */
+  private checkSceneConsistency(_input: string, objective: string, sceneState: any): { isValid: boolean; reason: string } {
+    // Nếu objective yêu cầu đến location cụ thể
+    if (objective.includes('đến') || objective.includes('tới')) {
+      const targetLocation = this.extractLocationFromObjective(objective);
+      if (targetLocation && sceneState.location) {
+        const currentLocation = sceneState.location.toLowerCase();
+        if (!this.isLocationMatch(currentLocation, targetLocation)) {
+          return {
+            isValid: false,
+            reason: `Location mismatch: expected ${targetLocation}, current ${currentLocation}`
+          };
+        }
+      }
+    }
+    
+    // Nếu objective yêu cầu gặp NPC cụ thể
+    if (objective.includes('nói chuyện') || objective.includes('gặp')) {
+      const targetNPC = this.extractNPCFromObjective(objective);
+      if (targetNPC && sceneState.npcs) {
+        const mentionedNPCs = sceneState.npcs.map((npc: any) => npc.name?.toLowerCase()).filter(Boolean);
+        if (!mentionedNPCs.some((npc: string) => this.isNPCMatch(npc, targetNPC))) {
+          return {
+            isValid: false,
+            reason: `NPC not in scene: expected ${targetNPC}`
+          };
+        }
+      }
+    }
+    
+    return {
+      isValid: true,
+      reason: 'Scene consistent'
+    };
+  }
+
+  /**
+   * Validation đặc biệt cho side quest
+   */
+  private validateSideQuestSpecific(
+    _input: string,
+    _objective: string,
+    quest: QuestProgress,
+    matchResults: { method: string; confidence: number; details: string }[]
+  ): { isValid: boolean; reason: string } {
+    // Side quest cần có ít nhất 2 matches hoặc 1 match rất mạnh
+    const strongMatches = matchResults.filter(m => m.confidence > 0.8);
+    const mediumMatches = matchResults.filter(m => m.confidence > 0.6);
+    
+    if (strongMatches.length === 0 && mediumMatches.length < 2) {
+      return {
+        isValid: false,
+        reason: 'Side quest needs stronger evidence'
+      };
+    }
+    
+    // Kiểm tra quest-specific patterns
+    const questTypePatterns = this.getQuestTypePatterns(quest.title);
+    const hasQuestTypePattern = questTypePatterns.some(pattern => _input.includes(pattern));
+    
+    if (!hasQuestTypePattern && matchResults.length === 1) {
+      return {
+        isValid: false,
+        reason: 'Side quest type pattern missing'
+      };
+    }
+    
+    return {
+      isValid: true,
+      reason: 'Side quest validation passed'
+    };
+  }
+
+  /**
+   * Lấy patterns theo quest type
+   */
+  private getQuestTypePatterns(questTitle: string): string[] {
+    const title = questTitle.toLowerCase();
+    const patterns: string[] = [];
+    
+    if (title.includes('giao hàng') || title.includes('delivery')) {
+      patterns.push('giao', 'chuyển', 'đưa', 'mang', 'trao', 'nhận');
+    }
+    
+    if (title.includes('tìm kiếm') || title.includes('search')) {
+      patterns.push('tìm', 'tìm thấy', 'phát hiện', 'khám phá', 'tìm được');
+    }
+    
+    if (title.includes('bảo vệ') || title.includes('protect')) {
+      patterns.push('bảo vệ', 'che chở', 'giữ an toàn', 'phòng thủ');
+    }
+    
+    if (title.includes('thu thập') || title.includes('collect')) {
+      patterns.push('thu thập', 'gom', 'sưu tầm', 'có đủ');
+    }
+    
+    return patterns;
+  }
+
+  /**
+   * Kiểm tra false positive patterns
+   */
+  private checkFalsePositivePatterns(input: string, objective: string): { isFalsePositive: boolean; reason: string } {
+    // Từ chối nếu input quá ngắn và chung chung
+    if (input.length < 10 && ['đến', 'tới', 'vào', 'tìm', 'xong'].some(word => input.includes(word))) {
+      return {
+        isFalsePositive: true,
+        reason: 'Too generic and short input'
+      };
+    }
+    
+    // Từ chối nếu input chỉ là câu hỏi
+    if (input.includes('?') && !objective.includes('hỏi') && !objective.includes('thông tin')) {
+      return {
+        isFalsePositive: true,
+        reason: 'Question input without quest context'
+      };
+    }
+    
+    // Từ chối nếu input chỉ là mô tả trạng thái
+    const stateWords = ['đang', 'sẽ', 'có thể', 'có lẽ', 'có vẻ'];
+    if (stateWords.some(word => input.includes(word)) && !input.includes('hoàn thành') && !input.includes('xong')) {
+      return {
+        isFalsePositive: true,
+        reason: 'State description without completion'
+      };
+    }
+    
+    return {
+      isFalsePositive: false,
+      reason: 'No false positive detected'
+    };
+  }
+
+  /**
+   * Phân tích Side Quest completion với logic đặc biệt (MỚI!)
+   */
+  private analyzeSideQuestCompletion(
+    chatInput: string, 
+    objectiveDescription: string, 
+    quest: QuestProgress, 
+    additionalContext?: any
+  ): { matched: boolean; confidence: number; details?: string } {
+    const input = chatInput.toLowerCase();
+    const objective = objectiveDescription.toLowerCase();
+    let maxConfidence = 0;
+    let bestMatch = '';
+
+    // 1. Side quest specific keywords với confidence cao hơn
+    const sideQuestKeywords = [
+      'nhiệm vụ', 'quest', 'yêu cầu', 'giúp đỡ', 'hỗ trợ', 'thuê', 'mướn',
+      'tìm kiếm', 'điều tra', 'khám phá', 'thu thập', 'bảo vệ', 'giải cứu',
+      'giao hàng', 'chuyển phát', 'thông báo', 'báo cáo', 'kiểm tra'
+    ];
+    
+    const matchedKeywords = sideQuestKeywords.filter(keyword => input.includes(keyword));
+    if (matchedKeywords.length > 0) {
+      const confidence = Math.min(0.8, 0.6 + (matchedKeywords.length * 0.1)); // 0.6-0.8
+      if (confidence > maxConfidence) {
+        maxConfidence = confidence;
+        bestMatch = `Side quest keywords: ${matchedKeywords.join(', ')}`;
+      }
+    }
+
+    // 2. Side quest completion patterns
+    const sideQuestCompletionPatterns = [
+      'hoàn thành nhiệm vụ', 'làm xong', 'thực hiện xong', 'kết thúc',
+      'đã xong', 'hoàn tất', 'thành công', 'xong việc', 'hoàn thành quest',
+      'quest xong', 'nhiệm vụ xong', 'yêu cầu xong'
+    ];
+    
+    const matchedPatterns = sideQuestCompletionPatterns.filter(pattern => input.includes(pattern));
+    if (matchedPatterns.length > 0) {
+      const confidence = 0.9; // Confidence cao cho completion patterns
+      if (confidence > maxConfidence) {
+        maxConfidence = confidence;
+        bestMatch = `Side quest completion: ${matchedPatterns[0]}`;
+      }
+    }
+
+    // 3. Side quest specific context analysis
+    if (quest.title) {
+      const questTitle = quest.title.toLowerCase();
+      
+      // Kiểm tra xem input có đề cập đến quest title không
+      if (this.calculateSimilarity(input, questTitle) > 0.6) {
+        const confidence = 0.85;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Side quest title match: ${quest.title}`;
+        }
+      }
+
+      // Kiểm tra quest type specific patterns
+      if (questTitle.includes('giao hàng') || questTitle.includes('delivery')) {
+        const deliveryKeywords = ['giao', 'chuyển', 'đưa', 'mang', 'trao', 'nhận'];
+        if (deliveryKeywords.some(keyword => input.includes(keyword))) {
+          const confidence = 0.8;
+          if (confidence > maxConfidence) {
+            maxConfidence = confidence;
+            bestMatch = 'Delivery quest pattern match';
+          }
+        }
+      }
+
+      if (questTitle.includes('tìm kiếm') || questTitle.includes('search')) {
+        const searchKeywords = ['tìm thấy', 'phát hiện', 'khám phá', 'tìm được', 'tìm ra'];
+        if (searchKeywords.some(keyword => input.includes(keyword))) {
+          const confidence = 0.8;
+          if (confidence > maxConfidence) {
+            maxConfidence = confidence;
+            bestMatch = 'Search quest pattern match';
+          }
+        }
+      }
+
+      if (questTitle.includes('bảo vệ') || questTitle.includes('protect')) {
+        const protectKeywords = ['bảo vệ', 'che chở', 'giữ an toàn', 'phòng thủ', 'chống lại'];
+        if (protectKeywords.some(keyword => input.includes(keyword))) {
+          const confidence = 0.8;
+          if (confidence > maxConfidence) {
+            maxConfidence = confidence;
+            bestMatch = 'Protection quest pattern match';
+          }
+        }
+      }
+    }
+
+    // 4. Side quest objective specific analysis
+    const objectiveWords = objective.split(/\s+/).filter(word => word.length > 3);
+    const inputWords = input.split(/\s+/).filter(word => word.length > 3);
+    
+    // Kiểm tra overlap giữa objective và input
+    const commonWords = objectiveWords.filter(word => 
+      inputWords.some(inputWord => this.calculateSimilarity(word, inputWord) > 0.7)
+    );
+    
+    if (commonWords.length > 0) {
+      const confidence = Math.min(0.85, 0.5 + (commonWords.length * 0.1));
+      if (confidence > maxConfidence) {
+        maxConfidence = confidence;
+        bestMatch = `Side quest objective words match: ${commonWords.join(', ')}`;
+      }
+    }
+
+    // 5. Side quest reward context (nếu có)
+    if (quest.rewards && quest.rewards.length > 0) {
+      const rewardKeywords = quest.rewards.map(reward => 
+        reward.description.toLowerCase().split(/\s+/)
+      ).flat();
+      
+      const matchedRewardWords = rewardKeywords.filter(keyword => 
+        keyword.length > 3 && input.includes(keyword)
+      );
+      
+      if (matchedRewardWords.length > 0) {
+        const confidence = 0.7;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = `Side quest reward context: ${matchedRewardWords.join(', ')}`;
+        }
+      }
+    }
+
+    // 6. Side quest time sensitivity (nếu có)
+    if (quest.unlockConditions?.timeBased) {
+      const timeKeywords = ['nhanh', 'gấp', 'khẩn cấp', 'urgent', 'cấp bách'];
+      if (timeKeywords.some(keyword => input.includes(keyword))) {
+        const confidence = 0.75;
+        if (confidence > maxConfidence) {
+          maxConfidence = confidence;
+          bestMatch = 'Time-sensitive side quest match';
+        }
+      }
+    }
+
+    // 7. Side quest NPC interaction context
+    if (additionalContext?.npcRelationships) {
+      const npcContext = this.analyzeSideQuestNPCContext(input, objective, additionalContext.npcRelationships);
+      if (npcContext.matched && npcContext.confidence > maxConfidence) {
+        maxConfidence = npcContext.confidence;
+        bestMatch = npcContext.details || 'Side quest NPC context match';
+      }
+    }
+
+    return {
+      matched: maxConfidence > 0,
+      confidence: maxConfidence,
+      details: bestMatch || undefined
+    };
+  }
+
+  /**
+   * Phân tích NPC context cho side quest (MỚI!)
+   */
+  private analyzeSideQuestNPCContext(
+    _input: string, 
+    objective: string, 
+    npcRelationships: any
+  ): { matched: boolean; confidence: number; details?: string } {
+    let maxConfidence = 0;
+    let bestMatch = '';
+
+    // Kiểm tra NPC interactions gần đây
+    if (npcRelationships.encounters && Array.isArray(npcRelationships.encounters)) {
+      const recentEncounters = npcRelationships.encounters.slice(-5);
+      
+      for (const encounter of recentEncounters) {
+        if (encounter.npcName && encounter.interaction) {
+          const npcName = encounter.npcName.toLowerCase();
+          const interaction = encounter.interaction.toLowerCase();
+          
+          // Kiểm tra xem có NPC được đề cập trong objective không
+          if (objective.includes(npcName) || this.calculateSimilarity(npcName, objective) > 0.6) {
+            // Kiểm tra interaction có phù hợp với side quest không
+            const sideQuestInteractionKeywords = [
+              'nói chuyện', 'gặp', 'hỏi', 'thảo luận', 'tiếp xúc', 'giao tiếp',
+              'nhận nhiệm vụ', 'báo cáo', 'thông báo', 'báo tin', 'kể lại'
+            ];
+            
+            const hasInteractionKeyword = sideQuestInteractionKeywords.some(keyword => 
+              interaction.includes(keyword)
+            );
+
+            if (hasInteractionKeyword) {
+              const confidence = 0.85; // Confidence cao cho NPC interaction
+              if (confidence > maxConfidence) {
+                maxConfidence = confidence;
+                bestMatch = `Side quest NPC interaction: ${encounter.npcName} - ${encounter.interaction}`;
+              }
+            }
+          }
         }
       }
     }
@@ -913,7 +1563,62 @@ export class QuestDetectionService {
       patterns.push('báo cáo', 'thông báo', 'báo tin', 'nói lại', 'kể lại', 'tường thuật');
     }
 
+    // THÊM PATTERNS CHO SIDE QUEST (MỚI!)
+    this.addSideQuestPatterns(patterns, description);
+
     return patterns;
+  }
+
+  /**
+   * Thêm patterns đặc biệt cho side quest (MỚI!)
+   */
+  private addSideQuestPatterns(patterns: string[], description: string): void {
+    // Delivery/Transport quests
+    if (description.includes('giao') || description.includes('chuyển') || description.includes('đưa')) {
+      patterns.push('giao hàng', 'chuyển phát', 'đưa đến', 'mang đến', 'trao tay', 'nhận hàng');
+    }
+
+    // Investigation quests
+    if (description.includes('điều tra') || description.includes('khám phá') || description.includes('tìm hiểu')) {
+      patterns.push('điều tra', 'khám phá', 'tìm hiểu', 'nghiên cứu', 'phân tích', 'kiểm tra kỹ');
+    }
+
+    // Collection quests
+    if (description.includes('thu thập') || description.includes('gom') || description.includes('sưu tầm')) {
+      patterns.push('thu thập', 'gom góp', 'sưu tầm', 'tích lũy', 'có đủ', 'đủ số lượng');
+    }
+
+    // Protection quests
+    if (description.includes('bảo vệ') || description.includes('che chở') || description.includes('giữ an toàn')) {
+      patterns.push('bảo vệ', 'che chở', 'giữ an toàn', 'phòng thủ', 'chống lại', 'ngăn chặn');
+    }
+
+    // Rescue quests
+    if (description.includes('giải cứu') || description.includes('cứu') || description.includes('giúp đỡ')) {
+      patterns.push('giải cứu', 'cứu', 'giúp đỡ', 'hỗ trợ', 'cứu thoát', 'giải phóng');
+    }
+
+    // Communication quests
+    if (description.includes('thông báo') || description.includes('báo tin') || description.includes('truyền đạt')) {
+      patterns.push('thông báo', 'báo tin', 'truyền đạt', 'thông tin', 'tin tức', 'cập nhật');
+    }
+
+    // Time-sensitive quests
+    if (description.includes('nhanh') || description.includes('gấp') || description.includes('khẩn cấp')) {
+      patterns.push('nhanh chóng', 'gấp rút', 'khẩn cấp', 'cấp bách', 'urgent', 'ngay lập tức');
+    }
+
+    // Reward-related patterns
+    if (description.includes('phần thưởng') || description.includes('thưởng') || description.includes('tiền công')) {
+      patterns.push('phần thưởng', 'thưởng', 'tiền công', 'lương', 'bồi thường', 'đền đáp');
+    }
+
+    // Quest completion patterns
+    patterns.push(
+      'hoàn thành nhiệm vụ', 'làm xong', 'thực hiện xong', 'kết thúc',
+      'đã xong', 'hoàn tất', 'thành công', 'xong việc', 'hoàn thành quest',
+      'quest xong', 'nhiệm vụ xong', 'yêu cầu xong', 'công việc xong'
+    );
   }
 
   /**
@@ -1451,6 +2156,7 @@ export class QuestDetectionService {
       details: bestMatch || undefined
     };
   }
+
 }
 
 export const questDetectionService = new QuestDetectionService();

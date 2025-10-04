@@ -65,7 +65,7 @@ export class LocalSaveService {
 
       // Create SaveGame object
       const saveGame: SaveGame = {
-        version: '2.5.0',
+        version: '2.6.0',
         meta: {
           slotId,
           updatedAt: Date.now(),

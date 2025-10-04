@@ -2,14 +2,14 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "2.5.0";
+  const version = "2.6.0";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
 const updateLog = [
     {
-      version: "2.5.0",
+      version: "2.6.0",
       date: now.toISOString().split('T')[0],
       changes: [
         "🤖 Hệ thống gợi ý hành động AI thông minh",

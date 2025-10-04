@@ -190,7 +190,6 @@ class MultiApiKeyService {
       this.genAI = new GoogleGenerativeAI(currentKey.key);
       this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       this.isInitialized = true;
-      console.log(`Initialized Gemini with key: ${currentKey.name}`);
     } catch (error) {
       console.error('Failed to initialize Gemini:', error);
       this.markKeyError(`Initialization failed: ${error}`);
@@ -210,8 +209,6 @@ class MultiApiKeyService {
     const startTime = Date.now();
     
     try {
-      console.log(`🔍 Testing API key: ${testKey.name} (${testKey.id})`);
-      
       const testGenAI = new GoogleGenerativeAI(testKey.key);
       const testModel = testGenAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       
@@ -228,11 +225,7 @@ class MultiApiKeyService {
       
       const success = text.includes('OK') || text.length > 0;
       
-      console.log(`✅ API test ${success ? 'PASSED' : 'FAILED'} for ${testKey.name}:`, {
-        duration: `${duration}ms`,
-        responseLength: text.length,
-        responsePreview: text.substring(0, 100)
-      });
+      
       
       return { 
         success, 
@@ -298,15 +291,12 @@ class MultiApiKeyService {
   async testAllApiKeys(): Promise<{ [keyId: string]: { success: boolean; error?: string; details?: any } }> {
     const results: { [keyId: string]: { success: boolean; error?: string; details?: any } } = {};
     
-    console.log(`🧪 Testing all ${this.apiKeys.length} API keys...`);
-    
     for (const key of this.apiKeys) {
-      console.log(`Testing key ${key.name} (${key.id})...`);
       results[key.id] = await this.testApiKey(key.id);
     }
     
-    const successCount = Object.values(results).filter(r => r.success).length;
-    console.log(`📊 Test results: ${successCount}/${this.apiKeys.length} keys working`);
+    // Count successful tests (for debugging if needed)
+    // const successCount = Object.values(results).filter(r => r.success).length;
     
     return results;
   }
@@ -338,14 +328,11 @@ class MultiApiKeyService {
       }
 
       try {
-        console.log(`🔄 Attempting API call with key: ${currentKey.name} (attempt ${attempts + 1}/${maxAttempts})`);
-        
         const result = await this.model.generateContent(prompt);
         const response = result.response;
         const text = await response.text();
         
-        const duration = Date.now() - startTime;
-        console.log(`✅ API call successful with ${currentKey.name} (${duration}ms)`);
+        // const duration = Date.now() - startTime;
         
         this.markKeySuccess();
         return text;
@@ -359,7 +346,6 @@ class MultiApiKeyService {
         const shouldSwitchImmediately = this.shouldSwitchKeyImmediately(error);
         
         if (shouldSwitchImmediately) {
-          console.log(`🚨 Critical error detected, switching key immediately: ${lastError}`);
           this.markKeyError(lastError);
           
           // Chuyển sang key tiếp theo ngay lập tức
@@ -412,39 +398,29 @@ class MultiApiKeyService {
   async autoSwitchOnError(): Promise<boolean> {
     const currentKey = this.getCurrentApiKey();
     if (!currentKey) {
-      console.log('🔄 No current key to test, attempting to find working key...');
       return this.findAndSwitchToWorkingKey();
     }
 
     // Test key hiện tại
-    console.log(`🔍 Auto-checking current key: ${currentKey.name}`);
     const testResult = await this.testApiKey(currentKey.id);
     
     if (!testResult.success) {
-      console.log(`⚠️ Current key ${currentKey.name} failed auto-test: ${testResult.error}`);
       return this.findAndSwitchToWorkingKey();
     }
-    
-    console.log(`✅ Current key ${currentKey.name} is working fine`);
     return true;
   }
 
   // Tìm và chuyển sang key đang hoạt động
   private async findAndSwitchToWorkingKey(): Promise<boolean> {
     const activeKeys = this.apiKeys.filter(k => k.isActive);
-    console.log(`🔍 Searching for working key among ${activeKeys.length} active keys...`);
     
     for (const key of activeKeys) {
-      console.log(`🧪 Testing key: ${key.name}`);
       const testResult = await this.testApiKey(key.id);
       
       if (testResult.success) {
-        console.log(`✅ Found working key: ${key.name}, switching to it`);
         this.currentKeyIndex = this.apiKeys.findIndex(k => k.id === key.id);
         this.initializeGemini();
         return true;
-      } else {
-        console.log(`❌ Key ${key.name} failed: ${testResult.error}`);
       }
     }
     
@@ -454,10 +430,7 @@ class MultiApiKeyService {
 
   // Method để force switch sang key khác (có thể gọi từ UI)
   async forceSwitchToNextKey(): Promise<boolean> {
-    console.log('🔄 Force switching to next key...');
-    
     if (this.rotateToNextKey()) {
-      console.log(`✅ Switched to key: ${this.getCurrentApiKey()?.name}`);
       return true;
     } else {
       console.error('❌ No more keys available to switch to');

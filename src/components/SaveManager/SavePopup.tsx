@@ -26,9 +26,10 @@ interface SavePopupProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveGame: (slotId: 'slot1' | 'slot2' | 'slot3') => Promise<void>;
+  isProcessing?: boolean; // Thêm prop để kiểm tra trạng thái xử lý
 }
 
-export function SavePopup({ isOpen, onClose, onSaveGame }: SavePopupProps) {
+export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }: SavePopupProps) {
   const [cloudSlots, setCloudSlots] = useState<SaveSlot[]>([]);
   const [localSlots, setLocalSlots] = useState<SaveSlot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -83,6 +84,12 @@ export function SavePopup({ isOpen, onClose, onSaveGame }: SavePopupProps) {
   };
 
   const handleSaveCloud = async (slotId: 'slot1' | 'slot2' | 'slot3') => {
+    // Kiểm tra nếu đang có tiến trình xử lý nào đang chạy
+    if (isProcessing) {
+      setError('Không thể lưu game khi đang xử lý. Vui lòng đợi hoàn tất.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -98,6 +105,12 @@ export function SavePopup({ isOpen, onClose, onSaveGame }: SavePopupProps) {
   };
 
   const handleSaveLocal = async (slotId: 'local1' | 'local2' | 'local3') => {
+    // Kiểm tra nếu đang có tiến trình xử lý nào đang chạy
+    if (isProcessing) {
+      setError('Không thể lưu game khi đang xử lý. Vui lòng đợi hoàn tất.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -392,15 +405,21 @@ export function SavePopup({ isOpen, onClose, onSaveGame }: SavePopupProps) {
                     {/* Save Button */}
                       <button
                         onClick={() => handleSaveCloud(slotId as any)}
-                        disabled={loading}
-                        className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50"
+                        disabled={loading || isProcessing}
+                        className={`w-full flex items-center justify-center space-x-2 px-3 py-2 border rounded-lg transition-colors duration-200 ${
+                          loading || isProcessing
+                            ? 'bg-gray-500/20 border-gray-500/50 text-gray-400 cursor-not-allowed opacity-50'
+                            : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30'
+                        }`}
                       >
                       {loading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Save className="w-4 h-4" />
                       )}
-                      <span className="text-sm">Lưu Game</span>
+                      <span className="text-sm">
+                        {isProcessing ? 'Đang xử lý...' : 'Lưu Game'}
+                      </span>
                     </button>
 
 
@@ -516,15 +535,21 @@ export function SavePopup({ isOpen, onClose, onSaveGame }: SavePopupProps) {
                       {/* Save Button */}
                       <button
                         onClick={() => handleSaveLocal(slotId as any)}
-                        disabled={loading}
-                        className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50"
+                        disabled={loading || isProcessing}
+                        className={`w-full flex items-center justify-center space-x-2 px-3 py-2 border rounded-lg transition-colors duration-200 ${
+                          loading || isProcessing
+                            ? 'bg-gray-500/20 border-gray-500/50 text-gray-400 cursor-not-allowed opacity-50'
+                            : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30'
+                        }`}
                       >
                         {loading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Save className="w-4 h-4" />
                         )}
-                        <span className="text-sm">Lưu Game</span>
+                        <span className="text-sm">
+                          {isProcessing ? 'Đang xử lý...' : 'Lưu Game'}
+                        </span>
                       </button>
 
 

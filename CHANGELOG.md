@@ -5,6 +5,34 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2025-01-02
+
+### 🎯 Added
+- **Hệ thống gợi ý hành động AI thông minh**: 4 gợi ý hành động được tạo tự động dựa trên context game
+- **Lịch sử hành động (Action Log)**: Theo dõi tất cả hành động đã thực hiện với thu/mở từng mục
+- **Cơ chế thời gian hành động**: Mỗi hành động có thời gian thực hiện (5-120 phút) được AI quyết định
+- **Tích hợp Save System**: Action suggestions và log được lưu/khôi phục cùng với game data
+- **UI responsive**: Gợi ý hành động hiển thị 2x2 grid (PC) và 4x1 (mobile)
+- **Cơ chế highlight và deselect**: Chọn/hủy chọn gợi ý hành động trực quan
+
+### 🔧 Changed
+- **Chat input behavior**: Có thể gõ sẵn text khi AI đang xử lý, chỉ disable nút gửi
+- **Action classification**: Phân biệt hành động gợi ý vs thủ công trong Action Log
+- **Time system**: Thêm phút vào WorldTime (HH:mm format)
+- **AI response validation**: Kiểm tra toàn diện AI response trước khi xử lý
+- **Error handling**: Cơ chế backup/restore suggestions khi AI response lỗi
+
+### 🐛 Fixed
+- **geminiService.generateText error**: Sửa lỗi method không tồn tại
+- **TypeScript warnings**: Sửa các unused variables trong services
+- **UI alignment**: Sửa lỗi alignment khi InfoMenu được pin
+- **Suggestion regeneration**: Ngăn tạo lại suggestions khi refresh trang
+
+### 🚀 Performance
+- **Lazy loading**: Action suggestions và log được load lazy
+- **Optimized prompts**: Giảm thời gian AI response cho action duration
+- **Smart caching**: Suggestions được cache trong localStorage
+
 ## [1.4.0] - 2025-01-02
 
 ### 🎯 Added

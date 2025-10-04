@@ -40,9 +40,10 @@ interface SaveManagerProps {
     uiState?: any;
     contentFlags?: any;
   };
+  isProcessing?: boolean; // Thêm prop để kiểm tra trạng thái xử lý
 }
 
-export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: SaveManagerProps) {
+export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isProcessing = false }: SaveManagerProps) {
   const [slots, setSlots] = useState<SaveSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<'slot1' | 'slot2' | 'slot3' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,8 +76,6 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: Sa
       
       const slotsData = await saveGameService.listSlots();
       setSlots(slotsData);
-      
-      console.log('✅ Đã tải danh sách slot:', slotsData);
     } catch (err) {
       console.error('❌ Lỗi tải slots:', err);
       setError('Không thể tải danh sách slot');
@@ -145,6 +144,12 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: Sa
   const handleSave = async (slotId: 'slot1' | 'slot2' | 'slot3') => {
     if (!currentGameData) {
       setError('Không có dữ liệu game để lưu');
+      return;
+    }
+
+    // Kiểm tra nếu đang có tiến trình xử lý nào đang chạy
+    if (isProcessing) {
+      setError('Không thể lưu game khi đang xử lý. Vui lòng đợi hoàn tất.');
       return;
     }
 
@@ -540,15 +545,21 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData }: Sa
 
                     <button
                       onClick={() => handleSave(slotId as 'slot1' | 'slot2' | 'slot3')}
-                      disabled={loading || !currentGameData}
-                      className="w-full py-2 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                      disabled={loading || !currentGameData || isProcessing}
+                      className={`w-full py-2 border rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${
+                        loading || !currentGameData || isProcessing
+                          ? 'bg-gray-500/20 border-gray-500/50 text-gray-400 cursor-not-allowed opacity-50'
+                          : 'bg-green-500/20 border-green-500/50 text-green-300 hover:bg-green-500/30'
+                      }`}
                     >
                       {loading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Save className="w-4 h-4" />
                       )}
-                      <span>Lưu</span>
+                      <span>
+                        {isProcessing ? 'Đang xử lý...' : 'Lưu'}
+                      </span>
                     </button>
 
                     {!slot.isEmpty && (

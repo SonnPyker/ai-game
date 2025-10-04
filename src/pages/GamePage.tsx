@@ -95,6 +95,8 @@ export function GamePage() {
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [isSuggestionsCollapsed, setIsSuggestionsCollapsed] = useState(false);
   const [hasLoadedSuggestions, setHasLoadedSuggestions] = useState(false);
+  const [backupSuggestions, setBackupSuggestions] = useState<SuggestedAction[]>([]);
+  const [userInteractedWithSuggestions, setUserInteractedWithSuggestions] = useState(false);
   
   // Responsive design context
   const { shouldUseMobileLayout } = useResponsiveContext();
@@ -138,7 +140,6 @@ export function GamePage() {
     
     while (retryCount < maxRetries) {
       try {
-        console.log(`🔄 Attempting NPC analysis (attempt ${retryCount + 1}/${maxRetries})`);
         setIsNPCAnalysisProcessing(true);
         
         await npcRelationshipService.updateRelationshipsFromNarrative(
@@ -149,7 +150,6 @@ export function GamePage() {
         
         // Success - force UI refresh
         setNpcRelationshipsUpdated(prev => prev + 1);
-        console.log('✅ NPC analysis completed successfully');
         return;
         
       } catch (error) {
@@ -159,7 +159,6 @@ export function GamePage() {
         if (retryCount < maxRetries) {
           // Wait before retry
           const delay = Math.min(1000 * retryCount, 3000); // 1s, 2s, 3s max
-          console.log(`⏳ Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           // All retries failed
@@ -254,7 +253,6 @@ export function GamePage() {
           setTurnCounter(savedTurnCounter);
           setChatHistory(chatHistory);
           
-          console.log('✅ Đã load game data từ localStorage');
         } catch (error) {
           console.error('❌ Lỗi load game data:', error);
         }
@@ -274,7 +272,6 @@ export function GamePage() {
   // Ensure suggestions are loaded on mount
   useEffect(() => {
     if (gameState.isInitialized && !hasLoadedSuggestions) {
-      console.log('🔄 Loading suggestions on mount...');
       
       // Check if suggestions already exist in localStorage
       const savedSuggestions = localStorage.getItem('action_suggestions');
@@ -283,8 +280,8 @@ export function GamePage() {
           const suggestions = JSON.parse(savedSuggestions);
           if (suggestions && suggestions.length > 0) {
             setActionSuggestions(suggestions);
+            setBackupSuggestions([...suggestions]);
             setHasLoadedSuggestions(true);
-            console.log('✅ Loaded existing suggestions from localStorage:', suggestions.length);
             return; // Don't generate new ones
           }
         } catch (error) {
@@ -293,7 +290,6 @@ export function GamePage() {
       }
       
       // Only generate new suggestions if none exist
-      console.log('📝 No existing suggestions found, generating new ones...');
       setHasLoadedSuggestions(true);
       
       // Set immediate fallback suggestions
@@ -304,7 +300,7 @@ export function GamePage() {
           summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
           pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
           cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
-          durationMinutes: 30,
+          durationMinutes: 15,
           impactTags: ['exploration'],
           source: 'heuristic' as const
         },
@@ -340,23 +336,27 @@ export function GamePage() {
         }
       ];
       setActionSuggestions(immediateSuggestions);
-      console.log('✅ Immediate suggestions set:', immediateSuggestions.length);
+      setBackupSuggestions([...immediateSuggestions]);
       
       // Then try to load AI suggestions
       loadActionSuggestions();
     }
   }, [gameState.isInitialized, hasLoadedSuggestions]);
 
-  // Auto-collapse suggestions when chat history gets long
+  // Auto-collapse suggestions when chat history gets long (only if user hasn't interacted)
   useEffect(() => {
-    if (chatHistory.length > 10 && !isSuggestionsCollapsed) {
-      setIsSuggestionsCollapsed(true);
+    if (chatHistory.length > 10 && !isSuggestionsCollapsed && !userInteractedWithSuggestions) {
+      // Add a small delay to prevent immediate collapse when user is trying to open
+      const timeoutId = setTimeout(() => {
+        setIsSuggestionsCollapsed(true);
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [chatHistory.length, isSuggestionsCollapsed]);
+  }, [chatHistory.length, isSuggestionsCollapsed, userInteractedWithSuggestions]);
 
   // Load action log on mount
   useEffect(() => {
-    console.log('🔄 Loading action log on mount...');
     loadActionLog();
   }, []);
 
@@ -364,15 +364,13 @@ export function GamePage() {
   const loadActionSuggestions = async () => {
     try {
       setIsGeneratingSuggestions(true);
-      console.log('🔄 Loading action suggestions...');
       
       const context = actionSuggestionService.buildContextFromStorage();
-      console.log('📊 Context built:', context);
       
       const suggestions = await actionSuggestionService.generateSuggestions(context, context.contentFlags);
-      console.log('💡 Generated suggestions:', suggestions);
       
       setActionSuggestions(suggestions);
+      setBackupSuggestions([...suggestions]);
       actionSuggestionService.saveCurrentSuggestions(suggestions);
       setHasLoadedSuggestions(true);
     } catch (error) {
@@ -385,7 +383,7 @@ export function GamePage() {
           summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
           pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
           cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
-          durationMinutes: 30,
+          durationMinutes: 15,
           impactTags: ['exploration'],
           source: 'heuristic' as const
         },
@@ -401,6 +399,7 @@ export function GamePage() {
         }
       ];
       setActionSuggestions(fallbackSuggestions);
+      setBackupSuggestions([...fallbackSuggestions]);
       setHasLoadedSuggestions(true);
     } finally {
       setIsGeneratingSuggestions(false);
@@ -411,10 +410,7 @@ export function GamePage() {
   const loadActionLog = () => {
     try {
       const log = actionSuggestionService.getActionLog();
-      console.log('📋 Raw action log from service:', log);
-      console.log('📋 Action log length:', log?.length || 0);
       setActionLog(log || []);
-      console.log('📋 Action log state set:', log?.length || 0, 'entries');
     } catch (error) {
       console.error('Error loading action log:', error);
       setActionLog([]);
@@ -423,13 +419,174 @@ export function GamePage() {
 
   // Handle suggestion pick
   const handleSuggestionPick = (suggestion: SuggestedAction) => {
-    setCurrentMessage(suggestion.text);
-    setSelectedSuggestionId(suggestion.id);
+    setUserInteractedWithSuggestions(true);
+    
+    // Nếu đã chọn suggestion này rồi thì hủy chọn
+    if (selectedSuggestionId === suggestion.id) {
+      setSelectedSuggestionId(null);
+      setCurrentMessage('');
+    } else {
+      // Chọn suggestion mới
+      setCurrentMessage(suggestion.text);
+      setSelectedSuggestionId(suggestion.id);
+    }
   };
 
   // Toggle suggestions collapse
   const toggleSuggestionsCollapse = () => {
+    setUserInteractedWithSuggestions(true);
     setIsSuggestionsCollapsed(!isSuggestionsCollapsed);
+  };
+
+  // Generate action summary for manual actions
+  const generateActionSummary = async (actionText: string, gameState: GameState): Promise<string> => {
+    try {
+      // Ensure services are loaded
+      await loadServices();
+      
+      // Use AI to generate a summary based on the action text and current context
+      const context = actionSuggestionService.buildContextFromStorage();
+      const prompt = `Tạo một mô tả ngắn gọn (1-2 câu) cho hành động sau trong game RPG:
+
+Hành động: "${actionText}"
+
+Context hiện tại:
+- Thế giới: ${context.worldData?.name || 'Unknown'}
+- Nhân vật: ${context.characterData?.name || 'Unknown'}
+- Vị trí: ${context.sceneState?.location || 'Unknown'}
+- Thời gian: ${gameState.worldTime ? `${gameState.worldTime.hour}:${gameState.worldTime.minute.toString().padStart(2, '0')}` : 'Unknown'}
+
+Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
+
+      const response = await geminiService.generateContent(prompt);
+      return response || `Thực hiện hành động: ${actionText}`;
+    } catch (error) {
+      console.error('Error generating action summary:', error);
+      return `Thực hiện hành động: ${actionText}`;
+    }
+  };
+
+  // Estimate impact tags for manual actions
+  const estimateImpactTags = (actionText: string): string[] => {
+    const tags: string[] = [];
+    const text = actionText.toLowerCase();
+    
+    // Story impact
+    if (text.includes('nói') || text.includes('hỏi') || text.includes('thảo luận') || 
+        text.includes('kể') || text.includes('giải thích') || text.includes('thuyết phục')) {
+      tags.push('story');
+    }
+    
+    // Risk impact
+    if (text.includes('nguy hiểm') || text.includes('rủi ro') || text.includes('thám hiểm') || 
+        text.includes('chiến đấu') || text.includes('tấn công') || text.includes('đối đầu')) {
+      tags.push('risk');
+    }
+    
+    // Relationship impact
+    if (text.includes('npc') || text.includes('người') || text.includes('bạn') || 
+        text.includes('quan hệ') || text.includes('giao tiếp') || text.includes('hợp tác')) {
+      tags.push('relationship');
+    }
+    
+    // Exploration impact
+    if (text.includes('khám phá') || text.includes('tìm kiếm') || text.includes('đi') || 
+        text.includes('thăm') || text.includes('xem') || text.includes('kiểm tra')) {
+      tags.push('exploration');
+    }
+    
+    // Planning impact
+    if (text.includes('suy nghĩ') || text.includes('lên kế hoạch') || text.includes('quyết định') || 
+        text.includes('chọn') || text.includes('xem xét') || text.includes('đánh giá')) {
+      tags.push('planning');
+    }
+    
+    // Default to general if no specific tags found
+    if (tags.length === 0) {
+      tags.push('general');
+    }
+    
+    return tags;
+  };
+
+  // Hàm validation AI response toàn diện
+  const validateAIResponse = (response: any): { isValid: boolean; error?: string } => {
+    try {
+      // Kiểm tra response tồn tại
+      if (!response) {
+        return { isValid: false, error: 'AI response không tồn tại' };
+      }
+
+      // Kiểm tra narrative
+      if (!response.narrative || typeof response.narrative !== 'string' || response.narrative.trim() === '') {
+        return { isValid: false, error: 'AI response narrative không hợp lệ hoặc rỗng' };
+      }
+
+      // Kiểm tra narrative có độ dài hợp lý (ít nhất 50 ký tự)
+      if (response.narrative.trim().length < 50) {
+        return { isValid: false, error: 'AI response narrative quá ngắn (dưới 50 ký tự)' };
+      }
+
+      // Kiểm tra narrative không chứa lỗi rõ ràng
+      const narrative = response.narrative.toLowerCase();
+      
+      // Kiểm tra các pattern lỗi cụ thể hơn
+      const errorPatterns = [
+        'error:',
+        'lỗi:',
+        'failed:',
+        'thất bại:',
+        'cannot generate',
+        'không thể tạo',
+        'api error',
+        'lỗi api',
+        'generation failed',
+        'tạo thất bại',
+        'invalid response',
+        'phản hồi không hợp lệ',
+        'sorry, i cannot',
+        'xin lỗi, tôi không thể',
+        'i apologize, but',
+        'tôi xin lỗi, nhưng'
+      ];
+      
+      const hasErrorPattern = errorPatterns.some(pattern => narrative.includes(pattern));
+      if (hasErrorPattern) {
+        console.error('🚫 AI response chứa thông báo lỗi:', {
+          narrative: response.narrative,
+          detectedPatterns: errorPatterns.filter(pattern => narrative.includes(pattern))
+        });
+        return { isValid: false, error: 'AI response chứa thông báo lỗi' };
+      }
+
+      // Kiểm tra sceneState
+      if (typeof response.sceneState !== 'object' || response.sceneState === null) {
+        console.warn('⚠️ AI response sceneState không hợp lệ, sử dụng fallback');
+        response.sceneState = {};
+      }
+
+      // Kiểm tra storyProgress
+      if (typeof response.storyProgress !== 'object' || response.storyProgress === null) {
+        console.warn('⚠️ AI response storyProgress không hợp lệ, sử dụng fallback');
+        response.storyProgress = {};
+      }
+
+      // Kiểm tra softGuidance (có thể rỗng)
+      if (response.softGuidance && typeof response.softGuidance !== 'string') {
+        console.warn('⚠️ AI response softGuidance không hợp lệ, sử dụng fallback');
+        response.softGuidance = '';
+      }
+
+      // Kiểm tra sideQuestOffer (có thể null)
+      if (response.sideQuestOffer && typeof response.sideQuestOffer !== 'object') {
+        console.warn('⚠️ AI response sideQuestOffer không hợp lệ, sử dụng fallback');
+        response.sideQuestOffer = null;
+      }
+
+      return { isValid: true };
+    } catch (error) {
+      return { isValid: false, error: `Lỗi validation AI response: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
   };
 
   const initializeGame = async () => {
@@ -458,7 +615,6 @@ export function GamePage() {
           const currentWorldParsed = JSON.parse(currentWorldData);
           if (currentWorldParsed.contentFlags) {
             contentFlags = currentWorldParsed.contentFlags;
-            console.log('✅ Loaded content flags from currentWorldData:', contentFlags);
           }
         } catch (error) {
           console.error('Lỗi parse currentWorldData:', error);
@@ -471,7 +627,6 @@ export function GamePage() {
           const worldDataParsed = JSON.parse(worldData);
           if (worldDataParsed.contentFlags) {
             contentFlags = worldDataParsed.contentFlags;
-            console.log('✅ Loaded content flags from world_gen_result (fallback):', contentFlags);
           }
         } catch (error) {
           console.error('Lỗi parse world_gen_result:', error);
@@ -541,8 +696,8 @@ export function GamePage() {
             const suggestions = JSON.parse(savedSuggestions);
             if (suggestions && suggestions.length > 0) {
               setActionSuggestions(suggestions);
+              setBackupSuggestions([...suggestions]);
               setHasLoadedSuggestions(true);
-              console.log('✅ Loaded suggestions from localStorage in initializeGame:', suggestions.length);
             } else {
               // Only generate if no valid suggestions exist
               await loadActionSuggestions();
@@ -565,7 +720,7 @@ export function GamePage() {
             summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
             pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
             cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
-            durationMinutes: 30,
+            durationMinutes: 15,
             impactTags: ['exploration'],
             source: 'heuristic' as const
           },
@@ -601,8 +756,8 @@ export function GamePage() {
           }
         ];
         setActionSuggestions(fallbackSuggestions);
+        setBackupSuggestions([...fallbackSuggestions]);
         setHasLoadedSuggestions(true);
-        console.log('✅ Fallback suggestions set:', fallbackSuggestions.length);
       }
 
     } catch (error) {
@@ -653,8 +808,15 @@ export function GamePage() {
     setIsAIProcessing(true);
     setError(null);
 
+    // Backup current suggestions trước khi gửi tin nhắn
+    setBackupSuggestions([...actionSuggestions]);
+
     // Flag để đánh dấu AI response thành công
-    let aiResponseSuccess = true;
+    // LOGIC: 
+    // - Khởi tạo = false (an toàn, không update gì)
+    // - Chỉ set = true khi AI response thực sự thành công và hợp lệ
+    // - Set = false khi có lỗi (trong catch block)
+    let aiResponseSuccess = false;
 
     try {
       // Load data
@@ -678,17 +840,21 @@ export function GamePage() {
       let shouldSummarize = false;
       if (updatedSccContext && sccService.shouldSummarize(updatedSccContext)) {
         shouldSummarize = true;
-        console.log(`🔄 Summarizing at turn ${updatedSccContext.turnCounter}`);
       }
       
-      // Debug log - show sync status
-      console.log(`🎯 Turn Sync - Game turnCounter: ${turnCounter}, SCC turnCounter: ${updatedSccContext?.turnCounter || 'undefined'}, Should Summarize: ${shouldSummarize}`);
 
       // Build delta context for AI
       const deltaContext = buildContextForAI(turnCounter + 1); // +1 because we're about to add the current turn
       
       
       // Generate AI response using delta context
+      console.log('🤖 Gọi AI API với context:', {
+        turnCounter: turnCounter,
+        enhancedMessage: enhancedMessage,
+        contentFlags: gameState.contentFlags,
+        worldTime: gameState.worldTime
+      });
+      
       const response = await geminiService.generateTurnResponseWithDelta(
         worldData,
         characterData,
@@ -699,22 +865,42 @@ export function GamePage() {
         enhancedMessage, // Use enhanced message for AI processing
         gameState.contentFlags || undefined,
         questSystem,
-        turnCounter
+        turnCounter,
+        gameState.worldTime // Pass world time to AI
       );
+      
+      console.log('🤖 AI response nhận được:', {
+        hasResponse: !!response,
+        hasNarrative: !!response?.narrative,
+        narrativeLength: response?.narrative?.length,
+        narrativePreview: response?.narrative?.substring(0, 100) + '...',
+        hasSceneState: !!response?.sceneState,
+        hasStoryProgress: !!response?.storyProgress
+      });
 
-      // Validate AI response before proceeding
-      if (!response || !response.narrative) {
-        throw new Error('AI response không hợp lệ hoặc rỗng');
+      // Validate AI response using comprehensive validation function
+      const validation = validateAIResponse(response);
+      if (!validation.isValid) {
+        console.error('🚫 AI response validation failed:', {
+          error: validation.error,
+          response: response,
+          narrative: response?.narrative,
+          narrativeLength: response?.narrative?.length
+        });
+        throw new Error(validation.error || 'AI response validation failed');
       }
 
-      // Set flag để đánh dấu AI response thành công
+      // CHỈ SET FLAG THÀNH CÔNG KHI AI RESPONSE HOÀN TOÀN HỢP LỆ
+      // Đây là điểm duy nhất set flag thành true trong try block
+      // Nếu đến đây nghĩa là AI response đã được validate thành công
       aiResponseSuccess = true;
 
       // TẤT CẢ XỬ LÝ SAU AI RESPONSE PHẢI NẰM TRONG TRY-CATCH BLOCK NÀY
       // Để đảm bảo khi AI response bị lỗi, không có gì được cập nhật
 
       // CHỈ XỬ LÝ CÁC THÀNH PHẦN KHÁC KHI AI RESPONSE THÀNH CÔNG
-      if (aiResponseSuccess) {
+      // Bảo vệ kép: kiểm tra flag và response validity
+      if (aiResponseSuccess && response && response.narrative) {
         // Add AI response to chat
         const aiMessage: ChatMessage = {
           role: 'ai',
@@ -756,14 +942,11 @@ export function GamePage() {
               // Hiển thị modal để người chơi chọn nhận/từ chối
               setPendingQuestOffer(validQuestOffer);
               setShowQuestOfferModal(true);
-              console.log('🎯 Side quest offer từ AI:', validQuestOffer.title);
-            } else {
-              console.log('⚠️ Quest đã được xử lý trước đó:', response.sideQuestOffer.title);
             }
           }
           
           if (questAnalysis.completedObjectives.length > 0) {
-            console.log('✅ Quest objectives hoàn thành:', questAnalysis.completedObjectives);
+            // Quest objectives completed
           }
         } catch (questError) {
           console.error('Lỗi quest system:', questError);
@@ -777,7 +960,7 @@ export function GamePage() {
         }
 
         // Determine action duration
-        let durationMinutes = 30; // Default
+        let durationMinutes = 10; // Default
         if (selectedSuggestionId) {
           const selectedSuggestion = actionSuggestions.find(s => s.id === selectedSuggestionId);
           if (selectedSuggestion) {
@@ -811,7 +994,7 @@ export function GamePage() {
         const aiSceneState = response.sceneState || {};
         
         // Update game state
-        const newSceneState = { ...gameState.sceneState, ...aiSceneState };
+        const newSceneState = { ...gameState.sceneState, ...aiSceneState, worldTime: newTime };
         
         setGameState(prev => ({
           ...prev,
@@ -831,25 +1014,53 @@ export function GamePage() {
         // Save sceneState to localStorage
         localStorage.setItem('rp_scene_state', JSON.stringify(newSceneState));
 
-        // Log action if it was from a suggestion
-        if (selectedSuggestionId && gameState.worldTime && newTime) {
-          const selectedSuggestion = actionSuggestions.find(s => s.id === selectedSuggestionId);
-          if (selectedSuggestion) {
-            const actionLogEntry: ActionLogEntry = {
+        // Log action (both from suggestions and manual input)
+        if (gameState.worldTime && newTime) {
+          let actionLogEntry: ActionLogEntry | null = null;
+          
+          if (selectedSuggestionId) {
+            // Action from suggestion
+            const selectedSuggestion = actionSuggestions.find(s => s.id === selectedSuggestionId);
+            if (selectedSuggestion) {
+              actionLogEntry = {
+                id: `action_${Date.now()}`,
+                actionId: selectedSuggestionId,
+                text: currentMessage.trim(),
+                summary: selectedSuggestion.summary,
+                pros: selectedSuggestion.pros,
+                cons: selectedSuggestion.cons,
+                durationMinutes: durationMinutes,
+                startedAt: gameState.worldTime,
+                endedAt: newTime,
+                turn: turnCounter + 1,
+                impactTags: selectedSuggestion.impactTags,
+                source: 'suggestion'
+              };
+            }
+          } else {
+            // Manual action - generate summary and estimate impact
+            const actionSummary = await generateActionSummary(currentMessage.trim(), gameState);
+            const impactTags = estimateImpactTags(currentMessage.trim());
+            
+            actionLogEntry = {
               id: `action_${Date.now()}`,
-              actionId: selectedSuggestionId,
+              actionId: undefined,
               text: currentMessage.trim(),
-              summary: selectedSuggestion.summary,
-              pros: selectedSuggestion.pros,
-              cons: selectedSuggestion.cons,
+              summary: actionSummary,
+              pros: ['Thực hiện theo ý muốn', 'Linh hoạt trong hành động'],
+              cons: ['Có thể có rủi ro không lường trước', 'Cần thời gian để thực hiện'],
               durationMinutes: durationMinutes,
               startedAt: gameState.worldTime,
               endedAt: newTime,
               turn: turnCounter + 1,
-              impactTags: selectedSuggestion.impactTags
+              impactTags: impactTags,
+              source: 'manual'
             };
+          }
+          
+          if (actionLogEntry) {
             actionSuggestionService.saveActionLog(actionLogEntry);
-            setActionLog(prev => [actionLogEntry, ...prev.slice(0, 99)]); // Keep last 100 entries
+            setActionLog(prev => [actionLogEntry!, ...prev.slice(0, 99)]); // Keep last 100 entries
           }
         }
 
@@ -900,23 +1111,59 @@ export function GamePage() {
 
         // Generate new action suggestions after AI response
         await loadActionSuggestions();
+        
+        // Clear backup suggestions sau khi AI response thành công
+        setBackupSuggestions([]);
       } else {
-        console.log('🚫 AI response failed - skipping all game updates to prevent corruption');
+        // BẢO VỆ KÉP: Đảm bảo không có gì được update khi AI response không thành công
+        console.error('🚫 AI response failed - skipping ALL game updates to prevent corruption');
+        
+        // Khôi phục gợi ý hành động cũ khi AI response bị lỗi
+        if (backupSuggestions.length > 0) {
+          setActionSuggestions([...backupSuggestions]);
+          actionSuggestionService.saveCurrentSuggestions(backupSuggestions);
+        }
       }
 
     } catch (error) {
-      console.error('Lỗi gửi tin nhắn:', error);
+      console.error('🚫 Lỗi gửi tin nhắn:', {
+        error: error,
+        errorMessage: error instanceof Error ? error.message : 'Có lỗi xảy ra',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        aiResponseSuccess: aiResponseSuccess,
+        currentMessage: currentMessage,
+        turnCounter: turnCounter
+      });
       setError(error instanceof Error ? error.message : 'Có lỗi xảy ra');
       
-      // Khi có lỗi, không cập nhật bất kỳ state nào
-      // Chỉ hiển thị lỗi cho người dùng
-      console.log('🚫 AI response failed - skipping all updates to prevent game flow corruption');
-      
-      // Set flag để ngăn NPC analysis chạy
+      // QUAN TRỌNG: Khi có lỗi, KHÔNG CẬP NHẬT BẤT KỲ STATE NÀO
+      // Đảm bảo aiResponseSuccess = false để ngăn mọi update
       aiResponseSuccess = false;
+      
+      // Khôi phục gợi ý hành động cũ khi có lỗi
+      if (backupSuggestions.length > 0) {
+        setActionSuggestions([...backupSuggestions]);
+        actionSuggestionService.saveCurrentSuggestions(backupSuggestions);
+      }
+      
+      // KHÔNG CẬP NHẬT BẤT KỲ THỨ GÌ KHÁC:
+      // - Không update chatHistory
+      // - Không update gameState
+      // - Không update turnCounter
+      // - Không update sceneState
+      // - Không update SCC context
+      // - Không update NPC relationships
+      // - Không update quest system
+      // - Không update world time
+      // - Không save to localStorage
     } finally {
       setIsLoading(false);
       setIsAIProcessing(false);
+      
+      // CHỈ clear backup suggestions khi AI response THÀNH CÔNG
+      if (aiResponseSuccess && backupSuggestions.length > 0) {
+        setBackupSuggestions([]);
+      }
     }
   };
 
@@ -931,8 +1178,6 @@ export function GamePage() {
     const retryDelay = 2000; // 2 seconds
     
     try {
-      console.log(`🔄 Starting summarization... (Attempt ${retryCount + 1}/${maxRetries + 1})`);
-      
       // Create backup before summarizing (only on first attempt)
       if (retryCount === 0) {
         sccService.createSummaryBackup(sccContext.summary);
@@ -983,14 +1228,10 @@ export function GamePage() {
       // Clean up old chat history to save memory
       sccService.cleanupOldChatHistory(turnCounter);
       
-      console.log(`✅ Summarization completed successfully (Attempt ${retryCount + 1})`);
-      
     } catch (error) {
       console.error(`❌ Error during summarization (Attempt ${retryCount + 1}):`, error);
       
       if (retryCount < maxRetries) {
-        console.log(`🔄 Retrying summarization in ${retryDelay/1000} seconds...`);
-        
         // Wait before retry
         await new Promise(resolve => setTimeout(resolve, retryDelay));
         
@@ -1042,6 +1283,13 @@ export function GamePage() {
 
   // Save game to slot
   const handleSaveGame = async (slotId: 'slot1' | 'slot2' | 'slot3' | 'local1' | 'local2' | 'local3') => {
+    // Kiểm tra nếu đang có tiến trình xử lý nào đang chạy
+    if (isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions) {
+      setSaveMessage('❌ Không thể lưu game khi đang xử lý. Vui lòng đợi hoàn tất.');
+      setTimeout(() => setSaveMessage(null), 3000);
+      return;
+    }
+
     try {
       setSaveMessage(null);
 
@@ -1066,15 +1314,12 @@ export function GamePage() {
       const worldParsed = JSON.parse(worldData);
       const characterParsed = JSON.parse(characterData);
       
-      // Debug log để kiểm tra data
-      console.log('World data:', worldParsed);
-      console.log('Character data:', characterParsed);
       
       // Get current NPC relationship data
       const npcRelationshipData = npcRelationshipService.exportForSaveGame();
 
       const saveGame: SaveGame = {
-        version: '2.5.0',
+        version: '2.6.0',
         meta: {
           slotId,
           updatedAt: Date.now(),
@@ -1179,8 +1424,6 @@ export function GamePage() {
         }, turnCounter);
         
         if (newSideQuest) {
-          console.log('✅ Side quest được chấp nhận:', newSideQuest.title);
-          
           // Đánh dấu quest đã được xử lý
           const questId = pendingQuestOffer.id || pendingQuestOffer.title;
           setProcessedQuests(prev => new Set([...prev, questId]));
@@ -1200,8 +1443,6 @@ export function GamePage() {
 
   const handleDeclineQuestOffer = () => {
     if (!pendingQuestOffer) return;
-    
-    console.log('❌ Side quest bị từ chối:', pendingQuestOffer.title);
     
     // Đánh dấu quest đã được xử lý
     const questId = pendingQuestOffer.id || pendingQuestOffer.title;
@@ -1232,6 +1473,13 @@ export function GamePage() {
       lastSummaryTurn: 0,
       contentFlags: null
     });
+    
+    // Clear action suggestions and backup
+    setActionSuggestions([]);
+    setBackupSuggestions([]);
+    setActionLog([]);
+    setSelectedSuggestionId(null);
+    setHasLoadedSuggestions(false);
     
     // Clear game-related localStorage but keep save slots and API keys
     const keysToRemove = [
@@ -1265,8 +1513,6 @@ export function GamePage() {
     
     // Clear NPC relationship data
     npcRelationshipService.clearAllData();
-    
-    console.log('✅ Đã reset game data, giữ lại save slots và API keys');
   };
 
 
@@ -1279,8 +1525,6 @@ export function GamePage() {
       // Clear existing NPC data before loading save
       npcRelationshipService.clearAllData();
       
-      // Debug: Log contentFlags from saveGame
-      console.log('🔍 Loading contentFlags from saveGame:', saveGame.contentFlags);
       
       // Cập nhật game state từ SaveGame
       setGameState({
@@ -1304,10 +1548,13 @@ export function GamePage() {
       setChatHistory(saveGame.chat);
       setTurnCounter(saveGame.turnCounter);
       
-      // Debug: Log contentFlags after setGameState
-      setTimeout(() => {
-        console.log('🔍 contentFlags after load:', gameState.contentFlags);
-      }, 100);
+      // Clear action suggestions and backup
+      setActionSuggestions([]);
+      setBackupSuggestions([]);
+      setActionLog([]);
+      setSelectedSuggestionId(null);
+      setHasLoadedSuggestions(false);
+      
 
       // Cập nhật localStorage để tương thích với hệ thống cũ
       localStorage.setItem('rp_chat', JSON.stringify(saveGame.chat));
@@ -1319,13 +1566,11 @@ export function GamePage() {
       // Khôi phục quest system nếu có
       if (saveGame.questSystem) {
         localStorage.setItem('quest_system', JSON.stringify(saveGame.questSystem));
-        console.log('✅ Đã khôi phục quest system từ save file');
       }
       
       // Khôi phục NPC relationship data nếu có
       if (saveGame.npcRelationships) {
         npcRelationshipService.importFromSaveGame(saveGame.npcRelationships);
-        console.log('✅ Đã khôi phục NPC relationship data từ save file');
       }
       
       // KHÔNG lưu contentFlags vào localStorage riêng biệt
@@ -1336,7 +1581,6 @@ export function GamePage() {
         sccService.saveSCCContext(gameState.sccContext);
       }
 
-      console.log('✅ Đã load game từ SaveGame');
     } catch (error) {
       console.error('❌ Lỗi load game:', error);
       setError('Lỗi tải game');
@@ -1384,7 +1628,6 @@ export function GamePage() {
         const worldData = JSON.parse(currentWorldData);
         worldData.contentFlags = newFlags;
         localStorage.setItem('currentWorldData', JSON.stringify(worldData));
-        console.log('✅ Updated contentFlags in currentWorldData:', newFlags);
       } catch (error) {
         console.error('❌ Error updating contentFlags in currentWorldData:', error);
       }
@@ -1670,8 +1913,17 @@ export function GamePage() {
               {/* Save Button */}
               <button
                 onClick={() => setShowSavePopup(true)}
-                className="p-2 bg-green-600/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-600/30 transition-colors duration-200 mobile-button touch-feedback"
-                title="Lưu game"
+                disabled={isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions}
+                className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
+                  isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
+                    ? 'bg-gray-600/20 border-gray-500/30 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-600/20 border-green-500/30 text-green-300 hover:bg-green-600/30'
+                }`}
+                title={
+                  isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
+                    ? "Đang xử lý, không thể lưu game"
+                    : "Lưu game"
+                }
               >
                 <Save className="w-4 h-4" />
               </button>
@@ -1836,6 +2088,7 @@ export function GamePage() {
               isMobile={shouldUseMobileLayout()}
               isCollapsed={isSuggestionsCollapsed}
               onToggleCollapse={toggleSuggestionsCollapse}
+              selectedSuggestionId={selectedSuggestionId}
             />
           </Suspense>
           
@@ -1855,21 +2108,25 @@ export function GamePage() {
               onChange={(e) => setCurrentMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={
-                isAIProcessing || isNPCAnalysisProcessing 
-                  ? "AI đang xử lý, vui lòng đợi..." 
-                  : "Mô tả hành động của bạn..."
+                selectedSuggestionId 
+                  ? "Đã chọn hành động gợi ý - nhấn gửi để thực hiện" 
+                  : isAIProcessing || isNPCAnalysisProcessing 
+                    ? "AI đang xử lý - bạn có thể gõ sẵn hành động..." 
+                    : "Mô tả hành động của bạn..."
               }
               className={`flex-1 px-3 sm:px-4 py-2.5 bg-gray-800/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none resize-none transition-colors ${
                 shouldUseMobileLayout() ? 'text-sm' : 'text-base'
               } ${
-                resendingMessageIndex !== null 
-                  ? 'border-green-500/50 focus:border-green-500' 
-                  : (isAIProcessing || isNPCAnalysisProcessing)
-                    ? 'border-yellow-500/50 focus:border-yellow-500'
-                    : 'border-gray-600/50 focus:border-blue-500'
+                selectedSuggestionId
+                  ? 'border-blue-500/50 focus:border-blue-500 opacity-75'
+                  : resendingMessageIndex !== null 
+                    ? 'border-green-500/50 focus:border-green-500' 
+                    : (isAIProcessing || isNPCAnalysisProcessing)
+                      ? 'border-yellow-500/50 focus:border-yellow-500'
+                      : 'border-gray-600/50 focus:border-blue-500'
               }`}
               rows={2}
-              disabled={isLoading || isAIProcessing || isNPCAnalysisProcessing}
+              disabled={!!selectedSuggestionId}
             />
             <button
               onClick={sendMessage}
@@ -1895,6 +2152,7 @@ export function GamePage() {
           isOpen={showSavePopup}
           onClose={() => setShowSavePopup(false)}
           onSaveGame={handleSaveGame}
+          isProcessing={isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions}
         />
       </Suspense>
 
@@ -1905,6 +2163,7 @@ export function GamePage() {
           onClose={() => setShowSaveManager(false)}
           onLoadGame={handleLoadGame}
           currentGameData={getCurrentGameData()}
+          isProcessing={isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions}
         />
       </Suspense>
 

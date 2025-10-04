@@ -8,7 +8,7 @@ export interface NPCRelationshipData {
 
 // SaveGame Schema - Versioned JSON chứa toàn bộ dữ liệu game
 export interface SaveGame {
-  version: string; // Phiên bản schema để migration (2.5.0)
+  version: string; // Phiên bản schema để migration (2.6.0)
   meta: SaveGameMeta;
   world: WorldData;
   character: Character;

@@ -8,6 +8,7 @@ interface ActionSuggestionsProps {
   isMobile?: boolean;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  selectedSuggestionId?: string | null;
 }
 
 export function ActionSuggestions({ 
@@ -16,7 +17,8 @@ export function ActionSuggestions({
   isLoading = false,
   isMobile = false,
   isCollapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  selectedSuggestionId = null
 }: ActionSuggestionsProps) {
   if (isLoading) {
     return (
@@ -119,13 +121,19 @@ export function ActionSuggestions({
       
       {!isCollapsed && (
         <div className={`grid gap-1.5 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {suggestions.map((suggestion) => (
-            <button
-              key={suggestion.id}
-              onClick={() => onPick(suggestion)}
-              className="glass-effect border border-gray-600/50 rounded-lg px-3 py-2 text-left hover:border-blue-500/50 hover:bg-blue-500/10 transition-all duration-200 group min-h-[50px] touch-feedback active:scale-95"
-              title={`Thời gian: ${formatDuration(suggestion.durationMinutes)}`}
-            >
+          {suggestions.map((suggestion) => {
+            const isSelected = selectedSuggestionId === suggestion.id;
+            return (
+              <button
+                key={suggestion.id}
+                onClick={() => onPick(suggestion)}
+                className={`glass-effect border rounded-lg px-3 py-2 text-left transition-all duration-200 group min-h-[50px] touch-feedback active:scale-95 ${
+                  isSelected 
+                    ? 'border-blue-500 bg-blue-500/20 shadow-lg shadow-blue-500/20' 
+                    : 'border-gray-600/50 hover:border-blue-500/50 hover:bg-blue-500/10'
+                }`}
+                title={`Thời gian: ${formatDuration(suggestion.durationMinutes)}${isSelected ? ' - Nhấn để hủy chọn' : ''}`}
+              >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center space-x-1">
                   {getImpactIcon(suggestion.impactTags)}
@@ -138,11 +146,14 @@ export function ActionSuggestions({
                 </div>
               </div>
               
-              <div className="text-sm text-white group-hover:text-blue-100 transition-colors leading-tight">
-                {suggestion.summary}
-              </div>
-            </button>
-          ))}
+                <div className={`text-sm transition-colors leading-tight ${
+                  isSelected ? 'text-blue-100' : 'text-white group-hover:text-blue-100'
+                }`}>
+                  {suggestion.summary}
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

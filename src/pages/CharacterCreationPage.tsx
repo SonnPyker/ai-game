@@ -155,10 +155,7 @@ export function CharacterCreationPage() {
       const worldGenResult = localStorage.getItem('world_gen_result');
       const worldContext = worldGenResult ? JSON.parse(worldGenResult) : null;
       
-      console.log('World context for character analysis:', worldContext);
-      
       const analysis = await geminiService.analyzeCharacterDescription(characterDescription, worldContext);
-      console.log('Analysis result:', analysis);
       
       // Convert new schema to old format for compatibility
       const convertedData: any = {
@@ -202,14 +199,12 @@ export function CharacterCreationPage() {
         convertedData.energyMax = analysis.derived.energyMax || 100;
       }
       
-      console.log('Converted data:', convertedData);
-      console.log('Original analysis with evidence:', analysis);
       setCharacterData(convertedData);
       setCurrentStep('customize');
       
       // Show evidence information if available
       if (analysis.unknown_fields && analysis.unknown_fields.length > 0) {
-        console.log('Missing fields:', analysis.unknown_fields);
+        // Missing fields detected
       }
     } catch (error) {
       console.error('Error analyzing character:', error);
@@ -425,7 +420,6 @@ export function CharacterCreationPage() {
       const worldGenResult = localStorage.getItem('world_gen_result');
       const worldContext = worldGenResult ? JSON.parse(worldGenResult) : null;
       
-      console.log('World context for stats suggestion:', worldContext);
       
       const suggestions = await geminiService.suggestCharacterStats(characterData, worldContext);
       setCharacterData(prev => ({
@@ -451,7 +445,6 @@ export function CharacterCreationPage() {
       const worldGenResult = localStorage.getItem('world_gen_result');
       const worldContext = worldGenResult ? JSON.parse(worldGenResult) : null;
       
-      console.log('Rerolling skills with world context:', worldContext);
       
       const newSkills = await geminiService.rerollCharacterSkills(characterData, worldContext);
       

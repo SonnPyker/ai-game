@@ -281,6 +281,7 @@ export interface SCCState {
   inventory?: { name: string; qty?: number }[];
   clocks?: { name: string; value: number; max: number }[];
   flags?: Record<string, boolean>;
+  worldTime?: WorldTime;
 }
 
 // NPC Relationship System

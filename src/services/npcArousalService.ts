@@ -261,6 +261,41 @@ class NPCArousalService {
     }
   }
 
+  // Detect consciousness level from narrative (same as in NPCRelationshipService)
+  private detectConsciousnessLevel(narrative: string): number {
+    const lowerNarrative = narrative.toLowerCase();
+    
+    // Hoàn toàn mất ý thức
+    if (lowerNarrative.includes('bất tỉnh') || lowerNarrative.includes('unconscious') || 
+        lowerNarrative.includes('ngất') || lowerNarrative.includes('fainted') ||
+        lowerNarrative.includes('ngủ sâu') || lowerNarrative.includes('deep sleep') ||
+        lowerNarrative.includes('chuốc thuốc') || lowerNarrative.includes('drugged') ||
+        lowerNarrative.includes('thuốc ngủ') || lowerNarrative.includes('sleeping potion') ||
+        lowerNarrative.includes('vô thức') || lowerNarrative.includes('không hay biết') ||
+        lowerNarrative.includes('chìm trong giấc ngủ') || lowerNarrative.includes('ngủ say') ||
+        lowerNarrative.includes('không tỉnh') || lowerNarrative.includes('bất động')) {
+      return 0;
+    }
+    
+    // Mất ý thức một phần (ngủ)
+    if (lowerNarrative.includes('ngủ') || lowerNarrative.includes('sleeping') ||
+        lowerNarrative.includes('asleep') || lowerNarrative.includes('đang ngủ') ||
+        lowerNarrative.includes('giấc ngủ') || lowerNarrative.includes('ngủ say')) {
+      return 0.3;
+    }
+    
+    // Mơ màng
+    if (lowerNarrative.includes('mơ màng') || lowerNarrative.includes('drowsy') ||
+        lowerNarrative.includes('semi-conscious') || lowerNarrative.includes('nửa tỉnh nửa mê') ||
+        lowerNarrative.includes('say') || lowerNarrative.includes('drunk') ||
+        lowerNarrative.includes('intoxicated') || lowerNarrative.includes('lơ mơ')) {
+      return 0.5;
+    }
+    
+    // Ý thức bình thường
+    return 1.0;
+  }
+
   private buildArousalAnalysisPrompt(
     narrative: string,
     npc: NPCRelationship,
@@ -284,14 +319,20 @@ class NPCArousalService {
     const playerActionContext = additionalContext?.playerAction ? 
       `\nHÀNH ĐỘNG NGƯỜI CHƠI: "${additionalContext.playerAction}"` : '';
     
+    // Detect consciousness level for special handling
+    const consciousnessLevel = this.detectConsciousnessLevel(narrative);
+    const isUnconscious = consciousnessLevel <= 0.3;
+    const isSemiConscious = consciousnessLevel <= 0.5;
+    
     return `Bạn là AI phân tích mức độ hứng tình của NPC trong bối cảnh 18+.
 
 NGỮ CẢNH:
 - Narrative: "${narrative}"
 - NPC: "${npc.name}"
 - Mức hứng tình hiện tại: ${arousal.level}/100
-- Mức độ quan hệ: ${npc.relationshipLevel}/100
-- Danh tiếng: ${npc.reputation}/100
+- Mức độ quan hệ: ${Math.round(npc.relationshipLevel)}/100
+- Danh tiếng: ${Math.round(npc.reputation)}/100
+- Trạng thái ý thức: ${isUnconscious ? 'MẤT Ý THỨC' : isSemiConscious ? 'MƠ MÀNG' : 'TỈNH TÁO'}
 
 TÍNH CÁCH NPC:
 - Responsiveness (dễ bị kích thích): ${arousal.personality.responsiveness}/100
@@ -311,12 +352,60 @@ ${sceneStateContext}
 
 ${chatHistoryContext}${playerActionContext}
 
-NGUYÊN TẮC PHÂN TÍCH:
+NGUYÊN TẮC PHÂN TÍCH ĐẶC BIỆT:
+${isUnconscious ? `
+⚠️ TRẠNG THÁI MẤT Ý THỨC:
+- NPC đang mất ý thức hoàn toàn (ngủ sâu, bất tỉnh, chuốc thuốc)
+- Hành động kích thích vẫn có tác động lên cơ thể và phản ứng sinh lý
+- Arousal vẫn tăng nhưng NHẸ HƠN (40% so với bình thường)
+- Phản ứng có thể là vô thức, co thắt cơ, thay đổi nhịp thở
+- Không có sự đồng ý có ý thức nhưng cơ thể vẫn phản ứng
+
+PHẢN ỨNG SINH LÝ VÔ THỨC (TĂNG NHẸ):
+- Co thắt cơ bắp, run rẩy nhẹ
+- Thay đổi nhịp thở (nhanh hơn, sâu hơn)
+- Tiết dịch tự nhiên (dù không có ý thức)
+- Thay đổi nhiệt độ cơ thể
+- Phản ứng cơ thể tự động với kích thích
+- Các phản xạ sinh lý không kiểm soát được
+- LƯU Ý: Phản ứng vô thức chỉ tăng arousal nhẹ, không mạnh như có ý thức
+` : isSemiConscious ? `
+⚠️ TRẠNG THÁI MƠ MÀNG:
+- NPC đang trong trạng thái mơ màng, nửa tỉnh nửa mê
+- Phản ứng có thể chậm chạp hoặc không rõ ràng
+- Arousal tăng NHẸ HƠN (60% so với bình thường)
+- Có thể có phản ứng vô thức hoặc mơ màng
+
+PHẢN ỨNG SINH LÝ MƠ MÀNG (TĂNG NHẸ):
+- Phản ứng chậm chạp nhưng vẫn có
+- Có thể có tiếng thở dài, rên rỉ nhẹ
+- Cơ thể phản ứng một cách mơ hồ
+- Có thể có co thắt nhẹ hoặc run rẩy
+- LƯU Ý: Phản ứng mơ màng chỉ tăng arousal nhẹ hơn so với tỉnh táo
+` : `
+✅ TRẠNG THÁI TỈNH TÁO:
+- NPC hoàn toàn tỉnh táo và có ý thức
+- Phản ứng bình thường dựa trên tính cách và sở thích
+- Arousal tăng 100% theo logic thông thường
+
+PHẢN ỨNG SINH LÝ CÓ Ý THỨC:
+- Phản ứng rõ ràng và có kiểm soát
+- Có thể có sự đồng ý hoặc từ chối
+- Phản ứng dựa trên tính cách và sở thích
+`}
+
+NGUYÊN TẮC PHÂN TÍCH CHUNG:
 1. Phân tích dựa trên tính cách và sở thích của NPC
 2. Xem xét mức độ quan hệ hiện tại
 3. Đánh giá ngữ cảnh và tình huống
 4. Giữ tính chân thực và nhất quán
 5. Tôn trọng ranh giới và sở thích của NPC
+6. Xem xét trạng thái ý thức của NPC
+7. QUAN TRỌNG: Phản ứng sinh lý vô thức VẪN ĐƯỢC TÍNH VÀO AROUSAL NHƯNG TĂNG NHẸ
+8. Cơ thể phản ứng độc lập với ý thức và ý muốn
+9. Co thắt cơ, thay đổi nhịp thở, tiết dịch = tăng arousal nhẹ
+10. Phản xạ sinh lý tự nhiên không thể kiểm soát được
+11. Phản ứng vô thức chỉ tăng arousal nhẹ, không mạnh như có ý thức
 
 SCORING GUIDELINES:
 AROUSAL CHANGE (-50 to +50):
@@ -325,6 +414,39 @@ AROUSAL CHANGE (-50 to +50):
 - Hành động trung tính: -5 to +5
 - Hành động không phù hợp: -10 to -30
 - Hành động vi phạm ranh giới: -30 to -50
+
+QUAN TRỌNG VỀ PHẢN ỨNG SINH LÝ:
+- Phản ứng sinh lý vô thức VẪN ĐƯỢC TÍNH VÀO AROUSAL NHƯNG TĂNG NHẸ
+- Ngay cả khi hành động trái với ý muốn, cơ thể vẫn phản ứng
+- Co thắt cơ, thay đổi nhịp thở, tiết dịch = tăng arousal nhẹ
+- Phản xạ sinh lý tự nhiên không thể kiểm soát được
+- Cơ thể phản ứng độc lập với ý thức và ý muốn
+- LƯU Ý: Phản ứng vô thức chỉ tăng arousal nhẹ, không mạnh như có ý thức
+
+${isUnconscious ? `
+ĐIỀU CHỈNH CHO TRẠNG THÁI MẤT Ý THỨC (TĂNG NHẸ):
+- Hành động kích thích mạnh: +6 to +16 (40% của +15 to +40)
+- Hành động kích thích vừa: +1 to +6 (40% của +3 to +15)
+- Hành động nhẹ: +0 to +2 (40% của +1 to +5)
+- Phản ứng cơ thể vô thức vẫn có thể xảy ra
+- BONUS cho phản ứng sinh lý rõ rệt: +2 to +4 (40% của +5 to +10)
+- Co thắt cơ mạnh, thay đổi nhịp thở rõ rệt: +3 to +6 (40% của +8 to +15)
+- Tiết dịch tự nhiên: +4 to +8 (40% của +10 to +20)
+` : isSemiConscious ? `
+ĐIỀU CHỈNH CHO TRẠNG THÁI MƠ MÀNG (TĂNG NHẸ):
+- Hành động kích thích mạnh: +10 to +27 (60% của +16 to +45)
+- Hành động kích thích vừa: +2 to +11 (60% của +4 to +18)
+- Hành động nhẹ: +1 to +4 (60% của +2 to +7)
+- Phản ứng mơ màng vẫn có thể xảy ra
+- BONUS cho phản ứng sinh lý: +2 to +5 (60% của +3 to +8)
+` : `
+ĐIỀU CHỈNH CHO TRẠNG THÁI TỈNH TÁO:
+- Hành động kích thích mạnh: +20 to +50 (bình thường)
+- Hành động kích thích vừa: +5 to +20 (bình thường)
+- Hành động nhẹ: +2 to +8 (bình thường)
+- Phản ứng có ý thức và kiểm soát được
+- BONUS cho phản ứng tích cực: +5 to +15
+`}
 
 INTENSITY:
 - low: Thay đổi nhỏ, tương tác bình thường
@@ -337,7 +459,7 @@ OUTPUT JSON:
   "reason": "string - lý do thay đổi hứng tình",
   "context": "string - ngữ cảnh cụ thể",
   "intensity": "low|medium|high",
-  "reasoning": "string - giải thích chi tiết"
+  "reasoning": "string - giải thích chi tiết về phản ứng của NPC"
 }`;
   }
 
@@ -390,6 +512,11 @@ OUTPUT JSON:
     }
     const arousal = npc.arousal;
 
+    // Detect consciousness level for special handling
+    const consciousnessLevel = this.detectConsciousnessLevel(narrative);
+    const isUnconscious = consciousnessLevel <= 0.3;
+    const isSemiConscious = consciousnessLevel <= 0.5;
+
     let arousalChange = 0;
     let reason = 'Tương tác bình thường';
     let intensity: 'low' | 'medium' | 'high' = 'low';
@@ -397,17 +524,27 @@ OUTPUT JSON:
     // Enhanced positive arousal keywords with different intensities
     const highIntensityKeywords = [
       'hôn', 'ôm chặt', 'vuốt ve', 'chạm', 'thân mật', 'gần gũi',
-      'quyến rũ', 'hấp dẫn', 'kích thích', 'say mê', 'mê mẩn'
+      'quyến rũ', 'hấp dẫn', 'kích thích', 'say mê', 'mê mẩn',
+      'đút', 'thâm nhập', 'xâm phạm', 'cưỡng bức', 'bạo lực tình dục'
     ];
 
     const mediumIntensityKeywords = [
       'đẹp', 'xinh', 'thu hút', 'lãng mạn', 'tình cảm', 'yêu thương',
-      'quan tâm', 'chăm sóc', 'ngọt ngào', 'dịu dàng', 'ấm áp'
+      'quan tâm', 'chăm sóc', 'ngọt ngào', 'dịu dàng', 'ấm áp',
+      'co thắt', 'run rẩy', 'thở dài', 'rên rỉ'
     ];
 
     const lowIntensityKeywords = [
       'vui vẻ', 'thích thú', 'hài lòng', 'tốt bụng', 'tử tế',
       'thú vị', 'hấp dẫn', 'tò mò', 'quan tâm'
+    ];
+
+    // Keywords for physiological responses (always count as arousal)
+    const physiologicalKeywords = [
+      'co thắt', 'run rẩy', 'thở dài', 'rên rỉ', 'thay đổi nhịp thở',
+      'tiết dịch', 'ẩm ướt', 'nóng bỏng', 'phản xạ', 'phản ứng cơ thể',
+      'cơ thể phản ứng', 'phản ứng sinh lý', 'phản xạ sinh lý',
+      'thay đổi nhiệt độ', 'co giật', 'run rẩy nhẹ'
     ];
 
     // Enhanced negative arousal keywords
@@ -427,6 +564,7 @@ OUTPUT JSON:
     let lowPositiveCount = 0;
     let highNegativeCount = 0;
     let mediumNegativeCount = 0;
+    let physiologicalCount = 0;
 
     for (const keyword of highIntensityKeywords) {
       if (lowerNarrative.includes(keyword)) highPositiveCount++;
@@ -443,14 +581,23 @@ OUTPUT JSON:
     for (const keyword of mediumNegativeKeywords) {
       if (lowerNarrative.includes(keyword)) mediumNegativeCount++;
     }
+    for (const keyword of physiologicalKeywords) {
+      if (lowerNarrative.includes(keyword)) physiologicalCount++;
+    }
 
     // Calculate base arousal change with more realistic scoring
     const totalPositive = highPositiveCount * 3 + mediumPositiveCount * 2 + lowPositiveCount * 1;
     const totalNegative = highNegativeCount * 3 + mediumNegativeCount * 2;
-
-    if (totalPositive > totalNegative) {
+    
+    // Physiological responses always count as arousal (even if unconscious) but lighter
+    const physiologicalBonus = physiologicalCount * 2; // Lighter bonus for physiological responses
+    
+    if (totalPositive > totalNegative || physiologicalCount > 0) {
       // More realistic positive scoring
       arousalChange = Math.floor(totalPositive * 2 * (arousal.personality.responsiveness / 100));
+      
+      // Add physiological bonus (always counts regardless of consciousness)
+      arousalChange += physiologicalBonus;
       
       // Adjust based on inhibition (higher inhibition = less arousal change)
       const inhibitionFactor = (100 - arousal.personality.inhibition) / 100;
@@ -460,8 +607,18 @@ OUTPUT JSON:
       const experienceFactor = (100 - arousal.personality.experience) / 100;
       arousalChange = Math.floor(arousalChange * (0.5 + experienceFactor * 0.5));
       
-      reason = 'Tương tác tích cực';
-      intensity = totalPositive >= 6 ? 'high' : totalPositive >= 3 ? 'medium' : 'low';
+      // Apply consciousness level adjustment - lighter for unconscious responses
+      if (isUnconscious) {
+        arousalChange = Math.floor(arousalChange * 0.4); // 40% for unconscious (lighter)
+        reason = 'Phản ứng sinh lý vô thức (nhẹ)';
+      } else if (isSemiConscious) {
+        arousalChange = Math.floor(arousalChange * 0.6); // 60% for semi-conscious (lighter)
+        reason = 'Phản ứng mơ màng (nhẹ)';
+      } else {
+        reason = 'Tương tác tích cực';
+      }
+      
+      intensity = (totalPositive + physiologicalCount) >= 6 ? 'high' : (totalPositive + physiologicalCount) >= 3 ? 'medium' : 'low';
       
     } else if (totalNegative > totalPositive) {
       // More realistic negative scoring
@@ -541,7 +698,8 @@ OUTPUT JSON:
     arousalChange: number,
     reason: string,
     context: string,
-    intensity: 'low' | 'medium' | 'high'
+    intensity: 'low' | 'medium' | 'high',
+    consciousnessLevel?: number
   ): void {
     if (!npc.arousal) {
       this.initializeArousalForNPC(npc);
@@ -549,14 +707,33 @@ OUTPUT JSON:
 
     if (!npc.arousal) return; // Double check after initialization
 
-    const oldLevel = npc.arousal.level;
+    // const oldLevel = npc.arousal.level;
     const arousal = npc.arousal;
     
     // Apply additional realistic adjustments
     let finalArousalChange = arousalChange;
     
+    // Xử lý đặc biệt cho arousal khi NPC mất ý thức
+    if (consciousnessLevel !== undefined && arousalChange > 0) {
+      // Hành động kích thích vẫn có tác động lên arousal dù NPC mất ý thức
+      if (consciousnessLevel <= 0) {
+        // Hoàn toàn mất ý thức - arousal vẫn tăng nhưng chậm hơn (60-80%)
+        finalArousalChange = Math.floor(arousalChange * 0.7);
+      } else if (consciousnessLevel <= 0.3) {
+        // Mất ý thức một phần (ngủ) - arousal tăng 80-90%
+        finalArousalChange = Math.floor(arousalChange * 0.85);
+      } else if (consciousnessLevel <= 0.5) {
+        // Mơ màng - arousal tăng gần như bình thường (90-95%)
+        finalArousalChange = Math.floor(arousalChange * 0.92);
+      }
+      // consciousnessLevel > 0.5: ý thức bình thường, arousal tăng bình thường
+    }
+    
     // Gradual decay over time (arousal naturally decreases)
-    const timeSinceLastChange = Date.now() - arousal.lastArousalChange.getTime();
+    const lastChangeTime = arousal.lastArousalChange instanceof Date ? 
+      arousal.lastArousalChange.getTime() : 
+      new Date(arousal.lastArousalChange).getTime();
+    const timeSinceLastChange = Date.now() - lastChangeTime;
     const hoursSinceLastChange = timeSinceLastChange / (1000 * 60 * 60);
     
     if (hoursSinceLastChange > 1 && arousal.level > 0) {
@@ -667,7 +844,6 @@ OUTPUT JSON:
       arousal.arousalHistory = arousal.arousalHistory.slice(-20);
     }
 
-    console.log(`🔥 ${npc.name} arousal: ${oldLevel} → ${arousal.level} (${finalArousalChange > 0 ? '+' : ''}${finalArousalChange}) - ${reason} [${intensity}]`);
   }
 
   // Get arousal description
@@ -921,7 +1097,6 @@ OUTPUT JSON:
   // Clear cache
   clearCache(): void {
     this.arousalCache.clear();
-    console.log('🗑️ Arousal cache cleared');
   }
 }
 

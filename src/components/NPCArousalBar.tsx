@@ -55,7 +55,7 @@ export function NPCArousalBar({ npc, contentFlags, className = '' }: NPCArousalB
             Thay đổi gần đây:
           </div>
           <div className="space-y-1 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-700">
-            {arousal.arousalHistory.slice(-3).map((event) => (
+            {arousal.arousalHistory.slice(-3).reverse().map((event) => (
               <div key={event.id} className="text-xs text-gray-300">
                 <div className="flex items-start space-x-2">
                   <span className={`px-1 py-0.5 rounded text-xs flex-shrink-0 ${

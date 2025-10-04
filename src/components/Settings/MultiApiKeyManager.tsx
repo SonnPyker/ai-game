@@ -129,7 +129,6 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
       
       if (result.success) {
         setSuccessMessage(`✅ API key hoạt động tốt! (${result.details?.duration || 'N/A'})`);
-        console.log('✅ Individual key test successful:', result.details);
       } else {
         setErrorMessage(`❌ API key không hoạt động: ${result.error || 'Unknown error'}`);
         console.error('❌ Individual key test failed:', result);
@@ -151,15 +150,12 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
     setTestingKeys({});
     setTestResults({});
     
-    console.log('🧪 Starting comprehensive API key testing...');
     const results = await geminiService.testAllApiKeys();
     setTestResults(results);
     
     const workingKeys = Object.values(results).filter(r => r.success).length;
     const totalKeys = Object.keys(results).length;
     
-    // Log detailed results
-    console.log('📊 Detailed test results:', results);
     
     if (workingKeys === totalKeys) {
       setSuccessMessage(`✅ Tất cả ${totalKeys} API keys đều hoạt động tốt!`);
@@ -192,7 +188,6 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
     setSuccessMessage('');
     
     try {
-      console.log('🔄 Starting auto-switch process...');
       const success = await geminiService.autoSwitchOnError();
       
       if (success) {
@@ -221,7 +216,6 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
     setSuccessMessage('');
     
     try {
-      console.log('🔄 Force switching to next key...');
       const success = await geminiService.forceSwitchToNextKey();
       
       if (success) {

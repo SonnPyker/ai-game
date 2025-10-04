@@ -476,7 +476,6 @@ export function WorldBuilder() {
 
     setIsGenerating(true);
     try {
-      console.log('🔄 Generating complete world...');
       const worldResult = await geminiService.generateCompleteWorld(worldData);
       
       // Parse JSON response
@@ -491,7 +490,6 @@ export function WorldBuilder() {
         }
       } catch (parseError) {
         console.error('Failed to parse world JSON:', parseError);
-        console.log('Raw response:', worldResult);
         throw new Error('Không thể phân tích kết quả từ AI. Vui lòng thử lại.');
       }
       
@@ -504,7 +502,6 @@ export function WorldBuilder() {
        
        // Save to localStorage
        localStorage.setItem('world_gen_result', JSON.stringify(worldJson));
-       console.log('✅ World data saved to localStorage with time and contentFlags:', worldTime, contentFlags);
       
       // Set the narrative opening for display
       setGeneratedWorldDescription(worldJson.narrativeOpening || 'Không có mô tả mở đầu.');
@@ -529,13 +526,11 @@ export function WorldBuilder() {
     };
     localStorage.setItem('currentWorldData', JSON.stringify(worldDataWithFlags));
     
-    console.log('✅ Content flags đã lưu trong currentWorldData:', contentFlags);
     
     // Lấy dữ liệu thế giới hoàn chỉnh từ localStorage nếu có
     const worldGenResult = localStorage.getItem('world_gen_result');
     if (worldGenResult) {
       localStorage.setItem('completeWorldData', worldGenResult);
-      console.log('✅ Complete world data saved for game use');
     }
     
     // Chuyển đến tạo nhân vật
@@ -545,7 +540,6 @@ export function WorldBuilder() {
   const handleRegenerateDescription = async () => {
     setIsGenerating(true);
     try {
-      console.log('🔄 Regenerating complete world...');
       const worldResult = await geminiService.generateCompleteWorld(worldData);
       
       // Parse JSON response
@@ -559,7 +553,6 @@ export function WorldBuilder() {
         }
       } catch (parseError) {
         console.error('Failed to parse world JSON:', parseError);
-        console.log('Raw response:', worldResult);
         throw new Error('Không thể phân tích kết quả từ AI. Vui lòng thử lại.');
       }
       
@@ -568,7 +561,6 @@ export function WorldBuilder() {
        
        // Save to localStorage
        localStorage.setItem('world_gen_result', JSON.stringify(worldJson));
-       console.log('✅ Regenerated world data saved to localStorage with contentFlags:', contentFlags);
       
       // Set the narrative opening for display
       setGeneratedWorldDescription(worldJson.narrativeOpening || 'Không có mô tả mở đầu.');

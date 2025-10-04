@@ -37,7 +37,6 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
           setStatus('success');
           onApiKeySet(true);
           setApiKey(''); // Clear input for security
-          console.log('✅ API key test successful:', testResult.details);
         } else {
           throw new Error(testResult.error || 'API key không hợp lệ hoặc không thể kết nối đến Gemini API');
         }

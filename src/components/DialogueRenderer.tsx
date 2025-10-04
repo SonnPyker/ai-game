@@ -151,7 +151,7 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
                         return (
                           <span 
                             key={partIndex}
-                            className="text-yellow-300 font-semibold bg-yellow-500/20 px-1 rounded"
+                            className="text-yellow-300 font-semibold"
                           >
                             {part.content}
                           </span>
@@ -177,7 +177,7 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
                   return (
                     <span 
                       key={partIndex}
-                      className="text-yellow-300 font-semibold bg-yellow-500/20 px-1 rounded"
+                      className="text-yellow-300 font-semibold"
                     >
                       {part.content}
                     </span>

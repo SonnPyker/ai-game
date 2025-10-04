@@ -23,6 +23,7 @@ export interface ActionLogEntry {
   endedAt: WorldTime;
   turn: number;
   impactTags: string[];
+  source: 'suggestion' | 'manual';
 }
 
 export interface ActionContext {
@@ -155,11 +156,16 @@ class ActionSuggestionService {
   }
 
   private buildSuggestionPrompt(context: ActionContext, contentFlags: ContentFlags): string {
-    const { worldData, characterData, summary, sceneState, chatHistory, worldTime } = context;
+    const { worldData, characterData, questSystem, summary, sceneState, chatHistory, worldTime } = context;
     
     const contentGuidance = this.getContentGuidance(contentFlags);
     
+    // Quest context information
+    const questContext = this.buildQuestContext(questSystem);
+    
     return `Bạn là AI trợ lý cho game RPG text-based. Hãy tạo 4 gợi ý hành động ngắn gọn (1-2 câu) cho người chơi dựa trên context hiện tại.
+
+QUAN TRỌNG: ƯU TIÊN HÀNH ĐỘNG GẦN ĐÂY CỦA NGƯỜI CHƠI - Không ép buộc vào quest nếu người chơi đang làm việc khác.
 
 CONTEXT GAME:
 - Thế giới: ${worldData?.name || 'Unknown'} - ${worldData?.coreIdea || 'No description'}
@@ -170,6 +176,8 @@ CONTEXT GAME:
 - Tóm tắt cốt truyện: ${summary?.content || 'Chưa có'}
 - Chat gần đây: ${chatHistory.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
 
+${questContext}
+
 ${contentGuidance}
 
 YÊU CẦU:
@@ -178,6 +186,8 @@ YÊU CẦU:
 3. Phù hợp với tình huống hiện tại
 4. Ngắn gọn, dễ hiểu
 5. Có thể thực hiện ngay
+6. ƯU TIÊN: Dựa trên hành động và context gần đây của người chơi
+7. Quest chỉ là tham khảo, không ép buộc - chỉ đề xuất nếu phù hợp với hướng đi hiện tại
 
 TRẢ VỀ JSON:
 {
@@ -193,6 +203,44 @@ TRẢ VỀ JSON:
     }
   ]
 }`;
+  }
+
+  private buildQuestContext(questSystem: any): string {
+    if (!questSystem) {
+      return 'QUEST SYSTEM: Chưa có quest system';
+    }
+
+    const activeMainQuests = questSystem.mainQuests?.filter((q: any) => q.status === 'active') || [];
+    const activeSideQuests = questSystem.sideQuests?.filter((q: any) => q.status === 'active') || [];
+    const completedQuests = questSystem.questHistory?.filter((q: any) => q.status === 'completed') || [];
+
+    let questInfo = `QUEST SYSTEM (THAM KHẢO - KHÔNG ÉP BUỘC):
+- Act hiện tại: ${questSystem.currentAct || 1}
+- Main quests đang active: ${activeMainQuests.length}
+- Side quests đang active: ${activeSideQuests.length}
+- Quests đã hoàn thành: ${completedQuests.length}`;
+
+    if (activeMainQuests.length > 0) {
+      questInfo += '\n\nMAIN QUESTS ACTIVE:';
+      activeMainQuests.forEach((quest: any, index: number) => {
+        questInfo += `\n${index + 1}. ${quest.title}: ${quest.description}`;
+        if (quest.objectives && quest.objectives.length > 0) {
+          questInfo += `\n   Mục tiêu: ${quest.objectives.map((obj: any) => obj.description).join(', ')}`;
+        }
+      });
+    }
+
+    if (activeSideQuests.length > 0) {
+      questInfo += '\n\nSIDE QUESTS ACTIVE:';
+      activeSideQuests.forEach((quest: any, index: number) => {
+        questInfo += `\n${index + 1}. ${quest.title}: ${quest.description}`;
+        if (quest.objectives && quest.objectives.length > 0) {
+          questInfo += `\n   Mục tiêu: ${quest.objectives.map((obj: any) => obj.description).join(', ')}`;
+        }
+      });
+    }
+
+    return questInfo;
   }
 
   private getContentGuidance(contentFlags: ContentFlags): string {
@@ -273,7 +321,7 @@ TRẢ VỀ JSON:
             summary: `Tiếp tục nhiệm vụ chính: ${nextObjective.description}`,
             pros: ['Tiến bộ cốt truyện', 'Phần thưởng kinh nghiệm'],
             cons: ['Có thể gặp nguy hiểm'],
-            durationMinutes: 30,
+            durationMinutes: 15,
             impactTags: ['quest', 'story'],
             source: 'quest'
           });
@@ -288,7 +336,7 @@ TRẢ VỀ JSON:
         summary: 'Khám phá môi trường xung quanh',
         pros: ['Tìm thấy thông tin mới', 'Có thể gặp NPC'],
         cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
-        durationMinutes: 45,
+        durationMinutes: 20,
         impactTags: ['exploration', 'discovery']
       },
       {
@@ -296,7 +344,7 @@ TRẢ VỀ JSON:
         summary: 'Dành thời gian suy nghĩ và lên kế hoạch',
         pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
         cons: ['Mất thời gian', 'Có thể bỏ lỡ cơ hội'],
-        durationMinutes: 20,
+        durationMinutes: 10,
         impactTags: ['planning', 'reflection']
       },
       {
@@ -304,7 +352,7 @@ TRẢ VỀ JSON:
         summary: 'Hỏi thăm thông tin từ NPC',
         pros: ['Thu thập thông tin', 'Xây dựng mối quan hệ'],
         cons: ['Có thể bị lừa', 'Mất tiền'],
-        durationMinutes: 60,
+        durationMinutes: 30,
         impactTags: ['social', 'information']
       }
     ];
@@ -332,7 +380,7 @@ TRẢ VỀ JSON:
     try {
       const geminiService = await this.getGeminiService();
       
-      const prompt = `Ước tính thời gian thực hiện hành động sau (tính bằng phút, tối thiểu 10 phút):
+      const prompt = `Ước tính thời gian thực hiện hành động sau (tính bằng phút, tối thiểu 5 phút, tối đa 60 phút):
 
 Hành động: "${message}"
 Context: ${JSON.stringify({
@@ -341,15 +389,15 @@ Context: ${JSON.stringify({
         characterLevel: context.characterData?.level || 1
       })}
 
-Chỉ trả về số phút (ví dụ: 30), không giải thích.`;
+Chỉ trả về số phút (ví dụ: 10), không giải thích.`;
 
       const response = await geminiService.generateContent(prompt);
       const minutes = parseInt(response.trim());
       
-      return Math.max(10, Math.min(120, isNaN(minutes) ? 30 : minutes));
+      return Math.max(5, Math.min(60, isNaN(minutes) ? 10 : minutes));
     } catch (error) {
       console.error('Error estimating action duration:', error);
-      return 30; // Default 30 phút
+      return 10; // Default 10 phút
     }
   }
 

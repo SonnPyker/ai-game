@@ -187,10 +187,34 @@ class NPCRelationshipService {
     }
   }
 
-  updateRelationshipLevel(npcId: string, change: number): void {
+  updateRelationshipLevel(npcId: string, change: number, consciousnessLevel?: number): void {
     const relationship = this.relationships.get(npcId);
     if (relationship) {
-      relationship.relationshipLevel = Math.max(-100, Math.min(100, relationship.relationshipLevel + change));
+      let finalChange = change;
+      
+      // Áp dụng hệ số giảm tác động dựa trên mức độ ý thức
+      if (consciousnessLevel !== undefined) {
+        if (consciousnessLevel <= 0) {
+          // Hoàn toàn mất ý thức - giảm tác động xuống 10-20%
+          finalChange = change * 0.1;
+        } else if (consciousnessLevel <= 0.3) {
+          // Mất ý thức một phần (ngủ) - giảm tác động xuống 30-50%
+          finalChange = change * 0.3;
+        } else if (consciousnessLevel <= 0.5) {
+          // Mơ màng - giảm tác động xuống 50-70%
+          finalChange = change * 0.5;
+        }
+        // consciousnessLevel > 0.5: ý thức bình thường, không giảm tác động
+      }
+      
+      // Chỉ áp dụng giảm tác động cho hành động tiêu cực
+      if (finalChange < 0) {
+        relationship.relationshipLevel = Math.max(-100, Math.min(100, relationship.relationshipLevel + finalChange));
+      } else {
+        // Hành động tích cực vẫn có tác động bình thường
+        relationship.relationshipLevel = Math.max(-100, Math.min(100, relationship.relationshipLevel + change));
+      }
+      
       relationship.lastInteraction = new Date();
       relationship.totalInteractions++;
       this.saveToStorage();
@@ -218,10 +242,8 @@ class NPCRelationshipService {
       });
       
       this.saveToStorage();
-      console.log(`✅ Removed NPC relationship: ${npcId}`);
       return true;
     }
-    console.log(`❌ NPC relationship not found: ${npcId}`);
     return false;
   }
 
@@ -247,17 +269,14 @@ class NPCRelationshipService {
     );
 
     if (mentionedNPCs.length === 0) {
-      console.log('📝 No NPCs mentioned in narrative, skipping analysis');
       return;
     }
 
     // OPTIMIZATION: Batch analysis for multiple NPCs
     if (mentionedNPCs.length > 1) {
-      console.log(`🚀 Batch analyzing ${mentionedNPCs.length} NPCs for better performance`);
       await this.batchAnalyzeNPCInteractions(narrative, mentionedNPCs, additionalContext);
     } else {
       // Single NPC - use optimized single analysis
-      console.log(`⚡ Single NPC analysis for ${mentionedNPCs[0].name}`);
       await this.analyzeSingleNPCInteraction(narrative, mentionedNPCs[0], additionalContext);
     }
 
@@ -279,7 +298,6 @@ class NPCRelationshipService {
       const cachedResult = this.analysisCache.get(cacheKey);
       
       if (cachedResult) {
-        console.log('⚡ Using cached analysis result for better performance');
         this.applyCachedResults(npcs, cachedResult, narrative, additionalContext);
         return;
       }
@@ -344,8 +362,6 @@ OUTPUT JSON:
       const responseText = await geminiService.generateContent(prompt);
       const result = this.parseJsonResponse(responseText, { npcs: [] });
 
-      console.log(`🤖 Batch AI Analysis completed for ${result.npcs?.length || 0} NPCs`);
-
       // Cache the result for future use
       this.cacheAnalysisResult(cacheKey, result);
 
@@ -386,21 +402,27 @@ OUTPUT JSON:
       this.applyNPCAnalysisResult(npc, sentiment, narrative, additionalContext);
       
       // Process arousal if available and adult content is enabled
+      
       if (sentiment.arousalChange !== undefined && additionalContext?.contentFlags?.adult_enabled && 
-          additionalContext.contentFlags.adult_intensity === 'direct') {
+          (additionalContext.contentFlags.adult_intensity === 'direct' || 
+           additionalContext.contentFlags.adult_intensity === 'direct_safe')) {
+        
         // Initialize arousal if not exists
         if (!npc.arousal) {
           npcArousalService.initializeArousalForNPC(npc);
         }
         
-        // Update arousal
+        // Update arousal with consciousness level consideration
         if (sentiment.arousalChange !== 0) {
+          const consciousnessLevel = this.detectConsciousnessLevel(narrative);
+          
           npcArousalService.updateNPCArousal(
             npc,
             sentiment.arousalChange,
             sentiment.arousalReason || 'Unknown reason',
             sentiment.arousalContext || 'General interaction',
-            sentiment.arousalIntensity || 'low'
+            sentiment.arousalIntensity || 'low',
+            consciousnessLevel
           );
         }
       }
@@ -409,13 +431,51 @@ OUTPUT JSON:
     }
   }
 
+  // Detect consciousness level from narrative
+  private detectConsciousnessLevel(narrative: string): number {
+    const lowerNarrative = narrative.toLowerCase();
+    
+    // Hoàn toàn mất ý thức
+    if (lowerNarrative.includes('bất tỉnh') || lowerNarrative.includes('unconscious') || 
+        lowerNarrative.includes('ngất') || lowerNarrative.includes('fainted') ||
+        lowerNarrative.includes('ngủ sâu') || lowerNarrative.includes('deep sleep') ||
+        lowerNarrative.includes('chuốc thuốc') || lowerNarrative.includes('drugged') ||
+        lowerNarrative.includes('thuốc ngủ') || lowerNarrative.includes('sleeping potion') ||
+        lowerNarrative.includes('vô thức') || lowerNarrative.includes('không hay biết') ||
+        lowerNarrative.includes('chìm trong giấc ngủ') || lowerNarrative.includes('ngủ say') ||
+        lowerNarrative.includes('không tỉnh') || lowerNarrative.includes('bất động')) {
+      return 0;
+    }
+    
+    // Mất ý thức một phần (ngủ)
+    if (lowerNarrative.includes('ngủ') || lowerNarrative.includes('sleeping') ||
+        lowerNarrative.includes('asleep') || lowerNarrative.includes('đang ngủ') ||
+        lowerNarrative.includes('giấc ngủ') || lowerNarrative.includes('ngủ say')) {
+      return 0.3;
+    }
+    
+    // Mơ màng
+    if (lowerNarrative.includes('mơ màng') || lowerNarrative.includes('drowsy') ||
+        lowerNarrative.includes('semi-conscious') || lowerNarrative.includes('nửa tỉnh nửa mê') ||
+        lowerNarrative.includes('say') || lowerNarrative.includes('drunk') ||
+        lowerNarrative.includes('intoxicated') || lowerNarrative.includes('lơ mơ')) {
+      return 0.5;
+    }
+    
+    // Ý thức bình thường
+    return 1.0;
+  }
+
   // NEW: Apply analysis result to NPC
   private applyNPCAnalysisResult(npc: any, analysis: any, narrative: string, additionalContext?: any): void {
     let hasChanges = false;
 
-    // Apply relationship changes
+    // Detect consciousness level from narrative
+    const consciousnessLevel = this.detectConsciousnessLevel(narrative);
+
+    // Apply relationship changes with consciousness consideration
     if (analysis.relationshipChange && analysis.relationshipChange !== 0) {
-      this.updateRelationshipLevel(npc.id, analysis.relationshipChange);
+      this.updateRelationshipLevel(npc.id, analysis.relationshipChange, consciousnessLevel);
       hasChanges = true;
     }
     
@@ -441,10 +501,9 @@ OUTPUT JSON:
     // Auto-fix status based on current relationship level
     const currentLevelStatus = this.determineStatusByRelationshipLevel(npc.relationshipLevel);
     if (currentLevelStatus && currentLevelStatus !== npc.status) {
-      const oldStatus = npc.status;
+      // const oldStatus = npc.status;
       npc.status = currentLevelStatus as any;
       hasChanges = true;
-      console.log(`🔧 Auto-fixed ${npc.name} status: '${oldStatus}' → '${currentLevelStatus}' (Level: ${npc.relationshipLevel})`);
     }
 
     // Add contextual notes
@@ -495,7 +554,6 @@ OUTPUT JSON:
     }
     
     this.analysisCache.set(key, result);
-    console.log(`💾 Cached analysis result (${this.analysisCache.size}/${this.CACHE_SIZE_LIMIT})`);
   }
 
   private applyCachedResults(npcs: any[], cachedResult: any, narrative: string, additionalContext?: any): void {
@@ -527,7 +585,6 @@ OUTPUT JSON:
   // Clear cache when needed
   public clearAnalysisCache(): void {
     this.analysisCache.clear();
-    console.log('🗑️ Analysis cache cleared');
   }
 
   // Legacy method for backward compatibility
@@ -537,19 +594,14 @@ OUTPUT JSON:
 
   // Force update all NPC statuses based on current relationship levels
   fixAllNPCStatuses(): void {
-    console.log('🔧 Fixing all NPC statuses based on current relationship levels...');
-    
     this.relationships.forEach(npc => {
       const correctStatus = this.determineStatusByRelationshipLevel(npc.relationshipLevel);
       if (correctStatus && correctStatus !== npc.status) {
-        const oldStatus = npc.status;
         npc.status = correctStatus as any;
-        console.log(`🔧 Fixed ${npc.name}: '${oldStatus}' → '${correctStatus}' (Level: ${npc.relationshipLevel})`);
       }
     });
     
     this.saveToStorage();
-    console.log('✅ All NPC statuses have been fixed!');
   }
 
   private async analyzeNPCInteractionSentiment(
@@ -629,7 +681,9 @@ OUTPUT JSON:
 
     // Check if arousal analysis should be included
     const shouldIncludeArousal = additionalContext?.contentFlags?.adult_enabled && 
-      additionalContext.contentFlags.adult_intensity === 'direct';
+      (additionalContext.contentFlags.adult_intensity === 'direct' || 
+       additionalContext.contentFlags.adult_intensity === 'direct_safe');
+    
 
     const prompt = `Bạn là AI phân tích tác động của hành động lên mối quan hệ NPC với tư duy THỰC TẾ và NGHIÊM NGẶT.
 
@@ -746,7 +800,6 @@ OUTPUT JSON:
       })
     });
 
-    console.log(`🤖 AI Analysis for ${npcName}: ${result.reasoning}`);
     
     return {
       relationshipChange: Math.max(-25, Math.min(25, result.relationshipChange || 0)),
@@ -1245,24 +1298,19 @@ OUTPUT JSON:
     // Kiểm tra từ khóa nhóm (sử dụng shared constant)
     for (const keyword of this.GROUP_KEYWORDS) {
       if (lowerName.includes(keyword)) {
-        console.log(`❌ Rejected group NPC: "${name}" (contains "${keyword}")`);
         return false;
       }
     }
     
     // Kiểm tra tên quá ngắn hoặc quá chung chung
     if (name.length < 3) {
-      console.log(`❌ Rejected short NPC name: "${name}"`);
       return false;
     }
-    
+
     // Kiểm tra tên có chứa số (trừ tên có số thứ tự hợp lệ)
     if (/\d+/.test(name) && !/^(thứ|số|đầu|cuối)/.test(lowerName)) {
-      console.log(`❌ Rejected numbered NPC name: "${name}"`);
       return false;
     }
-    
-    console.log(`✅ Accepted individual NPC: "${name}"`);
     return true;
   }
 
@@ -1520,7 +1568,9 @@ OUTPUT JSON:
     // Extract location context
     const locationMatch = narrative.match(/tại\s+([^,\.]+)/i) || narrative.match(/ở\s+([^,\.]+)/i);
     if (locationMatch) {
-      notes.push(`Vị trí ${locationMatch[1].trim()}`);
+      const location = locationMatch[1].trim();
+      const wrappedLocation = this.wrapLocationNames(location);
+      notes.push(`Vị trí ${wrappedLocation}`);
     }
     
     return notes;
@@ -1533,7 +1583,7 @@ OUTPUT JSON:
     // Scene context reasons
     if (context?.sceneState) {
       const scene = context.sceneState;
-      if (scene.location) reasons.push(`tại ${scene.location}`);
+      if (scene.location) reasons.push(`tại /${scene.location}/`);
       if (scene.timeOfDay) reasons.push(`vào ${scene.timeOfDay}`);
       if (scene.weather) reasons.push(`trong thời tiết ${scene.weather}`);
       if (scene.mood) reasons.push(`trong không khí ${scene.mood}`);
@@ -1554,13 +1604,65 @@ OUTPUT JSON:
       if (pattern.test(narrative)) {
         const match = narrative.match(extract);
         if (match) {
-          reasons.push(match[1].trim());
+          const contextText = match[1].trim();
+          // Check if it's a location or proper name and wrap with /.../
+          const wrappedContext = this.wrapLocationNames(contextText);
+          reasons.push(wrappedContext);
           break;
         }
       }
     }
     
     return reasons.length > 0 ? reasons.join(', ') : 'theo tình huống hiện tại';
+  }
+
+  // Helper function to wrap location names and proper nouns with /.../
+  private wrapLocationNames(text: string): string {
+    // Common location indicators
+    const locationPatterns = [
+      // Vietnamese location patterns
+      /(thành phố|thị trấn|làng|xã|phường|quận|huyện|tỉnh|tỉnh thành|thủ đô|kinh đô)\s+([A-Z][^,\.\s]+(?:\s+[A-Z][^,\.\s]+)*)/gi,
+      /(cung điện|lâu đài|tháp|thành|pháo đài|thành trì|thành lũy|thành quách)\s+([A-Z][^,\.\s]+(?:\s+[A-Z][^,\.\s]+)*)/gi,
+      /(rừng|núi|sông|hồ|biển|đảo|bán đảo|thung lũng|cao nguyên|đồng bằng)\s+([A-Z][^,\.\s]+(?:\s+[A-Z][^,\.\s]+)*)/gi,
+      /(đền|chùa|miếu|nhà thờ|thánh đường|tu viện|thiền viện)\s+([A-Z][^,\.\s]+(?:\s+[A-Z][^,\.\s]+)*)/gi,
+      /(quán|tiệm|cửa hàng|chợ|bến|ga|sân bay|bến cảng)\s+([A-Z][^,\.\s]+(?:\s+[A-Z][^,\.\s]+)*)/gi,
+      // Generic proper noun patterns
+      /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:của|thuộc|trong|tại|ở|từ|đến|về)/gi,
+      /(?:của|thuộc|trong|tại|ở|từ|đến|về)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/gi
+    ];
+
+    let result = text;
+    
+    for (const pattern of locationPatterns) {
+      result = result.replace(pattern, (match, prefix, name) => {
+        if (prefix && name) {
+          return `${prefix} /${name}/`;
+        } else if (name) {
+          return `/${name}/`;
+        }
+        return match;
+      });
+    }
+
+    // Also wrap standalone proper nouns that look like locations
+    const standalonePattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g;
+    result = result.replace(standalonePattern, (match) => {
+      // Skip common words that shouldn't be wrapped
+      const commonWords = ['Tôi', 'Bạn', 'Chúng', 'Họ', 'Nó', 'Cô', 'Anh', 'Chị', 'Em', 'Thầy', 'Cô', 'Bác', 'Chú', 'Cậu', 'Dì', 'Mợ'];
+      if (commonWords.includes(match)) {
+        return match;
+      }
+      
+      // Check if it's already wrapped
+      if (match.startsWith('/') && match.endsWith('/')) {
+        return match;
+      }
+      
+      // Wrap with /.../
+      return `/${match}/`;
+    });
+
+    return result;
   }
 
   // Extract notes from chat history patterns
@@ -1760,7 +1862,8 @@ OUTPUT JSON:
       const location = typeof currentLocation === 'string' 
         ? currentLocation 
         : ((currentLocation as any).name || JSON.stringify(currentLocation));
-      notes.push(`Gặp tại ${location}`);
+      const wrappedLocation = this.wrapLocationNames(location);
+      notes.push(`Gặp tại ${wrappedLocation}`);
     }
     
     // State-based notes with more context
@@ -1836,7 +1939,8 @@ OUTPUT JSON:
     
     // Faction or allegiance
     if (npcData.faction && npcData.faction !== 'neutral') {
-      notes.push(`Phe phái: ${npcData.faction}`);
+      const wrappedFaction = this.wrapLocationNames(npcData.faction);
+      notes.push(`Phe phái: ${wrappedFaction}`);
     }
     
     return notes.filter(note => note && note.trim().length > 0);
@@ -2109,6 +2213,60 @@ OUTPUT JSON:
           { pattern: /ma quỷ|ghost|spirit/i, reason: 'do ma quỷ' },
           { pattern: /nguy hiểm|danger|threat/i, reason: 'do nguy hiểm' }
         ]
+      },
+      // Trạng thái mất ý thức - ảnh hưởng đến phản ứng với hành động
+      { 
+        pattern: /ngủ sâu|deep sleep|unconscious|bất tỉnh|ngất|fainted/i, 
+        baseStatus: 'Mất ý thức',
+        severity: 'severe' as const, 
+        effects: { 
+          statModifiers: { 
+            intelligence: -5, wisdom: -5, charisma: -5, 
+            strength: -2, agility: -2, constitution: -2, dexterity: -2 
+          },
+          consciousnessLevel: 0 // Hoàn toàn mất ý thức
+        },
+        contextPatterns: [
+          { pattern: /ngủ sâu|deep sleep/i, reason: 'do ngủ sâu' },
+          { pattern: /bất tỉnh|unconscious|fainted/i, reason: 'do bất tỉnh' },
+          { pattern: /chuốc thuốc|drugged|sedated/i, reason: 'do bị chuốc thuốc' },
+          { pattern: /thuốc ngủ|sleeping potion/i, reason: 'do thuốc ngủ' },
+          { pattern: /bị đánh|knocked out|stunned/i, reason: 'do bị đánh' }
+        ]
+      },
+      { 
+        pattern: /ngủ|sleeping|asleep/i, 
+        baseStatus: 'Đang ngủ',
+        severity: 'moderate' as const, 
+        effects: { 
+          statModifiers: { 
+            intelligence: -3, wisdom: -3, charisma: -2, 
+            strength: 0, agility: -1, constitution: 0, dexterity: -1 
+          },
+          consciousnessLevel: 0.3 // Mất ý thức một phần
+        },
+        contextPatterns: [
+          { pattern: /ngủ thường|normal sleep/i, reason: 'do ngủ thường' },
+          { pattern: /mệt mỏi|tired|exhausted/i, reason: 'do mệt mỏi' },
+          { pattern: /buồn ngủ|sleepy|drowsy/i, reason: 'do buồn ngủ' }
+        ]
+      },
+      { 
+        pattern: /mơ màng|drowsy|semi-conscious|nửa tỉnh nửa mê/i, 
+        baseStatus: 'Mơ màng',
+        severity: 'moderate' as const, 
+        effects: { 
+          statModifiers: { 
+            intelligence: -2, wisdom: -2, charisma: -1, 
+            strength: 0, agility: -1, constitution: 0, dexterity: -1 
+          },
+          consciousnessLevel: 0.5 // Mất ý thức một phần
+        },
+        contextPatterns: [
+          { pattern: /thuốc|drug|potion/i, reason: 'do tác dụng thuốc' },
+          { pattern: /mệt|tired|exhausted/i, reason: 'do mệt mỏi' },
+          { pattern: /say|drunk|intoxicated/i, reason: 'do say rượu' }
+        ]
       }
     ];
 
@@ -2166,7 +2324,6 @@ OUTPUT JSON:
     for (const [id, relationship] of this.relationships) {
       // Sử dụng lại logic validation thay vì duplicate code
       if (!this.isValidIndividualNPC(relationship.name)) {
-        console.log(`🗑️ Removing invalid NPC: "${relationship.name}"`);
           toRemove.push(id);
       }
     }
@@ -2178,7 +2335,6 @@ OUTPUT JSON:
     
     if (toRemove.length > 0) {
       this.saveToStorage();
-      console.log(`✅ Removed ${toRemove.length} invalid NPCs`);
     }
   }
 
@@ -2231,8 +2387,6 @@ OUTPUT JSON:
     // Cập nhật relationships
     this.relationships = mergedRelationships;
     this.saveToStorage();
-    
-    console.log(`✅ Merged duplicate NPCs: ${allRelationships.length} -> ${mergedRelationships.size}`);
   }
 
   // Export data for save games
@@ -2265,7 +2419,6 @@ OUTPUT JSON:
     
     // Save to localStorage for persistence
     this.saveToStorage();
-    console.log(`✅ Imported ${Object.keys(data.relationships || {}).length} NPC relationships and ${(data.encounters || []).length} encounters from save game`);
   }
 
   // Clear all data (for testing or reset)
@@ -2280,7 +2433,6 @@ OUTPUT JSON:
     localStorage.removeItem('faction_reputations');
     localStorage.removeItem('action_suggestions');
     localStorage.removeItem('action_log');
-    console.log('🗑️ Cleared all NPC relationship data, encounters, faction data, summary backup, action suggestions, and action log JSON files');
   }
 
   // Get faction reputation (from stored value + NPC contributions)
@@ -2318,10 +2470,18 @@ OUTPUT JSON:
     window.dispatchEvent(event);
   }
 
+  // Helper function to normalize faction names (remove /.../ wrapper)
+  private normalizeFactionName(factionName: string): string {
+    if (!factionName) return '';
+    // Remove /.../ wrapper if present
+    return factionName.replace(/^\/|\/$/g, '');
+  }
+
   // Calculate NPC contribution to faction reputation
   private calculateNPCContribution(factionName: string): number {
+    const normalizedFactionName = this.normalizeFactionName(factionName);
     const factionMembers = Array.from(this.relationships.values())
-      .filter(npc => npc.faction === factionName);
+      .filter(npc => npc.faction && this.normalizeFactionName(npc.faction) === normalizedFactionName);
     
     return factionMembers.reduce((sum, npc) => sum + npc.reputation, 0);
   }
@@ -2358,8 +2518,9 @@ OUTPUT JSON:
     averageReputation: number;
     members: Array<{ name: string; reputation: number; relationshipLevel: number }>;
   } {
+    const normalizedFactionName = this.normalizeFactionName(factionName);
     const factionMembers = Array.from(this.relationships.values())
-      .filter(npc => npc.faction === factionName);
+      .filter(npc => npc.faction && this.normalizeFactionName(npc.faction) === normalizedFactionName);
     
     const totalReputation = this.getFactionReputation(factionName);
     
@@ -2396,11 +2557,14 @@ OUTPUT JSON:
     averageReputation: number;
     members: Array<{ name: string; reputation: number; relationshipLevel: number }>;
   }> {
-    // Get all unique faction names from NPCs
+    // Get all unique faction names from NPCs (normalized)
     const factionNames = new Set<string>();
     this.relationships.forEach(npc => {
       if (npc.faction) {
-        factionNames.add(npc.faction);
+        const normalizedFaction = this.normalizeFactionName(npc.faction);
+        if (normalizedFaction) {
+          factionNames.add(normalizedFaction);
+        }
       }
     });
 

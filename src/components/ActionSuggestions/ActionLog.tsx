@@ -19,8 +19,6 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
     }
   }, [entries]);
 
-  // Debug log
-  console.log('🔍 ActionLog render - isOpen:', isOpen, 'entries:', entries?.length || 0, 'entries data:', entries);
 
   if (!isOpen) return null;
 

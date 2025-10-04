@@ -49,6 +49,42 @@ export function QuestTracker({
   void onQuestAccept;
   void onQuestDecline;
   
+  // Function to highlight names and locations with /.../ syntax
+  const highlightNames = (text: string) => {
+    const nameRegex = /\/([^\/]+)\//g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = nameRegex.exec(text)) !== null) {
+      // Add text before the name
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'text',
+          content: text.slice(lastIndex, match.index)
+        });
+      }
+
+      // Add highlighted name
+      parts.push({
+        type: 'highlight',
+        content: match[1]
+      });
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push({
+        type: 'text',
+        content: text.slice(lastIndex)
+      });
+    }
+
+    return parts;
+  };
+  
   // State để quản lý trạng thái collapse của từng quest
   const [collapsedQuests, setCollapsedQuests] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'main' | 'side' | 'faction'>('main');
@@ -89,7 +125,7 @@ export function QuestTracker({
     // Check reputation before creating quest
     if (!checkFactionReputation(factionName)) {
       const factionReputation = npcRelationshipService.calculateFactionReputation(factionName);
-      alert(`Không thể tạo quest phe phái!\n\nDanh tiếng hiện tại: ${factionReputation.reputation}/100\nCần đạt ít nhất 100 điểm danh tiếng để tạo quest phe phái.`);
+      alert(`Không thể tạo quest phe phái!\n\nDanh tiếng hiện tại: ${Math.round(factionReputation.reputation)}/100\nCần đạt ít nhất 100 điểm danh tiếng để tạo quest phe phái.`);
       return;
     }
     
@@ -204,7 +240,25 @@ export function QuestTracker({
               className="overflow-hidden"
             >
               {/* Quest Description */}
-              <p className="text-sm text-gray-300 mb-3">{quest.description}</p>
+              <p className="text-sm text-gray-300 mb-3">
+                {(() => {
+                  const highlightedParts = highlightNames(quest.description);
+                  return highlightedParts.map((part, partIndex) => {
+                    if (part.type === 'highlight') {
+                      return (
+                        <span 
+                          key={partIndex}
+                          className="text-yellow-300 font-semibold"
+                        >
+                          {part.content}
+                        </span>
+                      );
+                    } else {
+                      return part.content;
+                    }
+                  });
+                })()}
+              </p>
 
         {/* Progress Bar - Chỉ hiển thị khi quest không bị khóa và không bị từ chối */}
         {!isLocked && !isDeclined && (
@@ -236,7 +290,23 @@ export function QuestTracker({
                   <span className={`text-sm ${
                     objective.completed ? 'text-green-400 line-through' : 'text-white'
                   }`}>
-                    {objective.description}
+                    {(() => {
+                      const highlightedParts = highlightNames(objective.description);
+                      return highlightedParts.map((part, partIndex) => {
+                        if (part.type === 'highlight') {
+                          return (
+                            <span 
+                              key={partIndex}
+                              className="text-yellow-300 font-semibold"
+                            >
+                              {part.content}
+                            </span>
+                          );
+                        } else {
+                          return part.content;
+                        }
+                      });
+                    })()}
                   </span>
                   {objective.completed && (
                     <CheckCircle className="w-3 h-3 text-green-400" />
@@ -283,7 +353,25 @@ export function QuestTracker({
                   }`}
                 >
                   <Gift className="w-3 h-3" />
-                  <span>{reward.description}</span>
+                  <span>
+                    {(() => {
+                      const highlightedParts = highlightNames(reward.description);
+                      return highlightedParts.map((part, partIndex) => {
+                        if (part.type === 'highlight') {
+                          return (
+                            <span 
+                              key={partIndex}
+                              className="text-yellow-300 font-semibold"
+                            >
+                              {part.content}
+                            </span>
+                          );
+                        } else {
+                          return part.content;
+                        }
+                      });
+                    })()}
+                  </span>
                   {!reward.claimed && isCompleted && (
                     <button
                       onClick={() => onClaimReward(quest.id, reward.type)}
@@ -460,7 +548,7 @@ export function QuestTracker({
                            <div className={`text-xs ${
                              canCreateQuest ? 'text-green-400' : 'text-red-400'
                            }`}>
-                             Danh tiếng: {factionReputation.reputation}/100
+                             Danh tiếng: {Math.round(factionReputation.reputation)}/100
                              {!canCreateQuest && ' (Chưa đủ)'}
                            </div>
                          </div>
@@ -562,7 +650,7 @@ export function QuestTracker({
                            <div className={`text-xs ${
                              canCreateQuest ? 'text-green-400' : 'text-red-400'
                            }`}>
-                             Danh tiếng: {factionReputation.reputation}/100
+                             Danh tiếng: {Math.round(factionReputation.reputation)}/100
                              {!canCreateQuest && ' (Chưa đủ)'}
                            </div>
                          </div>
