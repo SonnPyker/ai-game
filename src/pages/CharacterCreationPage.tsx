@@ -314,22 +314,6 @@ export function CharacterCreationPage() {
     // Convert to Character type and save
     const character: Character = {
       name: characterData.name,
-      class: { 
-        id: 'adventurer',
-        name: 'Phiêu lưu gia',
-        description: 'Một nhân vật phiêu lưu đa năng',
-        icon: '⚔️',
-        primaryStats: ['strength', 'agility'],
-        abilities: ['Combat', 'Exploration']
-      },
-      race: { 
-        id: 'human',
-        name: 'Con người',
-        description: 'Chủng tộc con người cân bằng',
-        icon: '👤',
-        racialBonuses: {},
-        specialAbilities: ['Adaptability']
-      },
       gender: characterData.gender,
       backstory: characterData.backstory,
       // Add custom fields

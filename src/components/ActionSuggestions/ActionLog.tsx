@@ -110,24 +110,6 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                 </button>
               ))}
             </div>
-            
-            {/* Collapse/Expand All */}
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => {
-                  if (collapsedEntries.size === filteredEntries.length) {
-                    // All collapsed, expand all
-                    setCollapsedEntries(new Set());
-                  } else {
-                    // Some or none collapsed, collapse all
-                    setCollapsedEntries(new Set(filteredEntries.map(entry => entry.id)));
-                  }
-                }}
-                className="px-3 py-1 rounded-lg text-sm bg-gray-700/30 text-gray-300 hover:bg-gray-600/30 transition-colors"
-              >
-                {collapsedEntries.size === filteredEntries.length ? 'Mở tất cả' : 'Thu tất cả'}
-              </button>
-            </div>
           </div>
         </div>
 

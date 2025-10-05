@@ -29,7 +29,7 @@ Hệ thống quan hệ NPC là một cơ chế phức tạp theo dõi mối quan
 ### 4. **Notes (Ghi Chú)**
 - Lưu trữ lịch sử tương tác quan trọng
 - Tự động tạo dựa trên context
-- Tối đa 15 notes mỗi NPC
+- Tối đa 5 notes mỗi NPC
 - Chỉ lưu những ghi chú có ý nghĩa
 
 ### 5. **Tags và Metadata**

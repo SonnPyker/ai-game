@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, AlertCircle, Play, RotateCcw, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History } from 'lucide-react';
+import { Send, Loader2, AlertCircle, Play, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History, Moon } from 'lucide-react';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
-import { WorldTime, SCCContext, ChatMessage, ContentFlags } from '../types';
+import { WorldTime, SCCContext, ChatMessage, ContentFlags, PlayerLocation } from '../types';
 import { buildContextForAI } from '../lib/context';
 import { SaveGame } from '../types/saveGame';
 import { useQuestSystem } from '../hooks/useQuestSystem';
@@ -11,6 +11,7 @@ import { DialogueRenderer } from '../components/DialogueRenderer';
 import { detectPlayerDialogue, enhanceDialogueForAI } from '../utils/dialogueProcessor';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
 import { actionSuggestionService, SuggestedAction, ActionLogEntry } from '../services/actionSuggestionService';
+import { locationService } from '../services/locationService';
 
 // Lazy load các services lớn để giảm kích thước bundle chính
 let geminiService: any;
@@ -56,6 +57,7 @@ interface GameState {
   showSummaryBanner: boolean;
   lastSummaryTurn: number;
   contentFlags: ContentFlags | null;
+  playerLocation: PlayerLocation | null;
 }
 
 export function GamePage() {
@@ -98,6 +100,15 @@ export function GamePage() {
   const [backupSuggestions, setBackupSuggestions] = useState<SuggestedAction[]>([]);
   const [userInteractedWithSuggestions, setUserInteractedWithSuggestions] = useState(false);
   
+  // Skip time modal state
+  const [showSkipTimeModal, setShowSkipTimeModal] = useState(false);
+  const [skipHours, setSkipHours] = useState(2);
+  
+  // Helper function to generate random duration for suggestions (10-120 minutes)
+  const generateSuggestionDuration = (): number => {
+    return Math.floor(Math.random() * 111) + 10; // 10-120 phút
+  };
+  
   // Responsive design context
   const { shouldUseMobileLayout } = useResponsiveContext();
   const [gameState, setGameState] = useState<GameState>({
@@ -109,7 +120,8 @@ export function GamePage() {
     sccContext: null,
     showSummaryBanner: false,
     lastSummaryTurn: 0,
-    contentFlags: null
+    contentFlags: null,
+    playerLocation: null
   });
 
   // Quest system hook
@@ -300,7 +312,7 @@ export function GamePage() {
           summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
           pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
           cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
-          durationMinutes: 15,
+          durationMinutes: generateSuggestionDuration(),
           impactTags: ['exploration'],
           source: 'heuristic' as const
         },
@@ -310,7 +322,7 @@ export function GamePage() {
           summary: 'Dành thời gian để lên kế hoạch tiếp theo',
           pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
           cons: ['Mất thời gian'],
-          durationMinutes: 20,
+          durationMinutes: generateSuggestionDuration(),
           impactTags: ['planning'],
           source: 'heuristic' as const
         },
@@ -320,7 +332,7 @@ export function GamePage() {
           summary: 'Hỏi thăm thông tin từ NPC',
           pros: ['Thu thập thông tin', 'Xây dựng mối quan hệ'],
           cons: ['Có thể bị lừa', 'Mất tiền'],
-          durationMinutes: 60,
+          durationMinutes: generateSuggestionDuration(),
           impactTags: ['social'],
           source: 'heuristic' as const
         },
@@ -330,7 +342,7 @@ export function GamePage() {
           summary: 'Thăm dò những nơi có thể có rủi ro',
           pros: ['Phát hiện mối nguy', 'Chuẩn bị tốt hơn'],
           cons: ['Rất nguy hiểm', 'Có thể bị thương'],
-          durationMinutes: 45,
+          durationMinutes: generateSuggestionDuration(),
           impactTags: ['risk'],
           source: 'heuristic' as const
         }
@@ -383,7 +395,7 @@ export function GamePage() {
           summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
           pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
           cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
-          durationMinutes: 15,
+          durationMinutes: generateSuggestionDuration(),
           impactTags: ['exploration'],
           source: 'heuristic' as const
         },
@@ -393,7 +405,7 @@ export function GamePage() {
           summary: 'Dành thời gian để lên kế hoạch tiếp theo',
           pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
           cons: ['Mất thời gian'],
-          durationMinutes: 20,
+          durationMinutes: generateSuggestionDuration(),
           impactTags: ['planning'],
           source: 'heuristic' as const
         }
@@ -530,6 +542,15 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Kiểm tra narrative không chứa lỗi rõ ràng
       const narrative = response.narrative.toLowerCase();
       
+      // KIỂM TRA ĐẶC BIỆT: Thông báo lỗi cụ thể từ generateTurnResponse
+      if (narrative.includes('xin lỗi, có lỗi xảy ra khi xử lý phản hồi từ ai')) {
+        console.error('🚫 PHÁT HIỆN THÔNG BÁO LỖI CỤ THỂ - KHÔNG ĐƯỢC CẬP NHẬT BẤT KỲ THỨ GÌ:', {
+          narrative: response.narrative,
+          message: 'Đây là thông báo lỗi từ generateTurnResponse - tuyệt đối không được update state'
+        });
+        return { isValid: false, error: 'PHÁT HIỆN THÔNG BÁO LỖI CỤ THỂ - KHÔNG ĐƯỢC CẬP NHẬT BẤT KỲ STATE NÀO' };
+      }
+      
       // Kiểm tra các pattern lỗi cụ thể hơn
       const errorPatterns = [
         'error:',
@@ -547,7 +568,13 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         'sorry, i cannot',
         'xin lỗi, tôi không thể',
         'i apologize, but',
-        'tôi xin lỗi, nhưng'
+        'tôi xin lỗi, nhưng',
+        // Thêm pattern cho thông báo lỗi cụ thể từ generateTurnResponse
+        'xin lỗi, có lỗi xảy ra khi xử lý phản hồi từ ai',
+        'có lỗi xảy ra khi xử lý phản hồi từ ai',
+        'vui lòng thử lại',
+        'không thể tạo phản hồi',
+        'lỗi khi tạo turn response'
       ];
       
       const hasErrorPattern = errorPatterns.some(pattern => narrative.includes(pattern));
@@ -556,7 +583,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           narrative: response.narrative,
           detectedPatterns: errorPatterns.filter(pattern => narrative.includes(pattern))
         });
-        return { isValid: false, error: 'AI response chứa thông báo lỗi' };
+        return { isValid: false, error: 'AI response chứa thông báo lỗi - không được phép cập nhật bất kỳ state nào' };
       }
 
       // Kiểm tra sceneState
@@ -640,11 +667,25 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Generate scenario skeleton
       const scenarioSkeleton = await geminiService.generateScenarioSkeleton(worldData, characterData);
       
-      // Generate opening narrative
+      // Lấy thông tin quest để nhắc đến trong opening message
+      let questInfo = null;
+      if (questSystem.mainQuests.length > 0) {
+        const firstMainQuest = questSystem.mainQuests[0];
+        if (firstMainQuest.objectives.length > 0) {
+          questInfo = {
+            title: firstMainQuest.title,
+            description: firstMainQuest.description,
+            firstObjective: firstMainQuest.objectives[0].description
+          };
+        }
+      }
+      
+      // Generate opening narrative với thông tin quest
       const openingNarrative = await geminiService.generateOpeningNarrative(
         worldData, 
         characterData, 
-        JSON.stringify(scenarioSkeleton)
+        JSON.stringify(scenarioSkeleton),
+        questInfo
       );
 
       // Save scenario to localStorage
@@ -669,6 +710,24 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       sccContext.turnCounter = savedTurnCounter;
       const updatedSccContext = sccService.addTurn(sccContext, openingMessage);
       
+      // Initialize player location
+      const initialLocationId = locationService.initializePlayerLocation(
+        worldDataParsed,
+        scenarioSkeleton,
+        openingNarrative
+      );
+      
+      const playerLocation: PlayerLocation = {
+        currentLocationId: initialLocationId,
+        locationHistory: [{
+          locationId: initialLocationId,
+          arrivedAt: currentTime,
+          turn: savedTurnCounter
+        }]
+      };
+      
+      locationService.savePlayerLocation(playerLocation);
+      
       setChatHistory([openingMessage]);
       setTurnCounter(savedTurnCounter);
       setGameState({
@@ -680,7 +739,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         sccContext: updatedSccContext,
         showSummaryBanner: false,
         lastSummaryTurn: 0,
-        contentFlags: contentFlags
+        contentFlags: contentFlags,
+        playerLocation: playerLocation
       });
 
       // Save SCC context
@@ -720,7 +780,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
             pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
             cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
-            durationMinutes: 15,
+            durationMinutes: generateSuggestionDuration(),
             impactTags: ['exploration'],
             source: 'heuristic' as const
           },
@@ -730,7 +790,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             summary: 'Dành thời gian để lên kế hoạch tiếp theo',
             pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
             cons: ['Mất thời gian'],
-            durationMinutes: 20,
+            durationMinutes: generateSuggestionDuration(),
             impactTags: ['planning'],
             source: 'heuristic' as const
           },
@@ -740,7 +800,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             summary: 'Hỏi thăm thông tin từ NPC',
             pros: ['Thu thập thông tin', 'Xây dựng mối quan hệ'],
             cons: ['Có thể bị lừa', 'Mất tiền'],
-            durationMinutes: 60,
+            durationMinutes: generateSuggestionDuration(),
             impactTags: ['social'],
             source: 'heuristic' as const
           },
@@ -750,7 +810,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             summary: 'Thăm dò những nơi có thể có rủi ro',
             pros: ['Phát hiện mối nguy', 'Chuẩn bị tốt hơn'],
             cons: ['Rất nguy hiểm', 'Có thể bị thương'],
-            durationMinutes: 45,
+            durationMinutes: generateSuggestionDuration(),
             impactTags: ['risk'],
             source: 'heuristic' as const
           }
@@ -960,8 +1020,13 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         }
 
         // Determine action duration
-        let durationMinutes = 10; // Default
-        if (selectedSuggestionId) {
+        let durationMinutes = 5; // Default for manual actions
+        let isTravelAction = false; // Flag to identify travel actions
+        
+        // Check if this is a travel action
+        if (currentMessage.trim().startsWith('Bạn di chuyển đến')) {
+          isTravelAction = true;
+        } else if (selectedSuggestionId) {
           const selectedSuggestion = actionSuggestions.find(s => s.id === selectedSuggestionId);
           if (selectedSuggestion) {
             durationMinutes = selectedSuggestion.durationMinutes;
@@ -976,10 +1041,13 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           }
         }
 
-        // Advance world time by minutes
-        const newTime = gameState.worldTime ? 
-          worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes) : 
-          null;
+        // Advance world time by minutes (skip for travel actions as time is already advanced in locationService.moveToLocation)
+        let newTime = gameState.worldTime;
+        if (!isTravelAction) {
+          newTime = gameState.worldTime ? 
+            worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes) : 
+            null;
+        }
 
         // Increment turn counter after AI response
         setTurnCounter(prev => {
@@ -1042,6 +1110,31 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             const actionSummary = await generateActionSummary(currentMessage.trim(), gameState);
             const impactTags = estimateImpactTags(currentMessage.trim());
             
+            // For travel actions, use travel time instead of manual action time
+            let finalDurationMinutes = durationMinutes;
+            let finalEndedAt = newTime;
+            
+            if (isTravelAction) {
+              // Get travel time from locationService
+              const currentPlayerLocation = locationService.getCurrentLocation();
+              if (currentPlayerLocation) {
+                const locationName = currentMessage.trim().replace('Bạn di chuyển đến ', '').trim();
+                const worldDataParsed = JSON.parse(worldData);
+                const targetLocation = worldDataParsed.locations?.find((loc: any) => 
+                  loc.name === locationName
+                );
+                
+                if (targetLocation) {
+                  const travelInfo = locationService.getTravelInfo(currentPlayerLocation.currentLocationId, targetLocation.id);
+                  finalDurationMinutes = travelInfo.travelMinutes;
+                  finalEndedAt = gameState.worldTime ? 
+                    worldTimeService.advanceMinutes(gameState.worldTime, finalDurationMinutes) : 
+                    gameState.worldTime!;
+                  
+                }
+              }
+            }
+            
             actionLogEntry = {
               id: `action_${Date.now()}`,
               actionId: undefined,
@@ -1049,12 +1142,12 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               summary: actionSummary,
               pros: ['Thực hiện theo ý muốn', 'Linh hoạt trong hành động'],
               cons: ['Có thể có rủi ro không lường trước', 'Cần thời gian để thực hiện'],
-              durationMinutes: durationMinutes,
+              durationMinutes: finalDurationMinutes,
               startedAt: gameState.worldTime,
-              endedAt: newTime,
+              endedAt: finalEndedAt,
               turn: turnCounter + 1,
               impactTags: impactTags,
-              source: 'manual'
+              source: isTravelAction ? 'travel' : 'manual'
             };
           }
           
@@ -1066,6 +1159,43 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
         // Clear selected suggestion
         setSelectedSuggestionId(null);
+
+        // Process location travel if message contains travel action
+        try {
+          const travelMessage = currentMessage.trim();
+          
+          if (travelMessage.startsWith('Bạn di chuyển đến')) {
+            // Extract location name from message
+            const locationName = travelMessage.replace('Bạn di chuyển đến ', '').trim();
+            
+            // Find location by name
+            const worldDataParsed = JSON.parse(worldData);
+            const targetLocation = worldDataParsed.locations?.find((loc: any) => 
+              loc.name === locationName
+            );
+            
+            // Sử dụng locationService.getCurrentLocation() thay vì gameState.playerLocation
+            const currentPlayerLocation = locationService.getCurrentLocation();
+            
+            if (targetLocation && currentPlayerLocation) {
+              // Calculate travel time and update location
+              const { newTime } = locationService.moveToLocation(
+                targetLocation.id,
+                gameState.worldTime!,
+                turnCounter + 1
+              );
+              
+              // Update game state with new location and time
+              setGameState(prev => ({
+                ...prev,
+                worldTime: newTime,
+                playerLocation: locationService.getCurrentLocation()
+              }));
+            }
+          }
+        } catch (travelError) {
+          console.error('Lỗi xử lý di chuyển:', travelError);
+        }
 
         // Process NPC relationships and character status from AI response
         try {
@@ -1134,7 +1264,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         currentMessage: currentMessage,
         turnCounter: turnCounter
       });
-      setError(error instanceof Error ? error.message : 'Có lỗi xảy ra');
+      
+      // Kiểm tra nếu đây là lỗi từ thông báo lỗi cụ thể
+      const errorMessage = error instanceof Error ? error.message : 'Có lỗi xảy ra';
+      if (errorMessage.includes('PHÁT HIỆN THÔNG BÁO LỖI CỤ THỂ')) {
+        setError('Xin lỗi, có lỗi xảy ra khi xử lý phản hồi từ AI. Vui lòng thử lại.');
+      } else {
+        setError(errorMessage);
+      }
       
       // QUAN TRỌNG: Khi có lỗi, KHÔNG CẬP NHẬT BẤT KỲ STATE NÀO
       // Đảm bảo aiResponseSuccess = false để ngăn mọi update
@@ -1455,66 +1592,27 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     setPendingQuestOffer(null);
   };
 
-  const resetGameData = async () => {
-    // Load services trước khi sử dụng
-    await loadServices();
+  // Handle skip time
+  const handleSkipTime = () => {
+    if (!gameState.worldTime) return;
     
-    // Reset game state
-    setChatHistory([]);
-    setTurnCounter(0);
-    setGameState({
-      scenarioSkeleton: null,
-      sceneState: {},
-      storyProgress: null,
-      isInitialized: false,
-      worldTime: null,
-      sccContext: null,
-      showSummaryBanner: false,
-      lastSummaryTurn: 0,
-      contentFlags: null
-    });
+    // Add hours to current time
+    const newTime = worldTimeService.advanceTime(gameState.worldTime, skipHours);
     
-    // Clear action suggestions and backup
-    setActionSuggestions([]);
-    setBackupSuggestions([]);
-    setActionLog([]);
-    setSelectedSuggestionId(null);
-    setHasLoadedSuggestions(false);
+    // Update game state
+    setGameState(prev => ({
+      ...prev,
+      worldTime: newTime
+    }));
     
-    // Clear game-related localStorage but keep save slots and API keys
-    const keysToRemove = [
-      'rp_chat',
-      'rp_scenario', 
-      'game_turn_counter',
-      'rp_summary_indexed',
-      'rp_scene_state',
-      'world_gen_result',
-      'currentCharacter',
-      'scc_context',
-      'rp_summary_backup', // Sửa từ scc_summary_backup thành rp_summary_backup
-      'contentFlags', // Xóa contentFlags khi reset game
-      'quest_system', // Xóa quest system khi reset game
-      'faction_quests', // Xóa faction quests khi reset game
-      'faction_reputations', // Xóa faction reputations khi reset game
-      // World Builder keys
-      'completeWorldData',
-      'currentWorldData',
-      'currentWorldDescription',
-      'worldTitle',
-      'rp_summary'
-    ];
+    // Close modal and reset
+    setShowSkipTimeModal(false);
+    setSkipHours(2);
     
-    keysToRemove.forEach(key => {
-      localStorage.removeItem(key);
-    });
-    
-    // Clear SCC data
-    sccService.clearSCCData();
-    
-    // Clear NPC relationship data
-    npcRelationshipService.clearAllData();
+    // Show success message
+    setSaveMessage(`Đã nghỉ ngơi ${skipHours} giờ. Thời gian hiện tại: ${newTime.hour}:${newTime.minute.toString().padStart(2, '0')}`);
+    setTimeout(() => setSaveMessage(null), 3000);
   };
-
 
   // Xử lý load game từ SaveManager
   const handleLoadGame = async (saveGame: SaveGame) => {
@@ -1541,7 +1639,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         },
         showSummaryBanner: saveGame.ui?.showSummaryBanner || false,
         lastSummaryTurn: saveGame.ui?.lastSummaryTurn || 0,
-        contentFlags: saveGame.contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true }
+        contentFlags: saveGame.contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true },
+        playerLocation: saveGame.playerLocation || null
       });
 
       // Cập nhật chat history và turn counter
@@ -1571,6 +1670,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Khôi phục NPC relationship data nếu có
       if (saveGame.npcRelationships) {
         npcRelationshipService.importFromSaveGame(saveGame.npcRelationships);
+      }
+      
+      // Khôi phục player location nếu có
+      if (saveGame.playerLocation) {
+        locationService.savePlayerLocation(saveGame.playerLocation);
       }
       
       // KHÔNG lưu contentFlags vào localStorage riêng biệt
@@ -1610,7 +1714,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         showSummaryBanner: gameState.showSummaryBanner,
         lastSummaryTurn: gameState.lastSummaryTurn
       },
-      contentFlags: gameState.contentFlags
+      contentFlags: gameState.contentFlags,
+      playerLocation: gameState.playerLocation
     };
   };
 
@@ -1658,6 +1763,36 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     };
     
     handleContentFlagsChange(newFlags);
+  };
+
+  // Handle location travel
+  const handleLocationTravel = (locationId: string) => {
+    // Sử dụng locationService.getCurrentLocation() thay vì gameState.playerLocation
+    const currentPlayerLocation = locationService.getCurrentLocation();
+    
+    if (!gameState.worldTime || !currentPlayerLocation) {
+      return;
+    }
+    
+    const location = locationService.getLocationById(locationId);
+    if (!location) {
+      return;
+    }
+    
+    // Generate travel message
+    const travelMessage = locationService.generateTravelMessage(locationId);
+    
+    if (travelMessage) {
+      setCurrentMessage(travelMessage);
+      
+      // Focus vào input box
+      setTimeout(() => {
+        const inputElement = document.querySelector('textarea[placeholder*="Mô tả hành động"]') as HTMLTextAreaElement;
+        if (inputElement) {
+          inputElement.focus();
+        }
+      }, 100);
+    }
   };
 
   // Resend message - copy message content to input box
@@ -1910,6 +2045,23 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               >
                 <History className="w-4 h-4" />
               </button>
+              {/* Skip Time Button */}
+              <button
+                onClick={() => setShowSkipTimeModal(true)}
+                disabled={isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions}
+                className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
+                  isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
+                    ? 'bg-gray-600/20 border-gray-500/30 text-gray-400 cursor-not-allowed'
+                    : 'bg-purple-600/20 border-purple-500/30 text-purple-300 hover:bg-purple-600/30'
+                }`}
+                title={
+                  isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
+                    ? "Đang xử lý, không thể skip thời gian"
+                    : "Nghỉ ngơi/Skip thời gian (2-8h)"
+                }
+              >
+                <Moon className="w-4 h-4" />
+              </button>
               {/* Save Button */}
               <button
                 onClick={() => setShowSavePopup(true)}
@@ -1926,13 +2078,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 }
               >
                 <Save className="w-4 h-4" />
-              </button>
-              <button
-                onClick={resetGameData}
-                className="p-2 bg-red-600/20 border border-red-500/30 text-red-300 rounded-lg hover:bg-red-600/30 transition-colors duration-200 mobile-button touch-feedback"
-                title="Chơi mới (giữ save slots)"
-              >
-                <RotateCcw className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -2197,6 +2342,10 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             isAIProcessing={isAIProcessing}
             isNPCAnalysisProcessing={isNPCAnalysisProcessing}
             contentFlags={gameState.contentFlags || undefined}
+            turnCounter={turnCounter}
+            onToggleAdultContent={toggleAdultContent}
+            onToggleAdultIntensity={toggleAdultIntensity}
+            onLocationTravel={handleLocationTravel}
           />
         </Suspense>
       )}
@@ -2223,6 +2372,90 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           entries={actionLog}
         />
       </Suspense>
+
+      {/* Skip Time Modal */}
+      {showSkipTimeModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="glass-effect p-6 rounded-2xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center">
+                <Moon className="w-5 h-5 mr-2" />
+                Nghỉ ngơi / Skip thời gian
+              </h3>
+              <button
+                onClick={() => setShowSkipTimeModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <p className="text-gray-300 text-sm">
+                Chọn số giờ bạn muốn nghỉ ngơi (tối thiểu 2 giờ, tối đa 8 giờ):
+              </p>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm text-gray-300">
+                  <span>Thời gian nghỉ:</span>
+                  <span className="font-semibold text-white">{skipHours} giờ</span>
+                </div>
+                
+                <input
+                  type="range"
+                  min="2"
+                  max="8"
+                  value={skipHours}
+                  onChange={(e) => setSkipHours(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${((skipHours - 2) / 6) * 100}%, #374151 ${((skipHours - 2) / 6) * 100}%, #374151 100%)`
+                  }}
+                />
+                
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>2h</span>
+                  <span>3h</span>
+                  <span>4h</span>
+                  <span>5h</span>
+                  <span>6h</span>
+                  <span>7h</span>
+                  <span>8h</span>
+                </div>
+              </div>
+              
+              <div className="bg-gray-800/50 rounded-lg p-3">
+                <p className="text-sm text-gray-300">
+                  <strong>Thời gian hiện tại:</strong> {gameState.worldTime ? `${gameState.worldTime.hour}:${gameState.worldTime.minute.toString().padStart(2, '0')}` : 'N/A'}
+                </p>
+                <p className="text-sm text-gray-300 mt-1">
+                  <strong>Sau khi nghỉ:</strong> {gameState.worldTime ? (() => {
+                    const newTime = worldTimeService.advanceTime(gameState.worldTime!, skipHours);
+                    return `${newTime.hour}:${newTime.minute.toString().padStart(2, '0')}`;
+                  })() : 'N/A'}
+                </p>
+              </div>
+              
+              <div className="flex space-x-3 pt-2">
+                <button
+                  onClick={() => setShowSkipTimeModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-600/20 border border-gray-500/30 text-gray-300 rounded-lg hover:bg-gray-600/30 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSkipTime}
+                  className="flex-1 px-4 py-2 bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-600/30 transition-colors"
+                >
+                  Xác nhận
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

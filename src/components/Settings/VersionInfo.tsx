@@ -2,15 +2,33 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "2.6.0";
+  const version = "3.0.0";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
 const updateLog = [
     {
-      version: "2.6.0",
+      version: "3.0.0",
       date: now.toISOString().split('T')[0],
+      changes: [
+        "🗺️ Hệ thống bản đồ hoàn chỉnh với grid 15x15",
+        "📍 Tối thiểu 5 địa điểm cốt truyện + 2-3 địa điểm phụ",
+        "🚶 Cơ chế di chuyển với A* pathfinding algorithm",
+        "⏰ Tính thời gian di chuyển chính xác (30 phút/ô)",
+        "🎯 Hiển thị đường đi với số thứ tự trên bản đồ",
+        "🔄 Tách biệt chọn địa điểm và di chuyển",
+        "💬 Auto-paste message di chuyển vào chat input",
+        "🏷️ Tag đặc biệt cho hành động di chuyển",
+        "📊 Đồng bộ thời gian di chuyển với lịch sử hành động",
+        "🎮 Tab 'Bản Đồ' mới trong InfoMenu",
+        "🔧 Tối ưu hóa performance với caching",
+        "🧹 Dọn dẹp console logs và code optimization"
+      ]
+    },
+    {
+      version: "2.6.0",
+      date: "2025-01-01",
       changes: [
         "🤖 Hệ thống gợi ý hành động AI thông minh",
         "📋 Lịch sử hành động với thu/mở từng mục",

@@ -44,7 +44,8 @@ export class SaveGameService {
     worldTime: WorldTime,
     questSystemData?: any,
     uiState?: any,
-    contentFlags?: any
+    contentFlags?: any,
+    playerLocation?: any
   ): Promise<SaveResult> {
     try {
       if (!this.isInitialized) {
@@ -64,7 +65,8 @@ export class SaveGameService {
         slotId,
         questSystemData,
         uiState,
-        contentFlags
+        contentFlags,
+        playerLocation
       );
 
       // Lưu vào storage

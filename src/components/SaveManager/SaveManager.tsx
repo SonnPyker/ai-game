@@ -39,6 +39,7 @@ interface SaveManagerProps {
     worldTime: any;
     uiState?: any;
     contentFlags?: any;
+    playerLocation?: any;
   };
   isProcessing?: boolean; // Thêm prop để kiểm tra trạng thái xử lý
 }
@@ -169,7 +170,8 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         currentGameData.worldTime,
         undefined, // questSystemData - sẽ được thêm sau
         currentGameData.uiState,
-        currentGameData.contentFlags
+        currentGameData.contentFlags,
+        currentGameData.playerLocation
       );
 
       if (result.success) {

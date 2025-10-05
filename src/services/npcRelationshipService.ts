@@ -508,7 +508,7 @@ OUTPUT JSON:
 
     // Add contextual notes
     if (analysis.contextNote) {
-      this.addNotesToNPC(npc, [analysis.contextNote], 20);
+      this.addNotesToNPC(npc, [analysis.contextNote], 5);
       hasChanges = true;
     }
 
@@ -516,7 +516,7 @@ OUTPUT JSON:
     if (additionalContext) {
       const enhancedNotes = this.generateEnhancedNotes(npc.name, narrative, additionalContext);
       if (enhancedNotes.length > 0) {
-        this.addNotesToNPC(npc, enhancedNotes, 20);
+        this.addNotesToNPC(npc, enhancedNotes, 5);
         hasChanges = true;
       }
     }
@@ -1423,7 +1423,7 @@ OUTPUT JSON:
     const contextualNotes = this.generateContextualNotes(npcData, currentLocation);
     
     // Use consolidated method to add notes
-    this.addNotesToNPC(existing, contextualNotes);
+    this.addNotesToNPC(existing, contextualNotes, 5);
     
     this.saveToStorage();
   }
@@ -1974,12 +1974,12 @@ OUTPUT JSON:
   }
 
   // Consolidated method to add notes to NPC (appending to existing notes)
-  private addNotesToNPC(npc: NPCRelationship, newNotes: string[], maxNotes: number = 15): void {
+  private addNotesToNPC(npc: NPCRelationship, newNotes: string[], maxNotes: number = 5): void {
     npc.notes = npc.notes || [];
     
     // If no existing notes, start with first note
     if (npc.notes.length === 0 && newNotes.length > 0) {
-      npc.notes.push(this.highlightKeywords(newNotes[0]));
+      npc.notes.push(newNotes[0]);
       newNotes = newNotes.slice(1);
     }
     
@@ -1987,7 +1987,7 @@ OUTPUT JSON:
     if (npc.notes.length > 0 && newNotes.length > 0) {
       const lastNote = npc.notes[npc.notes.length - 1];
       const combinedNote = this.combineNotes(lastNote, newNotes);
-      npc.notes[npc.notes.length - 1] = this.highlightKeywords(combinedNote);
+      npc.notes[npc.notes.length - 1] = combinedNote;
     }
     
     // Limit notes to prevent bloat
@@ -2054,27 +2054,6 @@ OUTPUT JSON:
     return ', ';
   }
 
-  // Highlight important keywords in notes
-  private highlightKeywords(note: string): string {
-    const keywords = [
-      { pattern: /(Trạng thái hiện tại|Tình trạng|Vị trí|Tâm trạng|Cảm xúc|Phản ứng|Hành động|Mục tiêu|Kế hoạch|Quan hệ|Mối quan hệ|Tương tác|Gặp gỡ|Trò chuyện|Giúp đỡ|Tặng|Chia sẻ|Đồng hành|Từ chối|Tranh cãi|Thân mật|Lãng mạn|Hứng tình|Arousal|Responsiveness|Inhibition|Curiosity|Experience|Dominance|Romanticism)/gi, 
-        replacement: '<span class="text-yellow-400 font-semibold">$1</span>' },
-      { pattern: /(Turn \d+|Lần gặp thứ \d+|Gặp tại|Tại|Ở)/gi, 
-        replacement: '<span class="text-blue-400 font-medium">$1</span>' },
-      { pattern: /(vui mừng|hạnh phúc|phấn khích|buồn bã|thất vọng|chán nản|tức giận|phẫn nộ|bực mình|lo lắng|băn khoăn|bối rối|sợ hãi|hoảng sợ|kinh hãi)/gi, 
-        replacement: '<span class="text-green-400 font-medium">$1</span>' },
-      { pattern: /(đã|được|sẽ|đang|vừa|mới)/gi, 
-        replacement: '<span class="text-purple-400 font-medium">$1</span>' }
-    ];
-    
-    let highlightedNote = note;
-    
-    for (const keyword of keywords) {
-      highlightedNote = highlightedNote.replace(keyword.pattern, keyword.replacement);
-    }
-    
-    return highlightedNote;
-  }
 
   // Shared status patterns for reuse
   private readonly STATUS_PATTERNS = [
@@ -2300,7 +2279,7 @@ OUTPUT JSON:
                  
                    const statusNote = `Trạng thái PC: ${statusName}`;
                  currentNPCs.forEach(relationship => {
-                   this.addNotesToNPC(relationship, [statusNote]);
+                   this.addNotesToNPC(relationship, [statusNote], 5);
                  });
                  
                  // Lưu lại để cập nhật localStorage

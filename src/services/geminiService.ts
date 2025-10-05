@@ -1,8 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { multiApiKeyService, ApiKeyInfo, ApiKeyStats } from './multiApiKeyService';
 import { SCCSummary, SCCState, ContentFlags } from '../types';
 import { npcRelationshipService } from './npcRelationshipService';
 import { nameGenerationService } from './nameGenerationService';
+import { locationService } from './locationService';
 
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
@@ -53,7 +54,27 @@ class GeminiService {
       const apiKey = localStorage.getItem('gemini_api_key');
       if (apiKey) {
         this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        this.model = this.genAI.getGenerativeModel({ 
+          model: 'gemini-2.5-flash',
+          safetySettings: [
+            {
+              category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+              threshold: HarmBlockThreshold.BLOCK_NONE
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+              threshold: HarmBlockThreshold.BLOCK_NONE
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+              threshold: HarmBlockThreshold.BLOCK_NONE
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+              threshold: HarmBlockThreshold.BLOCK_NONE
+            }
+          ]
+        });
       }
     }
   }
@@ -309,6 +330,41 @@ class GeminiService {
 - Khi gặp tình huống nhạy cảm, hãy "fade-to-black" hoặc chuyển sang mô tả cảm xúc/hậu quả`;
   }
 
+  private buildLocationContext(): string {
+    try {
+      const playerLocation = locationService.getCurrentLocation();
+      if (!playerLocation) {
+        return 'VỊ TRÍ: Chưa xác định vị trí hiện tại';
+      }
+
+      const currentLocation = locationService.getLocationById(playerLocation.currentLocationId);
+      if (!currentLocation) {
+        return 'VỊ TRÍ: Không tìm thấy thông tin vị trí hiện tại';
+      }
+
+      const nearbyLocations = locationService.getLocationsInRadius(playerLocation.currentLocationId, 2);
+      
+      let locationInfo = `VỊ TRÍ HIỆN TẠI: ${currentLocation.name} (${currentLocation.type === 'story' ? 'Cốt truyện chính' : 'Địa điểm phụ'})
+- Mô tả: ${currentLocation.description}
+- Vai trò: ${currentLocation.role}`;
+
+      if (nearbyLocations.length > 0) {
+        locationInfo += `\n- Các địa điểm lân cận (trong bán kính 2 ô): ${nearbyLocations.map((loc: any) => loc.name).join(', ')}`;
+      }
+
+      locationInfo += `\n\nQUAN TRỌNG VỀ VỊ TRÍ:
+- CHỈ mô tả sự kiện tại ${currentLocation.name} hoặc các địa điểm lân cận
+- KHÔNG mô tả sự kiện ở địa điểm xa (sử dụng bản đồ để di chuyển)
+- Tập trung vào khám phá và tương tác tại vị trí hiện tại
+- Nếu người chơi di chuyển, cập nhật sceneState.location và sceneState.locationId`;
+
+      return locationInfo;
+    } catch (error) {
+      console.error('Error building location context:', error);
+      return 'VỊ TRÍ: Không thể xác định vị trí hiện tại';
+    }
+  }
+
 
   async generateContent(prompt: string): Promise<string> {
     if (this.useMultiKeyService) {
@@ -425,7 +481,7 @@ class GeminiService {
 
     const prompt = `
     Tạo một tình huống game roleplay dựa trên:
-    - Nhân vật: ${character.name} (${character.race.name} ${character.class.name})
+    - Nhân vật: ${character.name}
     - Thế giới: ${worldDescription}
     - Tình huống hiện tại: ${currentSituation}
     
@@ -1007,11 +1063,15 @@ YÊU CẦU NỘI DUNG:
 3) Ẩn hoạ & xung đột chủ đạo.
 4) Tạo main quest cho tất cả 5 Acts - mỗi Act phải có main quest riêng với độ khó tăng dần.
 5) Quest phải mang tính tổng quát, phù hợp với nhiều loại nhân vật khác nhau.
+6) Tạo TỐI THIỂU 5 địa điểm cốt truyện chính (type: "story") + 2-3 địa điểm phụ (type: "secondary").
+7) Đặt gridPosition cho mỗi location trên grid 15x15 (x: 0-14, y: 0-14), đảm bảo khoảng cách hợp lý giữa các địa điểm.
 
 TỰ SUY LUẬN KHI THIẾU:
 - Nếu trường trống, hãy chọn giá trị hợp lý dựa theo thể loại/bối cảnh.
 - Tôn trọng tone/thể loại người chơi chọn (ví dụ bí ẩn siêu nhiên, cyberpunk…).
 - Main quests phải có sự tiến triển logic: Act 1 (khởi đầu), Act 2 (phát triển), Act 3 (xung đột), Act 4 (cao trào), Act 5 (kết thúc).
+- Locations phải có ý nghĩa trong cốt truyện: địa điểm cốt truyện chính (story) là nơi diễn ra các sự kiện quan trọng, địa điểm phụ (secondary) là nơi có thể ảnh hưởng gián tiếp đến cốt truyện.
+- GridPosition phải được phân bố hợp lý: không quá gần nhau (tối thiểu 2 ô), không quá xa nhau (tối đa 8 ô), tập trung ở khu vực trung tâm (x: 3-11, y: 3-11).
 
 SCHEMA JSON (bắt buộc):
 {
@@ -1032,7 +1092,14 @@ SCHEMA JSON (bắt buộc):
     {"name": "string", "goal": "string", "methods": "string", "weakness": "string"}
   ],
   "locations": [
-    {"name": "string", "description": "string", "role": "string"}
+    {
+      "id": "loc_1",
+      "name": "string",
+      "description": "string", 
+      "role": "string",
+      "type": "story",
+      "gridPosition": { "x": 7, "y": 7 }
+    }
   ],
   "keyEntities": [
     {"name": "string", "type": "Nhân vật|Vật phẩm|Hiện tượng", "description": "string", "hook": "string"}
@@ -1382,7 +1449,7 @@ SCHEMA:
     }
   }
 
-  async generateOpeningNarrative(worldJson: string, characterJson: string, scenarioJson: string): Promise<string> {
+  async generateOpeningNarrative(worldJson: string, characterJson: string, scenarioJson: string, questInfo?: any): Promise<string> {
     try {
       const prompt = `Bạn là AI Storyteller. Hãy viết đoạn mở đầu cho phiên roleplay, dựa trên WORLD, CHARACTER, và SCENARIO_SKELETON.
 Yêu cầu:
@@ -1391,6 +1458,7 @@ Yêu cầu:
 - Dùng "openingSeed" trong kịch bản làm mồi.
 - Gợi không khí, đặt vấn đề, hé lộ nguy cơ, kết bằng một tình huống mở đầu hấp dẫn.
 - KHÔNG đặt câu hỏi trực tiếp cho người chơi, chỉ mô tả tình huống để người chơi tự quyết định hành động.
+${questInfo ? `- QUAN TRỌNG: Trong đoạn cuối, hãy nhắc đến nhiệm vụ chính "${questInfo.title}" và gợi ý về mục tiêu đầu tiên: "${questInfo.firstObjective}". Tuy nhiên, hãy làm điều này một cách tự nhiên trong câu chuyện, không phải như một danh sách nhiệm vụ.` : ''}
 
 QUAN TRỌNG VỀ NGÔI KỂ:
 - Kiểm tra trường "narration" trong WORLD để xác định ngôi kể
@@ -1406,6 +1474,12 @@ ${characterJson}
 
 SCENARIO_SKELETON:
 ${scenarioJson}
+${questInfo ? `
+QUEST_INFO:
+- Title: ${questInfo.title}
+- Description: ${questInfo.description}
+- First Objective: ${questInfo.firstObjective}
+` : ''}
 
 Chỉ xuất văn xuôi, không thêm lời dẫn.`;
 
@@ -1600,7 +1674,14 @@ QUAN TRỌNG VỀ THỜI GIAN TRONG NARRATIVE:
 - Mô tả khí quyển và cảm giác thời gian thay vì số giờ cụ thể
 - Ví dụ: "Ánh sáng ban mai chiếu qua cửa sổ" thay vì "Lúc 7h30 sáng"
 
-QUAN TRỌNG: KHÔNG BAO GIỜ nói trực tiếp "nhiệm vụ của bạn là", "bạn phải làm", "mục tiêu là" hay các từ tương tự. Hãy để câu chuyện tự nhiên dẫn dắt người chơi.
+QUAN TRỌNG VỀ TÔN TRỌNG SỰ TỰ DO CỦA NGƯỜI CHƠI:
+- TUYỆT ĐỐI KHÔNG được phản bác, từ chối, hoặc hạn chế hành động của người chơi
+- TUYỆT ĐỐI KHÔNG được nói "không liên quan", "không cần thiết", "không phù hợp" với hành động của người chơi
+- TUYỆT ĐỐI KHÔNG được ép buộc người chơi làm theo hướng khác
+- TUYỆT ĐỐI KHÔNG được nói "bạn phải", "bạn cần", "bạn nên" làm gì đó
+- THAY VÀO ĐÓ: Hãy mô tả kết quả của hành động người chơi một cách tích cực và sáng tạo
+- THAY VÀO ĐÓ: Hãy tìm cách làm cho hành động của người chơi có ý nghĩa trong câu chuyện
+- THAY VÀO ĐÓ: Hãy mở rộng câu chuyện dựa trên hành động của người chơi, không phải chống lại nó
 
 QUAN TRỌNG VỀ ĐỐI THOẠI: TẤT CẢ lời nói trực tiếp PHẢI được viết trong dấu ngoặc kép ("..."). KHÔNG BAO GIỜ viết lời nói trực tiếp mà không có dấu ngoặc kép.
 
@@ -1842,6 +1923,11 @@ VÍ DỤ CẤU TRÚC NARRATIVE:
 - Người chơi: "Tôi mở cửa phòng"
 - AI phản hồi: "Bạn đẩy cánh cửa gỗ cũ kỹ, tiếng kẽo kẹt vang lên trong không gian yên tĩnh. Ánh sáng từ bên ngoài chiếu vào, làm lộ ra một căn phòng bụi bặm với những đồ vật kỳ lạ. [Tiếp tục mô tả phòng và gợi ý bước tiếp theo]"
 
+VÍ DỤ TÔN TRỌNG SỰ TỰ DO CỦA NGƯỜI CHƠI:
+- Người chơi: "Tôi đi vào phòng học thay vì thư viện"
+- AI phản hồi SAI: "Bạn cảm thấy rõ ràng rằng khu vực này không hề liên quan đến mục tiêu hiện tại của mình. Với hiện vật Eldar trong tay, nơi bạn cần đến là thư viện..."
+- AI phản hồi ĐÚNG: "Bạn bước vào phòng học, ánh sáng mờ ảo chiếu qua cửa sổ tạo nên những bóng đen kỳ lạ trên bảng đen. Các bàn ghế được xếp ngay ngắn, nhưng có vẻ như có gì đó khác thường ở góc phòng - một cuốn sách cổ đang mở trên bàn giáo viên, và những ký tự lạ lùng trên trang giấy có vẻ quen thuộc với hiện vật bạn đang cầm..."
+
 QUEST SYSTEM RULES:
 - Chỉ tạo side quest khi có cơ hội tự nhiên trong câu chuyện (không ép buộc)
 - Tránh tạo quá nhiều side quest cùng lúc (tối đa 1 side quest mỗi 3-5 turn)
@@ -1852,6 +1938,9 @@ QUEST SYSTEM RULES:
 - QUAN TRỌNG: KHÔNG BAO GIỜ nhắc lại hoặc đề xuất lại các side quest đã bị từ chối (xem danh sách "Declined Side Quests")
 - Nếu người chơi đã từ chối một quest, hãy tôn trọng quyết định đó và không đề cập đến quest đó nữa
 - Nếu người chơi đang làm việc khác (không liên quan quest), hãy tập trung vào hành động hiện tại thay vì nhắc quest
+- TUYỆT ĐỐI KHÔNG được sử dụng quest để phản bác hoặc hạn chế hành động của người chơi
+- TUYỆT ĐỐI KHÔNG được nói "điều này không liên quan đến quest" hoặc tương tự
+- Nếu người chơi làm gì đó không liên quan quest, hãy tìm cách tích hợp nó vào câu chuyện một cách sáng tạo
 
 ĐẦU VÀO:
 - WORLD: ${worldJson}
@@ -1862,6 +1951,8 @@ QUEST SYSTEM RULES:
 - CHAT_DELTA (sau snapshot, ≤ ${chatDelta.length} lượt): ${JSON.stringify(chatDelta)}
 - PLAYER_ACTION: "${playerAction}"
 - GAME_TIME: ${JSON.stringify(worldTime || sceneState.worldTime || { hour: 12, minute: 0, day: 1, month: 1, year: 1 })}
+
+${this.buildLocationContext()}
 
 ⚠️ QUAN TRỌNG: PLAYER_ACTION là hành động người chơi vừa thực hiện. BẮT BUỘC phải phản hồi trực tiếp với hành động này. KHÔNG được bỏ qua hoặc làm lơ.
 

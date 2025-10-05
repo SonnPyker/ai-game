@@ -1,4 +1,4 @@
-import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime, ContentFlags, QuestSystem, NPCRelationship } from './index';
+import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime, ContentFlags, QuestSystem, NPCRelationship, PlayerLocation } from './index';
 
 // NPC Relationship Data for save games
 export interface NPCRelationshipData {
@@ -24,6 +24,7 @@ export interface SaveGame {
   contentFlags?: ContentFlags; // Cờ nội dung 18+
   actionSuggestions?: any[]; // Gợi ý hành động hiện tại
   actionLog?: any[]; // Lịch sử hành động đã thực hiện
+  playerLocation?: PlayerLocation; // Vị trí hiện tại của người chơi
 }
 
 // Metadata của save game

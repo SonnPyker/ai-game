@@ -180,7 +180,8 @@ export class MigrationService {
     slotId: 'slot1' | 'slot2' | 'slot3' = 'slot1',
     questSystemData?: any,
     uiState?: any,
-    contentFlags?: any
+    contentFlags?: any,
+    playerLocation?: any
   ): SaveGame {
     // Cập nhật sceneState vào summary
     const updatedSummary = {
@@ -210,7 +211,8 @@ export class MigrationService {
       questSystem: questSystemData,
       npcRelationships: npcRelationshipData,
       ui: uiState,
-      contentFlags: contentFlags
+      contentFlags: contentFlags,
+      playerLocation: playerLocation
     };
   }
 

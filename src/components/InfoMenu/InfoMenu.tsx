@@ -5,6 +5,7 @@ import {
   PinOff, 
   User, 
   MapPin, 
+  Map,
   Users, 
   Target,
   Heart,
@@ -27,7 +28,9 @@ import { worldTimeService } from '../../services/worldTimeService';
 import { QuestTracker } from '../QuestTracker/QuestTracker';
 import { SCCJournal } from './SCCJournal';
 import { NPCArousalBar } from '../NPCArousalBar';
+import { MapView } from './MapView';
 import { useResponsiveContext } from '../../contexts/ResponsiveContext';
+import { getCharacterDisplayTitle } from '../../utils/characterTitleExtractor';
 
 interface InfoMenuProps {
   isOpen: boolean;
@@ -52,6 +55,8 @@ interface InfoMenuProps {
   turnCounter?: number;
   onToggleAdultContent?: () => void;
   onToggleAdultIntensity?: () => void;
+  // Map props
+  onLocationTravel?: (locationId: string) => void;
 }
 
 interface MenuSection {
@@ -82,7 +87,8 @@ export function InfoMenu({
   contentFlags,
   turnCounter,
   onToggleAdultContent,
-  onToggleAdultIntensity
+  onToggleAdultIntensity,
+  onLocationTravel
 }: InfoMenuProps) {
   // Responsive design context
   const { shouldUseMobileLayout } = useResponsiveContext();
@@ -209,6 +215,7 @@ export function InfoMenu({
     { id: 'character', title: 'Nhân Vật', icon: <User className="w-4 h-4" />, isActive: true },
     { id: 'quests', title: 'Nhiệm Vụ', icon: <Target className="w-4 h-4" />, isActive: true },
     { id: 'relationships', title: 'Quan Hệ', icon: <Heart className="w-4 h-4" />, isActive: true },
+    { id: 'map', title: 'Bản Đồ', icon: <Map className="w-4 h-4" />, isActive: true },
     { id: 'world', title: 'Thế Giới', icon: <MapPin className="w-4 h-4" />, isActive: true },
     { id: 'factions', title: 'Phe Phái', icon: <Users className="w-4 h-4" />, isActive: true },
     { id: 'journal', title: 'Nhật Ký', icon: <FileText className="w-4 h-4" />, isActive: true }
@@ -334,7 +341,7 @@ export function InfoMenu({
           <div className="space-y-2 text-sm">
             <div><span className="text-gray-400">Tên:</span> <span className="text-white">{characterData.name}</span></div>
             <div><span className="text-gray-400">Giới tính:</span> <span className="text-white">{characterData.gender}</span></div>
-            <div><span className="text-gray-400">Chủng tộc:</span> <span className="text-white">{characterData.race?.name}</span></div>
+            <div><span className="text-gray-400">Danh hiệu:</span> <span className="text-white">{getCharacterDisplayTitle(characterData)}</span></div>
           </div>
         </div>
 
@@ -1216,6 +1223,30 @@ export function InfoMenu({
     return <SCCJournal isVisible={activeSection === 'journal'} />;
   };
 
+  // Render section bản đồ
+  const renderMapSection = () => {
+    if (!worldData || !worldTime) {
+      return <div className="text-gray-400">Không có dữ liệu thế giới</div>;
+    }
+
+    // Lấy vị trí hiện tại từ localStorage
+    const playerLocation = JSON.parse(localStorage.getItem('player_location') || 'null');
+    const currentLocationId = playerLocation?.currentLocationId || '';
+
+    if (!currentLocationId) {
+      return <div className="text-gray-400">Chưa xác định vị trí hiện tại</div>;
+    }
+
+    return (
+      <MapView
+        worldData={worldData}
+        currentLocationId={currentLocationId}
+        onLocationClick={onLocationTravel || (() => {})}
+        worldTime={worldTime}
+      />
+    );
+  };
+
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'gameinfo':
@@ -1224,6 +1255,8 @@ export function InfoMenu({
         return renderCharacterSection();
       case 'quests':
         return renderQuestsSection();
+      case 'map':
+        return renderMapSection();
       case 'journal':
         return renderJournalSection();
       case 'world':

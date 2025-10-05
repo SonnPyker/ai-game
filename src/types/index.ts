@@ -1,8 +1,6 @@
 export interface Character {
   id?: string;
   name: string;
-  class: CharacterClass;
-  race: CharacterRace;
   level?: number;
   stats?: CharacterStats;
   personality?: string;
@@ -40,23 +38,6 @@ export interface Character {
   energyMax?: number;
 }
 
-export interface CharacterClass {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  primaryStats: string[];
-  abilities: string[];
-}
-
-export interface CharacterRace {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  racialBonuses: Record<string, number>;
-  specialAbilities: string[];
-}
 
 export interface CharacterStats {
   strength: number;
@@ -206,6 +187,25 @@ export interface WorldTime {
   dayOfWeek: number; // 0-6 (0 = Sunday, 1 = Monday, etc.)
 }
 
+export interface Location {
+  id: string;
+  name: string;
+  description: string;
+  role: string;
+  type: 'story' | 'secondary'; // story = cốt truyện chính, secondary = ít liên quan nhưng có ảnh hưởng
+  gridPosition: { x: number; y: number }; // vị trí trên grid
+  nearbyLocations?: string[]; // IDs của locations lân cận
+}
+
+export interface PlayerLocation {
+  currentLocationId: string;
+  locationHistory: Array<{
+    locationId: string;
+    arrivedAt: WorldTime;
+    turn: number;
+  }>;
+}
+
 export interface WorldData {
   id: string;
   name: string;
@@ -243,11 +243,7 @@ export interface WorldData {
     methods: string;
     weakness: string;
   }>;
-  locations?: Array<{
-    name: string;
-    description: string;
-    role: string;
-  }>;
+  locations?: Location[]; // thay vì Array<{name, description, role}>
   keyEntities?: Array<{
     name: string;
     type: string;
@@ -277,6 +273,7 @@ export interface SCCSummary {
 
 export interface SCCState {
   location?: string;
+  locationId?: string; // ID của location hiện tại
   npcs?: { name: string; state?: string }[];
   inventory?: { name: string; qty?: number }[];
   clocks?: { name: string; value: number; max: number }[];

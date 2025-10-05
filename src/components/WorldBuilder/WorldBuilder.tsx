@@ -497,6 +497,27 @@ export function WorldBuilder() {
        const worldTime = worldTimeService.initializeWorldTime(worldData.startYear);
        worldJson.currentTime = worldTime;
        
+       // Validate and fix locations
+       if (worldJson.locations && Array.isArray(worldJson.locations)) {
+         // Import locationService dynamically
+         const { locationService } = await import('../../services/locationService');
+         
+         // Validate and fix grid positions
+         worldJson.locations = locationService.validateAndFixGridPositions(worldJson.locations);
+         
+         // Ensure we have at least 5 locations
+         if (worldJson.locations.length < 5) {
+           console.warn(`Chỉ có ${worldJson.locations.length} locations, cần tối thiểu 5`);
+         }
+         
+         // Log location info
+         console.log('Generated locations:', worldJson.locations.map((loc: any) => ({
+           name: loc.name,
+           type: loc.type,
+           position: loc.gridPosition
+         })));
+       }
+       
        // Merge contentFlags vào world data
        worldJson.contentFlags = contentFlags;
        

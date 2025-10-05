@@ -51,7 +51,8 @@ export class LocalSaveService {
     uiState?: any,
     contentFlags?: any,
     actionSuggestions?: any,
-    actionLog?: any
+    actionLog?: any,
+    playerLocation?: any
   ): Promise<SaveResult> {
     try {
       // Cập nhật sceneState vào summary
@@ -85,7 +86,8 @@ export class LocalSaveService {
         ui: uiState,
         contentFlags: contentFlags,
         actionSuggestions: actionSuggestions,
-        actionLog: actionLog
+        actionLog: actionLog,
+        playerLocation: playerLocation
       };
 
       await this.localStorageStore.save(slotId, saveGame);

@@ -1,4 +1,5 @@
 import { WorldTime, ContentFlags } from '../types';
+import { locationService } from './locationService';
 
 export interface SuggestedAction {
   id: string;
@@ -23,7 +24,7 @@ export interface ActionLogEntry {
   endedAt: WorldTime;
   turn: number;
   impactTags: string[];
-  source: 'suggestion' | 'manual';
+  source: 'suggestion' | 'manual' | 'travel';
 }
 
 export interface ActionContext {
@@ -163,6 +164,9 @@ class ActionSuggestionService {
     // Quest context information
     const questContext = this.buildQuestContext(questSystem);
     
+    // Location context
+    const locationContext = this.buildLocationContext();
+    
     return `Bạn là AI trợ lý cho game RPG text-based. Hãy tạo 4 gợi ý hành động ngắn gọn (1-2 câu) cho người chơi dựa trên context hiện tại.
 
 QUAN TRỌNG: ƯU TIÊN HÀNH ĐỘNG GẦN ĐÂY CỦA NGƯỜI CHƠI - Không ép buộc vào quest nếu người chơi đang làm việc khác.
@@ -178,16 +182,19 @@ CONTEXT GAME:
 
 ${questContext}
 
+${locationContext}
+
 ${contentGuidance}
 
 YÊU CẦU:
-1. Mỗi gợi ý phải có thời lượng 10-120 phút
+1. Mỗi gợi ý phải có thời lượng 10-120 phút (random trong range này, không cần bội số của 5)
 2. Có lợi và hại rõ ràng
 3. Phù hợp với tình huống hiện tại
 4. Ngắn gọn, dễ hiểu
 5. Có thể thực hiện ngay
 6. ƯU TIÊN: Dựa trên hành động và context gần đây của người chơi
 7. Quest chỉ là tham khảo, không ép buộc - chỉ đề xuất nếu phù hợp với hướng đi hiện tại
+8. Thời gian phải đa dạng và thực tế (ví dụ: 12p, 27p, 43p, 78p, 95p, 118p)
 
 TRẢ VỀ JSON:
 {
@@ -241,6 +248,42 @@ TRẢ VỀ JSON:
     }
 
     return questInfo;
+  }
+
+  private buildLocationContext(): string {
+    try {
+      // Import locationService dynamically
+      
+      const playerLocation = locationService.getCurrentLocation();
+      if (!playerLocation) {
+        return 'VỊ TRÍ: Chưa xác định vị trí hiện tại';
+      }
+
+      const currentLocation = locationService.getLocationById(playerLocation.currentLocationId);
+      if (!currentLocation) {
+        return 'VỊ TRÍ: Không tìm thấy thông tin vị trí hiện tại';
+      }
+
+      const nearbyLocations = locationService.getLocationsInRadius(playerLocation.currentLocationId, 2);
+      
+      let locationInfo = `VỊ TRÍ HIỆN TẠI: ${currentLocation.name} (${currentLocation.type === 'story' ? 'Cốt truyện chính' : 'Địa điểm phụ'})
+- Mô tả: ${currentLocation.description}
+- Vai trò: ${currentLocation.role}`;
+
+      if (nearbyLocations.length > 0) {
+        locationInfo += `\n- Các địa điểm lân cận (trong bán kính 2 ô): ${nearbyLocations.map((loc: any) => loc.name).join(', ')}`;
+      }
+
+      locationInfo += `\n\nQUAN TRỌNG VỀ VỊ TRÍ:
+- CHỈ gợi ý hành động tại vị trí hiện tại hoặc các địa điểm lân cận
+- KHÔNG gợi ý di chuyển đến địa điểm xa (sử dụng bản đồ để di chuyển)
+- Tập trung vào khám phá và tương tác tại vị trí hiện tại`;
+
+      return locationInfo;
+    } catch (error) {
+      console.error('Error building location context:', error);
+      return 'VỊ TRÍ: Không thể xác định vị trí hiện tại';
+    }
   }
 
   private getContentGuidance(contentFlags: ContentFlags): string {
@@ -321,7 +364,7 @@ TRẢ VỀ JSON:
             summary: `Tiếp tục nhiệm vụ chính: ${nextObjective.description}`,
             pros: ['Tiến bộ cốt truyện', 'Phần thưởng kinh nghiệm'],
             cons: ['Có thể gặp nguy hiểm'],
-            durationMinutes: 15,
+            durationMinutes: this.generateSuggestionDuration(),
             impactTags: ['quest', 'story'],
             source: 'quest'
           });
@@ -336,7 +379,7 @@ TRẢ VỀ JSON:
         summary: 'Khám phá môi trường xung quanh',
         pros: ['Tìm thấy thông tin mới', 'Có thể gặp NPC'],
         cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
-        durationMinutes: 20,
+        durationMinutes: this.generateSuggestionDuration(),
         impactTags: ['exploration', 'discovery']
       },
       {
@@ -344,7 +387,7 @@ TRẢ VỀ JSON:
         summary: 'Dành thời gian suy nghĩ và lên kế hoạch',
         pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
         cons: ['Mất thời gian', 'Có thể bỏ lỡ cơ hội'],
-        durationMinutes: 10,
+        durationMinutes: this.generateSuggestionDuration(),
         impactTags: ['planning', 'reflection']
       },
       {
@@ -352,7 +395,7 @@ TRẢ VỀ JSON:
         summary: 'Hỏi thăm thông tin từ NPC',
         pros: ['Thu thập thông tin', 'Xây dựng mối quan hệ'],
         cons: ['Có thể bị lừa', 'Mất tiền'],
-        durationMinutes: 30,
+        durationMinutes: this.generateSuggestionDuration(),
         impactTags: ['social', 'information']
       }
     ];
@@ -374,32 +417,61 @@ TRẢ VỀ JSON:
   }
 
   /**
-   * Ước tính thời lượng hành động từ message
+   * Ước tính thời lượng hành động từ message (hành động thủ công)
    */
   async estimateActionDuration(message: string, context: ActionContext, _contentFlags: ContentFlags): Promise<number> {
     try {
       const geminiService = await this.getGeminiService();
       
-      const prompt = `Ước tính thời gian thực hiện hành động sau (tính bằng phút, tối thiểu 5 phút, tối đa 60 phút):
+      const prompt = `Phân tích và ước tính thời gian thực hiện hành động sau (tính bằng phút):
 
-Hành động: "${message}"
-Context: ${JSON.stringify({
-        worldTime: context.worldTime,
-        sceneState: context.sceneState,
-        characterLevel: context.characterData?.level || 1
-      })}
+HÀNH ĐỘNG: "${message}"
 
-Chỉ trả về số phút (ví dụ: 10), không giải thích.`;
+CONTEXT HIỆN TẠI:
+- Thời gian: ${context.worldTime ? `${context.worldTime.hour}:${context.worldTime.minute.toString().padStart(2, '0')}` : 'Unknown'}
+- Vị trí: ${context.sceneState?.location || 'Unknown'}
+- NPCs: ${context.sceneState?.npcs?.map((npc: any) => npc.name).join(', ') || 'Không có'}
+- Level nhân vật: ${context.characterData?.level || 1}
+
+PHÂN TÍCH CHI TIẾT:
+1. Độ phức tạp của hành động (đơn giản/phức tạp/rất phức tạp)
+2. Môi trường thực hiện (an toàn/nguy hiểm/không xác định)
+3. Số lượng NPC liên quan (0/1-2/nhiều)
+4. Mức độ rủi ro (thấp/trung bình/cao)
+5. Kỹ năng cần thiết (cơ bản/trung bình/cao)
+
+YÊU CẦU:
+- Thời gian tối thiểu: 5 phút
+- Thời gian tối đa: 60 phút
+- Trả về số phút chính xác (không cần bội số của 5)
+- Ví dụ: 7, 13, 23, 37, 45, 58
+
+Chỉ trả về số phút, không giải thích.`;
 
       const response = await geminiService.generateContent(prompt);
       const minutes = parseInt(response.trim());
       
-      return Math.max(5, Math.min(60, isNaN(minutes) ? 10 : minutes));
+      // Nếu AI trả về số hợp lệ, sử dụng nó
+      if (!isNaN(minutes) && minutes >= 5 && minutes <= 60) {
+        return minutes;
+      }
+      
+      // Fallback: random trong range 5-60 phút
+      return Math.floor(Math.random() * 56) + 5; // 5-60 phút
     } catch (error) {
       console.error('Error estimating action duration:', error);
-      return 10; // Default 10 phút
+      // Fallback: random trong range 5-60 phút
+      return Math.floor(Math.random() * 56) + 5;
     }
   }
+
+  /**
+   * Tạo thời gian random cho suggestions (10-120 phút)
+   */
+  private generateSuggestionDuration(): number {
+    return Math.floor(Math.random() * 111) + 10; // 10-120 phút
+  }
+
 
   /**
    * Lưu action log entry
@@ -441,3 +513,4 @@ Chỉ trả về số phút (ví dụ: 10), không giải thích.`;
 }
 
 export const actionSuggestionService = ActionSuggestionService.getInstance();
+
