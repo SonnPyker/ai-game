@@ -1,11 +1,12 @@
 /**
  * Utility để trích xuất danh hiệu/nghề nghiệp từ backstory của nhân vật
+ * Sử dụng AI để phân tích chính xác hơn
  */
 
 export interface CharacterTitle {
   title: string;
   confidence: number; // 0-1, độ tin cậy của việc trích xuất
-  source: 'backstory' | 'description' | 'inferred';
+  source: 'backstory' | 'description' | 'inferred' | 'ai_analyzed';
 }
 
 /**
@@ -88,7 +89,29 @@ export function extractCharacterTitle(backstory: string, description?: string): 
     
     // Nghề nghiệp thủ công
     { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:thợ rèn|thợ mộc|thợ may|thợ gốm|thợ kim hoàn)/i, 
-      title: 'Thợ thủ công', confidence: 0.8 }
+      title: 'Thợ thủ công', confidence: 0.8 },
+    
+    // Nghề nghiệp siêu nhiên/fantasy
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:thợ săn quỷ|demon hunter|thợ săn ma|quỷ sư|demon slayer)/i, 
+      title: 'Thợ Săn Quỷ', confidence: 0.95 },
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:thợ săn quỷ cấp cao|high-ranking demon hunter|thợ săn ma cấp cao)/i, 
+      title: 'Thợ Săn Quỷ Cấp Cao', confidence: 0.98 },
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:phù thủy|witch|wizard|pháp sư|mage|sorcerer)/i, 
+      title: 'Phù Thủy', confidence: 0.9 },
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:hiệp sĩ|knight|paladin|chiến binh|warrior)/i, 
+      title: 'Hiệp Sĩ', confidence: 0.9 },
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:ninja|assassin|sát thủ|đặc vụ|spy)/i, 
+      title: 'Ninja', confidence: 0.9 },
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:thầy tu|monk|tu sĩ|priest|giáo sĩ)/i, 
+      title: 'Thầy Tu', confidence: 0.9 },
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:ranger|thợ săn|hunter|tracker)/i, 
+      title: 'Thợ Săn', confidence: 0.8 },
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:bard|nhạc sĩ|ca sĩ|nghệ sĩ)/i, 
+      title: 'Nghệ Sĩ', confidence: 0.8 },
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:rogue|trộm|thief|burglar)/i, 
+      title: 'Trộm', confidence: 0.8 },
+    { pattern: /(?:là|từng là|hiện là|đang làm|đang học|đang thực tập)\s*(?:một\s*)?(?:cleric|healer|chữa bệnh|healing priest)/i, 
+      title: 'Thầy Thuốc', confidence: 0.9 }
   ];
   
   // Tìm pattern phù hợp nhất
@@ -163,13 +186,125 @@ function inferTitleFromContext(text: string): string | null {
     return 'Phiêu lưu gia';
   }
   
+  // Kiểm tra các từ khóa siêu nhiên
+  if (text.includes('quỷ') || text.includes('demon') || text.includes('ma') || text.includes('ghost')) {
+    if (text.includes('săn') || text.includes('hunt') || text.includes('slay') || text.includes('tiêu diệt')) {
+      return 'Thợ Săn Quỷ';
+    }
+  }
+  
+  if (text.includes('phép thuật') || text.includes('magic') || text.includes('spell') || text.includes('enchant')) {
+    return 'Pháp sư';
+  }
+  
+  if (text.includes('kiếm') || text.includes('sword') || text.includes('vũ khí') || text.includes('weapon')) {
+    if (text.includes('hiệp sĩ') || text.includes('knight') || text.includes('warrior')) {
+      return 'Hiệp Sĩ';
+    }
+  }
+  
   return null;
 }
 
 /**
- * Lấy danh hiệu hiển thị cho nhân vật
+ * Phân tích danh hiệu bằng AI từ backstory
+ */
+export async function analyzeCharacterTitleWithAI(backstory: string, personality?: string): Promise<CharacterTitle> {
+  try {
+    // Import GeminiService dynamically để tránh circular dependency
+    const { geminiService } = await import('../services/geminiService');
+    
+    const prompt = `
+Hãy phân tích backstory và personality của nhân vật để xác định danh hiệu/nghề nghiệp chính xác nhất.
+
+Backstory: "${backstory}"
+${personality ? `Personality: "${personality}"` : ''}
+
+Hãy trả về danh hiệu phù hợp nhất dựa trên thông tin trên. Ưu tiên các danh hiệu fantasy/supernatural nếu có.
+
+Ví dụ:
+- Nếu là thợ săn quỷ → "Thợ Săn Quỷ" hoặc "Thợ Săn Quỷ Cấp Cao"
+- Nếu là pháp sư → "Pháp sư" hoặc "Phù Thủy"
+- Nếu là hiệp sĩ → "Hiệp Sĩ"
+- Nếu là ninja → "Ninja"
+- Nếu là thầy tu → "Thầy Tu"
+- Nếu là thầy thuốc → "Thầy Thuốc"
+- Nếu là nghệ sĩ → "Nghệ Sĩ"
+- Nếu là thợ săn thông thường → "Thợ Săn"
+- Nếu là trộm → "Trộm"
+- Nếu không rõ ràng → "Thường dân"
+
+Chỉ trả về danh hiệu, không giải thích thêm.
+`;
+
+    const response = await geminiService.generateContent(prompt);
+
+    const aiTitle = response.trim();
+    
+    return {
+      title: aiTitle,
+      confidence: 0.9,
+      source: 'ai_analyzed'
+    };
+  } catch (error) {
+    console.warn('AI title analysis failed, falling back to pattern matching:', error);
+    return extractCharacterTitle(backstory, personality);
+  }
+}
+
+/**
+ * Lấy danh hiệu hiển thị cho nhân vật với AI analysis
+ */
+export async function getCharacterDisplayTitleWithAI(character: { backstory: string; appearance?: string; personality?: string }): Promise<string> {
+  // Thử AI analysis trước
+  const aiTitle = await analyzeCharacterTitleWithAI(character.backstory, character.personality);
+  
+  // Nếu AI trả về kết quả tốt, sử dụng nó
+  if (aiTitle.confidence > 0.7) {
+    return aiTitle.title;
+  }
+  
+  // Fallback về pattern matching
+  const titleInfo = extractCharacterTitle(character.backstory, character.appearance || character.personality);
+  return titleInfo.title;
+}
+
+/**
+ * Lấy danh hiệu hiển thị cho nhân vật (sync version)
  */
 export function getCharacterDisplayTitle(character: { backstory: string; appearance?: string; personality?: string }): string {
   const titleInfo = extractCharacterTitle(character.backstory, character.appearance || character.personality);
   return titleInfo.title;
+}
+
+/**
+ * Cập nhật danh hiệu nhân vật và lưu vào localStorage
+ */
+export function updateCharacterTitle(character: any, title: string): void {
+  if (character) {
+    character.title = title;
+    
+    // Lưu vào localStorage
+    try {
+      localStorage.setItem('currentCharacter', JSON.stringify(character));
+      console.log('✅ Đã cập nhật danh hiệu nhân vật:', title);
+    } catch (error) {
+      console.warn('Không thể lưu danh hiệu vào localStorage:', error);
+    }
+  }
+}
+
+/**
+ * Lấy danh hiệu từ character data (ưu tiên title đã lưu)
+ */
+export function getCharacterTitle(character: any): string {
+  if (!character) return 'Thường dân';
+  
+  // Ưu tiên title đã lưu
+  if (character.title) {
+    return character.title;
+  }
+  
+  // Fallback về pattern matching
+  return getCharacterDisplayTitle(character);
 }

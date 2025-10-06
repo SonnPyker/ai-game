@@ -10,6 +10,7 @@ export interface Character {
   gender: 'male' | 'female' | 'other';
   appearance?: string;
   personalityTraits?: string[];
+  title?: string; // Danh hiệu đã được phân tích và lưu trữ
   coreStats?: {
     strength: number;
     agility: number;
@@ -36,6 +37,17 @@ export interface Character {
   proficiencies?: { name: string; level: number; description?: string }[];
   hpMax?: number;
   energyMax?: number;
+  // Inventory and Equipment system
+  inventory?: InventoryItem[];
+  equipment?: Equipment;
+  equipped_stats_bonuses?: {
+    strength: number;
+    agility: number;
+    intelligence: number;
+    constitution: number;
+    wisdom: number;
+    charisma: number;
+  };
 }
 
 
@@ -93,6 +105,31 @@ export interface InventoryItem {
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
   quantity: number;
   icon: string;
+  // New fields for equipment system
+  isEquipped?: boolean;
+  stats?: {
+    strength?: number;
+    agility?: number;
+    intelligence?: number;
+    constitution?: number;
+    wisdom?: number;
+    charisma?: number;
+  };
+  slot?: 'weapon_main' | 'weapon_off' | 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'accessory1' | 'accessory2' | 'accessory3';
+  equipped_at?: Date;
+}
+
+export interface Equipment {
+  weapon_main?: InventoryItem;      // Vũ khí chính
+  weapon_off?: InventoryItem;       // Vũ khí phụ
+  head?: InventoryItem;             // Mũ
+  chest?: InventoryItem;            // Áo giáp
+  hands?: InventoryItem;            // Găng tay
+  legs?: InventoryItem;             // Quần
+  feet?: InventoryItem;             // Giày
+  accessory1?: InventoryItem;       // Phụ kiện 1
+  accessory2?: InventoryItem;       // Phụ kiện 2
+  accessory3?: InventoryItem;       // Phụ kiện 3
 }
 
 export interface Quest {
@@ -138,6 +175,10 @@ export interface QuestProgress {
   turnCreated?: number; // Turn khi quest được tạo
   turnCompleted?: number; // Turn khi quest được hoàn thành
   turnStarted?: number; // Turn khi quest được bắt đầu
+  // Location signature quest system
+  isLocationSignature?: boolean; // true if this is a signature quest for a location
+  signatureLocationId?: string; // ID of the location this quest is signature for
+  signatureNPCId?: string; // ID of the NPC who offers this signature quest
   // Lưu trữ toàn bộ objectives để tạo dần sau này (chỉ cho side quest)
   _allObjectives?: Array<{
     id: string;
@@ -195,6 +236,10 @@ export interface Location {
   type: 'story' | 'secondary'; // story = cốt truyện chính, secondary = ít liên quan nhưng có ảnh hưởng
   gridPosition: { x: number; y: number }; // vị trí trên grid
   nearbyLocations?: string[]; // IDs của locations lân cận
+  // Location signature system
+  signatureNPCId?: string; // ID of the signature NPC for this location
+  signatureQuestId?: string; // ID of the signature quest for this location
+  hasSignatureContent?: boolean; // true if this location has signature NPC and quest
 }
 
 export interface PlayerLocation {
@@ -275,7 +320,7 @@ export interface SCCState {
   location?: string;
   locationId?: string; // ID của location hiện tại
   npcs?: { name: string; state?: string }[];
-  inventory?: { name: string; qty?: number }[];
+  inventory?: InventoryItem[]; // Updated to use structured inventory
   clocks?: { name: string; value: number; max: number }[];
   flags?: Record<string, boolean>;
   worldTime?: WorldTime;
@@ -297,6 +342,53 @@ export interface NPCRelationship {
   tags?: string[]; // e.g., ['merchant', 'noble', 'criminal']
   location?: string; // where they were last seen
   faction?: string; // if they belong to a faction
+  // Location-specific NPC system
+  isLocationSignature?: boolean; // true if this NPC is the signature NPC for a location
+  signatureLocationId?: string; // ID of the location this NPC is signature for
+  signatureQuestId?: string; // ID of the signature quest this NPC offers
+  // Enhanced NPC information - revealed progressively
+  personalInfo?: {
+    age?: {
+      value?: number;
+      revealed: boolean; // whether this info has been revealed through interaction
+      source?: string; // how this info was revealed (e.g., "asked_directly", "overheard", "told_by_others")
+    };
+    occupation?: {
+      value?: string;
+      revealed: boolean;
+      source?: string;
+    };
+    address?: {
+      value?: string;
+      revealed: boolean;
+      source?: string;
+    };
+    family?: {
+      value?: string; // family information
+      revealed: boolean;
+      source?: string;
+    };
+    background?: {
+      value?: string; // personal background/history
+      revealed: boolean;
+      source?: string;
+    };
+    personality?: {
+      value?: string; // detailed personality traits
+      revealed: boolean;
+      source?: string;
+    };
+    goals?: {
+      value?: string; // personal goals and motivations
+      revealed: boolean;
+      source?: string;
+    };
+    secrets?: {
+      value?: string; // secrets or hidden information
+      revealed: boolean;
+      source?: string;
+    };
+  };
   // Arousal system for 18+ content
   arousal?: {
     level: number; // 0 to 100 (not interested to very aroused)

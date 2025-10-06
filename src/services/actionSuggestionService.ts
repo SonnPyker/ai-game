@@ -171,6 +171,12 @@ class ActionSuggestionService {
 
 QUAN TRỌNG: ƯU TIÊN HÀNH ĐỘNG GẦN ĐÂY CỦA NGƯỜI CHƠI - Không ép buộc vào quest nếu người chơi đang làm việc khác.
 
+QUAN TRỌNG VỀ QUEST ĐÃ TỪ CHỐI:
+- KHÔNG BAO GIỜ đề xuất lại quest đã bị từ chối (xem danh sách "QUESTS ĐÃ TỪ CHỐI")
+- KHÔNG BAO GIỜ tạo quest tương tự với quest đã bị từ chối
+- KHÔNG BAO GIỜ nhắc đến tên, nội dung, hoặc bất kỳ chi tiết nào của quest đã bị từ chối
+- Tôn trọng quyết định của người chơi và không ép buộc quest
+
 CONTEXT GAME:
 - Thế giới: ${worldData?.name || 'Unknown'} - ${worldData?.coreIdea || 'No description'}
 - Thể loại: ${worldData?.genre || 'Unknown'} - ${worldData?.setting || 'Unknown'}
@@ -187,14 +193,18 @@ ${locationContext}
 ${contentGuidance}
 
 YÊU CẦU:
-1. Mỗi gợi ý phải có thời lượng 10-120 phút (random trong range này, không cần bội số của 5)
+1. Thời lượng phải HỢP LÝ và THỰC TẾ:
+   - Hành động đơn giản: 5-15 phút (gọi, mua, uống, ăn, ngồi, đứng, nhìn, chào, hỏi)
+   - Hành động trung bình: 15-30 phút (trò chuyện, nói chuyện, bắt chuyện, làm quen, khám phá)
+   - Hành động phức tạp: 30-60 phút (điều tra, truy tìm, theo dõi, chiến đấu, lập kế hoạch)
+   - Hành động rất phức tạp: 60-90 phút (chỉ khi thực sự cần thiết)
 2. Có lợi và hại rõ ràng
 3. Phù hợp với tình huống hiện tại
 4. Ngắn gọn, dễ hiểu
 5. Có thể thực hiện ngay
 6. ƯU TIÊN: Dựa trên hành động và context gần đây của người chơi
 7. Quest chỉ là tham khảo, không ép buộc - chỉ đề xuất nếu phù hợp với hướng đi hiện tại
-8. Thời gian phải đa dạng và thực tế (ví dụ: 12p, 27p, 43p, 78p, 95p, 118p)
+8. Thời gian phải đa dạng và thực tế (ví dụ: 8p, 12p, 18p, 25p, 35p, 45p, 65p, 80p)
 
 TRẢ VỀ JSON:
 {
@@ -220,12 +230,21 @@ TRẢ VỀ JSON:
     const activeMainQuests = questSystem.mainQuests?.filter((q: any) => q.status === 'active') || [];
     const activeSideQuests = questSystem.sideQuests?.filter((q: any) => q.status === 'active') || [];
     const completedQuests = questSystem.questHistory?.filter((q: any) => q.status === 'completed') || [];
+    const declinedQuests = questSystem.questHistory?.filter((q: any) => q.status === 'declined') || [];
 
     let questInfo = `QUEST SYSTEM (THAM KHẢO - KHÔNG ÉP BUỘC):
 - Act hiện tại: ${questSystem.currentAct || 1}
 - Main quests đang active: ${activeMainQuests.length}
 - Side quests đang active: ${activeSideQuests.length}
-- Quests đã hoàn thành: ${completedQuests.length}`;
+- Quests đã hoàn thành: ${completedQuests.length}
+- Quests đã từ chối: ${declinedQuests.length}`;
+
+    if (declinedQuests.length > 0) {
+      questInfo += '\n\nQUESTS ĐÃ TỪ CHỐI (KHÔNG BAO GIỜ ĐỀ XUẤT LẠI):';
+      declinedQuests.forEach((quest: any, index: number) => {
+        questInfo += `\n${index + 1}. ${quest.title}`;
+      });
+    }
 
     if (activeMainQuests.length > 0) {
       questInfo += '\n\nMAIN QUESTS ACTIVE:';
@@ -315,7 +334,7 @@ TRẢ VỀ JSON:
         summary: s.summary || '',
         pros: Array.isArray(s.pros) ? s.pros : [],
         cons: Array.isArray(s.cons) ? s.cons : [],
-        durationMinutes: Math.max(10, Math.min(120, s.durationMinutes || 30)),
+        durationMinutes: Math.max(5, Math.min(90, s.durationMinutes || 15)),
         impactTags: Array.isArray(s.impactTags) ? s.impactTags : ['story'],
         source: 'ai' as const
       }));
@@ -353,11 +372,16 @@ TRẢ VỀ JSON:
         ...(context.questSystem.sideQuests || [])
       ];
       
+      // Lấy danh sách quest đã bị từ chối để tránh đề xuất lại
+      const declinedQuestTitles = context.questSystem.questHistory
+        ?.filter((q: any) => q.status === 'declined')
+        ?.map((q: any) => q.title) || [];
+      
       const activeQuests = allQuests.filter(q => q.status === 'active');
       if (activeQuests.length > 0) {
         const quest = activeQuests[0];
         const nextObjective = quest.objectives?.find((obj: any) => !obj.completed);
-        if (nextObjective) {
+        if (nextObjective && !declinedQuestTitles.includes(quest.title)) {
           suggestions.push({
             id: `quest_${Date.now()}`,
             text: `Tiếp tục nhiệm vụ "${quest.title}": ${nextObjective.description}`,
@@ -421,6 +445,14 @@ TRẢ VỀ JSON:
    */
   async estimateActionDuration(message: string, context: ActionContext, _contentFlags: ContentFlags): Promise<number> {
     try {
+      // Trước tiên, thử phân loại hành động bằng từ khóa đơn giản
+      const simpleDuration = this.estimateDurationByKeywords(message);
+      if (simpleDuration) {
+        console.log(`🎯 Ước tính thời gian bằng từ khóa: ${simpleDuration} phút cho hành động "${message}"`);
+        return simpleDuration;
+      }
+
+      // Nếu không thể phân loại bằng từ khóa, sử dụng AI
       const geminiService = await this.getGeminiService();
       
       const prompt = `Phân tích và ước tính thời gian thực hiện hành động sau (tính bằng phút):
@@ -453,23 +485,73 @@ Chỉ trả về số phút, không giải thích.`;
       
       // Nếu AI trả về số hợp lệ, sử dụng nó
       if (!isNaN(minutes) && minutes >= 5 && minutes <= 60) {
+        console.log(`🤖 AI ước tính thời gian: ${minutes} phút cho hành động "${message}"`);
         return minutes;
       }
       
       // Fallback: random trong range 5-60 phút
-      return Math.floor(Math.random() * 56) + 5; // 5-60 phút
+      const fallbackDuration = Math.floor(Math.random() * 56) + 5;
+      console.log(`🎲 Fallback thời gian: ${fallbackDuration} phút cho hành động "${message}"`);
+      return fallbackDuration;
     } catch (error) {
       console.error('Error estimating action duration:', error);
       // Fallback: random trong range 5-60 phút
-      return Math.floor(Math.random() * 56) + 5;
+      const fallbackDuration = Math.floor(Math.random() * 56) + 5;
+      console.log(`❌ Error fallback thời gian: ${fallbackDuration} phút cho hành động "${message}"`);
+      return fallbackDuration;
     }
   }
 
   /**
-   * Tạo thời gian random cho suggestions (10-120 phút)
+   * Ước tính thời gian bằng từ khóa đơn giản
+   */
+  private estimateDurationByKeywords(message: string): number | null {
+    const lowerMessage = message.toLowerCase();
+    
+    // Hành động đơn giản (5-15 phút)
+    const simpleActions = [
+      'gọi', 'mua', 'uống', 'ăn', 'ngồi', 'đứng', 'nhìn', 'quan sát',
+      'chào', 'hỏi', 'trả lời', 'nói', 'thì thầm', 'cười', 'gật đầu',
+      'mở', 'đóng', 'cầm', 'đặt', 'lấy', 'cho', 'nhận'
+    ];
+    
+    // Hành động trung bình (15-30 phút)
+    const mediumActions = [
+      'trò chuyện', 'nói chuyện', 'bắt chuyện', 'làm quen', 'giới thiệu',
+      'khám phá', 'tìm kiếm', 'kiểm tra', 'xem xét', 'phân tích',
+      'thương lượng', 'đàm phán', 'thỏa thuận', 'giao dịch'
+    ];
+    
+    // Hành động phức tạp (30-60 phút)
+    const complexActions = [
+      'điều tra', 'truy tìm', 'theo dõi', 'giám sát', 'bảo vệ',
+      'chiến đấu', 'đánh nhau', 'tấn công', 'phòng thủ', 'trốn chạy',
+      'lập kế hoạch', 'chuẩn bị', 'tổ chức', 'sắp xếp'
+    ];
+    
+    // Kiểm tra hành động đơn giản
+    if (simpleActions.some(action => lowerMessage.includes(action))) {
+      return Math.floor(Math.random() * 11) + 5; // 5-15 phút
+    }
+    
+    // Kiểm tra hành động trung bình
+    if (mediumActions.some(action => lowerMessage.includes(action))) {
+      return Math.floor(Math.random() * 16) + 15; // 15-30 phút
+    }
+    
+    // Kiểm tra hành động phức tạp
+    if (complexActions.some(action => lowerMessage.includes(action))) {
+      return Math.floor(Math.random() * 31) + 30; // 30-60 phút
+    }
+    
+    return null; // Không thể phân loại, sử dụng AI
+  }
+
+  /**
+   * Tạo thời gian random cho suggestions (5-90 phút)
    */
   private generateSuggestionDuration(): number {
-    return Math.floor(Math.random() * 111) + 10; // 10-120 phút
+    return Math.floor(Math.random() * 86) + 5; // 5-90 phút
   }
 
 

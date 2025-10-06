@@ -96,6 +96,17 @@ class LocationService {
   }
 
   /**
+   * Xóa vị trí hiện tại của người chơi (dùng khi reset game)
+   */
+  clearPlayerLocation(): void {
+    try {
+      localStorage.removeItem('player_location');
+    } catch (error) {
+      console.error('Lỗi clear player location:', error);
+    }
+  }
+
+  /**
    * Di chuyển đến location mới
    */
   moveToLocation(

@@ -330,21 +330,41 @@ class GeminiService {
 - Khi gặp tình huống nhạy cảm, hãy "fade-to-black" hoặc chuyển sang mô tả cảm xúc/hậu quả`;
   }
 
-  private buildLocationContext(): string {
+  private buildLocationContext(sceneState?: SCCState): string {
     try {
-      const playerLocation = locationService.getCurrentLocation();
-      if (!playerLocation) {
+      // Ưu tiên sử dụng thông tin location từ sceneState
+      let locationId: string | undefined;
+      
+      if (sceneState?.locationId) {
+        locationId = sceneState.locationId;
+      } else if (sceneState?.location) {
+        // Nếu chỉ có location name, tìm locationId
+        const allLocations = locationService.getAllLocations();
+        const foundLocation = allLocations.find(loc => loc.name === sceneState.location);
+        if (foundLocation) {
+          locationId = foundLocation.id;
+        }
+      } else {
+        // Fallback: sử dụng locationService
+        const playerLocation = locationService.getCurrentLocation();
+        if (playerLocation) {
+          locationId = playerLocation.currentLocationId;
+        }
+      }
+
+      if (!locationId) {
         return 'VỊ TRÍ: Chưa xác định vị trí hiện tại';
       }
 
-      const currentLocation = locationService.getLocationById(playerLocation.currentLocationId);
+      const currentLocation = locationService.getLocationById(locationId);
       if (!currentLocation) {
-        return 'VỊ TRÍ: Không tìm thấy thông tin vị trí hiện tại';
+        return `VỊ TRÍ: Không tìm thấy thông tin vị trí hiện tại (ID: ${locationId})`;
       }
 
-      const nearbyLocations = locationService.getLocationsInRadius(playerLocation.currentLocationId, 2);
+      const nearbyLocations = locationService.getLocationsInRadius(locationId, 2);
       
       let locationInfo = `VỊ TRÍ HIỆN TẠI: ${currentLocation.name} (${currentLocation.type === 'story' ? 'Cốt truyện chính' : 'Địa điểm phụ'})
+- ID: ${currentLocation.id}
 - Mô tả: ${currentLocation.description}
 - Vai trò: ${currentLocation.role}`;
 
@@ -356,7 +376,8 @@ class GeminiService {
 - CHỈ mô tả sự kiện tại ${currentLocation.name} hoặc các địa điểm lân cận
 - KHÔNG mô tả sự kiện ở địa điểm xa (sử dụng bản đồ để di chuyển)
 - Tập trung vào khám phá và tương tác tại vị trí hiện tại
-- Nếu người chơi di chuyển, cập nhật sceneState.location và sceneState.locationId`;
+- Nếu người chơi di chuyển, cập nhật sceneState.location và sceneState.locationId
+- QUAN TRỌNG: Nếu đây là địa điểm phụ (type: 'secondary'), BẮT BUỘC phải tạo NPC đặc trưng`;
 
       return locationInfo;
     } catch (error) {
@@ -1598,10 +1619,11 @@ SCHEMA:
 
     const contentGuidance = this.getContentGuidance(contentFlags);
 
-    // Quest system context - chỉ thêm khi có quest active và trong vòng 2 turn gần đây
+    // Quest system context - luôn bao gồm thông tin về quest đã bị từ chối
     const shouldIncludeQuestContext = questSystem && turnCounter && (
       (questSystem.mainQuests?.some((q: any) => q.status === 'active' && q.turnStarted && (turnCounter - q.turnStarted) <= 2)) ||
-      (questSystem.sideQuests?.some((q: any) => q.status === 'active' && q.turnStarted && (turnCounter - q.turnStarted) <= 2))
+      (questSystem.sideQuests?.some((q: any) => q.status === 'active' && q.turnStarted && (turnCounter - q.turnStarted) <= 2)) ||
+      (questSystem.questHistory?.some((q: any) => q.status === 'declined'))
     );
 
     const questContext = shouldIncludeQuestContext ? `
@@ -1936,7 +1958,9 @@ QUEST SYSTEM RULES:
 - QUAN TRỌNG: KHÔNG nhắc lại quest cũ nếu người chơi đã chuyển sang làm việc khác
 - QUAN TRỌNG: Khi tích hợp quest vào narrative, hãy mô tả tình huống và bối cảnh một cách tự nhiên, để người chơi tự hiểu và quyết định hành động. KHÔNG nói "Bây giờ bạn có nhiệm vụ..." hay "Mục tiêu của bạn là..."
 - QUAN TRỌNG: KHÔNG BAO GIỜ nhắc lại hoặc đề xuất lại các side quest đã bị từ chối (xem danh sách "Declined Side Quests")
-- Nếu người chơi đã từ chối một quest, hãy tôn trọng quyết định đó và không đề cập đến quest đó nữa
+- QUAN TRỌNG: Nếu người chơi đã từ chối một quest, hãy tôn trọng quyết định đó và KHÔNG BAO GIỜ đề cập đến quest đó nữa trong bất kỳ response nào
+- QUAN TRỌNG: KHÔNG BAO GIỜ tạo lại quest tương tự với quest đã bị từ chối
+- QUAN TRỌNG: KHÔNG BAO GIỜ nhắc đến tên, nội dung, hoặc bất kỳ chi tiết nào của quest đã bị từ chối
 - Nếu người chơi đang làm việc khác (không liên quan quest), hãy tập trung vào hành động hiện tại thay vì nhắc quest
 - TUYỆT ĐỐI KHÔNG được sử dụng quest để phản bác hoặc hạn chế hành động của người chơi
 - TUYỆT ĐỐI KHÔNG được nói "điều này không liên quan đến quest" hoặc tương tự
@@ -1947,12 +1971,12 @@ QUEST SYSTEM RULES:
 - CHARACTER: ${characterJson}
 - SCENARIO: ${scenarioJson}
 - SUMMARY (SCC): ${JSON.stringify(summary)}
-- SCENE_STATE: ${JSON.stringify(sceneState)}
+- SCENE_STATE: ${JSON.stringify(sceneState)} (chứa location, locationId, npcs, inventory, clocks, flags)
 - CHAT_DELTA (sau snapshot, ≤ ${chatDelta.length} lượt): ${JSON.stringify(chatDelta)}
 - PLAYER_ACTION: "${playerAction}"
 - GAME_TIME: ${JSON.stringify(worldTime || sceneState.worldTime || { hour: 12, minute: 0, day: 1, month: 1, year: 1 })}
 
-${this.buildLocationContext()}
+${this.buildLocationContext(sceneState)}
 
 ⚠️ QUAN TRỌNG: PLAYER_ACTION là hành động người chơi vừa thực hiện. BẮT BUỘC phải phản hồi trực tiếp với hành động này. KHÔNG được bỏ qua hoặc làm lơ.
 
@@ -2019,11 +2043,75 @@ QUAN TRỌNG VỀ NPCs:
   * Tên phải là tên riêng cụ thể (ví dụ: "Satoru Gojo", "Megumi Fushiguro", "Nobara Kugisaki")
   * KHÔNG tạo NPC với tên như "học viên", "nhiều người", "nhóm người", "đám đông"
 
+QUAN TRỌNG VỀ HỆ THỐNG NPC ĐẶC TRƯNG CHO ĐỊA ĐIỂM PHỤ:
+- KHI NGƯỜI CHƠI VÀO ĐỊA ĐIỂM PHỤ (type: 'secondary'), BẮT BUỘC phải tạo ít nhất 1 NPC đặc trưng
+- NPC đặc trưng phải có các thuộc tính sau trong sceneState.npcs:
+  * isLocationSignature: true
+  * signatureLocationId: ID của địa điểm phụ hiện tại (lấy từ thông tin VỊ TRÍ HIỆN TẠI ở trên)
+  * tags: phải chứa tag phù hợp với địa điểm (ví dụ: "chủ quán", "thủ thư", "thầy thuốc", "thương gia")
+  * description: mô tả chi tiết về vai trò của NPC tại địa điểm này
+- NPC đặc trưng phải có tính cách và mục đích rõ ràng liên quan đến địa điểm
+- NPC đặc trưng sẽ luôn có 1 nhiệm vụ phụ đặc trưng để giao cho người chơi
+- Các NPC khác tại địa điểm phụ (nếu có) KHÔNG được đánh dấu isLocationSignature: true
+- CHỈ có 1 NPC đặc trưng duy nhất cho mỗi địa điểm phụ
+- QUAN TRỌNG: Sử dụng chính xác locationId từ thông tin VỊ TRÍ HIỆN TẠI ở trên
+
+QUAN TRỌNG VỀ SIGNATURE QUEST (NHIỆM VỤ PHỤ ĐẶC TRƯNG):
+- KHI NPC đặc trưng được tạo, BẮT BUỘC phải tạo sideQuestOffer với:
+  * isLocationSignature: true
+  * signatureLocationId: ID của địa điểm phụ hiện tại (lấy từ thông tin VỊ TRÍ HIỆN TẠI ở trên)
+  * signatureNPCId: ID của NPC đặc trưng (sẽ được hệ thống tự động gán)
+- Signature quest phải có tính chất đặc trưng cho địa điểm:
+  * Liên quan trực tiếp đến vai trò và mục đích của địa điểm
+  * Phù hợp với tính cách và nghề nghiệp của NPC đặc trưng
+  * Có bước cuối cùng là "gặp lại NPC đặc trưng để báo cáo"
+- Ví dụ signature quest:
+  * Tại quán rượu: "Thu thập thông tin từ khách hàng" → "Báo cáo với chủ quán"
+  * Tại thư viện: "Tìm kiếm tài liệu cổ" → "Trả lời thủ thư"
+  * Tại cửa hàng: "Giao hàng cho khách" → "Báo cáo với thương gia"
+- Signature quest phải có ít nhất 2 objectives:
+  * Objective 1: Nhiệm vụ chính liên quan đến địa điểm
+  * Objective 2: "Gặp lại [Tên NPC đặc trưng] để báo cáo kết quả"
+
+QUAN TRỌNG VỀ QUY TẮC TẠO QUEST:
+- SIGNATURE QUEST (đặc trưng cho địa điểm phụ):
+  * CHỈ được tạo 1 LẦN duy nhất khi người chơi lần đầu vào địa điểm phụ
+  * KHÔNG được tạo lại nếu đã có signature quest cho địa điểm đó
+  * Luôn được tạo khi có NPC đặc trưng mới
+
+HƯỚNG DẪN VỀ VẬT PHẨM (ITEMS):
+- Khi người chơi nhận được, tìm thấy, hoặc mua vật phẩm, hãy mô tả chi tiết trong narrative
+- Thêm thông tin item vào sceneState.inventory theo format:
+  * name: tên vật phẩm
+  * description: mô tả chi tiết
+  * type: 'weapon' | 'armor' | 'consumable' | 'misc'
+  * rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+  * quantity: số lượng
+  * stats (nếu có): { strength: +2, agility: -1, etc. }
+  * slot (nếu là trang bị): 'weapon_main' | 'weapon_off' | 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'accessory1' | 'accessory2' | 'accessory3'
+
+QUAN TRỌNG - TÍNH HỢP LÝ CỦA VẬT PHẨM:
+- Items PHẢI phù hợp với bối cảnh thời đại và thế giới game:
+  * Thời trung cổ: KHÔNG có smartphone, súng lục, máy tính, điện thoại, xe hơi, vũ khí hiện đại
+  * Thời hiện đại: KHÔNG có sách phép thật, quyền trượng có phép thuật, áo giáp thời trung cổ (trừ khi là đồ cổ/trang sức)
+  * Tương lai: Có thể có công nghệ cao, nhưng vẫn phải hợp lý với setting
+  * Fantasy: Có thể có phép thuật, nhưng phải consistent với thế giới đã thiết lập
+- Vũ khí và trang bị phải phù hợp với thời đại:
+  * Thời trung cổ: Kiếm, cung tên, áo giáp, khiên, gậy gỗ
+  * Thời hiện đại: Súng, dao, áo chống đạn, thiết bị điện tử
+  * Fantasy: Kiếm phép, áo giáp ma thuật, pháp trượng
+- KHÔNG tạo items ngẫu nhiên hoặc không có lý do
+- Items chỉ xuất hiện khi thực sự cần thiết và hợp lý với tình huống
+- KHÔNG lạm dụng - không phải response nào cũng cần có items
+- Items chỉ xuất hiện đúng lúc, đúng chỗ và phải hợp lý với tình huống
+- Ưu tiên chất lượng hơn số lượng - ít items nhưng có ý nghĩa
+- Mô tả items một cách sinh động và hấp dẫn trong narrative
+
 ĐẦU RA (JSON, không thêm chữ khác):
 {
   "narrative": "văn xuôi 120–220 từ, liền mạch, không bullet/emoji",
   "softGuidance": "1–2 câu định hướng kín đáo (có thể rỗng)",
-  "sceneState": { "các trường cần cập nhật (vị trí, NPC, manh mối, rủi ro, đồng hồ…)" },
+  "sceneState": { "các trường cần cập nhật (vị trí, NPC, manh mối, rủi ro, đồng hồ, inventory…)" },
   "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện" },
   "sideQuestOffer": {
     "title": "tên quest phụ (chỉ có khi có cơ hội tự nhiên)",
@@ -2033,6 +2121,11 @@ QUAN TRỌNG VỀ NPCs:
         "id": "obj_1",
         "description": "mục tiêu quest phụ",
         "aiKeywords": ["từ khóa AI cần nhận diện"]
+      },
+      {
+        "id": "obj_2",
+        "description": "gặp lại NPC để báo cáo (chỉ cho signature quest)",
+        "aiKeywords": ["báo cáo", "gặp lại", "trả lời"]
       }
     ],
     "rewards": [
@@ -2041,7 +2134,10 @@ QUAN TRỌNG VỀ NPCs:
         "amount": 200,
         "description": "Kinh nghiệm +200"
       }
-    ]
+    ],
+    "isLocationSignature": false,
+    "signatureLocationId": null,
+    "signatureNPCId": null
   }
 }`;
 

@@ -239,7 +239,42 @@ export class QuestDetectionService {
     if (currentStoryContext.sideQuestOffer) {
       const offer = currentStoryContext.sideQuestOffer;
       // Thêm random để tránh collision nếu 2 quests được tạo cùng lúc
-      const questId = `side_quest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const questId = offer.isLocationSignature 
+        ? `signature_quest_${offer.signatureLocationId}_${Date.now()}`
+        : `side_quest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Tạo objectives dựa trên loại quest
+      let objectives: any[] = [];
+      if (offer.isLocationSignature && offer.objectives && offer.objectives.length >= 2) {
+        // Signature quest: tạo cả 2 objectives
+        objectives = [
+          {
+            id: 'obj_1',
+            description: offer.objectives[0]?.description || 'Bắt đầu nhiệm vụ',
+            completed: false,
+            aiKeywords: offer.objectives[0]?.aiKeywords || [],
+            unlocked: true
+          },
+          {
+            id: 'obj_2',
+            description: offer.objectives[1]?.description || 'Báo cáo kết quả',
+            completed: false,
+            aiKeywords: offer.objectives[1]?.aiKeywords || ['báo cáo', 'gặp lại', 'trả lời'],
+            unlocked: false // Objective thứ 2 sẽ unlock khi hoàn thành objective 1
+          }
+        ];
+      } else {
+        // Quest thường: chỉ tạo objective đầu tiên
+        objectives = [
+          {
+            id: 'obj_1',
+            description: offer.objectives[0]?.description || 'Bắt đầu nhiệm vụ',
+            completed: false,
+            aiKeywords: offer.objectives[0]?.aiKeywords || [],
+            unlocked: true
+          }
+        ];
+      }
       
       const quest: QuestProgress = {
         id: questId,
@@ -247,16 +282,7 @@ export class QuestDetectionService {
         title: offer.title,
         description: offer.description,
         status: 'available', // Side quest luôn available
-        objectives: [
-          // CHỈ TẠO OBJECTIVE ĐẦU TIÊN
-          {
-            id: 'obj_1',
-            description: offer.objectives[0]?.description || 'Bắt đầu nhiệm vụ',
-            completed: false,
-            aiKeywords: offer.objectives[0]?.aiKeywords || [],
-            unlocked: true // Objective đầu tiên được unlock
-          }
-        ],
+        objectives: objectives,
         rewards: offer.rewards.map((reward: any) => ({
           type: reward.type,
           amount: reward.amount,
@@ -265,6 +291,10 @@ export class QuestDetectionService {
         })),
         createdAt: new Date(),
         turnCreated: turnCounter || Date.now(), // Lưu turn khi quest được tạo để tính toán tần suất
+        // Location signature quest system
+        isLocationSignature: offer.isLocationSignature || false,
+        signatureLocationId: offer.signatureLocationId || undefined,
+        signatureNPCId: offer.signatureNPCId || undefined,
         // Lưu trữ toàn bộ objectives để tạo dần sau này
         _allObjectives: offer.objectives || []
       };

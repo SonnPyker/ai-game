@@ -22,15 +22,18 @@ import {
   AlertTriangle,
   EyeOff
 } from 'lucide-react';
-import { WorldData, Character, WorldTime, QuestSystem, QuestProgress, ContentFlags } from '../../types';
+import { WorldData, Character, WorldTime, QuestSystem, QuestProgress, ContentFlags, InventoryItem } from '../../types';
 import { npcRelationshipService } from '../../services/npcRelationshipService';
 import { worldTimeService } from '../../services/worldTimeService';
+import { inventoryService } from '../../services/inventoryService';
 import { QuestTracker } from '../QuestTracker/QuestTracker';
 import { SCCJournal } from './SCCJournal';
 import { NPCArousalBar } from '../NPCArousalBar';
 import { MapView } from './MapView';
+import { InventoryView } from './InventoryView';
+import { EquipmentView } from './EquipmentView';
 import { useResponsiveContext } from '../../contexts/ResponsiveContext';
-import { getCharacterDisplayTitle } from '../../utils/characterTitleExtractor';
+import { getCharacterDisplayTitle, getCharacterDisplayTitleWithAI, updateCharacterTitle, getCharacterTitle } from '../../utils/characterTitleExtractor';
 
 interface InfoMenuProps {
   isOpen: boolean;
@@ -57,6 +60,11 @@ interface InfoMenuProps {
   onToggleAdultIntensity?: () => void;
   // Map props
   onLocationTravel?: (locationId: string) => void;
+  // Inventory props
+  onEquipItem?: (itemId: string, slot?: string) => void;
+  onUnequipItem?: (itemId: string) => void;
+  onDropItem?: (itemId: string) => void;
+  onViewItemDetails?: (item: InventoryItem) => void;
 }
 
 interface MenuSection {
@@ -88,7 +96,11 @@ export function InfoMenu({
   turnCounter,
   onToggleAdultContent,
   onToggleAdultIntensity,
-  onLocationTravel
+  onLocationTravel,
+  onEquipItem,
+  onUnequipItem,
+  onDropItem,
+  onViewItemDetails
 }: InfoMenuProps) {
   // Responsive design context
   const { shouldUseMobileLayout } = useResponsiveContext();
@@ -129,44 +141,6 @@ export function InfoMenu({
     return parts;
   };
 
-  // Function to highlight only location names (not keywords) with /.../ syntax
-  const highlightLocationNames = (text: string) => {
-    // First, clean HTML tags
-    const cleanText = text.replace(/<[^>]*>/g, '');
-    
-    const nameRegex = /\/([^\/]+)\//g;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = nameRegex.exec(cleanText)) !== null) {
-      // Add text before the name
-      if (match.index > lastIndex) {
-        parts.push({
-          type: 'text',
-          content: cleanText.slice(lastIndex, match.index)
-        });
-      }
-
-      // Add highlighted name
-      parts.push({
-        type: 'highlight',
-        content: match[1]
-      });
-
-      lastIndex = match.index + match[0].length;
-    }
-
-    // Add remaining text
-    if (lastIndex < cleanText.length) {
-      parts.push({
-        type: 'text',
-        content: cleanText.slice(lastIndex)
-      });
-    }
-
-    return parts;
-  };
   
   // Cache localStorage value để tránh gọi mỗi lần render
   const [activeSection, setActiveSection] = useState<string>(() => {
@@ -184,6 +158,7 @@ export function InfoMenu({
   });
   const [expandedNPCs, setExpandedNPCs] = useState<Set<string>>(new Set());
   const [forceUpdate, setForceUpdate] = useState<number>(0);
+  const [characterSubSection, setCharacterSubSection] = useState<'info' | 'inventory' | 'equipment'>('info');
   
   // Theo dõi thay đổi responsive và chuyển section khi cần
   useEffect(() => {
@@ -326,8 +301,114 @@ export function InfoMenu({
     );
   };
 
+  // State để theo dõi trạng thái phân tích
+  const [isAnalyzingTitle, setIsAnalyzingTitle] = useState(false);
+
+  // Phân tích danh hiệu bằng AI khi characterData thay đổi (chỉ khi chưa có title)
+  useEffect(() => {
+    if (characterData && characterData.backstory) {
+      // Nếu đã có title, không cần phân tích lại
+      if (characterData.title) {
+        setIsAnalyzingTitle(false);
+        return;
+      }
+
+      // Nếu chưa có title, phân tích bằng AI
+      setIsAnalyzingTitle(true);
+      getCharacterDisplayTitleWithAI(characterData)
+        .then(title => {
+          setIsAnalyzingTitle(false);
+          
+          // Lưu title vào characterData và localStorage
+          updateCharacterTitle(characterData, title);
+        })
+        .catch(error => {
+          console.warn('Failed to analyze character title with AI:', error);
+          const fallbackTitle = getCharacterDisplayTitle(characterData);
+          setIsAnalyzingTitle(false);
+          
+          // Lưu fallback title
+          updateCharacterTitle(characterData, fallbackTitle);
+        });
+    }
+  }, [characterData]);
+
+  // Khởi tạo inventory service khi characterData thay đổi
+  useEffect(() => {
+    if (characterData) {
+      inventoryService.setCharacter(characterData);
+    }
+  }, [characterData]);
+
   // Render section nhân vật
   const renderCharacterSection = () => {
+    if (!characterData) return <div className="text-gray-400">Không có dữ liệu nhân vật</div>;
+
+    return (
+      <div className="space-y-4">
+        {/* Character Sub-tabs */}
+        <div className="flex border-b border-gray-700/50">
+          <button
+            onClick={() => setCharacterSubSection('info')}
+            className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
+              characterSubSection === 'info'
+                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>Thông tin</span>
+          </button>
+          <button
+            onClick={() => setCharacterSubSection('inventory')}
+            className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
+              characterSubSection === 'inventory'
+                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>Túi đồ</span>
+          </button>
+          <button
+            onClick={() => setCharacterSubSection('equipment')}
+            className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
+              characterSubSection === 'equipment'
+                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
+          >
+            <Sword className="w-4 h-4" />
+            <span>Trang bị</span>
+          </button>
+        </div>
+        
+        {/* Character Content */}
+        {characterSubSection === 'info' && renderCharacterInfo()}
+        {characterSubSection === 'inventory' && (
+          <InventoryView
+            inventory={characterData.inventory || []}
+            onEquipItem={onEquipItem}
+            onUnequipItem={onUnequipItem}
+            onDropItem={onDropItem}
+            onViewItemDetails={onViewItemDetails}
+          />
+        )}
+        {characterSubSection === 'equipment' && (
+          <EquipmentView
+            equipment={characterData.equipment || {}}
+            inventory={characterData.inventory || []}
+            onEquipItem={onEquipItem}
+            onUnequipItem={onUnequipItem}
+            onViewItemDetails={onViewItemDetails}
+          />
+        )}
+      </div>
+    );
+  };
+
+  // Render character info (existing content)
+  const renderCharacterInfo = () => {
     if (!characterData) return <div className="text-gray-400">Không có dữ liệu nhân vật</div>;
 
     return (
@@ -341,7 +422,16 @@ export function InfoMenu({
           <div className="space-y-2 text-sm">
             <div><span className="text-gray-400">Tên:</span> <span className="text-white">{characterData.name}</span></div>
             <div><span className="text-gray-400">Giới tính:</span> <span className="text-white">{characterData.gender}</span></div>
-            <div><span className="text-gray-400">Danh hiệu:</span> <span className="text-white">{getCharacterDisplayTitle(characterData)}</span></div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400">Danh hiệu:</span> 
+              {isAnalyzingTitle ? (
+                <span className="text-yellow-400 text-xs">Đang phân tích...</span>
+              ) : (
+                <span className="text-white">
+                  {getCharacterTitle(characterData)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1140,6 +1230,78 @@ export function InfoMenu({
                         )}
                       </div>
 
+                      {/* Personal Information Section */}
+                      {relationship.personalInfo && (
+                        <div className="space-y-2">
+                          <div className="text-gray-400 text-xs font-medium">Thông tin cá nhân:</div>
+                          <div className="grid grid-cols-1 gap-2 text-xs">
+                            {/* Age */}
+                            {relationship.personalInfo.age?.revealed && relationship.personalInfo.age.value && (
+                              <div className="flex items-center space-x-2">
+                                <span className="text-gray-400 w-16">Tuổi:</span>
+                                <span className="text-white">{relationship.personalInfo.age.value} tuổi</span>
+                              </div>
+                            )}
+                            
+                            {/* Occupation */}
+                            {relationship.personalInfo.occupation?.revealed && relationship.personalInfo.occupation.value && (
+                              <div className="flex items-center space-x-2">
+                                <span className="text-gray-400 w-16">Nghề nghiệp:</span>
+                                <span className="text-white">{relationship.personalInfo.occupation.value}</span>
+                              </div>
+                            )}
+                            
+                            {/* Address */}
+                            {relationship.personalInfo.address?.revealed && relationship.personalInfo.address.value && (
+                              <div className="flex items-center space-x-2">
+                                <span className="text-gray-400 w-16">Địa chỉ:</span>
+                                <span className="text-white">{relationship.personalInfo.address.value}</span>
+                              </div>
+                            )}
+                            
+                            {/* Family */}
+                            {relationship.personalInfo.family?.revealed && relationship.personalInfo.family.value && (
+                              <div className="flex items-start space-x-2">
+                                <span className="text-gray-400 w-16">Gia đình:</span>
+                                <span className="text-white flex-1">{relationship.personalInfo.family.value}</span>
+                              </div>
+                            )}
+                            
+                            {/* Background */}
+                            {relationship.personalInfo.background?.revealed && relationship.personalInfo.background.value && (
+                              <div className="flex items-start space-x-2">
+                                <span className="text-gray-400 w-16">Lý lịch:</span>
+                                <span className="text-white flex-1">{relationship.personalInfo.background.value}</span>
+                              </div>
+                            )}
+                            
+                            {/* Personality */}
+                            {relationship.personalInfo.personality?.revealed && relationship.personalInfo.personality.value && (
+                              <div className="flex items-start space-x-2">
+                                <span className="text-gray-400 w-16">Tính cách:</span>
+                                <span className="text-white flex-1">{relationship.personalInfo.personality.value}</span>
+                              </div>
+                            )}
+                            
+                            {/* Goals */}
+                            {relationship.personalInfo.goals?.revealed && relationship.personalInfo.goals.value && (
+                              <div className="flex items-start space-x-2">
+                                <span className="text-gray-400 w-16">Mục tiêu:</span>
+                                <span className="text-white flex-1">{relationship.personalInfo.goals.value}</span>
+                              </div>
+                            )}
+                            
+                            {/* Secrets */}
+                            {relationship.personalInfo.secrets?.revealed && relationship.personalInfo.secrets.value && (
+                              <div className="flex items-start space-x-2">
+                                <span className="text-gray-400 w-16">Bí mật:</span>
+                                <span className="text-yellow-300 flex-1 italic">{relationship.personalInfo.secrets.value}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {relationship.tags && relationship.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {relationship.tags.map((tag: any, index: number) => (
@@ -1157,26 +1319,12 @@ export function InfoMenu({
                           </div>
                           <div className="text-gray-300 text-xs bg-gray-600/50 p-3 rounded max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-700 min-w-0 break-words border border-gray-500/30">
                             {cleanNotes(relationship.notes).map((note, noteIndex) => {
-                              const highlightedParts = highlightLocationNames(note);
+                              // Remove forward slashes from note
+                              const cleanedNote = note.replace(/\//g, '');
                               return (
                                 <div key={noteIndex} className="mb-2 last:mb-0 break-words overflow-wrap-anywhere min-w-0 leading-relaxed">
                                   <span className="text-gray-400 mr-2">•</span>
-                                  <span>
-                                    {highlightedParts.map((part, partIndex) => {
-                                      if (part.type === 'highlight') {
-                                        return (
-                                          <span 
-                                            key={partIndex}
-                                            className="text-yellow-300 font-semibold"
-                                          >
-                                            {part.content}
-                                          </span>
-                                        );
-                                      } else {
-                                        return part.content;
-                                      }
-                                    })}
-                                  </span>
+                                  <span className="text-gray-300">{cleanedNote}</span>
                                 </div>
                               );
                             })}

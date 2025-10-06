@@ -5,6 +5,42 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2025-01-05
+
+### 🎯 Added
+- **Hệ thống thông tin cá nhân NPC nâng cao**: Thông tin chi tiết về NPCs được hiển thị dần dần
+  - **8 loại thông tin**: Tuổi, nghề nghiệp, địa chỉ, gia đình, lý lịch, tính cách, mục tiêu, bí mật
+  - **Progressive Revelation**: Thông tin chỉ hiển thị khi được AI tiết lộ qua tương tác
+  - **Smart Detection**: Hệ thống nhận diện thông minh với 50+ keywords và patterns
+  - **Data Cleaning**: Tự động làm sạch và chuẩn hóa dữ liệu trước khi lưu
+- **UI cải tiến**: Giao diện thông tin cá nhân sạch sẽ, không còn text `(ai_response)`
+- **Migration System**: Tự động cập nhật NPCs cũ để hỗ trợ thông tin cá nhân mới
+
+### 🔧 Changed
+- **Enhanced Pattern Detection**: Cải thiện độ chính xác nhận diện thông tin cá nhân
+  - **Age patterns**: Thêm `độ tuổi`, `khoảng X tuổi`, `ngoài X tuổi`
+  - **Occupation patterns**: Thêm `từng là`, `trước đây là`, `nghề cũ là`, `chuyên về`
+  - **Address patterns**: Thêm `khu phố`, `quận`, `huyện`, `tỉnh`, `thành phố`
+  - **Family patterns**: Thêm `con trai`, `con gái`, `anh trai`, `chị gái`, `bà nội`, `ông nội`
+  - **Background patterns**: Thêm `kinh nghiệm`, `học vấn`, `bằng cấp`, `trường học`
+  - **Personality patterns**: Thêm các từ mô tả tính cách cụ thể
+  - **Goals patterns**: Thêm `muốn trở thành`, `muốn làm`, `muốn có`, `muốn đạt được`
+  - **Secrets patterns**: Thêm `che giấu`, `không tiết lộ`, `quá khứ đen tối`
+- **Data Processing**: Chỉ phân tích khi AI response thực sự chứa thông tin cá nhân
+- **Duplicate Prevention**: Chỉ lưu thông tin mới, không ghi đè thông tin đã có
+
+### 🐛 Fixed
+- **UI Cleanup**: Loại bỏ text `(ai_response)` khỏi giao diện thông tin cá nhân
+- **Data Quality**: Cải thiện chất lượng dữ liệu với hàm làm sạch thông minh
+- **Performance**: Tối ưu hóa việc phân tích chỉ khi cần thiết
+- **Memory Usage**: Giảm thiểu việc lưu trữ dữ liệu không cần thiết
+
+### 🚀 Performance
+- **Smart Analysis**: Chỉ phân tích khi có keywords liên quan
+- **Efficient Storage**: Chỉ lưu thông tin có ý nghĩa (0 < length < 200)
+- **Optimized Patterns**: Regex patterns được tối ưu hóa cho hiệu suất
+- **Lazy Loading**: Thông tin cá nhân được load khi cần thiết
+
 ## [2.6.0] - 2025-01-02
 
 ### 🎯 Added

@@ -39,12 +39,16 @@ class NPCRelationshipService {
         const relationships = JSON.parse(relationshipsData);
         this.relationships = new Map(relationships.map((r: any) => [r.id, {
           ...r,
-          lastInteraction: new Date(r.lastInteraction)
+          lastInteraction: new Date(r.lastInteraction),
+          // Ensure personalInfo is initialized for existing NPCs
+          personalInfo: r.personalInfo || {}
         }]));
         
         // Auto-fix any incorrect statuses after loading
         setTimeout(() => {
           this.fixAllNPCStatuses();
+          // Migrate existing NPCs to include personalInfo field
+          this.migrateNPCsToPersonalInfo();
         }, 1000); // Wait 1 second to ensure everything is loaded
       }
 
@@ -95,7 +99,8 @@ class NPCRelationshipService {
       notes: npcData.notes ?? existing?.notes ?? [],
       tags: npcData.tags ?? existing?.tags ?? [],
       location: npcData.location,
-      faction: npcData.faction
+      faction: npcData.faction,
+      personalInfo: npcData.personalInfo ?? existing?.personalInfo ?? {}
     };
 
     this.relationships.set(id, relationship);
@@ -107,9 +112,6 @@ class NPCRelationshipService {
     return this.relationships.get(npcId);
   }
 
-  getAllRelationships(): NPCRelationship[] {
-    return Array.from(this.relationships.values());
-  }
 
   // Get NPC relationship context for AI
   getRelationshipContext(location?: string): string {
@@ -1354,11 +1356,30 @@ OUTPUT JSON:
             relationshipLevel: 0,
             reputation: 0,
             totalInteractions: 0,
-            notes: this.generateInitialNotes(npc, currentLocation)
+            notes: this.generateInitialNotes(npc, currentLocation),
+            // Location signature NPC system
+            isLocationSignature: npc.isLocationSignature || false,
+            signatureLocationId: npc.signatureLocationId || undefined,
+            signatureQuestId: npc.signatureQuestId || undefined
           });
         }
       }
     });
+  }
+
+  // Location Signature NPC Management
+  getSignatureNPCForLocation(locationId: string): NPCRelationship | undefined {
+    return Array.from(this.relationships.values()).find(npc => 
+      npc.isLocationSignature && npc.signatureLocationId === locationId
+    );
+  }
+
+  hasSignatureNPCForLocation(locationId: string): boolean {
+    return this.getSignatureNPCForLocation(locationId) !== undefined;
+  }
+
+  getSignatureNPCs(): NPCRelationship[] {
+    return Array.from(this.relationships.values()).filter(npc => npc.isLocationSignature);
   }
 
   // Tìm NPC bằng tên chính xác hoặc tên tương tự
@@ -2575,6 +2596,459 @@ OUTPUT JSON:
     
     const selectedPersonality = personalities[Math.floor(random * personalities.length)];
     return selectedPersonality;
+  }
+
+  // Enhanced NPC Personal Information Management
+  /**
+   * Clean and normalize personal information value
+   */
+  private cleanPersonalInfoValue(value: string, infoType: string): string {
+    let cleaned = value.trim();
+    
+    // Remove common prefixes and suffixes
+    cleaned = cleaned.replace(/^(là|từng là|trước đây là|nghề cũ là|chủ|quản lý)\s*/i, '');
+    cleaned = cleaned.replace(/\s*(chuyên|về|tại|ở|này|đó|đây)$/i, '');
+    cleaned = cleaned.replace(/\s*[,.]*$/, ''); // Remove trailing punctuation
+    
+    // Specific cleaning for different info types
+    switch (infoType) {
+      case 'age':
+        // Extract only the number
+        const ageMatch = cleaned.match(/(\d+)/);
+        cleaned = ageMatch ? ageMatch[1] : cleaned;
+        break;
+      case 'occupation':
+        // Clean occupation text
+        cleaned = cleaned.replace(/^(người|một người)\s*/i, '');
+        cleaned = cleaned.replace(/\s*(của|tại|ở).*$/i, '');
+        break;
+      case 'address':
+        // Clean address text
+        cleaned = cleaned.replace(/^(tại|ở|sống tại)\s*/i, '');
+        cleaned = cleaned.replace(/\s*(khu phố|quận|huyện|tỉnh|thành phố).*$/i, '');
+        break;
+    }
+    
+    return cleaned;
+  }
+
+  /**
+   * Reveal personal information about an NPC based on AI response
+   */
+  public revealPersonalInfo(npcId: string, infoType: keyof NonNullable<NPCRelationship['personalInfo']>, value: string, source: string = 'ai_response'): void {
+    const npc = this.relationships.get(npcId);
+    if (!npc) return;
+
+    if (!npc.personalInfo) {
+      npc.personalInfo = {};
+    }
+
+    // Clean and normalize the value
+    const cleanedValue = this.cleanPersonalInfoValue(value, infoType);
+    
+    // Only save if the cleaned value is meaningful
+    if (cleanedValue.length > 0 && cleanedValue.length < 200) {
+      (npc.personalInfo as any)[infoType] = {
+        value: cleanedValue,
+        revealed: true,
+        source: source
+      };
+
+      this.saveToStorage();
+    }
+  }
+
+  /**
+   * Check if specific personal information has been revealed
+   */
+  public isPersonalInfoRevealed(npcId: string, infoType: keyof NonNullable<NPCRelationship['personalInfo']>): boolean {
+    const npc = this.relationships.get(npcId);
+    if (!npc?.personalInfo?.[infoType]) return false;
+    return npc.personalInfo[infoType]!.revealed;
+  }
+
+  /**
+   * Get revealed personal information
+   */
+  public getPersonalInfo(npcId: string, infoType: keyof NonNullable<NPCRelationship['personalInfo']>): string | null {
+    const npc = this.relationships.get(npcId);
+    if (!npc?.personalInfo?.[infoType]?.revealed) return null;
+    return String(npc.personalInfo[infoType]!.value || '');
+  }
+
+  /**
+   * Get all NPCs in a specific location
+   */
+  public getRelationshipsByLocation(locationId: string): NPCRelationship[] {
+    return Array.from(this.relationships.values()).filter(npc => 
+      npc.location === locationId || 
+      (typeof npc.location === 'object' && npc.location && 'id' in npc.location && (npc.location as any).id === locationId)
+    );
+  }
+
+  /**
+   * Get all NPCs
+   */
+  public getAllRelationships(): NPCRelationship[] {
+    return Array.from(this.relationships.values());
+  }
+
+  /**
+   * Migrate existing NPCs to include personalInfo field
+   */
+  public migrateNPCsToPersonalInfo(): void {
+    let hasChanges = false;
+    this.relationships.forEach((npc) => {
+      if (!npc.personalInfo) {
+        npc.personalInfo = {};
+        hasChanges = true;
+      }
+    });
+    
+    if (hasChanges) {
+      this.saveToStorage();
+      console.log('✅ Migrated existing NPCs to include personalInfo field');
+    }
+  }
+
+
+  /**
+   * Check if narrative contains personal information keywords
+   */
+  private containsPersonalInfoKeywords(narrative: string): boolean {
+    const personalInfoKeywords = [
+      // Age keywords - more specific patterns
+      'tuổi', 'khoảng', 'ngoài', 'trên', 'dưới', 'năm tuổi', 'tuổi đời',
+      'độ tuổi', 'trẻ', 'già', 'trung niên', 'thanh niên',
+      // Occupation keywords - more comprehensive
+      'nghề nghiệp', 'công việc', 'làm', 'chủ', 'quản lý', 'chuyên về',
+      'thợ', 'bác sĩ', 'luật sư', 'giáo viên', 'cảnh sát', 'lính', 'thương gia',
+      'nghệ sĩ', 'ca sĩ', 'diễn viên', 'nhà văn', 'họa sĩ', 'kiến trúc sư',
+      // Address keywords - more specific
+      'sống tại', 'ở', 'địa chỉ', 'nhà ở', 'cư trú', 'sinh sống',
+      'khu phố', 'quận', 'huyện', 'tỉnh', 'thành phố', 'đường', 'phố',
+      // Family keywords - more comprehensive
+      'chồng', 'vợ', 'con', 'cha', 'mẹ', 'anh', 'chị', 'em', 'bà', 'ông', 'gia đình',
+      'người thân', 'họ hàng', 'con trai', 'con gái', 'anh trai', 'chị gái', 'em trai', 'em gái',
+      'bố', 'mẹ', 'bà nội', 'ông nội', 'bà ngoại', 'ông ngoại',
+      // Background keywords - more specific
+      'trước đây', 'trong quá khứ', 'xuất thân', 'lớn lên', 'sinh ra', 'học tại', 'từng làm',
+      'kinh nghiệm', 'học vấn', 'bằng cấp', 'trường học', 'đại học', 'cao đẳng',
+      'nghề cũ', 'công việc trước', 'thời trẻ', 'thời thanh niên',
+      // Personality keywords - more specific
+      'tính cách', 'con người', 'bản chất', 'đặc điểm', 'tính tình', 'phẩm chất',
+      'thông minh', 'khôn ngoan', 'tốt bụng', 'lạnh lùng', 'nhiệt tình', 'cẩn thận',
+      'bốc đồng', 'kiên nhẫn', 'kiên trì', 'dũng cảm', 'nhút nhát', 'tự tin',
+      // Goals keywords - more comprehensive
+      'mục tiêu', 'ước mơ', 'kế hoạch', 'dự định', 'hy vọng', 'mong muốn',
+      'tham vọng', 'hoài bão', 'lý tưởng', 'chí hướng', 'nguyện vọng',
+      'muốn trở thành', 'muốn làm', 'muốn có', 'muốn đạt được',
+      // Secrets keywords - more specific
+      'bí mật', 'không ai biết', 'chỉ mình tôi biết', 'giấu giếm', 'ẩn giấu',
+      'che giấu', 'không tiết lộ', 'không nói ra', 'im lặng về',
+      'quá khứ đen tối', 'việc làm bí mật', 'tổ chức bí mật'
+    ];
+    
+    return personalInfoKeywords.some(keyword => 
+      narrative.toLowerCase().includes(keyword.toLowerCase())
+    );
+  }
+
+  /**
+   * Analyze AI response for personal information revelation
+   */
+  public analyzePersonalInfoRevelation(npcId: string, _aiResponse: string, narrative: string): void {
+    const npc = this.relationships.get(npcId);
+    if (!npc) return;
+
+    // Only analyze if narrative actually contains personal information
+    if (!this.containsPersonalInfoKeywords(narrative)) {
+      console.log(`🔍 No personal info keywords found in narrative for ${npc.name}`);
+      return;
+    }
+
+    console.log(`🔍 Analyzing personal info for ${npc.name}...`);
+    let hasNewInfo = false;
+
+    // Age detection patterns - improved accuracy
+    const agePatterns = [
+      /(\d+)\s*tuổi/i,
+      /khoảng\s*(\d+)/i,
+      /ngoài\s*(\d+)/i,
+      /trên\s*(\d+)/i,
+      /dưới\s*(\d+)/i,
+      /(\d+)\s*năm\s*tuổi/i,
+      /(\d+)\s*tuổi\s*đời/i,
+      /độ\s*tuổi\s*(\d+)/i,
+      /(\d+)\s*tuổi\s*đời/i,
+      /khoảng\s*(\d+)\s*tuổi/i,
+      /ngoài\s*(\d+)\s*tuổi/i,
+      /trên\s*(\d+)\s*tuổi/i,
+      /dưới\s*(\d+)\s*tuổi/i
+    ];
+
+    // Occupation detection patterns - improved accuracy
+    const occupationPatterns = [
+      /là\s*(?:một\s*)?(?:người\s*)?([^,.\n]+?)(?:\s*chuyên|$)/i,
+      /nghề\s*nghiệp[:\s]*([^,.\n]+)/i,
+      /công\s*việc[:\s]*([^,.\n]+)/i,
+      /làm\s*([^,.\n]+?)(?:\s*tại|$)/i,
+      /chủ\s*([^,.\n]+)/i,
+      /quản\s*lý\s*([^,.\n]+)/i,
+      /từng\s*là\s*([^,.\n]+)/i,
+      /trước\s*đây\s*là\s*([^,.\n]+)/i,
+      /nghề\s*cũ\s*là\s*([^,.\n]+)/i,
+      /chuyên\s*về\s*([^,.\n]+)/i,
+      /hoạt\s*động\s*trong\s*lĩnh\s*vực\s*([^,.\n]+)/i
+    ];
+
+    // Address detection patterns - improved accuracy
+    const addressPatterns = [
+      /sống\s*tại\s*([^,.\n]+)/i,
+      /ở\s*([^,.\n]+)/i,
+      /địa\s*chỉ[:\s]*([^,.\n]+)/i,
+      /nhà\s*ở\s*([^,.\n]+)/i,
+      /cư\s*trú\s*tại\s*([^,.\n]+)/i,
+      /sinh\s*sống\s*tại\s*([^,.\n]+)/i,
+      /khu\s*phố\s*([^,.\n]+)/i,
+      /quận\s*([^,.\n]+)/i,
+      /huyện\s*([^,.\n]+)/i,
+      /tỉnh\s*([^,.\n]+)/i,
+      /thành\s*phố\s*([^,.\n]+)/i,
+      /đường\s*([^,.\n]+)/i,
+      /phố\s*([^,.\n]+)/i
+    ];
+
+    // Family detection patterns - improved accuracy
+    const familyPatterns = [
+      /có\s*(?:một\s*)?(?:người\s*)?(?:chồng|vợ|con|cha|mẹ|anh|chị|em|bà|ông)/i,
+      /gia\s*đình[:\s]*([^,.\n]+)/i,
+      /vợ\s*chồng/i,
+      /con\s*cái/i,
+      /cha\s*mẹ/i,
+      /người\s*thân/i,
+      /họ\s*hàng/i,
+      /con\s*trai/i,
+      /con\s*gái/i,
+      /anh\s*trai/i,
+      /chị\s*gái/i,
+      /em\s*trai/i,
+      /em\s*gái/i,
+      /bà\s*nội/i,
+      /ông\s*nội/i,
+      /bà\s*ngoại/i,
+      /ông\s*ngoại/i
+    ];
+
+    // Background detection patterns - improved accuracy
+    const backgroundPatterns = [
+      /trước\s*đây/i,
+      /trong\s*quá\s*khứ/i,
+      /xuất\s*thân/i,
+      /lớn\s*lên\s*ở/i,
+      /sinh\s*ra\s*tại/i,
+      /học\s*tại/i,
+      /từng\s*làm/i,
+      /kinh\s*nghiệm/i,
+      /học\s*vấn/i,
+      /bằng\s*cấp/i,
+      /trường\s*học/i,
+      /đại\s*học/i,
+      /cao\s*đẳng/i,
+      /nghề\s*cũ/i,
+      /công\s*việc\s*trước/i,
+      /thời\s*trẻ/i,
+      /thời\s*thanh\s*niên/i
+    ];
+
+    // Personality detection patterns - improved accuracy
+    const personalityPatterns = [
+      /tính\s*cách/i,
+      /con\s*người/i,
+      /bản\s*chất/i,
+      /đặc\s*điểm/i,
+      /tính\s*tình/i,
+      /phẩm\s*chất/i,
+      /thông\s*minh/i,
+      /khôn\s*ngoan/i,
+      /tốt\s*bụng/i,
+      /lạnh\s*lùng/i,
+      /nhiệt\s*tình/i,
+      /cẩn\s*thận/i,
+      /bốc\s*đồng/i,
+      /kiên\s*nhẫn/i,
+      /kiên\s*trì/i,
+      /dũng\s*cảm/i,
+      /nhút\s*nhát/i,
+      /tự\s*tin/i
+    ];
+
+    // Goals detection patterns - improved accuracy
+    const goalsPatterns = [
+      /mục\s*tiêu/i,
+      /ước\s*mơ/i,
+      /kế\s*hoạch/i,
+      /dự\s*định/i,
+      /hy\s*vọng/i,
+      /mong\s*muốn/i,
+      /tham\s*vọng/i,
+      /hoài\s*bão/i,
+      /lý\s*tưởng/i,
+      /chí\s*hướng/i,
+      /nguyện\s*vọng/i,
+      /muốn\s*trở\s*thành/i,
+      /muốn\s*làm/i,
+      /muốn\s*có/i,
+      /muốn\s*đạt\s*được/i
+    ];
+
+    // Secrets detection patterns - improved accuracy
+    const secretsPatterns = [
+      /bí\s*mật/i,
+      /không\s*ai\s*biết/i,
+      /chỉ\s*mình\s*tôi\s*biết/i,
+      /giấu\s*giếm/i,
+      /ẩn\s*giấu/i,
+      /che\s*giấu/i,
+      /không\s*tiết\s*lộ/i,
+      /không\s*nói\s*ra/i,
+      /im\s*lặng\s*về/i,
+      /quá\s*khứ\s*đen\s*tối/i,
+      /việc\s*làm\s*bí\s*mật/i,
+      /tổ\s*chức\s*bí\s*mật/i
+    ];
+
+    // Check for age information
+    for (const pattern of agePatterns) {
+      const match = narrative.match(pattern);
+      if (match && match[1]) {
+        const age = parseInt(match[1]);
+        if (age >= 1 && age <= 150) {
+          if (!npc.personalInfo?.age?.revealed) {
+            this.revealPersonalInfo(npcId, 'age', age.toString(), 'ai_response');
+            console.log(`✅ Revealed age: ${age} for ${npc.name}`);
+            hasNewInfo = true;
+          }
+          break;
+        }
+      }
+    }
+
+    // Check for occupation information
+    for (const pattern of occupationPatterns) {
+      const match = narrative.match(pattern);
+      if (match && match[1]) {
+        const occupation = match[1].trim();
+        if (occupation.length > 2 && occupation.length < 50) {
+          if (!npc.personalInfo?.occupation?.revealed) {
+            this.revealPersonalInfo(npcId, 'occupation', occupation, 'ai_response');
+            console.log(`✅ Revealed occupation: ${occupation} for ${npc.name}`);
+            hasNewInfo = true;
+          }
+          break;
+        }
+      }
+    }
+
+    // Check for address information
+    for (const pattern of addressPatterns) {
+      const match = narrative.match(pattern);
+      if (match && match[1]) {
+        const address = match[1].trim();
+        if (address.length > 3 && address.length < 100) {
+          if (!npc.personalInfo?.address?.revealed) {
+            this.revealPersonalInfo(npcId, 'address', address, 'ai_response');
+            console.log(`✅ Revealed address: ${address} for ${npc.name}`);
+            hasNewInfo = true;
+          }
+          break;
+        }
+      }
+    }
+
+    // Check for family information
+    for (const pattern of familyPatterns) {
+      if (pattern.test(narrative)) {
+        // Extract family context around the match
+        const familyMatch = narrative.match(new RegExp(`.{0,50}${pattern.source}.{0,50}`, 'i'));
+        if (familyMatch) {
+          if (!npc.personalInfo?.family?.revealed) {
+            this.revealPersonalInfo(npcId, 'family', familyMatch[0].trim(), 'ai_response');
+            console.log(`✅ Revealed family: ${familyMatch[0].trim()} for ${npc.name}`);
+            hasNewInfo = true;
+          }
+          break;
+        }
+      }
+    }
+
+    // Check for background information
+    for (const pattern of backgroundPatterns) {
+      if (pattern.test(narrative)) {
+        // Extract background context around the match
+        const backgroundMatch = narrative.match(new RegExp(`.{0,100}${pattern.source}.{0,100}`, 'i'));
+        if (backgroundMatch) {
+          if (!npc.personalInfo?.background?.revealed) {
+            this.revealPersonalInfo(npcId, 'background', backgroundMatch[0].trim(), 'ai_response');
+            console.log(`✅ Revealed background: ${backgroundMatch[0].trim()} for ${npc.name}`);
+            hasNewInfo = true;
+          }
+          break;
+        }
+      }
+    }
+
+    // Check for personality information
+    for (const pattern of personalityPatterns) {
+      if (pattern.test(narrative)) {
+        // Extract personality context around the match
+        const personalityMatch = narrative.match(new RegExp(`.{0,100}${pattern.source}.{0,100}`, 'i'));
+        if (personalityMatch) {
+          if (!npc.personalInfo?.personality?.revealed) {
+            this.revealPersonalInfo(npcId, 'personality', personalityMatch[0].trim(), 'ai_response');
+            console.log(`✅ Revealed personality: ${personalityMatch[0].trim()} for ${npc.name}`);
+            hasNewInfo = true;
+          }
+          break;
+        }
+      }
+    }
+
+    // Check for goals information
+    for (const pattern of goalsPatterns) {
+      if (pattern.test(narrative)) {
+        // Extract goals context around the match
+        const goalsMatch = narrative.match(new RegExp(`.{0,100}${pattern.source}.{0,100}`, 'i'));
+        if (goalsMatch) {
+          if (!npc.personalInfo?.goals?.revealed) {
+            this.revealPersonalInfo(npcId, 'goals', goalsMatch[0].trim(), 'ai_response');
+            console.log(`✅ Revealed goals: ${goalsMatch[0].trim()} for ${npc.name}`);
+            hasNewInfo = true;
+          }
+          break;
+        }
+      }
+    }
+
+    // Check for secrets information
+    for (const pattern of secretsPatterns) {
+      if (pattern.test(narrative)) {
+        // Extract secrets context around the match
+        const secretsMatch = narrative.match(new RegExp(`.{0,100}${pattern.source}.{0,100}`, 'i'));
+        if (secretsMatch) {
+          if (!npc.personalInfo?.secrets?.revealed) {
+            this.revealPersonalInfo(npcId, 'secrets', secretsMatch[0].trim(), 'ai_response');
+            console.log(`✅ Revealed secrets: ${secretsMatch[0].trim()} for ${npc.name}`);
+            hasNewInfo = true;
+          }
+          break;
+        }
+      }
+    }
+    
+    if (!hasNewInfo) {
+      console.log(`ℹ️ No new personal info revealed for ${npc.name}`);
+    }
   }
 }
 

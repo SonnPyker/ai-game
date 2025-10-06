@@ -113,6 +113,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         localStorage.removeItem('faction_reputations');
         localStorage.removeItem('action_suggestions');
         localStorage.removeItem('action_log');
+        localStorage.removeItem('player_location'); // Clear player location when loading different game
         
         // Cập nhật localStorage với dữ liệu từ SaveGame
         const saveGame = result.saveGame;
@@ -141,6 +142,11 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         
         if (saveGame.actionLog) {
           localStorage.setItem('action_log', JSON.stringify(saveGame.actionLog));
+        }
+
+        // Khôi phục player location nếu có
+        if (saveGame.playerLocation) {
+          localStorage.setItem('player_location', JSON.stringify(saveGame.playerLocation));
         }
         
         // Khôi phục NPC relationship data nếu có

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Send, Loader2, AlertCircle, Play, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History, Moon } from 'lucide-react';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
-import { WorldTime, SCCContext, ChatMessage, ContentFlags, PlayerLocation } from '../types';
+import { WorldTime, SCCContext, ChatMessage, ContentFlags, PlayerLocation, InventoryItem } from '../types';
 import { buildContextForAI } from '../lib/context';
 import { SaveGame } from '../types/saveGame';
 import { useQuestSystem } from '../hooks/useQuestSystem';
@@ -12,6 +12,8 @@ import { detectPlayerDialogue, enhanceDialogueForAI } from '../utils/dialoguePro
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
 import { actionSuggestionService, SuggestedAction, ActionLogEntry } from '../services/actionSuggestionService';
 import { locationService } from '../services/locationService';
+import { inventoryService } from '../services/inventoryService';
+import { ItemSelectionModal } from '../components/ItemSelectionModal/ItemSelectionModal';
 
 // Lazy load các services lớn để giảm kích thước bundle chính
 let geminiService: any;
@@ -103,6 +105,10 @@ export function GamePage() {
   // Skip time modal state
   const [showSkipTimeModal, setShowSkipTimeModal] = useState(false);
   const [skipHours, setSkipHours] = useState(2);
+  
+  // Item selection modal state
+  const [showItemSelectionModal, setShowItemSelectionModal] = useState(false);
+  const [availableItems, setAvailableItems] = useState<InventoryItem[]>([]);
   
   // Helper function to generate random duration for suggestions (10-120 minutes)
   const generateSuggestionDuration = (): number => {
@@ -519,6 +525,32 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     }
     
     return tags;
+  };
+
+  // Check if narrative contains personal information keywords
+  const checkForPersonalInfoKeywords = (narrative: string): boolean => {
+    const personalInfoKeywords = [
+      // Age keywords
+      'tuổi', 'khoảng', 'ngoài', 'trên', 'dưới', 'năm tuổi',
+      // Occupation keywords  
+      'nghề nghiệp', 'công việc', 'làm', 'chủ', 'quản lý',
+      // Address keywords
+      'sống tại', 'ở', 'địa chỉ', 'nhà ở', 'cư trú',
+      // Family keywords
+      'chồng', 'vợ', 'con', 'cha', 'mẹ', 'anh', 'chị', 'em', 'bà', 'ông', 'gia đình',
+      // Background keywords
+      'trước đây', 'trong quá khứ', 'xuất thân', 'lớn lên', 'sinh ra', 'học tại', 'từng làm',
+      // Personality keywords
+      'tính cách', 'con người', 'bản chất', 'đặc điểm', 'tính tình',
+      // Goals keywords
+      'mục tiêu', 'ước mơ', 'kế hoạch', 'dự định', 'hy vọng', 'mong muốn',
+      // Secrets keywords
+      'bí mật', 'không ai biết', 'chỉ mình tôi biết', 'giấu giếm', 'ẩn giấu'
+    ];
+    
+    return personalInfoKeywords.some(keyword => 
+      narrative.toLowerCase().includes(keyword.toLowerCase())
+    );
   };
 
   // Hàm validation AI response toàn diện
@@ -991,17 +1023,56 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             // Kiểm tra quest đã được xử lý chưa
             const questId = response.sideQuestOffer.id || response.sideQuestOffer.title;
             if (!processedQuests.has(questId)) {
-              // Đảm bảo questOffer có cấu trúc đúng
-              const validQuestOffer = {
-                title: response.sideQuestOffer.title,
-                description: response.sideQuestOffer.description || 'Mô tả quest sẽ được cập nhật sau',
-                objectives: response.sideQuestOffer.objectives || [],
-                rewards: response.sideQuestOffer.rewards || []
-              };
               
-              // Hiển thị modal để người chơi chọn nhận/từ chối
-              setPendingQuestOffer(validQuestOffer);
-              setShowQuestOfferModal(true);
+              // Kiểm tra signature quest đã tồn tại chưa
+              let shouldCreateQuest = true;
+              if (response.sideQuestOffer.isLocationSignature && response.sideQuestOffer.signatureLocationId) {
+                const existingSignatureQuest = questSystem.sideQuests.find(quest => 
+                  quest.isLocationSignature && quest.signatureLocationId === response.sideQuestOffer.signatureLocationId
+                );
+                
+                if (existingSignatureQuest) {
+                  console.log(`🏛️ Signature quest đã tồn tại cho location ${response.sideQuestOffer.signatureLocationId}, bỏ qua`);
+                  // Đánh dấu quest này đã được xử lý để tránh tạo lại
+                  processedQuests.add(questId);
+                  shouldCreateQuest = false;
+                }
+              }
+              
+              if (shouldCreateQuest) {
+                // Kiểm tra quest system rules cho side quest bình thường
+                if (!response.sideQuestOffer.isLocationSignature) {
+                  // Kiểm tra tần suất tạo side quest (tối đa 1 quest mỗi 3-5 turn)
+                  const recentSideQuests = questSystem.sideQuests.filter(quest => 
+                    quest.turnCreated && turnCounter && (turnCounter - quest.turnCreated) <= 5
+                  );
+                  
+                  if (recentSideQuests.length > 0) {
+                    console.log(`🎯 Đã có ${recentSideQuests.length} side quest trong 5 turn gần đây, bỏ qua quest mới`);
+                    // Đánh dấu quest này đã được xử lý để tránh tạo lại
+                    processedQuests.add(questId);
+                    shouldCreateQuest = false;
+                  }
+                }
+                
+                if (shouldCreateQuest) {
+                  // Đảm bảo questOffer có cấu trúc đúng
+                  const validQuestOffer = {
+                    title: response.sideQuestOffer.title,
+                    description: response.sideQuestOffer.description || 'Mô tả quest sẽ được cập nhật sau',
+                    objectives: response.sideQuestOffer.objectives || [],
+                    rewards: response.sideQuestOffer.rewards || [],
+                    // Signature quest properties
+                    isLocationSignature: response.sideQuestOffer.isLocationSignature || false,
+                    signatureLocationId: response.sideQuestOffer.signatureLocationId || undefined,
+                    signatureNPCId: response.sideQuestOffer.signatureNPCId || undefined
+                  };
+                  
+                  // Hiển thị modal để người chơi chọn nhận/từ chối
+                  setPendingQuestOffer(validQuestOffer);
+                  setShowQuestOfferModal(true);
+                }
+              }
             }
           }
           
@@ -1010,6 +1081,18 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           }
         } catch (questError) {
           console.error('Lỗi quest system:', questError);
+        }
+
+        // Parse items from AI response and show selection modal
+        try {
+          const foundItems = inventoryService.parseItemsFromAIResponse(response);
+          if (foundItems && foundItems.length > 0) {
+            console.log('🎒 Phát hiện items từ AI response:', foundItems);
+            setAvailableItems(foundItems);
+            setShowItemSelectionModal(true);
+          }
+        } catch (itemError) {
+          console.error('Lỗi xử lý items:', itemError);
         }
 
         // Update SCC context with AI message
@@ -1201,6 +1284,53 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         try {
           // Parse NPCs from AI response
           npcRelationshipService.parseNPCsFromAIResponse(response, newSceneState.location);
+          
+          // Analyze personal information revelation from AI response
+          if (response.narrative) {
+            // Only analyze if narrative contains personal information keywords
+            const hasPersonalInfoKeywords = checkForPersonalInfoKeywords(response.narrative);
+            if (hasPersonalInfoKeywords) {
+              // Get all NPCs (not just current location) to analyze personal info
+              const allNPCs = npcRelationshipService.getAllRelationships();
+              allNPCs.forEach((npc: any) => {
+                npcRelationshipService.analyzePersonalInfoRevelation(npc.id, response.narrative, response.narrative);
+              });
+            }
+          }
+          
+          // Parse items from AI response
+          inventoryService.parseItemsFromAIResponse(response);
+          
+          // Check if player is in a secondary location and needs signature NPC
+          if (newSceneState.location) {
+            const currentLocation = locationService.getLocationById(newSceneState.location);
+            if (currentLocation && currentLocation.type === 'secondary') {
+              // Check if this location already has a signature NPC
+              if (!npcRelationshipService.hasSignatureNPCForLocation(currentLocation.id)) {
+                console.log(`🏛️ Player entered secondary location "${currentLocation.name}" without signature NPC - AI should create one`);
+              } else {
+                // Update location with signature NPC and quest info
+                const signatureNPC = npcRelationshipService.getSignatureNPCForLocation(currentLocation.id);
+                if (signatureNPC) {
+                  currentLocation.signatureNPCId = signatureNPC.id;
+                  if (signatureNPC.signatureQuestId) {
+                    currentLocation.signatureQuestId = signatureNPC.signatureQuestId;
+                  }
+                  currentLocation.hasSignatureContent = true;
+                }
+              }
+            }
+          }
+          
+          // Link signature NPC with signature quest if both exist
+          if (response.sideQuestOffer && response.sideQuestOffer.isLocationSignature && response.sideQuestOffer.signatureLocationId) {
+            const signatureNPC = npcRelationshipService.getSignatureNPCForLocation(response.sideQuestOffer.signatureLocationId);
+            if (signatureNPC) {
+              // Update NPC with quest ID
+              signatureNPC.signatureQuestId = response.sideQuestOffer.id || response.sideQuestOffer.title;
+              npcRelationshipService.addOrUpdateRelationship(signatureNPC);
+            }
+          }
           
           // Parse character status from AI response
           npcRelationshipService.parseCharacterStatusFromAIResponse(response, newSceneState.location);
@@ -1440,6 +1570,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       const sccData = localStorage.getItem('rp_summary_indexed');
       const sceneState = localStorage.getItem('rp_scene_state');
       const questSystemData = localStorage.getItem('quest_system');
+      const playerLocationData = localStorage.getItem('player_location');
       const savedTurnCounter = parseInt(localStorage.getItem('game_turn_counter') || '0', 10);
 
       if (!worldData || !characterData || !scenarioData) {
@@ -1476,7 +1607,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         ui: { showSummaryBanner: gameState.showSummaryBanner, lastSummaryTurn: gameState.lastSummaryTurn },
         contentFlags: gameState.contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true },
         actionSuggestions: actionSuggestions,
-        actionLog: actionLog
+        actionLog: actionLog,
+        playerLocation: playerLocationData ? JSON.parse(playerLocationData) : undefined
       };
 
       // Determine if it's a local or cloud slot
@@ -1512,7 +1644,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           updatedSaveGame.ui,
           updatedSaveGame.contentFlags,
           actionSuggestions,
-          actionLog
+          actionLog,
+          updatedSaveGame.playerLocation
         );
       } else {
         // Save to cloud
@@ -1623,6 +1756,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Clear existing NPC data before loading save
       npcRelationshipService.clearAllData();
       
+      // Clear existing player location before loading save
+      localStorage.removeItem('player_location');
       
       // Cập nhật game state từ SaveGame
       setGameState({
@@ -1752,6 +1887,38 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     handleContentFlagsChange(newFlags);
   };
 
+  // Handle item selection from modal
+  const handleSelectItems = (selectedItems: InventoryItem[]) => {
+    try {
+      inventoryService.addSelectedItems(selectedItems);
+      console.log(`🎒 Đã thêm ${selectedItems.length} vật phẩm vào túi đồ`);
+      
+      // Update character in localStorage
+      const characterData = localStorage.getItem('currentCharacter');
+      if (characterData) {
+        const character = JSON.parse(characterData);
+        character.inventory = inventoryService.getInventory();
+        character.equipment = inventoryService.getEquipment();
+        character.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
+        localStorage.setItem('currentCharacter', JSON.stringify(character));
+        
+        // Reload character data from localStorage to update UI
+        const reloadedCharacterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+        setGameState(prev => ({
+          ...prev,
+          character: reloadedCharacterData
+        }));
+      }
+      
+      // Close modal and clear items
+      setShowItemSelectionModal(false);
+      setAvailableItems([]);
+    } catch (error) {
+      console.error('Lỗi khi thêm items:', error);
+    }
+  };
+
+
   // Toggle adult intensity
   const toggleAdultIntensity = () => {
     if (!gameState.contentFlags || !gameState.contentFlags.adult_enabled) return;
@@ -1834,6 +2001,108 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     } else {
       setShowResendButton(messageIndex); // Show for this message
     }
+  };
+
+  // Inventory handlers
+  const handleEquipItem = (itemId: string, slot?: string) => {
+    const success = inventoryService.equipItem(itemId, slot);
+    if (success) {
+      // Update character data in localStorage
+      const updatedInventory = inventoryService.getInventory();
+      const updatedEquipment = inventoryService.getEquipment();
+      
+      try {
+        const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+        characterData.inventory = updatedInventory;
+        characterData.equipment = updatedEquipment;
+        characterData.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
+        localStorage.setItem('currentCharacter', JSON.stringify(characterData));
+        
+        // Reload character data from localStorage to update UI
+        const reloadedCharacterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+        setGameState(prev => ({
+          ...prev,
+          character: reloadedCharacterData
+        }));
+      } catch (error) {
+        console.error('Failed to update character data:', error);
+      }
+    }
+  };
+
+  const handleUnequipItem = (itemId: string) => {
+    const success = inventoryService.unequipItem(itemId);
+    if (success) {
+      // Update character data in localStorage
+      const updatedInventory = inventoryService.getInventory();
+      const updatedEquipment = inventoryService.getEquipment();
+      
+      try {
+        const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+        characterData.inventory = updatedInventory;
+        characterData.equipment = updatedEquipment;
+        characterData.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
+        localStorage.setItem('currentCharacter', JSON.stringify(characterData));
+        
+        // Reload character data from localStorage to update UI
+        const reloadedCharacterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+        setGameState(prev => ({
+          ...prev,
+          character: reloadedCharacterData
+        }));
+      } catch (error) {
+        console.error('Failed to update character data:', error);
+      }
+    }
+  };
+
+  const handleDropItem = (itemId: string) => {
+    // Check if item is equipped
+    const item = inventoryService.findItemInInventory(itemId);
+    if (!item) return;
+    
+    let confirmMessage = 'Bạn có chắc chắn muốn vứt bỏ vật phẩm này?';
+    if (item.isEquipped) {
+      confirmMessage = `Vật phẩm "${item.name}" đang được trang bị. Vứt bỏ sẽ tự động gỡ trang bị. Bạn có chắc chắn muốn tiếp tục?`;
+    }
+    
+    if (confirm(confirmMessage)) {
+      const success = inventoryService.removeItem(itemId);
+      if (success) {
+        // Update character data in localStorage
+        const updatedInventory = inventoryService.getInventory();
+        const updatedEquipment = inventoryService.getEquipment();
+        
+        try {
+          const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+          characterData.inventory = updatedInventory;
+          characterData.equipment = updatedEquipment;
+          characterData.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
+          localStorage.setItem('currentCharacter', JSON.stringify(characterData));
+          
+          // Reload character data from localStorage to update UI
+          const reloadedCharacterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+          setGameState(prev => ({
+            ...prev,
+            character: reloadedCharacterData
+          }));
+          
+          // Show success message
+          if (item.isEquipped) {
+            console.log(`🗑️ Đã gỡ trang bị và vứt bỏ "${item.name}"`);
+          } else {
+            console.log(`🗑️ Đã vứt bỏ "${item.name}"`);
+          }
+        } catch (error) {
+          console.error('Failed to update character data:', error);
+        }
+      }
+    }
+  };
+
+  const handleViewItemDetails = (item: InventoryItem) => {
+    // TODO: Implement item details modal
+    console.log('View item details:', item);
   };
 
   // Memoize InfoMenu data để tránh re-parse mỗi lần render
@@ -2346,6 +2615,10 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             onToggleAdultContent={toggleAdultContent}
             onToggleAdultIntensity={toggleAdultIntensity}
             onLocationTravel={handleLocationTravel}
+            onEquipItem={handleEquipItem}
+            onUnequipItem={handleUnequipItem}
+            onDropItem={handleDropItem}
+            onViewItemDetails={handleViewItemDetails}
           />
         </Suspense>
       )}
@@ -2372,6 +2645,17 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           entries={actionLog}
         />
       </Suspense>
+
+      {/* Item Selection Modal */}
+      <ItemSelectionModal
+        isOpen={showItemSelectionModal}
+        onClose={() => {
+          setShowItemSelectionModal(false);
+          setAvailableItems([]);
+        }}
+        items={availableItems}
+        onSelectItems={handleSelectItems}
+      />
 
       {/* Skip Time Modal */}
       {showSkipTimeModal && (
