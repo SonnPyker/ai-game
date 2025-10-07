@@ -2,8 +2,139 @@ import { useState, useEffect, useCallback } from 'react';
 import { QuestSystem, QuestProgress } from '../types';
 import { questDetectionService } from '../services/questDetectionService';
 import { factionQuestService } from '../services/factionQuestService';
+import { levelSystemService } from '../services/levelSystemService';
+import { currencyService } from '../services/currencyService';
+import { npcRelationshipService } from '../services/npcRelationshipService';
 
 const QUEST_SYSTEM_KEY = 'quest_system';
+
+// Helper function để xử lý claim reward theo loại
+const processRewardClaim = (reward: any) => {
+  try {
+    // Lấy character data từ localStorage
+    const characterData = localStorage.getItem('currentCharacter');
+    if (!characterData) return;
+
+    const character = JSON.parse(characterData);
+
+    switch (reward.type) {
+      case 'currency':
+        // Thêm tiền vào character
+        currencyService.addCurrency(character, reward.amount);
+        console.log(`✅ Đã nhận ${reward.amount} tiền tệ`);
+        break;
+
+      case 'secondary_currency':
+        // Thêm tiền phụ vào character
+        currencyService.addSecondaryCurrency(character, reward.amount);
+        console.log(`✅ Đã nhận ${reward.amount} tiền phụ`);
+        break;
+
+      case 'experience':
+        // Thêm kinh nghiệm và kiểm tra level up
+        const levelResult = levelSystemService.addExperience(character, reward.amount);
+        console.log(`✅ Đã nhận ${reward.amount} kinh nghiệm`);
+        
+        if (levelResult.leveledUp) {
+          if (levelResult.levelsGained > 1) {
+            console.log(`🎉 Level up! Từ level ${levelResult.previousLevel} lên level ${levelResult.newLevel} (+${levelResult.levelsGained} levels)!`);
+          } else {
+            console.log(`🎉 Level up! Từ level ${levelResult.previousLevel} lên level ${levelResult.newLevel}!`);
+          }
+          // Có thể hiển thị notification level up ở đây
+        }
+        break;
+
+      case 'item':
+        // Tạo item reward và thêm trực tiếp vào currentCharacter.inventory
+        if (reward.items && reward.items.length > 0) {
+          console.log('🎁 Đang thêm items vào character inventory:', reward.items);
+          reward.items.forEach((item: any) => {
+            // Đảm bảo item có tags phù hợp
+            if (!item.tags) {
+              item.tags = ['reward'];
+            } else if (!item.tags.includes('reward')) {
+              item.tags.push('reward');
+            }
+            
+            // Đối với faction quest, đảm bảo rarity unique
+            if (reward.factionName) {
+              item.rarity = 'unique';
+            }
+            
+            // Thêm trực tiếp vào character inventory
+            if (!character.inventory) {
+              character.inventory = [];
+            }
+            
+            // Kiểm tra xem item đã tồn tại chưa (để stack nếu cần)
+            const existingItem = character.inventory.find((i: any) => i.name === item.name && i.type === item.type);
+            if (existingItem && (item.type === 'consumable' || item.type === 'misc')) {
+              existingItem.quantity += item.quantity || 1;
+            } else {
+              character.inventory.push(item);
+            }
+            
+            console.log('🎁 Thêm item vào character:', item);
+          });
+          console.log(`✅ Đã nhận ${reward.items.length} vật phẩm`);
+        } else {
+          // Tạo item ngẫu nhiên nếu không có items cụ thể
+          const randomItem = generateRandomRewardItem(reward.factionName);
+          if (randomItem) {
+            console.log('🎁 Thêm random item vào character:', randomItem);
+            
+            // Thêm trực tiếp vào character inventory
+            if (!character.inventory) {
+              character.inventory = [];
+            }
+            character.inventory.push(randomItem);
+            
+            console.log(`✅ Đã nhận vật phẩm: ${randomItem.name}`);
+          }
+        }
+        break;
+
+      case 'faction_reputation':
+        // Thêm danh tiếng phe phái
+        if (reward.factionName) {
+          npcRelationshipService.adjustFactionReputation(reward.factionName, reward.amount);
+          console.log(`✅ Đã nhận ${reward.amount} danh tiếng phe phái ${reward.factionName}`);
+        }
+        break;
+
+      default:
+        console.log(`⚠️ Loại reward không được hỗ trợ: ${reward.type}`);
+    }
+
+    // Cập nhật character data trong localStorage
+    localStorage.setItem('currentCharacter', JSON.stringify(character));
+    
+  } catch (error) {
+    console.error('Lỗi khi xử lý reward:', error);
+  }
+};
+
+// Tạo item reward ngẫu nhiên
+const generateRandomRewardItem = (factionName?: string) => {
+  const itemTypes = ['weapon', 'armor', 'consumable', 'misc'];
+  const randomType = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+  
+  const item = {
+    id: `reward_item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    name: factionName ? `Vật phẩm đặc trưng ${factionName}` : 'Vật phẩm ngẫu nhiên',
+    description: factionName ? `Một vật phẩm đặc biệt từ phe phái ${factionName}` : 'Một vật phẩm bí ẩn',
+    type: randomType as 'weapon' | 'armor' | 'consumable' | 'misc',
+    rarity: factionName ? 'unique' as const : 'common' as const,
+    quantity: 1,
+    icon: randomType === 'weapon' ? '⚔️' : randomType === 'armor' ? '🛡️' : randomType === 'consumable' ? '🧪' : '📦',
+    stats: {},
+    isEquipped: false,
+    tags: ['reward', randomType]
+  };
+
+  return item;
+};
 
 // Helper function để convert world data quest thành QuestProgress
 const convertWorldQuestToQuestProgress = (worldQuest: any, act?: number): QuestProgress => {
@@ -22,12 +153,32 @@ const convertWorldQuestToQuestProgress = (worldQuest: any, act?: number): QuestP
         description: worldQuest.objective,
         aiKeywords: []
       }],
-      rewards: [{
-        type: 'experience',
-        amount: 300,
-        description: worldQuest.reward || 'Kinh nghiệm +300',
-        claimed: false
-      }]
+      rewards: [
+        {
+          type: 'currency',
+          amount: 100,
+          description: 'Tiền tệ +100',
+          claimed: false
+        },
+        {
+          type: 'experience',
+          amount: 300,
+          description: worldQuest.reward || 'Kinh nghiệm +300',
+          claimed: false
+        },
+        {
+          type: 'item',
+          amount: 1,
+          items: [{
+            name: 'Vật phẩm ngẫu nhiên',
+            description: 'Một vật phẩm hữu ích',
+            type: 'misc',
+            rarity: 'common'
+          }],
+          description: 'Vật phẩm ngẫu nhiên',
+          claimed: false
+        }
+      ]
     };
     
     return {
@@ -55,9 +206,56 @@ const convertWorldQuestToQuestProgress = (worldQuest: any, act?: number): QuestP
   }
   
   // Format mới (đã có objectives và rewards)
+  const questType = act !== undefined ? 'main' : 'side';
+  let rewards = worldQuest.rewards?.map((reward: any) => ({
+    type: reward.type,
+    amount: reward.amount,
+    description: reward.description,
+    claimed: false,
+    items: reward.items || undefined
+  })) || [];
+
+  // Validate rewards cho main quest
+  if (questType === 'main') {
+    const hasCurrency = rewards.some((r: any) => r.type === 'currency');
+    const hasExperience = rewards.some((r: any) => r.type === 'experience');
+    const hasItem = rewards.some((r: any) => r.type === 'item');
+
+    if (!hasCurrency) {
+      rewards.push({
+        type: 'currency',
+        amount: 100,
+        description: 'Tiền tệ +100',
+        claimed: false
+      });
+    }
+    if (!hasExperience) {
+      rewards.push({
+        type: 'experience',
+        amount: 300,
+        description: 'Kinh nghiệm +300',
+        claimed: false
+      });
+    }
+    if (!hasItem) {
+      rewards.push({
+        type: 'item',
+        amount: 1,
+        items: [{
+          name: 'Vật phẩm ngẫu nhiên',
+          description: 'Một vật phẩm hữu ích',
+          type: 'misc',
+          rarity: 'common'
+        }],
+        description: 'Vật phẩm ngẫu nhiên',
+        claimed: false
+      });
+    }
+  }
+
   return {
     id: worldQuest.id || `quest_${Date.now()}`,
-    type: act !== undefined ? 'main' : 'side', // act = 0 vẫn là main quest
+    type: questType,
     title: worldQuest.title,
     description: worldQuest.description,
     status: act !== undefined ? 'locked' : 'available', // Main quest bắt đầu locked, side quest available
@@ -69,12 +267,7 @@ const convertWorldQuestToQuestProgress = (worldQuest: any, act?: number): QuestP
       aiKeywords: obj.aiKeywords || [],
       unlocked: index === 0 // Chỉ objective đầu tiên được unlock
     })) || [],
-    rewards: worldQuest.rewards?.map((reward: any) => ({
-      type: reward.type,
-      amount: reward.amount,
-      description: reward.description,
-      claimed: false
-    })) || [],
+    rewards: rewards,
     createdAt: new Date()
   };
 };
@@ -413,9 +606,10 @@ export function useQuestSystem() {
   // Claim reward
   const claimReward = useCallback((questId: string, rewardType: string) => {
     setQuestSystem(prev => {
+      if (!prev) return prev;
       const newSystem = { ...prev };
       
-      // Tìm quest trong main hoặc side quests
+      // Tìm quest trong main, side hoặc faction quests
       let quest = newSystem.mainQuests.find(q => q.id === questId);
       let questList = 'mainQuests';
       let questIndex = newSystem.mainQuests.findIndex(q => q.id === questId);
@@ -426,13 +620,31 @@ export function useQuestSystem() {
         questIndex = newSystem.sideQuests.findIndex(q => q.id === questId);
       }
       
+      if (!quest) {
+        quest = newSystem.factionQuests.find(q => q.id === questId);
+        questList = 'factionQuests';
+        questIndex = newSystem.factionQuests.findIndex(q => q.id === questId);
+      }
+      
       if (quest && questIndex !== -1) {
         const updatedQuest = { ...quest };
         const rewardIndex = updatedQuest.rewards.findIndex(reward => reward.type === rewardType);
         
         if (rewardIndex !== -1) {
+          const reward = updatedQuest.rewards[rewardIndex];
+          
+          // Kiểm tra xem reward đã được claim chưa
+          if (reward.claimed) {
+            console.log('Reward đã được claim rồi');
+            return newSystem;
+          }
+          
+          // Xử lý reward theo loại
+          processRewardClaim(reward);
+          
+          // Đánh dấu reward đã claim
           updatedQuest.rewards[rewardIndex] = {
-            ...updatedQuest.rewards[rewardIndex],
+            ...reward,
             claimed: true,
             claimedAt: new Date()
           };
@@ -440,16 +652,25 @@ export function useQuestSystem() {
           // Cập nhật quest trong system
           if (questList === 'mainQuests') {
             newSystem.mainQuests[questIndex] = updatedQuest;
-          } else {
+          } else if (questList === 'sideQuests') {
             newSystem.sideQuests[questIndex] = updatedQuest;
+          } else if (questList === 'factionQuests') {
+            newSystem.factionQuests[questIndex] = updatedQuest;
           }
         }
       }
       
       saveQuestSystem(newSystem);
+      
+      // Force refresh UI bằng cách trigger re-render (sử dụng setTimeout để tránh lỗi render)
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('questRewardClaimed'));
+      }, 0);
+      
       return newSystem;
     });
   }, [saveQuestSystem]);
+
 
   // Unlock new quests từ world data
   const unlockNewQuests = useCallback((questSystem: QuestSystem, completedQuest: QuestProgress) => {

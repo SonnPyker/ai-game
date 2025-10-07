@@ -48,6 +48,10 @@ export interface Character {
     wisdom: number;
     charisma: number;
   };
+  // Currency and Experience system
+  currency?: number; // Số tiền chính hiện tại
+  secondaryCurrency?: number; // Số tiền phụ hiện tại
+  experience?: number; // Kinh nghiệm hiện tại
 }
 
 
@@ -102,7 +106,7 @@ export interface InventoryItem {
   name: string;
   description: string;
   type: 'weapon' | 'armor' | 'consumable' | 'misc';
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'unique';
   quantity: number;
   icon: string;
   // New fields for equipment system
@@ -117,6 +121,8 @@ export interface InventoryItem {
   };
   slot?: 'weapon_main' | 'weapon_off' | 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'accessory1' | 'accessory2' | 'accessory3';
   equipped_at?: Date;
+  // Tags system for quest rewards
+  tags?: string[]; // Tags để phân loại items (type tags + 'reward' tag)
 }
 
 export interface Equipment {
@@ -197,9 +203,10 @@ export interface QuestObjectiveProgress {
 }
 
 export interface QuestRewardProgress {
-  type: 'experience' | 'item' | 'gold' | 'story_progress';
+  type: 'currency' | 'item' | 'experience' | 'faction_reputation' | 'story_progress';
   amount: number;
-  itemId?: string;
+  items?: InventoryItem[]; // Mảng items cho loại reward item
+  factionName?: string; // Tên phe phái cho faction reputation
   description: string;
   claimed: boolean;
   claimedAt?: Date;
@@ -274,6 +281,10 @@ export interface WorldData {
     description: string;
     isMain: boolean;
   }>;
+  economy?: {
+    currencies: string[];
+    notes?: string;
+  };
   startYear: number;
   difficulty: string;
   useLevels: boolean;

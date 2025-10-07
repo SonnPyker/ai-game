@@ -83,7 +83,14 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
         // Pattern 4: Name at the beginning of a sentence
         /(?:^|\n|\.)\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:nói|thì thầm|hét lên|thốt lên|đáp|trả lời|hỏi|nói với|nói rằng)/i,
         // Pattern 5: For player dialogue, detect "I" patterns
-        /(?:^|\n|\.)\s*I\s+(?:said|speak|ask|reply|answer|whisper|shout|exclaim|murmur|mutter|nói|thì thầm|hét lên|thốt lên|đáp|trả lời|hỏi|nói với|nói rằng)\s*$/i
+        /(?:^|\n|\.)\s*I\s+(?:said|speak|ask|reply|answer|whisper|shout|exclaim|murmur|mutter|nói|thì thầm|hét lên|thốt lên|đáp|trả lời|hỏi|nói với|nói rằng)\s*$/i,
+        // Pattern 6: Vietnamese patterns - "Name nói" hoặc "nói Name"
+        /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:nói|thì thầm|hét lên|thốt lên|đáp|trả lời|hỏi|nói với|nói rằng)\s*$/i,
+        /(?:nói|thì thầm|hét lên|thốt lên|đáp|trả lời|hỏi|nói với|nói rằng)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*$/i,
+        // Pattern 7: "Name tiếp tục" hoặc "Name lên tiếng"
+        /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:tiếp tục|lên tiếng|thốt lên|thì thầm|hét lên)\s*$/i,
+        // Pattern 8: "Anh/Chị Name" patterns
+        /(?:Anh|Chị|Cô|Bác|Chú|Cậu|Dì|Mợ)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*$/i
       ];
 
       let speaker: string | undefined;
@@ -97,6 +104,36 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
             speaker = speakerMatch[1].trim();
           }
           break;
+        }
+      }
+
+      // Nếu không tìm thấy speaker, vẫn highlight dialogue nhưng với speaker mặc định
+      // Điều này đảm bảo tất cả dialogue đều được highlight
+      if (!speaker) {
+        // Thử đoán speaker dựa trên context hoặc sử dụng mặc định
+        if (isPlayer) {
+          speaker = 'Player';
+        } else {
+          // Thử tìm tên nhân vật trong văn bản trước đó với nhiều pattern hơn
+          const namePatterns = [
+            // Tìm tên nhân vật thông thường
+            /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/,
+            // Tìm tên trong "Anh/Chị Name"
+            /(?:Anh|Chị|Cô|Bác|Chú|Cậu|Dì|Mợ)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i,
+            // Tìm tên trong "Name-san" hoặc "Name-kun"
+            /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)[-](?:san|kun|chan|sama)/i
+          ];
+          
+          let foundName = null;
+          for (const pattern of namePatterns) {
+            const nameMatch = beforeDialogue.match(pattern);
+            if (nameMatch) {
+              foundName = nameMatch[1] || nameMatch[0];
+              break;
+            }
+          }
+          
+          speaker = foundName || 'Character';
         }
       }
 

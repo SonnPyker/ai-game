@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Character } from '../types';
 import { geminiService } from '../services/geminiService';
 import { nameGenerationService, NameGenerationOptions, GeneratedName } from '../services/nameGenerationService';
+import { levelSystemService } from '../services/levelSystemService';
+import { currencyService } from '../services/currencyService';
 import { Sparkles, Download, RotateCcw, Check, Globe, Upload, Shuffle, Star } from 'lucide-react';
 import { HelpTooltip } from '../components/HelpTooltip';
 
@@ -325,6 +327,24 @@ export function CharacterCreationPage() {
       customStats: [],
       proficiencies: characterData.proficiencies
     };
+
+    // Khởi tạo level và experience
+    levelSystemService.initializeCharacter(character);
+
+    // Khởi tạo currency dựa trên world data
+    try {
+      const worldData = localStorage.getItem('world_gen_result');
+      if (worldData) {
+        const parsedWorldData = JSON.parse(worldData);
+        currencyService.initializeCharacter(character, parsedWorldData);
+      } else {
+        // Fallback nếu không có world data
+        character.currency = 100; // Default currency
+      }
+    } catch (error) {
+      console.warn('Failed to initialize currency:', error);
+      character.currency = 100; // Fallback currency
+    }
 
     localStorage.setItem('currentCharacter', JSON.stringify(character));
     navigate('/game');

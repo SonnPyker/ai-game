@@ -2,15 +2,33 @@ import { motion } from 'framer-motion';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "3.0.0";
+  const version = "3.2.0";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
 const updateLog = [
     {
-      version: "3.0.0",
+      version: "3.2.0",
       date: now.toISOString().split('T')[0],
+      changes: [
+        "💰 Hệ thống tiền tệ hoàn chỉnh với currency chính và phụ",
+        "📈 Hệ thống level up DnD với XP riêng cho mỗi level",
+        "🎁 Cơ chế phần thưởng quest mới: Main (3 loại), Side (2 loại), Faction (4 loại)",
+        "⚔️ Item rewards có đầy đủ thông tin để trang bị được",
+        "🏆 Tab 'Tiền tệ' riêng biệt trong InfoMenu",
+        "📊 Thanh XP hiển thị progress và level hiện tại",
+        "🎯 Nút 'Claim All' thay thế các nút claim riêng lẻ",
+        "🔄 Auto-refresh UI sau khi claim rewards",
+        "🧹 Loại bỏ main quest khỏi generateScenarioSkeleton",
+        "✨ Cải thiện AI prompts để tạo item rewards cụ thể",
+        "🐛 Sửa lỗi React warning về missing key prop",
+        "🔧 Tối ưu hóa performance và code structure"
+      ]
+    },
+    {
+      version: "3.0.0",
+      date: "2025-01-01",
       changes: [
         "🗺️ Hệ thống bản đồ hoàn chỉnh với grid 15x15",
         "📍 Tối thiểu 5 địa điểm cốt truyện + 2-3 địa điểm phụ",

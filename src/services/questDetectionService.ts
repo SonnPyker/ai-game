@@ -323,7 +323,7 @@ export class QuestDetectionService {
       description: this.extractQuestDescription(aiResponse),
       status: 'locked', // Sẽ được unlock khi player accept
       objectives: this.extractQuestObjectives(aiResponse),
-      rewards: this.extractQuestRewards(aiResponse),
+      rewards: this.extractQuestRewards(aiResponse, 'side', this.getCharacterLevel()),
       createdAt: new Date(),
       turnCreated: turnCounter || Date.now() // Lưu turn khi quest được tạo để tính toán tần suất
     };
@@ -1766,9 +1766,9 @@ export class QuestDetectionService {
   }
 
   /**
-   * Trích xuất quest rewards từ AI response
+   * Trích xuất quest rewards từ AI response với schema mới
    */
-  private extractQuestRewards(aiResponse: string): QuestRewardProgress[] {
+  private extractQuestRewards(aiResponse: string, questType: 'main' | 'side' | 'faction' = 'side', characterLevel: number = 1): QuestRewardProgress[] {
     const rewards: QuestRewardProgress[] = [];
     
     // Tìm các phần thưởng được đề cập
@@ -1785,9 +1785,15 @@ export class QuestDetectionService {
       rewardItems.forEach((item) => {
         const trimmed = item.trim();
         if (trimmed.length > 0) {
+          const rewardType = this.determineRewardType(trimmed);
+          const amount = this.extractRewardAmount(trimmed);
+          
+          // Validate và normalize amount theo giới hạn min/max
+          const normalizedAmount = this.normalizeRewardAmount(rewardType, amount, characterLevel);
+          
           rewards.push({
-            type: this.determineRewardType(trimmed),
-            amount: this.extractRewardAmount(trimmed),
+            type: rewardType,
+            amount: normalizedAmount,
             description: trimmed,
             claimed: false
           });
@@ -1795,17 +1801,319 @@ export class QuestDetectionService {
       });
     }
 
-    // Nếu không tìm thấy rewards, tạo reward mặc định
+    // Tạo rewards theo loại quest nếu không tìm thấy
     if (rewards.length === 0) {
-      rewards.push({
-        type: 'experience',
-        amount: 100,
-        description: 'Kinh nghiệm +100',
-        claimed: false
+      rewards.push(...this.generateDefaultRewards(questType, characterLevel));
+    }
+
+    // Validate và đảm bảo đúng số lượng rewards theo loại quest
+    return this.validateQuestRewards(rewards, questType, characterLevel);
+  }
+
+  /**
+   * Normalize reward amount theo giới hạn min/max dựa trên level
+   */
+  private normalizeRewardAmount(rewardType: string, amount: number, characterLevel: number): number {
+    const minMaxRanges = {
+      'currency': { min: characterLevel * 10, max: characterLevel * 50 },
+      'experience': { min: characterLevel * 50, max: characterLevel * 200 },
+      'faction_reputation': { min: 20, max: 100 }
+    };
+
+    const range = minMaxRanges[rewardType as keyof typeof minMaxRanges];
+    if (!range) return amount;
+
+    return Math.max(range.min, Math.min(range.max, amount));
+  }
+
+  /**
+   * Tạo rewards mặc định theo loại quest
+   */
+  private generateDefaultRewards(questType: 'main' | 'side' | 'faction', characterLevel: number): QuestRewardProgress[] {
+    const rewards: QuestRewardProgress[] = [];
+
+    if (questType === 'main') {
+      // Main quest: đủ 3 loại (currency, items, experience)
+      rewards.push(
+        {
+          type: 'currency',
+          amount: this.normalizeRewardAmount('currency', characterLevel * 30, characterLevel),
+          description: `Tiền tệ +${this.normalizeRewardAmount('currency', characterLevel * 30, characterLevel)}`,
+          claimed: false
+        },
+        {
+          type: 'experience',
+          amount: this.normalizeRewardAmount('experience', characterLevel * 100, characterLevel),
+          description: `Kinh nghiệm +${this.normalizeRewardAmount('experience', characterLevel * 100, characterLevel)}`,
+          claimed: false
+        },
+        {
+          type: 'item',
+          amount: 1,
+          items: [this.generateRandomRewardItem(characterLevel, false)],
+          description: 'Vật phẩm ngẫu nhiên',
+          claimed: false
+        }
+      );
+    } else if (questType === 'side') {
+      // Side quest: random 2 trong 3 loại
+      const rewardTypes = ['currency', 'experience', 'item'];
+      const selectedTypes = this.shuffleArray(rewardTypes).slice(0, 2);
+
+      selectedTypes.forEach(type => {
+        if (type === 'currency') {
+          rewards.push({
+            type: 'currency',
+            amount: this.normalizeRewardAmount('currency', characterLevel * 20, characterLevel),
+            description: `Tiền tệ +${this.normalizeRewardAmount('currency', characterLevel * 20, characterLevel)}`,
+            claimed: false
+          });
+        } else if (type === 'experience') {
+          rewards.push({
+            type: 'experience',
+            amount: this.normalizeRewardAmount('experience', characterLevel * 75, characterLevel),
+            description: `Kinh nghiệm +${this.normalizeRewardAmount('experience', characterLevel * 75, characterLevel)}`,
+            claimed: false
+          });
+        } else if (type === 'item') {
+          const itemReward = this.generateRandomRewardItem(characterLevel, false);
+          rewards.push({
+            type: 'item',
+            amount: 1,
+            items: [itemReward],
+            description: `${itemReward.name} - ${itemReward.description}`,
+            claimed: false
+          });
+        }
       });
+    } else if (questType === 'faction') {
+      // Faction quest: đủ 4 loại (currency, items faction-unique, experience, faction_reputation)
+      rewards.push(
+        {
+          type: 'currency',
+          amount: this.normalizeRewardAmount('currency', characterLevel * 25, characterLevel),
+          description: `Tiền tệ +${this.normalizeRewardAmount('currency', characterLevel * 25, characterLevel)}`,
+          claimed: false
+        },
+        {
+          type: 'experience',
+          amount: this.normalizeRewardAmount('experience', characterLevel * 80, characterLevel),
+          description: `Kinh nghiệm +${this.normalizeRewardAmount('experience', characterLevel * 80, characterLevel)}`,
+          claimed: false
+        },
+        {
+          type: 'item',
+          amount: 1,
+          items: [this.generateRandomRewardItem(characterLevel, true)],
+          description: 'Vật phẩm đặc trưng phe phái',
+          claimed: false
+        },
+        {
+          type: 'faction_reputation',
+          amount: this.normalizeRewardAmount('faction_reputation', 50, characterLevel),
+          description: `Danh tiếng phe phái +${this.normalizeRewardAmount('faction_reputation', 50, characterLevel)}`,
+          claimed: false
+        }
+      );
     }
 
     return rewards;
+  }
+
+  /**
+   * Validate và đảm bảo đúng số lượng rewards theo loại quest
+   */
+  private validateQuestRewards(rewards: QuestRewardProgress[], questType: 'main' | 'side' | 'faction', characterLevel: number): QuestRewardProgress[] {
+    if (questType === 'main') {
+      // Main quest phải có đủ 3 loại: currency, experience, item
+      const hasCurrency = rewards.some(r => r.type === 'currency');
+      const hasExperience = rewards.some(r => r.type === 'experience');
+      const hasItem = rewards.some(r => r.type === 'item');
+
+      if (!hasCurrency) {
+        rewards.push({
+          type: 'currency',
+          amount: this.normalizeRewardAmount('currency', characterLevel * 30, characterLevel),
+          description: `Tiền tệ +${this.normalizeRewardAmount('currency', characterLevel * 30, characterLevel)}`,
+          claimed: false
+        });
+      }
+      if (!hasExperience) {
+        rewards.push({
+          type: 'experience',
+          amount: this.normalizeRewardAmount('experience', characterLevel * 100, characterLevel),
+          description: `Kinh nghiệm +${this.normalizeRewardAmount('experience', characterLevel * 100, characterLevel)}`,
+          claimed: false
+        });
+      }
+      if (!hasItem) {
+        rewards.push({
+          type: 'item',
+          amount: 1,
+          description: 'Vật phẩm ngẫu nhiên',
+          claimed: false
+        });
+      }
+    } else if (questType === 'side') {
+      // Side quest phải có đúng 2 loại trong 3 loại
+      const rewardTypes = rewards.map(r => r.type);
+      const uniqueTypes = [...new Set(rewardTypes)];
+
+      if (uniqueTypes.length < 2) {
+        // Thêm loại còn thiếu
+        const allTypes: ('currency' | 'experience' | 'item')[] = ['currency', 'experience', 'item'];
+        const missingTypes = allTypes.filter(type => !uniqueTypes.includes(type));
+        const randomType = missingTypes[Math.floor(Math.random() * missingTypes.length)];
+
+        if (randomType === 'currency') {
+          rewards.push({
+            type: 'currency',
+            amount: this.normalizeRewardAmount('currency', characterLevel * 20, characterLevel),
+            description: `Tiền tệ +${this.normalizeRewardAmount('currency', characterLevel * 20, characterLevel)}`,
+            claimed: false
+          });
+        } else if (randomType === 'experience') {
+          rewards.push({
+            type: 'experience',
+            amount: this.normalizeRewardAmount('experience', characterLevel * 75, characterLevel),
+            description: `Kinh nghiệm +${this.normalizeRewardAmount('experience', characterLevel * 75, characterLevel)}`,
+            claimed: false
+          });
+        } else if (randomType === 'item') {
+          rewards.push({
+            type: 'item',
+            amount: 1,
+            description: 'Vật phẩm ngẫu nhiên',
+            claimed: false
+          });
+        }
+      }
+    } else if (questType === 'faction') {
+      // Faction quest phải có đủ 4 loại: currency, experience, item, faction_reputation
+      const hasCurrency = rewards.some(r => r.type === 'currency');
+      const hasExperience = rewards.some(r => r.type === 'experience');
+      const hasItem = rewards.some(r => r.type === 'item');
+      const hasFactionRep = rewards.some(r => r.type === 'faction_reputation');
+
+      if (!hasCurrency) {
+        rewards.push({
+          type: 'currency',
+          amount: this.normalizeRewardAmount('currency', characterLevel * 25, characterLevel),
+          description: `Tiền tệ +${this.normalizeRewardAmount('currency', characterLevel * 25, characterLevel)}`,
+          claimed: false
+        });
+      }
+      if (!hasExperience) {
+        rewards.push({
+          type: 'experience',
+          amount: this.normalizeRewardAmount('experience', characterLevel * 80, characterLevel),
+          description: `Kinh nghiệm +${this.normalizeRewardAmount('experience', characterLevel * 80, characterLevel)}`,
+          claimed: false
+        });
+      }
+      if (!hasItem) {
+        rewards.push({
+          type: 'item',
+          amount: 1,
+          description: 'Vật phẩm đặc trưng phe phái',
+          claimed: false
+        });
+      }
+      if (!hasFactionRep) {
+        rewards.push({
+          type: 'faction_reputation',
+          amount: this.normalizeRewardAmount('faction_reputation', 50, characterLevel),
+          description: `Danh tiếng phe phái +${this.normalizeRewardAmount('faction_reputation', 50, characterLevel)}`,
+          claimed: false
+        });
+      }
+    }
+
+    return rewards;
+  }
+
+  /**
+   * Shuffle array helper
+   */
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
+  /**
+   * Lấy level hiện tại của character từ localStorage
+   */
+  private getCharacterLevel(): number {
+    try {
+      const characterData = localStorage.getItem('currentCharacter');
+      if (characterData) {
+        const character = JSON.parse(characterData);
+        return character.level || 1;
+      }
+    } catch (error) {
+      console.warn('Failed to get character level:', error);
+    }
+    return 1; // Default level
+  }
+
+  /**
+   * Tạo item reward ngẫu nhiên với tên và mô tả rõ ràng
+   */
+  private generateRandomRewardItem(characterLevel: number, isFaction: boolean = false): any {
+    const itemTypes = ['weapon', 'armor', 'consumable', 'misc'];
+    const randomType = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+    
+    // Tên items theo loại
+    const itemNames = {
+      weapon: ['Kiếm sắt', 'Rìu chiến', 'Cung tên', 'Gậy phép', 'Dao găm'],
+      armor: ['Áo giáp da', 'Giáp sắt', 'Khiên gỗ', 'Mũ sắt', 'Găng tay da'],
+      consumable: ['Thuốc hồi máu', 'Thuốc mana', 'Bánh mì', 'Nước uống', 'Thuốc độc'],
+      misc: ['Đá quý', 'Chìa khóa', 'Bản đồ', 'Sách phép', 'Vật liệu']
+    };
+
+    const itemDescriptions = {
+      weapon: ['Vũ khí sắc bén', 'Công cụ chiến đấu hiệu quả', 'Vũ khí được rèn kỹ'],
+      armor: ['Trang bị bảo vệ', 'Giáp phòng thủ tốt', 'Đồ bảo hộ chất lượng'],
+      consumable: ['Vật phẩm hữu ích', 'Đồ dùng cần thiết', 'Vật phẩm có giá trị'],
+      misc: ['Vật phẩm đặc biệt', 'Đồ vật quý hiếm', 'Vật liệu hữu ích']
+    };
+
+    const names = itemNames[randomType as keyof typeof itemNames];
+    const descriptions = itemDescriptions[randomType as keyof typeof itemDescriptions];
+    
+    const randomName = names[Math.floor(Math.random() * names.length)];
+    const randomDesc = descriptions[Math.floor(Math.random() * descriptions.length)];
+    
+    // Rarity dựa trên level và loại
+    let rarity: string = 'common';
+    if (characterLevel >= 10) {
+      rarity = Math.random() < 0.3 ? 'rare' : Math.random() < 0.6 ? 'uncommon' : 'common';
+    } else if (characterLevel >= 5) {
+      rarity = Math.random() < 0.2 ? 'rare' : Math.random() < 0.4 ? 'uncommon' : 'common';
+    }
+
+    if (isFaction) {
+      rarity = 'unique';
+    }
+
+    const item = {
+      id: `reward_item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: isFaction ? `${randomName} phe phái` : randomName,
+      description: isFaction ? `${randomDesc} đặc trưng của phe phái` : randomDesc,
+      type: randomType,
+      rarity: rarity,
+      quantity: 1,
+      icon: randomType === 'weapon' ? '⚔️' : randomType === 'armor' ? '🛡️' : randomType === 'consumable' ? '🧪' : '📦',
+      stats: {},
+      isEquipped: false,
+      tags: ['reward', randomType]
+    };
+
+    return item;
   }
 
   /**
@@ -1826,17 +2134,20 @@ export class QuestDetectionService {
   /**
    * Xác định loại reward
    */
-  private determineRewardType(rewardText: string): 'experience' | 'item' | 'gold' | 'story_progress' {
+  private determineRewardType(rewardText: string): 'currency' | 'item' | 'experience' | 'faction_reputation' | 'story_progress' {
     const text = rewardText.toLowerCase();
     
     if (text.includes('kinh nghiệm') || text.includes('exp') || text.includes('xp')) {
       return 'experience';
     }
-    if (text.includes('vàng') || text.includes('gold') || text.includes('tiền')) {
-      return 'gold';
+    if (text.includes('vàng') || text.includes('gold') || text.includes('tiền') || text.includes('currency')) {
+      return 'currency';
     }
-    if (text.includes('vật phẩm') || text.includes('item') || text.includes('đồ')) {
+    if (text.includes('vật phẩm') || text.includes('item') || text.includes('đồ') || text.includes('weapon') || text.includes('armor')) {
       return 'item';
+    }
+    if (text.includes('danh tiếng') || text.includes('reputation') || text.includes('phe phái') || text.includes('faction')) {
+      return 'faction_reputation';
     }
     if (text.includes('cốt truyện') || text.includes('story') || text.includes('tiến độ')) {
       return 'story_progress';

@@ -86,8 +86,8 @@ export function ItemCard({
 
     return Object.entries(stats)
       .filter(([_, value]) => value !== 0)
-      .map(([stat, value]) => (
-        <span key={stat} className={`text-xs ${value > 0 ? 'text-green-400' : 'text-red-400'}`}>
+      .map(([stat, value], index) => (
+        <span key={`${stat}-${index}`} className={`text-xs ${value > 0 ? 'text-green-400' : 'text-red-400'}`}>
           {statNames[stat]}: {value > 0 ? '+' : ''}{value}
         </span>
       ));

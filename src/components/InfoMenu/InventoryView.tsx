@@ -28,7 +28,7 @@ export function InventoryView({
   onEquipItem, 
   onUnequipItem, 
   onDropItem,
-  onViewItemDetails 
+  onViewItemDetails
 }: InventoryViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
@@ -69,7 +69,7 @@ export function InventoryView({
           comparison = a.type.localeCompare(b.type);
           break;
         case 'rarity':
-          const rarityOrder = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
+          const rarityOrder = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4, unique: 5 };
           comparison = rarityOrder[b.rarity] - rarityOrder[a.rarity];
           break;
         case 'quantity':
@@ -235,6 +235,7 @@ export function InventoryView({
           </button>
         )}
       </div>
+
 
       {/* Results Count */}
       <div className="text-sm text-gray-400">

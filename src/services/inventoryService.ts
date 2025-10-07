@@ -65,7 +65,7 @@ class InventoryService {
     const sceneState = aiResponse.sceneState;
     const foundItems: InventoryItem[] = [];
     
-    // Check for items in sceneState.inventory
+    // CHỈ parse items từ sceneState.inventory của AI response hiện tại
     if (sceneState.inventory && Array.isArray(sceneState.inventory)) {
       sceneState.inventory.forEach((itemData: any) => {
         if (this.isValidItemData(itemData)) {
@@ -161,7 +161,8 @@ class InventoryService {
       icon: itemData.icon || this.getDefaultIcon(itemData.type),
       stats: itemData.stats || {},
       slot: itemData.slot,
-      isEquipped: false
+      isEquipped: false,
+      tags: itemData.tags || [] // Hỗ trợ tags array
     };
 
     return item;
@@ -200,12 +201,17 @@ class InventoryService {
   }
 
   // Determine item rarity from data
-  private determineItemRarity(itemData: any): 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' {
+  private determineItemRarity(itemData: any): 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'unique' {
     if (itemData.rarity) {
       return itemData.rarity;
     }
 
     const name = itemData.name.toLowerCase();
+
+    // Unique keywords (for faction quest items)
+    if (name.includes('unique') || name.includes('độc nhất') || name.includes('faction') || name.includes('phe phái')) {
+      return 'unique';
+    }
 
     // Legendary keywords
     if (name.includes('legendary') || name.includes('mythic') || name.includes('huyền thoại')) {
@@ -248,12 +254,16 @@ class InventoryService {
 
   // Add item to inventory
   public addItem(item: InventoryItem): void {
-    // Check if item already exists (by name)
+    // Check if item already exists (by name and type)
     const existingItem = this.inventory.find(i => i.name === item.name && i.type === item.type);
     
     if (existingItem && this.isStackable(item)) {
       existingItem.quantity += item.quantity;
     } else {
+      // Ensure tags array exists for new items
+      if (!item.tags) {
+        item.tags = [];
+      }
       this.inventory.push(item);
     }
 
@@ -433,6 +443,9 @@ class InventoryService {
     if (this.character) {
       this.character.inventory = [...this.inventory];
       this.character.equipment = { ...this.equipment };
+      
+      // Lưu character data vào localStorage để UI có thể đọc được
+      localStorage.setItem('currentCharacter', JSON.stringify(this.character));
     }
   }
 
@@ -462,7 +475,7 @@ class InventoryService {
       case 'type':
         return sorted.sort((a, b) => a.type.localeCompare(b.type));
       case 'rarity':
-        const rarityOrder = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
+        const rarityOrder = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4, unique: 5 };
         return sorted.sort((a, b) => rarityOrder[b.rarity] - rarityOrder[a.rarity]);
       case 'quantity':
         return sorted.sort((a, b) => b.quantity - a.quantity);
@@ -534,7 +547,7 @@ class InventoryService {
     const equippedItems = this.inventory.filter(item => item.isEquipped).length;
     
     // Simple value calculation based on rarity
-    const rarityValues = { common: 1, uncommon: 5, rare: 25, epic: 100, legendary: 500 };
+    const rarityValues = { common: 1, uncommon: 5, rare: 25, epic: 100, legendary: 500, unique: 1000 };
     const totalValue = this.inventory.reduce((sum, item) => 
       sum + (rarityValues[item.rarity] * item.quantity), 0
     );

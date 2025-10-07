@@ -43,6 +43,12 @@ export interface ActionContext {
 class ActionSuggestionService {
   private static instance: ActionSuggestionService;
   private geminiService: any = null;
+  private retryConfig = {
+    maxRetries: 3,
+    baseDelay: 1000, // 1 giây
+    maxDelay: 10000, // 10 giây
+    backoffMultiplier: 2
+  };
 
   static getInstance(): ActionSuggestionService {
     if (!ActionSuggestionService.instance) {
@@ -139,21 +145,86 @@ class ActionSuggestionService {
   }
 
   /**
-   * Sinh 4 gợi ý hành động từ AI
+   * Sinh 4 gợi ý hành động từ AI với cơ chế retry
    */
   async generateSuggestions(context: ActionContext, contentFlags: ContentFlags): Promise<SuggestedAction[]> {
-    try {
-      const geminiService = await this.getGeminiService();
-      
-      const prompt = this.buildSuggestionPrompt(context, contentFlags);
-      const response = await geminiService.generateContent(prompt);
-      
-      const suggestions = this.parseSuggestionsFromResponse(response);
-      return this.filterByContentFlags(suggestions, contentFlags);
-    } catch (error) {
-      console.error('Error generating AI suggestions:', error);
-      return this.generateFallbackSuggestions(context);
+    return this.executeWithRetry(
+      async () => {
+        const geminiService = await this.getGeminiService();
+        
+        const prompt = this.buildSuggestionPrompt(context, contentFlags);
+        const response = await geminiService.generateContent(prompt);
+        
+        const suggestions = this.parseSuggestionsFromResponse(response);
+        return this.filterByContentFlags(suggestions, contentFlags);
+      },
+      'generateSuggestions',
+      () => this.generateFallbackSuggestions(context)
+    );
+  }
+
+  /**
+   * Thực hiện một tác vụ với cơ chế retry và exponential backoff
+   */
+  private async executeWithRetry<T>(
+    operation: () => Promise<T>,
+    operationName: string,
+    fallbackOperation?: () => T
+  ): Promise<T> {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
+      try {
+        console.log(`🔄 ${operationName} - Lần thử ${attempt + 1}/${this.retryConfig.maxRetries + 1}`);
+        
+        const result = await operation();
+        
+        if (attempt > 0) {
+          console.log(`✅ ${operationName} - Thành công sau ${attempt + 1} lần thử`);
+        }
+        
+        return result;
+      } catch (error) {
+        lastError = error as Error;
+        console.error(`❌ ${operationName} - Lần thử ${attempt + 1} thất bại:`, error);
+        
+        // Nếu đã thử hết số lần cho phép, sử dụng fallback
+        if (attempt >= this.retryConfig.maxRetries) {
+          console.error(`💥 ${operationName} - Đã thử hết ${this.retryConfig.maxRetries + 1} lần, sử dụng fallback`);
+          break;
+        }
+        
+        // Tính toán delay cho lần thử tiếp theo
+        const delay = this.calculateRetryDelay(attempt);
+        console.log(`⏳ ${operationName} - Chờ ${delay}ms trước khi thử lại...`);
+        
+        await this.sleep(delay);
+      }
     }
+    
+    // Nếu có fallback operation, sử dụng nó
+    if (fallbackOperation) {
+      console.log(`🔄 ${operationName} - Sử dụng fallback operation`);
+      return fallbackOperation();
+    }
+    
+    // Nếu không có fallback, throw error cuối cùng
+    throw lastError || new Error(`${operationName} failed after ${this.retryConfig.maxRetries + 1} attempts`);
+  }
+
+  /**
+   * Tính toán delay cho retry với exponential backoff
+   */
+  private calculateRetryDelay(attempt: number): number {
+    const delay = this.retryConfig.baseDelay * Math.pow(this.retryConfig.backoffMultiplier, attempt);
+    return Math.min(delay, this.retryConfig.maxDelay);
+  }
+
+  /**
+   * Sleep utility function
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   private buildSuggestionPrompt(context: ActionContext, contentFlags: ContentFlags): string {
@@ -441,21 +512,22 @@ TRẢ VỀ JSON:
   }
 
   /**
-   * Ước tính thời lượng hành động từ message (hành động thủ công)
+   * Ước tính thời lượng hành động từ message (hành động thủ công) với cơ chế retry
    */
   async estimateActionDuration(message: string, context: ActionContext, _contentFlags: ContentFlags): Promise<number> {
-    try {
-      // Trước tiên, thử phân loại hành động bằng từ khóa đơn giản
-      const simpleDuration = this.estimateDurationByKeywords(message);
-      if (simpleDuration) {
-        console.log(`🎯 Ước tính thời gian bằng từ khóa: ${simpleDuration} phút cho hành động "${message}"`);
-        return simpleDuration;
-      }
+    // Trước tiên, thử phân loại hành động bằng từ khóa đơn giản
+    const simpleDuration = this.estimateDurationByKeywords(message);
+    if (simpleDuration) {
+      console.log(`🎯 Ước tính thời gian bằng từ khóa: ${simpleDuration} phút cho hành động "${message}"`);
+      return simpleDuration;
+    }
 
-      // Nếu không thể phân loại bằng từ khóa, sử dụng AI
-      const geminiService = await this.getGeminiService();
-      
-      const prompt = `Phân tích và ước tính thời gian thực hiện hành động sau (tính bằng phút):
+    // Nếu không thể phân loại bằng từ khóa, sử dụng AI với retry
+    return this.executeWithRetry(
+      async () => {
+        const geminiService = await this.getGeminiService();
+        
+        const prompt = `Phân tích và ước tính thời gian thực hiện hành động sau (tính bằng phút):
 
 HÀNH ĐỘNG: "${message}"
 
@@ -480,26 +552,25 @@ YÊU CẦU:
 
 Chỉ trả về số phút, không giải thích.`;
 
-      const response = await geminiService.generateContent(prompt);
-      const minutes = parseInt(response.trim());
-      
-      // Nếu AI trả về số hợp lệ, sử dụng nó
-      if (!isNaN(minutes) && minutes >= 5 && minutes <= 60) {
-        console.log(`🤖 AI ước tính thời gian: ${minutes} phút cho hành động "${message}"`);
-        return minutes;
+        const response = await geminiService.generateContent(prompt);
+        const minutes = parseInt(response.trim());
+        
+        // Nếu AI trả về số hợp lệ, sử dụng nó
+        if (!isNaN(minutes) && minutes >= 5 && minutes <= 60) {
+          console.log(`🤖 AI ước tính thời gian: ${minutes} phút cho hành động "${message}"`);
+          return minutes;
+        }
+        
+        throw new Error(`AI trả về thời gian không hợp lệ: ${minutes}`);
+      },
+      'estimateActionDuration',
+      () => {
+        // Fallback: random trong range 5-60 phút
+        const fallbackDuration = Math.floor(Math.random() * 56) + 5;
+        console.log(`🎲 Fallback thời gian: ${fallbackDuration} phút cho hành động "${message}"`);
+        return fallbackDuration;
       }
-      
-      // Fallback: random trong range 5-60 phút
-      const fallbackDuration = Math.floor(Math.random() * 56) + 5;
-      console.log(`🎲 Fallback thời gian: ${fallbackDuration} phút cho hành động "${message}"`);
-      return fallbackDuration;
-    } catch (error) {
-      console.error('Error estimating action duration:', error);
-      // Fallback: random trong range 5-60 phút
-      const fallbackDuration = Math.floor(Math.random() * 56) + 5;
-      console.log(`❌ Error fallback thời gian: ${fallbackDuration} phút cho hành động "${message}"`);
-      return fallbackDuration;
-    }
+    );
   }
 
   /**
@@ -591,6 +662,29 @@ Chỉ trả về số phút, không giải thích.`;
    */
   getCurrentSuggestions(): SuggestedAction[] {
     return this.getJsonFromStorage('action_suggestions') || [];
+  }
+
+  /**
+   * Retry thủ công để sinh lại suggestions
+   */
+  async retryGenerateSuggestions(context: ActionContext, contentFlags: ContentFlags): Promise<SuggestedAction[]> {
+    console.log('🔄 Retry thủ công - Sinh lại action suggestions...');
+    return this.generateSuggestions(context, contentFlags);
+  }
+
+  /**
+   * Cập nhật cấu hình retry
+   */
+  updateRetryConfig(config: Partial<typeof this.retryConfig>): void {
+    this.retryConfig = { ...this.retryConfig, ...config };
+    console.log('⚙️ Cấu hình retry đã được cập nhật:', this.retryConfig);
+  }
+
+  /**
+   * Lấy cấu hình retry hiện tại
+   */
+  getRetryConfig() {
+    return { ...this.retryConfig };
   }
 }
 

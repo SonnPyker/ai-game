@@ -74,6 +74,7 @@ export function GamePage() {
   const [isInfoMenuPinned, setIsInfoMenuPinned] = useState(false);
   // Removed saveLoading state as it's handled in SavePopup
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [characterDataUpdate, setCharacterDataUpdate] = useState(0);
   
   // Quest offer modal state
   const [showQuestOfferModal, setShowQuestOfferModal] = useState(false);
@@ -101,6 +102,11 @@ export function GamePage() {
   const [hasLoadedSuggestions, setHasLoadedSuggestions] = useState(false);
   const [backupSuggestions, setBackupSuggestions] = useState<SuggestedAction[]>([]);
   const [userInteractedWithSuggestions, setUserInteractedWithSuggestions] = useState(false);
+  
+  // Retry state
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastRetryError, setLastRetryError] = useState<string | null>(null);
   
   // Skip time modal state
   const [showSkipTimeModal, setShowSkipTimeModal] = useState(false);
@@ -208,6 +214,19 @@ export function GamePage() {
         console.error('Lỗi load chat history:', error);
       }
     }
+  }, []);
+
+  // Listen for quest reward claimed events để refresh character data
+  useEffect(() => {
+    const handleQuestRewardClaimed = () => {
+      // Force re-render bằng cách update character data
+      setCharacterDataUpdate(prev => prev + 1);
+    };
+
+    window.addEventListener('questRewardClaimed', handleQuestRewardClaimed);
+    return () => {
+      window.removeEventListener('questRewardClaimed', handleQuestRewardClaimed);
+    };
   }, []);
 
   // Check for loaded save game data
@@ -379,9 +398,17 @@ export function GamePage() {
   }, []);
 
   // Load action suggestions
-  const loadActionSuggestions = async () => {
+  const loadActionSuggestions = async (isRetry = false) => {
     try {
-      setIsGeneratingSuggestions(true);
+      if (isRetry) {
+        setIsRetrying(true);
+        setRetryCount(prev => prev + 1);
+        setLastRetryError(null);
+      } else {
+        setIsGeneratingSuggestions(true);
+        setRetryCount(0);
+        setLastRetryError(null);
+      }
       
       const context = actionSuggestionService.buildContextFromStorage();
       
@@ -391,8 +418,17 @@ export function GamePage() {
       setBackupSuggestions([...suggestions]);
       actionSuggestionService.saveCurrentSuggestions(suggestions);
       setHasLoadedSuggestions(true);
+      
+      // Clear error khi thành công
+      setLastRetryError(null);
+      
+      if (isRetry) {
+        console.log('✅ Retry thành công - Đã sinh lại action suggestions');
+      }
     } catch (error) {
       console.error('Error loading action suggestions:', error);
+      setLastRetryError(error instanceof Error ? error.message : 'Lỗi không xác định');
+      
       // Fallback suggestions
       const fallbackSuggestions = [
         {
@@ -421,7 +457,14 @@ export function GamePage() {
       setHasLoadedSuggestions(true);
     } finally {
       setIsGeneratingSuggestions(false);
+      setIsRetrying(false);
     }
+  };
+
+  // Retry thủ công
+  const handleRetrySuggestions = async () => {
+    console.log('🔄 Người dùng yêu cầu retry action suggestions');
+    await loadActionSuggestions(true);
   };
 
   // Load action log
@@ -1085,11 +1128,29 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
         // Parse items from AI response and show selection modal
         try {
+          // CHỈ parse items từ AI response hiện tại, không từ sceneState cũ
           const foundItems = inventoryService.parseItemsFromAIResponse(response);
           if (foundItems && foundItems.length > 0) {
             console.log('🎒 Phát hiện items từ AI response:', foundItems);
-            setAvailableItems(foundItems);
-            setShowItemSelectionModal(true);
+            
+            // Lọc bỏ items đã có trong character inventory
+            const character = characterData ? JSON.parse(characterData) : null;
+            const characterInventory = character?.inventory || [];
+            const characterItemIds = new Set(characterInventory.map((item: any) => item.id));
+            
+            // Tạo Set để lọc theo tên + type (tránh trùng lặp theo tên)
+            const characterItemKeys = new Set(characterInventory.map((item: any) => `${item.name}_${item.type}`));
+            
+            // Lọc theo cả ID và tên+type để đảm bảo không trùng lặp
+            const newItems = foundItems.filter(item => {
+              const itemKey = `${item.name}_${item.type}`;
+              return !characterItemIds.has(item.id) && !characterItemKeys.has(itemKey);
+            });
+            
+            if (newItems.length > 0) {
+              setAvailableItems(newItems);
+              setShowItemSelectionModal(true);
+            }
           }
         } catch (itemError) {
           console.error('Lỗi xử lý items:', itemError);
@@ -1144,8 +1205,15 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         // Ensure sceneState exists and is an object
         const aiSceneState = response.sceneState || {};
         
-        // Update game state
-        const newSceneState = { ...gameState.sceneState, ...aiSceneState, worldTime: newTime };
+        // Update game state - đảm bảo inventory chỉ chứa items từ AI response hiện tại
+        const newSceneState = { 
+          ...gameState.sceneState, 
+          ...aiSceneState, 
+          worldTime: newTime,
+          // CHỈ sử dụng inventory từ AI response hiện tại, không merge với cũ
+          inventory: aiSceneState.inventory || []
+        };
+        
         
         setGameState(prev => ({
           ...prev,
@@ -2125,7 +2193,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     }
     
     return { worldData, characterData };
-  }, [gameState.worldTime]); // Chỉ re-calculate khi worldTime thay đổi
+  }, [gameState.worldTime, characterDataUpdate]); // Re-calculate khi worldTime hoặc character data thay đổi
 
   if (!gameState.isInitialized) {
     return (
@@ -2503,6 +2571,10 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               isCollapsed={isSuggestionsCollapsed}
               onToggleCollapse={toggleSuggestionsCollapse}
               selectedSuggestionId={selectedSuggestionId}
+              isRetrying={isRetrying}
+              retryCount={retryCount}
+              lastRetryError={lastRetryError}
+              onRetry={lastRetryError ? handleRetrySuggestions : undefined}
             />
           </Suspense>
           

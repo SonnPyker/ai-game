@@ -1078,6 +1078,38 @@ QUAN TRỌNG VỀ CHARACTER:
 - Opening message phải mô tả CHARACTER là nhân vật chính, không phải NPC
 - Tất cả quest và cốt truyện phải phù hợp với vai trò và background của CHARACTER
 
+QUAN TRỌNG VỀ QUEST REWARDS - TUÂN THỦ NGHIÊM NGẶT:
+- MAIN QUEST: BẮT BUỘC phải có đủ 3 loại phần thưởng: currency, experience, item
+- SIDE QUEST: BẮT BUỘC phải có đúng 2 loại phần thưởng (random 2 trong 3: currency, experience, item)
+- FACTION QUEST: BẮT BUỘC phải có đủ 4 loại phần thưởng: currency, experience, item, faction_reputation
+- Mỗi loại reward phải có amount cụ thể và description rõ ràng
+- KHÔNG ĐƯỢC bỏ sót bất kỳ loại reward nào theo quy định
+
+QUAN TRỌNG VỀ ITEM REWARDS - TẠO TÊN VÀ MÔ TẢ CỤ THỂ:
+- KHÔNG BAO GIỜ sử dụng "Vật phẩm ngẫu nhiên" hoặc "Một vật phẩm hữu ích"
+- TẠO TÊN CỤ THỂ cho từng item dựa trên context của quest và thế giới
+- TẠO MÔ TẢ CHI TIẾT về tác dụng, nguồn gốc, và đặc điểm của item
+- SỬ DỤNG ĐÚNG TYPE: weapon, armor, consumable, misc
+- SỬ DỤNG ĐÚNG RARITY: common, uncommon, rare, epic, legendary
+- VÍ DỤ TỐT: "Kiếm Thánh Quang", "Áo giáp Rồng", "Thuốc hồi sinh", "Chìa khóa ma thuật"
+- VÍ DỤ SAI: "Vật phẩm ngẫu nhiên", "Một vật phẩm hữu ích"
+
+QUAN TRỌNG VỀ INVENTORY ITEM STRUCTURE - TUÂN THỦ NGHIÊM NGẶT:
+- MỌI ITEM REWARD PHẢI CÓ ĐẦY ĐỦ CÁC TRƯỜNG THEO InventoryItem INTERFACE:
+  * id: string (phải unique, ví dụ: "sword_ancient_001")
+  * name: string (tên cụ thể của item)
+  * description: string (mô tả chi tiết)
+  * type: "weapon" | "armor" | "consumable" | "misc"
+  * rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "unique"
+  * quantity: number (thường là 1)
+  * icon: string (emoji phù hợp: ⚔️ cho weapon, 🛡️ cho armor, 🧪 cho consumable, 📦 cho misc)
+  * isEquipped: boolean (luôn false khi tạo mới)
+  * stats: object (các chỉ số tăng cường, có thể để 0 nếu không có)
+  * slot: string (slot trang bị phù hợp: "weapon_main", "weapon_off", "head", "chest", etc.)
+  * tags: array (luôn bao gồm ["reward"])
+- KHÔNG ĐƯỢC BỎ SÓT BẤT KỲ TRƯỜNG NÀO
+- ĐẢM BẢO ITEM CÓ THỂ TRANG BỊ ĐƯỢC
+
 YÊU CẦU NỘI DUNG:
 1) Tổng quan thế giới ngắn gọn, nhất quán với coreIdea/genres/settings.
 2) Mô tả hệ thống cốt lõi: công nghệ/phép thuật/sức mạnh, quy tắc siêu nhiên (nếu có).
@@ -1145,9 +1177,41 @@ SCHEMA JSON (bắt buộc):
     ],
     "rewards": [
       {
+        "type": "currency",
+        "amount": 100,
+        "description": "Tiền tệ +100"
+      },
+      {
         "type": "experience",
         "amount": 300,
-        "description": "string"
+        "description": "Kinh nghiệm +300"
+      },
+      {
+        "type": "item",
+        "amount": 1,
+        "items": [
+          {
+            "id": "item_id_unique",
+            "name": "Tên vật phẩm cụ thể (ví dụ: Kiếm ma thuật, Áo giáp bí ẩn, Thuốc hồi sinh)",
+            "description": "Mô tả chi tiết về vật phẩm và tác dụng của nó",
+            "type": "weapon/armor/consumable/misc",
+            "rarity": "common/uncommon/rare/epic/legendary",
+            "quantity": 1,
+            "icon": "⚔️/🛡️/🧪/📦",
+            "isEquipped": false,
+            "stats": {
+              "strength": 0,
+              "agility": 0,
+              "intelligence": 0,
+              "constitution": 0,
+              "wisdom": 0,
+              "charisma": 0
+            },
+            "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+            "tags": ["reward"]
+          }
+        ],
+        "description": "Tên vật phẩm cụ thể"
       }
     ]
   },
@@ -1166,9 +1230,41 @@ SCHEMA JSON (bắt buộc):
       ],
       "rewards": [
         {
+          "type": "currency",
+          "amount": 200,
+          "description": "Tiền tệ +200"
+        },
+        {
           "type": "experience",
           "amount": 500,
-          "description": "string"
+          "description": "Kinh nghiệm +500"
+        },
+        {
+          "type": "item",
+          "amount": 1,
+          "items": [
+            {
+              "id": "item_id_unique",
+              "name": "Tên vật phẩm cụ thể (ví dụ: Kiếm ma thuật, Áo giáp bí ẩn, Thuốc hồi sinh)",
+              "description": "Mô tả chi tiết về vật phẩm và tác dụng của nó",
+              "type": "weapon/armor/consumable/misc",
+              "rarity": "common/uncommon/rare/epic/legendary",
+              "quantity": 1,
+              "icon": "⚔️/🛡️/🧪/📦",
+              "isEquipped": false,
+              "stats": {
+                "strength": 0,
+                "agility": 0,
+                "intelligence": 0,
+                "constitution": 0,
+                "wisdom": 0,
+                "charisma": 0
+              },
+              "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+              "tags": ["reward"]
+            }
+          ],
+          "description": "Tên vật phẩm cụ thể"
         }
       ]
     },
@@ -1186,9 +1282,41 @@ SCHEMA JSON (bắt buộc):
       ],
       "rewards": [
         {
+          "type": "currency",
+          "amount": 300,
+          "description": "Tiền tệ +300"
+        },
+        {
           "type": "experience",
           "amount": 750,
-          "description": "string"
+          "description": "Kinh nghiệm +750"
+        },
+        {
+          "type": "item",
+          "amount": 1,
+          "items": [
+            {
+              "id": "item_id_unique",
+              "name": "Tên vật phẩm cụ thể (ví dụ: Kiếm ma thuật, Áo giáp bí ẩn, Thuốc hồi sinh)",
+              "description": "Mô tả chi tiết về vật phẩm và tác dụng của nó",
+              "type": "weapon/armor/consumable/misc",
+              "rarity": "common/uncommon/rare/epic/legendary",
+              "quantity": 1,
+              "icon": "⚔️/🛡️/🧪/📦",
+              "isEquipped": false,
+              "stats": {
+                "strength": 0,
+                "agility": 0,
+                "intelligence": 0,
+                "constitution": 0,
+                "wisdom": 0,
+                "charisma": 0
+              },
+              "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+              "tags": ["reward"]
+            }
+          ],
+          "description": "Tên vật phẩm cụ thể"
         }
       ]
     },
@@ -1206,9 +1334,41 @@ SCHEMA JSON (bắt buộc):
       ],
       "rewards": [
         {
+          "type": "currency",
+          "amount": 400,
+          "description": "Tiền tệ +400"
+        },
+        {
           "type": "experience",
           "amount": 1000,
-          "description": "string"
+          "description": "Kinh nghiệm +1000"
+        },
+        {
+          "type": "item",
+          "amount": 1,
+          "items": [
+            {
+              "id": "item_id_unique",
+              "name": "Tên vật phẩm cụ thể (ví dụ: Kiếm ma thuật, Áo giáp bí ẩn, Thuốc hồi sinh)",
+              "description": "Mô tả chi tiết về vật phẩm và tác dụng của nó",
+              "type": "weapon/armor/consumable/misc",
+              "rarity": "common/uncommon/rare/epic/legendary",
+              "quantity": 1,
+              "icon": "⚔️/🛡️/🧪/📦",
+              "isEquipped": false,
+              "stats": {
+                "strength": 0,
+                "agility": 0,
+                "intelligence": 0,
+                "constitution": 0,
+                "wisdom": 0,
+                "charisma": 0
+              },
+              "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+              "tags": ["reward"]
+            }
+          ],
+          "description": "Tên vật phẩm cụ thể"
         }
       ]
     },
@@ -1226,9 +1386,41 @@ SCHEMA JSON (bắt buộc):
       ],
       "rewards": [
         {
+          "type": "currency",
+          "amount": 500,
+          "description": "Tiền tệ +500"
+        },
+        {
           "type": "experience",
           "amount": 1250,
-          "description": "string"
+          "description": "Kinh nghiệm +1250"
+        },
+        {
+          "type": "item",
+          "amount": 1,
+          "items": [
+            {
+              "id": "item_id_unique",
+              "name": "Tên vật phẩm cụ thể (ví dụ: Kiếm ma thuật, Áo giáp bí ẩn, Thuốc hồi sinh)",
+              "description": "Mô tả chi tiết về vật phẩm và tác dụng của nó",
+              "type": "weapon/armor/consumable/misc",
+              "rarity": "common/uncommon/rare/epic/legendary",
+              "quantity": 1,
+              "icon": "⚔️/🛡️/🧪/📦",
+              "isEquipped": false,
+              "stats": {
+                "strength": 0,
+                "agility": 0,
+                "intelligence": 0,
+                "constitution": 0,
+                "wisdom": 0,
+                "charisma": 0
+              },
+              "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+              "tags": ["reward"]
+            }
+          ],
+          "description": "Tên vật phẩm cụ thể"
         }
       ]
     },
@@ -1246,9 +1438,41 @@ SCHEMA JSON (bắt buộc):
       ],
       "rewards": [
         {
+          "type": "currency",
+          "amount": 600,
+          "description": "Tiền tệ +600"
+        },
+        {
           "type": "experience",
           "amount": 1500,
-          "description": "string"
+          "description": "Kinh nghiệm +1500"
+        },
+        {
+          "type": "item",
+          "amount": 1,
+          "items": [
+            {
+              "id": "item_id_unique",
+              "name": "Tên vật phẩm cụ thể (ví dụ: Kiếm ma thuật, Áo giáp bí ẩn, Thuốc hồi sinh)",
+              "description": "Mô tả chi tiết về vật phẩm và tác dụng của nó",
+              "type": "weapon/armor/consumable/misc",
+              "rarity": "common/uncommon/rare/epic/legendary",
+              "quantity": 1,
+              "icon": "⚔️/🛡️/🧪/📦",
+              "isEquipped": false,
+              "stats": {
+                "strength": 0,
+                "agility": 0,
+                "intelligence": 0,
+                "constitution": 0,
+                "wisdom": 0,
+                "charisma": 0
+              },
+              "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+              "tags": ["reward"]
+            }
+          ],
+          "description": "Tên vật phẩm cụ thể"
         }
       ]
     }
@@ -1283,6 +1507,7 @@ QUAN TRỌNG VỀ CHARACTER:
 - KHÔNG BAO GIỜ tạo NPC có tên giống với CHARACTER
 - Tất cả quest và cốt truyện phải phù hợp với vai trò và background của CHARACTER
 
+
 WORLD:
 ${worldJson}
 
@@ -1304,30 +1529,7 @@ SCHEMA:
       "keyBeats": ["3–6 tình tiết quan trọng"],
       "obstacles": ["trở ngại"],
       "twist": "plot twist (nếu có)",
-      "outcomeHint": "gợi ý kết cục có/không thành",
-        "mainQuest": {
-          "title": "tên quest chính của act",
-          "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
-        "objectives": [
-          {
-            "id": "obj_1",
-            "description": "mục tiêu 1 của quest",
-            "aiKeywords": ["từ khóa AI cần nhận diện"]
-          },
-          {
-            "id": "obj_2", 
-            "description": "mục tiêu 2 của quest",
-            "aiKeywords": ["từ khóa AI cần nhận diện"]
-          }
-        ],
-        "rewards": [
-          {
-            "type": "experience",
-            "amount": 500,
-            "description": "Kinh nghiệm +500"
-          }
-        ]
-      }
+      "outcomeHint": "gợi ý kết cục có/không thành"
     },
     { 
       "act": 2, 
@@ -1335,25 +1537,7 @@ SCHEMA:
       "keyBeats": ["3–6 tình tiết quan trọng"], 
       "obstacles": ["trở ngại"], 
       "twist": "plot twist (nếu có)", 
-      "outcomeHint": "gợi ý kết cục có/không thành",
-      "mainQuest": {
-        "title": "tên quest chính của act 2",
-        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
-        "objectives": [
-          {
-            "id": "obj_1",
-            "description": "mục tiêu 1 của quest act 2",
-            "aiKeywords": ["từ khóa AI cần nhận diện"]
-          }
-        ],
-        "rewards": [
-          {
-            "type": "experience",
-            "amount": 750,
-            "description": "Kinh nghiệm +750"
-          }
-        ]
-      }
+      "outcomeHint": "gợi ý kết cục có/không thành"
     },
     { 
       "act": 3, 
@@ -1361,25 +1545,7 @@ SCHEMA:
       "keyBeats": ["3–6 tình tiết quan trọng"], 
       "obstacles": ["trở ngại"], 
       "twist": "plot twist (nếu có)", 
-      "outcomeHint": "gợi ý kết cục có/không thành",
-      "mainQuest": {
-        "title": "tên quest chính của act 3",
-        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
-        "objectives": [
-          {
-            "id": "obj_1",
-            "description": "mục tiêu 1 của quest act 3",
-            "aiKeywords": ["từ khóa AI cần nhận diện"]
-          }
-        ],
-        "rewards": [
-          {
-            "type": "experience",
-            "amount": 1000,
-            "description": "Kinh nghiệm +1000"
-          }
-        ]
-      }
+      "outcomeHint": "gợi ý kết cục có/không thành"
     },
     { 
       "act": 4, 
@@ -1387,25 +1553,7 @@ SCHEMA:
       "keyBeats": ["3–6 tình tiết quan trọng"], 
       "obstacles": ["trở ngại"], 
       "twist": "plot twist (nếu có)", 
-      "outcomeHint": "gợi ý kết cục có/không thành",
-      "mainQuest": {
-        "title": "tên quest chính của act 4",
-        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
-        "objectives": [
-          {
-            "id": "obj_1",
-            "description": "mục tiêu 1 của quest act 4",
-            "aiKeywords": ["từ khóa AI cần nhận diện"]
-          }
-        ],
-        "rewards": [
-          {
-            "type": "experience",
-            "amount": 1250,
-            "description": "Kinh nghiệm +1250"
-          }
-        ]
-      }
+      "outcomeHint": "gợi ý kết cục có/không thành"
     },
     { 
       "act": 5, 
@@ -1413,25 +1561,7 @@ SCHEMA:
       "keyBeats": ["3–6 tình tiết quan trọng"], 
       "obstacles": ["trở ngại"], 
       "twist": "plot twist (nếu có)", 
-      "outcomeHint": "gợi ý kết cục có/không thành",
-      "mainQuest": {
-        "title": "tên quest chính của act 5",
-        "description": "mô tả bối cảnh và tình huống một cách tự nhiên, KHÔNG nói trực tiếp 'nhiệm vụ của bạn là' hay 'bạn phải làm'. Quest phải phù hợp với vai trò của CHARACTER",
-        "objectives": [
-          {
-            "id": "obj_1",
-            "description": "mục tiêu 1 của quest act 5",
-            "aiKeywords": ["từ khóa AI cần nhận diện"]
-          }
-        ],
-        "rewards": [
-          {
-            "type": "experience",
-            "amount": 1500,
-            "description": "Kinh nghiệm +1500"
-          }
-        ]
-      }
+      "outcomeHint": "gợi ý kết cục có/không thành"
     }
   ],
   "failStates": ["những tình huống dẫn tới thất bại (không chết cứng, cho phép cứu vãn)"],
@@ -1463,7 +1593,10 @@ SCHEMA:
         openingSeed: "Bắt đầu cuộc phiêu lưu"
       };
 
-      return this.parseJsonResponse(response, fallbackData);
+      const result = this.parseJsonResponse(response, fallbackData);
+      
+      
+      return result;
     } catch (error) {
       console.error('Lỗi khi tạo scenario skeleton:', error);
       throw new Error('Không thể tạo kịch bản. Vui lòng thử lại.');
@@ -2079,6 +2212,13 @@ QUAN TRỌNG VỀ QUY TẮC TẠO QUEST:
   * KHÔNG được tạo lại nếu đã có signature quest cho địa điểm đó
   * Luôn được tạo khi có NPC đặc trưng mới
 
+QUAN TRỌNG VỀ QUEST REWARDS - TUÂN THỦ NGHIÊM NGẶT:
+- SIDE QUEST: BẮT BUỘC phải có đúng 2 loại phần thưởng (random 2 trong 3: currency, experience, item)
+- Mỗi loại reward phải có amount cụ thể và description rõ ràng
+- Currency: 20-100, Experience: 100-300, Item: 1 vật phẩm hữu ích
+- KHÔNG ĐƯỢC bỏ sót bất kỳ loại reward nào theo quy định
+- Nếu thiếu reward, hệ thống sẽ tự động thêm vào
+
 HƯỚNG DẪN VỀ VẬT PHẨM (ITEMS):
 - Khi người chơi nhận được, tìm thấy, hoặc mua vật phẩm, hãy mô tả chi tiết trong narrative
 - Thêm thông tin item vào sceneState.inventory theo format:
@@ -2107,6 +2247,13 @@ QUAN TRỌNG - TÍNH HỢP LÝ CỦA VẬT PHẨM:
 - Ưu tiên chất lượng hơn số lượng - ít items nhưng có ý nghĩa
 - Mô tả items một cách sinh động và hấp dẫn trong narrative
 
+QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
+- KHÔNG BAO GIỜ sử dụng "Vật phẩm ngẫu nhiên" hoặc "Một vật phẩm hữu ích"
+- TẠO TÊN CỤ THỂ cho từng item dựa trên context của side quest
+- TẠO MÔ TẢ CHI TIẾT về tác dụng và đặc điểm của item
+- VÍ DỤ TỐT: "Chìa khóa cổ", "Thuốc độc", "Bản đồ bí mật", "Đá quý ma thuật"
+- VÍ DỤ SAI: "Vật phẩm ngẫu nhiên", "Một vật phẩm hữu ích"
+
 ĐẦU RA (JSON, không thêm chữ khác):
 {
   "narrative": "văn xuôi 120–220 từ, liền mạch, không bullet/emoji",
@@ -2130,9 +2277,27 @@ QUAN TRỌNG - TÍNH HỢP LÝ CỦA VẬT PHẨM:
     ],
     "rewards": [
       {
+        "type": "currency",
+        "amount": 50,
+        "description": "Tiền tệ +50"
+      },
+      {
         "type": "experience",
         "amount": 200,
         "description": "Kinh nghiệm +200"
+      },
+      {
+        "type": "item",
+        "amount": 1,
+        "items": [
+          {
+            "name": "Vật phẩm ngẫu nhiên",
+            "description": "Một vật phẩm hữu ích",
+            "type": "misc",
+            "rarity": "common"
+          }
+        ],
+        "description": "Vật phẩm ngẫu nhiên"
       }
     ],
     "isLocationSignature": false,

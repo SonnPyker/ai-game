@@ -30,6 +30,8 @@ export function HomePage() {
       'faction_quests', // Xóa faction quests khi reset game
       'faction_reputations', // Xóa faction reputations khi reset game
       'player_location', // Xóa player location khi reset game
+      'game_inventory', // Xóa inventory khi reset game
+      'game_equipment', // Xóa equipment khi reset game
       // World Builder keys
       'completeWorldData',
       'currentWorldData',

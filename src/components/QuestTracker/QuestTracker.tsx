@@ -15,7 +15,11 @@ import {
   Trash2,
   Users,
   Plus,
-  Loader2
+  Loader2,
+  Coins,
+  Zap,
+  Award,
+  Package
 } from 'lucide-react';
 import { QuestProgress, QuestSystem } from '../../types';
 import { npcRelationshipService } from '../../services/npcRelationshipService';
@@ -45,6 +49,18 @@ export function QuestTracker({
   isAIProcessing,
   isNPCAnalysisProcessing
 }: QuestTrackerProps) {
+  
+  // Hàm xử lý claim tất cả rewards
+  const handleClaimAllRewards = async (quest: QuestProgress) => {
+    const unclaimedRewards = quest.rewards.filter(reward => !reward.claimed);
+    
+    // Claim từng reward một cách tuần tự để đảm bảo UI update
+    for (const reward of unclaimedRewards) {
+      onClaimReward(quest.id, reward.type);
+      // Thêm delay nhỏ để UI có thời gian update
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  };
   // Suppress unused parameter warnings for future use
   void onQuestAccept;
   void onQuestDecline;
@@ -343,46 +359,90 @@ export function QuestTracker({
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-gray-400">Phần thưởng:</h4>
             <div className="flex flex-wrap gap-2">
-              {quest.rewards.map((reward, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center space-x-1 px-2 py-1 rounded text-xs ${
-                    reward.claimed 
-                      ? 'bg-green-600/30 text-green-300' 
-                      : 'bg-yellow-600/30 text-yellow-300'
-                  }`}
-                >
-                  <Gift className="w-3 h-3" />
-                  <span>
-                    {(() => {
-                      const highlightedParts = highlightNames(reward.description);
-                      return highlightedParts.map((part, partIndex) => {
-                        if (part.type === 'highlight') {
-                          return (
-                            <span 
-                              key={partIndex}
-                              className="text-yellow-300 font-semibold"
-                            >
-                              {part.content}
-                            </span>
-                          );
-                        } else {
-                          return part.content;
+              {quest.rewards.map((reward, index) => {
+                // Lấy icon phù hợp cho từng loại reward
+                const getRewardIcon = (type: string) => {
+                  switch (type) {
+                    case 'currency':
+                      return <Coins className="w-3 h-3" />;
+                    case 'experience':
+                      return <Zap className="w-3 h-3" />;
+                    case 'item':
+                      return <Package className="w-3 h-3" />;
+                    case 'faction_reputation':
+                      return <Award className="w-3 h-3" />;
+                    default:
+                      return <Gift className="w-3 h-3" />;
+                  }
+                };
+
+                // Lấy màu sắc phù hợp cho từng loại reward
+                const getRewardColor = (type: string) => {
+                  switch (type) {
+                    case 'currency':
+                      return 'bg-yellow-600/30 text-yellow-300';
+                    case 'experience':
+                      return 'bg-purple-600/30 text-purple-300';
+                    case 'item':
+                      return 'bg-blue-600/30 text-blue-300';
+                    case 'faction_reputation':
+                      return 'bg-orange-600/30 text-orange-300';
+                    default:
+                      return 'bg-yellow-600/30 text-yellow-300';
+                  }
+                };
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded text-xs ${
+                      reward.claimed 
+                        ? 'bg-green-600/30 text-green-300' 
+                        : getRewardColor(reward.type)
+                    }`}
+                  >
+                    {getRewardIcon(reward.type)}
+                    <span>
+                      {(() => {
+                        // Hiển thị mô tả + số lượng cụ thể cho từng loại reward
+                        switch (reward.type) {
+                          case 'currency':
+                            return `${reward.description} (+${reward.amount})`;
+                          case 'experience':
+                            return `${reward.description} (+${reward.amount})`;
+                          case 'item':
+                            if (reward.items && reward.items.length > 0) {
+                              return reward.items.map((item, itemIndex) => (
+                                <span key={itemIndex}>
+                                  {item.name} ({item.rarity})
+                                </span>
+                              ));
+                            }
+                            return `${reward.description} (+${reward.amount})`;
+                          case 'faction_reputation':
+                            return `${reward.description} (+${reward.amount})`;
+                          default:
+                            return reward.description;
                         }
-                      });
-                    })()}
-                  </span>
-                  {!reward.claimed && isCompleted && (
-                    <button
-                      onClick={() => onClaimReward(quest.id, reward.type)}
-                      className="ml-1 text-yellow-200 hover:text-yellow-100"
-                    >
-                      Claim
-                    </button>
-                  )}
-                </div>
-              ))}
+                      })()}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
+            
+            {/* Claim All Button - Chỉ hiển thị khi quest completed và có rewards chưa claim */}
+            {isCompleted && quest.rewards.some(reward => !reward.claimed) && (
+              <div className="flex justify-end mt-3 pt-3 border-t border-gray-700/50">
+                <button
+                  onClick={() => handleClaimAllRewards(quest)}
+                  className="px-4 py-2 bg-green-600/20 border border-green-500/50 text-green-300 rounded text-sm hover:bg-green-600/30 transition-colors flex items-center space-x-2"
+                >
+                  <Gift className="w-4 h-4" />
+                  <span>Nhận tất cả thưởng</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 

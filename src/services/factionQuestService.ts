@@ -39,7 +39,13 @@ class FactionQuestService {
     const questTemplates = this.getFactionQuestTemplates(factionName);
     const randomTemplate = questTemplates[Math.floor(Math.random() * questTemplates.length)];
     
-    const reputationReward = Math.floor(Math.random() * 21) + 30; // 30-50 điểm
+    // Lấy character level để tính reward
+    const characterLevel = this.getCharacterLevel();
+    
+    // Tạo 4 loại reward cho faction quest
+    const currencyAmount = characterLevel * 25;
+    const experienceAmount = characterLevel * 80;
+    const reputationAmount = Math.floor(Math.random() * 21) + 30; // 30-50 điểm
 
     const quest: QuestProgress = {
       id: `faction_quest_${factionName}_${Date.now()}`,
@@ -57,9 +63,38 @@ class FactionQuestService {
       })),
       rewards: [
         {
+          type: 'currency',
+          amount: currencyAmount,
+          description: `Tiền tệ +${currencyAmount}`,
+          claimed: false
+        },
+        {
           type: 'experience',
-          amount: reputationReward,
-          description: `Danh tiếng phe phái ${factionName} +${reputationReward}`,
+          amount: experienceAmount,
+          description: `Kinh nghiệm +${experienceAmount}`,
+          claimed: false
+        },
+        {
+          type: 'item',
+          amount: 1,
+          items: [{
+            id: `faction_item_${factionName}_${Date.now()}`,
+            name: `Vật phẩm đặc trưng ${factionName}`,
+            description: `Vật phẩm độc đáo từ phe phái ${factionName}`,
+            type: 'misc',
+            rarity: 'unique',
+            quantity: 1,
+            icon: '🎁',
+            tags: ['reward', 'faction']
+          }],
+          description: `Vật phẩm đặc trưng ${factionName}`,
+          claimed: false
+        },
+        {
+          type: 'faction_reputation',
+          amount: reputationAmount,
+          factionName: factionName,
+          description: `Danh tiếng phe phái ${factionName} +${reputationAmount}`,
           claimed: false
         }
       ],
@@ -145,6 +180,22 @@ class FactionQuestService {
         completedAt: new Date()
       });
     }
+  }
+
+  /**
+   * Lấy level hiện tại của character từ localStorage
+   */
+  private getCharacterLevel(): number {
+    try {
+      const characterData = localStorage.getItem('currentCharacter');
+      if (characterData) {
+        const character = JSON.parse(characterData);
+        return character.level || 1;
+      }
+    } catch (error) {
+      console.warn('Failed to get character level:', error);
+    }
+    return 1; // Default level
   }
 
   // Lấy quest templates cho faction
@@ -263,6 +314,14 @@ Trả về JSON theo format này:
         }
       }
       
+      // Lấy character level để tính reward
+      const characterLevel = this.getCharacterLevel();
+      
+      // Tạo 4 loại reward cho faction quest (theo yêu cầu)
+      const currencyAmount = characterLevel * 25;
+      const experienceAmount = characterLevel * 80;
+      const reputationAmount = Math.floor(Math.random() * 21) + 30; // 30-50 điểm
+
       // Tạo QuestProgress object
       const quest: QuestProgress = {
         id: questData.id || `faction_quest_${factionName}_${Date.now()}`,
@@ -278,12 +337,43 @@ Trả về JSON theo format này:
           aiKeywords: obj.aiKeywords || [],
           unlocked: index === 0
         })),
-        rewards: questData.rewards.map((reward: any) => ({
-          type: reward.type,
-          amount: reward.amount,
-          description: reward.description,
-          claimed: false
-        })),
+        rewards: [
+          {
+            type: 'currency',
+            amount: currencyAmount,
+            description: `Tiền tệ +${currencyAmount}`,
+            claimed: false
+          },
+          {
+            type: 'experience',
+            amount: experienceAmount,
+            description: `Kinh nghiệm +${experienceAmount}`,
+            claimed: false
+          },
+          {
+            type: 'item',
+            amount: 1,
+            items: [{
+              id: `faction_item_${factionName}_${Date.now()}`,
+              name: `Vật phẩm đặc trưng ${factionName}`,
+              description: `Vật phẩm độc đáo từ phe phái ${factionName}`,
+              type: 'misc',
+              rarity: 'unique',
+              quantity: 1,
+              icon: '🎁',
+              tags: ['reward', 'faction']
+            }],
+            description: `Vật phẩm đặc trưng ${factionName}`,
+            claimed: false
+          },
+          {
+            type: 'faction_reputation',
+            amount: reputationAmount,
+            factionName: factionName,
+            description: `Danh tiếng phe phái ${factionName} +${reputationAmount}`,
+            claimed: false
+          }
+        ],
         createdAt: new Date()
       };
 

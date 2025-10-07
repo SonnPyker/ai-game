@@ -20,12 +20,15 @@ import {
   Clock,
   MessageSquare,
   AlertTriangle,
-  EyeOff
+  EyeOff,
+  Coins
 } from 'lucide-react';
 import { WorldData, Character, WorldTime, QuestSystem, QuestProgress, ContentFlags, InventoryItem } from '../../types';
 import { npcRelationshipService } from '../../services/npcRelationshipService';
 import { worldTimeService } from '../../services/worldTimeService';
 import { inventoryService } from '../../services/inventoryService';
+import { levelSystemService } from '../../services/levelSystemService';
+import { currencyService } from '../../services/currencyService';
 import { QuestTracker } from '../QuestTracker/QuestTracker';
 import { SCCJournal } from './SCCJournal';
 import { NPCArousalBar } from '../NPCArousalBar';
@@ -158,7 +161,7 @@ export function InfoMenu({
   });
   const [expandedNPCs, setExpandedNPCs] = useState<Set<string>>(new Set());
   const [forceUpdate, setForceUpdate] = useState<number>(0);
-  const [characterSubSection, setCharacterSubSection] = useState<'info' | 'inventory' | 'equipment'>('info');
+  const [characterSubSection, setCharacterSubSection] = useState<'info' | 'inventory' | 'equipment' | 'currency'>('info');
   
   // Theo dõi thay đổi responsive và chuyển section khi cần
   useEffect(() => {
@@ -172,6 +175,19 @@ export function InfoMenu({
       }
     }
   }, [shouldUseMobileLayout, activeSection]);
+
+  // Listen for quest reward claimed events để refresh UI
+  useEffect(() => {
+    const handleQuestRewardClaimed = () => {
+      // Force re-render bằng cách update một state
+      setForceUpdate(prev => prev + 1);
+    };
+
+    window.addEventListener('questRewardClaimed', handleQuestRewardClaimed);
+    return () => {
+      window.removeEventListener('questRewardClaimed', handleQuestRewardClaimed);
+    };
+  }, []);
 
   // Tối ưu localStorage access cho mobile
   const updateActiveSection = useCallback((sectionId: string) => {
@@ -331,14 +347,14 @@ export function InfoMenu({
           updateCharacterTitle(characterData, fallbackTitle);
         });
     }
-  }, [characterData]);
+  }, [characterData, forceUpdate]); // Thêm forceUpdate để re-render khi có thay đổi
 
   // Khởi tạo inventory service khi characterData thay đổi
   useEffect(() => {
     if (characterData) {
       inventoryService.setCharacter(characterData);
     }
-  }, [characterData]);
+  }, [characterData, forceUpdate]); // Thêm forceUpdate để re-render khi có thay đổi
 
   // Render section nhân vật
   const renderCharacterSection = () => {
@@ -381,6 +397,17 @@ export function InfoMenu({
             <Sword className="w-4 h-4" />
             <span>Trang bị</span>
           </button>
+          <button
+            onClick={() => setCharacterSubSection('currency')}
+            className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
+              characterSubSection === 'currency'
+                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
+          >
+            <Coins className="w-4 h-4" />
+            <span>Tiền tệ</span>
+          </button>
         </div>
         
         {/* Character Content */}
@@ -403,6 +430,7 @@ export function InfoMenu({
             onViewItemDetails={onViewItemDetails}
           />
         )}
+        {characterSubSection === 'currency' && renderCurrencyInfo()}
       </div>
     );
   };
@@ -545,9 +573,30 @@ export function InfoMenu({
                   ></div>
                 </div>
               </div>
+              
+              {/* XP Bar */}
+              {characterData.level && characterData.experience !== undefined && (
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-400">Kinh nghiệm</span>
+                    <span className="text-white">
+                      {characterData.experience}/{levelSystemService.getXPForLevel(characterData.level)} (Level {characterData.level})
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-purple-500 h-2 rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${levelSystemService.getLevelProgress(characterData)}%` 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
+
 
         {/* Tính cách và tiểu sử */}
         {(characterData.personality || characterData.backstory) && (
@@ -618,6 +667,80 @@ export function InfoMenu({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render currency info
+  const renderCurrencyInfo = () => {
+    if (!characterData) return <div className="text-gray-400">Không có dữ liệu nhân vật</div>;
+    if (!worldData) return <div className="text-gray-400">Không có dữ liệu thế giới</div>;
+    
+
+    return (
+      <div className="space-y-4">
+        {/* Main Currency */}
+        {characterData.currency !== undefined && (
+          <div className="bg-gray-800/50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Coins className="w-6 h-6 text-yellow-400" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    {currencyService.getCurrencyName(worldData)}
+                  </h3>
+                  <p className="text-sm text-gray-400">Tiền tệ chính</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-yellow-400">
+                  {characterData.currency.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-400">
+                  Số dư hiện tại
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Secondary Currency */}
+        {characterData.secondaryCurrency !== undefined && (
+          <div className="bg-gray-800/50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Coins className="w-6 h-6 text-gray-300" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    {currencyService.getSecondaryCurrencyName(worldData)}
+                  </h3>
+                  <p className="text-sm text-gray-400">Tiền tệ phụ</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-gray-300">
+                  {characterData.secondaryCurrency.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-400">
+                  Số dư hiện tại
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No Currency Message */}
+        {characterData.currency === undefined && characterData.secondaryCurrency === undefined && (
+          <div className="bg-gray-800/50 rounded-lg p-8 text-center">
+            <Coins className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-400 mb-2">
+              Chưa có tiền tệ
+            </h3>
+            <p className="text-sm text-gray-500">
+              Bạn chưa có tiền tệ nào. Hãy hoàn thành nhiệm vụ để kiếm tiền!
+            </p>
           </div>
         )}
       </div>
