@@ -5,6 +5,40 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2025-01-05
+
+### 🎯 Added
+- **Hệ thống Combat Level cho người chơi**: Combat Level riêng biệt dựa trên số lần tham gia chiến đấu
+  - **Công thức level**: Level 1-2 cần 1 battle, mỗi level sau cần số lẻ tiếp theo (3,5,7,9...)
+  - **Giới hạn tối đa**: Combat Level 30
+  - **Progress bar**: Thanh tiến độ hiển thị số battles hiện tại/tổng cần thiết
+  - **Auto level up**: Tự động tăng Combat Level khi đủ battles
+- **Combat Level Service**: Service quản lý Combat Level với các tính năng:
+  - `calculateCombatLevel()`: Tính Combat Level dựa trên số battles
+  - `addCombatExperience()`: Thêm combat experience và kiểm tra level up
+  - `getCombatLevelInfo()`: Lấy thông tin chi tiết về Combat Level
+  - `getBattlesNeededForLevel()`: Tính số battles cần để lên level cụ thể
+- **Combat Level UI**: Hiển thị Combat Level trong InfoMenu với:
+  - Progress bar màu cam để phân biệt với Character Level
+  - Hiển thị format "X/Y (Level Z)" giống thanh XP
+  - Thông tin số battles cần để lên level tiếp theo
+- **Combat Experience Integration**: Tích hợp vào CombatPage để tự động tăng combat experience khi kết thúc combat
+- **Character Interface Update**: Thêm `combatExperience` field vào Character interface
+- **Character Creation Integration**: Tự động khởi tạo Combat Level cho character mới
+
+### 🔧 Changed
+- **Combat Level Display**: Combat Level hiển thị đúng theo yêu cầu:
+  - Level 1: 0/1 (cần 1 battle để lên Level 2)
+  - Level 2: 0/3 (cần 3 battles để lên Level 3)
+  - Level 3: 0/5 (cần 5 battles để lên Level 4)
+- **InfoMenu Layout**: Bỏ dòng Character Level dưới thanh máu, chỉ hiển thị Combat Level
+- **Combat Level Logic**: Sửa logic tính toán để hiển thị đúng số battles cần thiết
+
+### 🐛 Fixed
+- **Combat Level Calculation**: Sửa lỗi tính toán Combat Level để phù hợp với yêu cầu
+- **Progress Bar Display**: Sửa lỗi hiển thị progress bar cho Combat Level
+- **TypeScript Errors**: Sửa các lỗi TypeScript liên quan đến Combat Level
+
 ## [3.1.0] - 2025-01-05
 
 ### 🎯 Added

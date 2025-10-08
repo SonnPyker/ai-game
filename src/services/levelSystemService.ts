@@ -2,7 +2,8 @@ import { Character } from '../types';
 
 /**
  * Level System Service - DnD 5e Level System
- * Hỗ trợ level 1-20 với bảng XP chuẩn DnD 5e
+ * Hỗ trợ level 1+ với bảng XP chuẩn DnD 5e cho level 1-20
+ * Level từ 20+ sử dụng công thức động: xp_max_previous + (xp_max_previous/2)
  */
 class LevelSystemService {
   private static instance: LevelSystemService;
@@ -41,14 +42,23 @@ class LevelSystemService {
 
   /**
    * Lấy XP cần để lên level tiếp theo
-   * @param currentLevel Level hiện tại (1-19)
+   * @param currentLevel Level hiện tại (1+)
    * @returns XP cần để lên level tiếp theo
    */
   public getXPForLevel(currentLevel: number): number {
-    if (currentLevel < 1 || currentLevel > 19) {
-      throw new Error('Level phải từ 1 đến 19');
+    if (currentLevel < 1) {
+      throw new Error('Level phải từ 1 trở lên');
     }
-    return this.XP_FOR_LEVEL[currentLevel - 1];
+    
+    // Level 1-20 sử dụng bảng XP cố định
+    if (currentLevel <= 20) {
+      return this.XP_FOR_LEVEL[currentLevel - 1];
+    }
+    
+    // Level 21+ sử dụng công thức động
+    // XP cần = XP max của level trước + (XP max của level trước / 2)
+    const previousLevelXP = this.getXPForLevel(currentLevel - 1);
+    return previousLevelXP + Math.floor(previousLevelXP / 2);
   }
 
 
@@ -81,8 +91,8 @@ class LevelSystemService {
     let levelsGained = 0;
     const previousLevel = currentLevel;
 
-    // Xử lý level up cho đến khi hết XP hoặc đạt max level
-    while (remainingXP > 0 && currentLevel < 20) {
+    // Xử lý level up cho đến khi hết XP (không giới hạn level)
+    while (remainingXP > 0) {
       const xpNeededForNextLevel = this.getXPForLevel(currentLevel);
       
       if (currentXP + remainingXP >= xpNeededForNextLevel) {
@@ -114,15 +124,11 @@ class LevelSystemService {
   /**
    * Lấy XP còn thiếu để lên level tiếp theo
    * @param character Character cần kiểm tra
-   * @returns XP còn thiếu (0 nếu đã max level)
+   * @returns XP còn thiếu (không có max level)
    */
   public getXPToNextLevel(character: Character): number {
     const currentLevel = character.level || 1;
     const currentXP = character.experience || 0;
-
-    if (currentLevel >= 20) {
-      return 0; // Đã max level
-    }
 
     const xpNeededForNextLevel = this.getXPForLevel(currentLevel);
     return Math.max(0, xpNeededForNextLevel - currentXP);
@@ -136,10 +142,6 @@ class LevelSystemService {
   public getLevelProgress(character: Character): number {
     const currentLevel = character.level || 1;
     const currentXP = character.experience || 0;
-
-    if (currentLevel >= 20) {
-      return 100; // Đã max level
-    }
 
     const xpNeededForNextLevel = this.getXPForLevel(currentLevel);
     return Math.min(100, Math.max(0, (currentXP / xpNeededForNextLevel) * 100));
@@ -161,7 +163,7 @@ class LevelSystemService {
     const currentXP = character.experience || 0;
     const xpToNext = this.getXPToNextLevel(character);
     const progress = this.getLevelProgress(character);
-    const isMaxLevel = currentLevel >= 20;
+    const isMaxLevel = false; // Không còn max level
 
     return {
       currentLevel,
@@ -189,7 +191,7 @@ class LevelSystemService {
   public canLevelUp(character: Character): boolean {
     const currentLevel = character.level || 1;
     const currentXP = character.experience || 0;
-    return currentLevel < 20 && currentXP >= this.getXPForLevel(currentLevel);
+    return currentXP >= this.getXPForLevel(currentLevel);
   }
 }
 

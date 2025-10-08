@@ -135,12 +135,12 @@ export function MapView({ worldData, currentLocationId, onLocationClick }: MapVi
 
       {/* Map Grid */}
       <div className="bg-gray-900/50 rounded-lg p-4">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-full mx-auto">
           <div 
             className="relative"
             style={{
-              width: '480px', // 15 * 32px
-              height: '480px', // 15 * 32px
+              width: '300px', // 15 * 20px
+              height: '300px', // 15 * 20px
             }}
           >
             {/* Grid Lines */}
@@ -151,7 +151,7 @@ export function MapView({ worldData, currentLocationId, onLocationClick }: MapVi
                   key={`v-${i}`}
                   className="absolute bg-gray-600"
                   style={{
-                    left: `${i * 32}px`,
+                    left: `${i * 20}px`,
                     top: 0,
                     width: '1px',
                     height: '100%'
@@ -164,7 +164,7 @@ export function MapView({ worldData, currentLocationId, onLocationClick }: MapVi
                   key={`h-${i}`}
                   className="absolute bg-gray-600"
                   style={{
-                    top: `${i * 32}px`,
+                    top: `${i * 20}px`,
                     left: 0,
                     height: '1px',
                     width: '100%'
@@ -173,22 +173,74 @@ export function MapView({ worldData, currentLocationId, onLocationClick }: MapVi
               ))}
             </div>
             
-            {/* Travel Path Numbers */}
-            {travelPath.map((point, index) => {
-              // Bỏ qua điểm đầu tiên (vị trí hiện tại) và điểm cuối (đích đến)
-              if (index === 0 || index === travelPath.length - 1) return null;
+            {/* Travel Path Lines */}
+            {travelPath.length > 1 && travelPath.map((point, index) => {
+              // Bỏ qua điểm cuối cùng vì không có điểm tiếp theo để nối
+              if (index === travelPath.length - 1) return null;
+              
+              const nextPoint = travelPath[index + 1];
+              const isHorizontal = point.y === nextPoint.y;
+              const isVertical = point.x === nextPoint.x;
+              const isDiagonal = point.x !== nextPoint.x && point.y !== nextPoint.y;
+              
+              // Tính toán vị trí và kích thước của đường nối
+              let lineStyle: React.CSSProperties = {};
+              
+              if (isHorizontal) {
+                // Đường ngang - đi chính xác trên grid line
+                const startX = Math.min(point.x, nextPoint.x) * 20;
+                const width = Math.abs(nextPoint.x - point.x) * 20;
+                lineStyle = {
+                  left: `${startX}px`,
+                  top: `${point.y * 20 - 1}px`, // -1px để nằm chính xác trên grid line
+                  width: `${width}px`,
+                  height: '2px',
+                };
+              } else if (isVertical) {
+                // Đường dọc - đi chính xác trên grid line
+                const startY = Math.min(point.y, nextPoint.y) * 20;
+                const height = Math.abs(nextPoint.y - point.y) * 20;
+                lineStyle = {
+                  left: `${point.x * 20 - 1}px`, // -1px để nằm chính xác trên grid line
+                  top: `${startY}px`,
+                  width: '2px',
+                  height: `${height}px`,
+                };
+              } else if (isDiagonal) {
+                // Đường chéo - vẽ 2 đoạn ngang và dọc
+                
+                return (
+                  <div key={`path-${index}`}>
+                    {/* Đoạn ngang */}
+                    <div
+                      className="absolute bg-white shadow-lg"
+                      style={{
+                        left: `${Math.min(point.x, nextPoint.x) * 20}px`,
+                        top: `${point.y * 20 - 1}px`,
+                        width: `${Math.abs(nextPoint.x - point.x) * 20}px`,
+                        height: '2px',
+                      }}
+                    />
+                    {/* Đoạn dọc */}
+                    <div
+                      className="absolute bg-white shadow-lg"
+                      style={{
+                        left: `${nextPoint.x * 20 - 1}px`,
+                        top: `${Math.min(point.y, nextPoint.y) * 20}px`,
+                        width: '2px',
+                        height: `${Math.abs(nextPoint.y - point.y) * 20}px`,
+                      }}
+                    />
+                  </div>
+                );
+              }
               
               return (
                 <div
-                  key={`path-${point.x}-${point.y}`}
-                  className="absolute w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold border-2 border-red-300 shadow-lg"
-                  style={{
-                    left: `${point.x * 32 - 12}px`,
-                    top: `${point.y * 32 - 12}px`,
-                  }}
-                >
-                  {index}
-                </div>
+                  key={`path-${index}`}
+                  className="absolute bg-white shadow-lg"
+                  style={lineStyle}
+                />
               );
             })}
 
@@ -205,8 +257,8 @@ export function MapView({ worldData, currentLocationId, onLocationClick }: MapVi
                       ${getLocationColor(cell)}
                     `}
                     style={{
-                      left: `${x * 32 - 12}px`, // Center 24px marker on intersection
-                      top: `${y * 32 - 12}px`,
+                      left: `${x * 20 - 3}px`, // Center on grid intersection
+                      top: `${y * 20 - 3}px`,
                     }}
                     onClick={() => handleLocationClick(cell.location!)}
                     title={cell.location.name}

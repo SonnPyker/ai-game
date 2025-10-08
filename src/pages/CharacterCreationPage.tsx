@@ -5,6 +5,7 @@ import { Character } from '../types';
 import { geminiService } from '../services/geminiService';
 import { nameGenerationService, NameGenerationOptions, GeneratedName } from '../services/nameGenerationService';
 import { levelSystemService } from '../services/levelSystemService';
+import { combatLevelService } from '../services/combatLevelService';
 import { currencyService } from '../services/currencyService';
 import { Sparkles, Download, RotateCcw, Check, Globe, Upload, Shuffle, Star } from 'lucide-react';
 import { HelpTooltip } from '../components/HelpTooltip';
@@ -330,6 +331,9 @@ export function CharacterCreationPage() {
 
     // Khởi tạo level và experience
     levelSystemService.initializeCharacter(character);
+    
+    // Khởi tạo combat level
+    combatLevelService.initializeCharacter(character);
 
     // Khởi tạo currency dựa trên world data
     try {

@@ -93,6 +93,33 @@ export function ItemCard({
       ));
   };
 
+  // Format damage type color
+  const getDamageTypeColor = (damageType?: string) => {
+    switch (damageType) {
+      case 'fire': return 'text-red-400';
+      case 'cold': return 'text-blue-400';
+      case 'lightning': return 'text-yellow-400';
+      case 'poison': return 'text-green-400';
+      case 'magical': return 'text-purple-400';
+      case 'psychic': return 'text-pink-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  // Format damage type name
+  const getDamageTypeName = (damageType?: string) => {
+    switch (damageType) {
+      case 'fire': return 'Lửa';
+      case 'cold': return 'Băng';
+      case 'lightning': return 'Sét';
+      case 'poison': return 'Độc';
+      case 'magical': return 'Phép thuật';
+      case 'psychic': return 'Tâm linh';
+      case 'physical': return 'Vật lý';
+      default: return 'Vật lý';
+    }
+  };
+
   const handleAction = (action: string) => {
     setShowMenu(false);
     
@@ -219,6 +246,29 @@ export function ItemCard({
         </div>
       )}
 
+      {/* Combat Stats */}
+      {(item.damage || item.attackBonus) && (
+        <div className="mb-2">
+          <div className="flex flex-wrap gap-2 text-xs">
+            {item.damage && (
+              <span className="text-red-400 font-mono">
+                Sát thương: {item.damage}
+              </span>
+            )}
+            {item.attackBonus && (
+              <span className="text-blue-400">
+                Tấn công: {item.attackBonus > 0 ? '+' : ''}{item.attackBonus}
+              </span>
+            )}
+            {item.damageType && (
+              <span className={getDamageTypeColor(item.damageType)}>
+                {getDamageTypeName(item.damageType)}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Item Footer */}
       <div className="flex items-center justify-between">
         {/* Quantity */}
@@ -250,8 +300,27 @@ export function ItemCard({
           <div className="text-sm font-medium text-white mb-1">{item.name}</div>
           <div className="text-xs text-gray-300 mb-2">{item.description}</div>
           {item.stats && Object.values(item.stats).some(value => value !== 0) && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 mb-2">
               {formatStats(item.stats)}
+            </div>
+          )}
+          {(item.damage || item.attackBonus) && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              {item.damage && (
+                <span className="text-red-400 font-mono">
+                  Sát thương: {item.damage}
+                </span>
+              )}
+              {item.attackBonus && (
+                <span className="text-blue-400">
+                  Tấn công: {item.attackBonus > 0 ? '+' : ''}{item.attackBonus}
+                </span>
+              )}
+              {item.damageType && (
+                <span className={getDamageTypeColor(item.damageType)}>
+                  {getDamageTypeName(item.damageType)}
+                </span>
+              )}
             </div>
           )}
         </div>

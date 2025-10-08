@@ -12,6 +12,7 @@ const GamePage = lazy(() => import('./pages/GamePage').then(module => ({ default
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(module => ({ default: module.SettingsPage })));
 const SaveLoadPage = lazy(() => import('./pages/SaveLoadPage').then(module => ({ default: module.SaveLoadPage })));
 const InitPage = lazy(() => import('./pages/InitPage').then(module => ({ default: module.InitPage })));
+const CombatPage = lazy(() => import('./pages/CombatPage').then(module => ({ default: module.CombatPage })));
 const WorldBuilder = lazy(() => import('./components/WorldBuilder/WorldBuilder').then(module => ({ default: module.WorldBuilder })));
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
             <Route path="/create-character" element={<CharacterCreationPage />} />
             <Route path="/world-builder" element={<WorldBuilder />} />
             <Route path="/game" element={<GamePage />} />
+            <Route path="/combat" element={<CombatPage />} />
             <Route path="/saveload" element={<SaveLoadPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>

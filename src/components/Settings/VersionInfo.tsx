@@ -12,18 +12,18 @@ const updateLog = [
       version: "3.2.0",
       date: now.toISOString().split('T')[0],
       changes: [
-        "💰 Hệ thống tiền tệ hoàn chỉnh với currency chính và phụ",
-        "📈 Hệ thống level up DnD với XP riêng cho mỗi level",
-        "🎁 Cơ chế phần thưởng quest mới: Main (3 loại), Side (2 loại), Faction (4 loại)",
-        "⚔️ Item rewards có đầy đủ thông tin để trang bị được",
-        "🏆 Tab 'Tiền tệ' riêng biệt trong InfoMenu",
-        "📊 Thanh XP hiển thị progress và level hiện tại",
-        "🎯 Nút 'Claim All' thay thế các nút claim riêng lẻ",
-        "🔄 Auto-refresh UI sau khi claim rewards",
-        "🧹 Loại bỏ main quest khỏi generateScenarioSkeleton",
-        "✨ Cải thiện AI prompts để tạo item rewards cụ thể",
-        "🐛 Sửa lỗi React warning về missing key prop",
-        "🔧 Tối ưu hóa performance và code structure"
+        "⚔️ Hệ thống Combat Level cho người chơi dựa trên số lần tham gia chiến đấu",
+        "📊 Công thức level: Level 1-2 cần 1 battle, mỗi level sau cần số lẻ tiếp theo (3,5,7,9...)",
+        "🎯 Giới hạn tối đa Combat Level 30 với progress bar hiển thị tiến độ",
+        "🔧 Combat Level Service với các tính năng: calculateCombatLevel, addCombatExperience, getCombatLevelInfo",
+        "🎨 UI Combat Level trong InfoMenu với thanh tiến độ màu cam và format X/Y (Level Z)",
+        "⚡ Tích hợp Combat Experience vào CombatPage để tự động tăng khi kết thúc combat",
+        "📝 Cập nhật Character interface với combatExperience field",
+        "🚀 Tự động khởi tạo Combat Level cho character mới trong CharacterCreationPage",
+        "🔧 Sửa logic hiển thị Combat Level đúng theo yêu cầu: Level 1: 0/1, Level 2: 0/3",
+        "🎮 Bỏ dòng Character Level dưới thanh máu, chỉ hiển thị Combat Level nổi bật",
+        "🐛 Sửa lỗi tính toán Combat Level và progress bar display",
+        "✨ Cải thiện UX với thông tin chi tiết về số battles cần để lên level tiếp theo"
       ]
     },
     {

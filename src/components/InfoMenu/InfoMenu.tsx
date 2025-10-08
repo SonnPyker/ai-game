@@ -28,13 +28,16 @@ import { npcRelationshipService } from '../../services/npcRelationshipService';
 import { worldTimeService } from '../../services/worldTimeService';
 import { inventoryService } from '../../services/inventoryService';
 import { levelSystemService } from '../../services/levelSystemService';
+import { combatLevelService } from '../../services/combatLevelService';
 import { currencyService } from '../../services/currencyService';
+// Combat services removed - now handled in CombatPage
 import { QuestTracker } from '../QuestTracker/QuestTracker';
 import { SCCJournal } from './SCCJournal';
 import { NPCArousalBar } from '../NPCArousalBar';
 import { MapView } from './MapView';
 import { InventoryView } from './InventoryView';
 import { EquipmentView } from './EquipmentView';
+// CombatConfirmationModal moved to CombatPage
 import { useResponsiveContext } from '../../contexts/ResponsiveContext';
 import { getCharacterDisplayTitle, getCharacterDisplayTitleWithAI, updateCharacterTitle, getCharacterTitle } from '../../utils/characterTitleExtractor';
 
@@ -143,6 +146,16 @@ export function InfoMenu({
 
     return parts;
   };
+
+  // Combat confirmation modal states - removed, now handled in CombatPage
+
+  // Function to handle combat with NPC - navigate directly to combat page
+  const handleCombatWithNPC = useCallback((npc: any) => {
+    // Navigate directly to combat page with NPC ID
+    window.location.href = `/combat?npcId=${npc.id}`;
+  }, []);
+
+  // Combat functions removed - now handled in CombatPage
 
   
   // Cache localStorage value để tránh gọi mỗi lần render
@@ -574,6 +587,24 @@ export function InfoMenu({
                 </div>
               </div>
               
+              {/* Combat Level */}
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-400">Combat Level</span>
+                  <span className="text-orange-400">
+                    {characterData.combatExperience || 0}/{combatLevelService.getCombatLevelInfo(characterData).totalBattlesForNextLevel} (Level {characterData.combatLevel || 1})
+                  </span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-orange-500 h-2 rounded-full transition-all duration-300" 
+                    style={{ 
+                      width: `${combatLevelService.getCombatLevelInfo(characterData).progress}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+
               {/* XP Bar */}
               {characterData.level && characterData.experience !== undefined && (
                 <div>
@@ -1098,17 +1129,6 @@ export function InfoMenu({
       });
     };
     
-    const handleMergeDuplicates = () => {
-      npcRelationshipService.mergeDuplicateNPCs();
-      // Force re-render by updating a dummy state
-      setForceUpdate(prev => prev + 1);
-    };
-
-    const handleRemoveGroupNPCs = () => {
-      npcRelationshipService.removeGroupNPCs();
-      // Force re-render by updating a dummy state
-      setForceUpdate(prev => prev + 1);
-    };
 
     const handleExpandAll = () => {
       const allIds = relationships.map(r => r.id);
@@ -1161,21 +1181,6 @@ export function InfoMenu({
               </div>
             </div>
             
-            {/* Nút quản lý dữ liệu */}
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={handleRemoveGroupNPCs}
-                className="px-3 py-1 bg-red-600/20 border border-red-500/50 text-red-300 rounded text-sm hover:bg-red-600/30 transition-colors flex items-center space-x-1"
-              >
-                <span>Xóa NPC nhóm</span>
-              </button>
-              <button
-                onClick={handleMergeDuplicates}
-                className="px-3 py-1 bg-blue-600/20 border border-blue-500/50 text-blue-300 rounded text-sm hover:bg-blue-600/30 transition-colors flex items-center space-x-1"
-              >
-                <span>Gộp NPC trùng lặp</span>
-              </button>
-            </div>
           </div>
         )}
 
@@ -1243,6 +1248,19 @@ export function InfoMenu({
                         </span>
                     </div>
                     <div className="flex items-center space-x-2">
+                      {/* Combat Button - only show if NPC can be combatant */}
+                      {relationship.canBeCombatant && relationship.combatStats && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCombatWithNPC(relationship);
+                          }}
+                          className="p-1 text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 rounded transition-colors"
+                          title={`Tấn công ${relationship.name}`}
+                        >
+                          <Sword className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1328,6 +1346,56 @@ export function InfoMenu({
                         className="mt-3"
                       />
 
+                      {/* Combat Stats - chỉ hiển thị khi NPC có thể combat */}
+                      {relationship.canBeCombatant && relationship.combatStats && (
+                        <div className="bg-gray-600/30 rounded-lg p-3 mt-3">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Sword className="w-4 h-4 text-orange-400" />
+                            <span className="text-orange-400 font-medium text-sm">Combat Stats</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <span className="text-gray-400">Combat Level:</span>
+                              <span className="text-orange-400 ml-1 font-semibold">
+                                {relationship.combatStats.combatLevel || relationship.combatStats.level || 1}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Character Level:</span>
+                              <span className="text-green-400 ml-1 font-semibold">
+                                {relationship.combatStats.characterLevel || relationship.level || 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">HP:</span>
+                              <span className="text-white ml-1">
+                                {relationship.combatStats.health.current}/{relationship.combatStats.health.max}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">AC:</span>
+                              <span className="text-white ml-1">{relationship.combatStats.armorClass}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Attacks:</span>
+                              <span className="text-white ml-1">{relationship.combatStats.attacks.length}</span>
+                            </div>
+                          </div>
+                          {relationship.combatStats.attacks.length > 0 && (
+                            <div className="mt-2">
+                              <span className="text-gray-400 text-xs">Tấn công:</span>
+                              <div className="mt-1 space-y-1">
+                                {relationship.combatStats.attacks.slice(0, 2).map((attack: any, index: number) => (
+                                  <div key={index} className="text-xs text-white">
+                                    {attack.name}: +{attack.attackBonus} ({attack.damage} {attack.damageType})
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="text-xs text-gray-400 break-words overflow-wrap-anywhere">
                         {relationship.location && (
                           <div>
@@ -1353,77 +1421,6 @@ export function InfoMenu({
                         )}
                       </div>
 
-                      {/* Personal Information Section */}
-                      {relationship.personalInfo && (
-                        <div className="space-y-2">
-                          <div className="text-gray-400 text-xs font-medium">Thông tin cá nhân:</div>
-                          <div className="grid grid-cols-1 gap-2 text-xs">
-                            {/* Age */}
-                            {relationship.personalInfo.age?.revealed && relationship.personalInfo.age.value && (
-                              <div className="flex items-center space-x-2">
-                                <span className="text-gray-400 w-16">Tuổi:</span>
-                                <span className="text-white">{relationship.personalInfo.age.value} tuổi</span>
-                              </div>
-                            )}
-                            
-                            {/* Occupation */}
-                            {relationship.personalInfo.occupation?.revealed && relationship.personalInfo.occupation.value && (
-                              <div className="flex items-center space-x-2">
-                                <span className="text-gray-400 w-16">Nghề nghiệp:</span>
-                                <span className="text-white">{relationship.personalInfo.occupation.value}</span>
-                              </div>
-                            )}
-                            
-                            {/* Address */}
-                            {relationship.personalInfo.address?.revealed && relationship.personalInfo.address.value && (
-                              <div className="flex items-center space-x-2">
-                                <span className="text-gray-400 w-16">Địa chỉ:</span>
-                                <span className="text-white">{relationship.personalInfo.address.value}</span>
-                              </div>
-                            )}
-                            
-                            {/* Family */}
-                            {relationship.personalInfo.family?.revealed && relationship.personalInfo.family.value && (
-                              <div className="flex items-start space-x-2">
-                                <span className="text-gray-400 w-16">Gia đình:</span>
-                                <span className="text-white flex-1">{relationship.personalInfo.family.value}</span>
-                              </div>
-                            )}
-                            
-                            {/* Background */}
-                            {relationship.personalInfo.background?.revealed && relationship.personalInfo.background.value && (
-                              <div className="flex items-start space-x-2">
-                                <span className="text-gray-400 w-16">Lý lịch:</span>
-                                <span className="text-white flex-1">{relationship.personalInfo.background.value}</span>
-                              </div>
-                            )}
-                            
-                            {/* Personality */}
-                            {relationship.personalInfo.personality?.revealed && relationship.personalInfo.personality.value && (
-                              <div className="flex items-start space-x-2">
-                                <span className="text-gray-400 w-16">Tính cách:</span>
-                                <span className="text-white flex-1">{relationship.personalInfo.personality.value}</span>
-                              </div>
-                            )}
-                            
-                            {/* Goals */}
-                            {relationship.personalInfo.goals?.revealed && relationship.personalInfo.goals.value && (
-                              <div className="flex items-start space-x-2">
-                                <span className="text-gray-400 w-16">Mục tiêu:</span>
-                                <span className="text-white flex-1">{relationship.personalInfo.goals.value}</span>
-                              </div>
-                            )}
-                            
-                            {/* Secrets */}
-                            {relationship.personalInfo.secrets?.revealed && relationship.personalInfo.secrets.value && (
-                              <div className="flex items-start space-x-2">
-                                <span className="text-gray-400 w-16">Bí mật:</span>
-                                <span className="text-yellow-300 flex-1 italic">{relationship.personalInfo.secrets.value}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
 
                       {relationship.tags && relationship.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
@@ -1598,6 +1595,8 @@ export function InfoMenu({
       <div className="flex-1 overflow-y-auto p-4">
         {renderActiveSection()}
       </div>
+
+      {/* Combat Confirmation Modal moved to CombatPage */}
     </div>
   );
 }

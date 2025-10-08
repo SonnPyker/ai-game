@@ -1,7 +1,9 @@
 export interface Character {
   id?: string;
   name: string;
-  level?: number;
+  level?: number; // Character Level (tổng thể)
+  combatLevel?: number; // Combat Level (chỉ cho chiến đấu)
+  combatExperience?: number; // Số lần tham gia chiến đấu
   stats?: CharacterStats;
   personality?: string;
   backstory: string;
@@ -123,6 +125,25 @@ export interface InventoryItem {
   equipped_at?: Date;
   // Tags system for quest rewards
   tags?: string[]; // Tags để phân loại items (type tags + 'reward' tag)
+  
+  // NEW: Combat stats for weapons and damaging items
+  damage?: string; // dice notation (e.g., "1d8+2", "2d6")
+  attackBonus?: number; // modifier for attack rolls
+  damageType?: 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic';
+  weaponProperties?: WeaponProperties;
+}
+
+export interface WeaponProperties {
+  range?: number; // range in feet, undefined for melee
+  twoHanded?: boolean; // requires two hands
+  finesse?: boolean; // can use agility instead of strength
+  light?: boolean; // light weapon for dual wielding
+  heavy?: boolean; // heavy weapon
+  reach?: boolean; // has reach (10ft range)
+  thrown?: boolean; // can be thrown
+  versatile?: string; // damage when used two-handed (e.g., "1d10")
+  ammunition?: boolean; // requires ammunition
+  loading?: boolean; // requires loading action
 }
 
 export interface Equipment {
@@ -337,11 +358,70 @@ export interface SCCState {
   worldTime?: WorldTime;
 }
 
+// Combat Stats System
+export interface CombatStats {
+  combatLevel?: number; // Combat Level (chỉ cho chiến đấu) - optional for backward compatibility
+  characterLevel?: number; // Character Level (tổng thể) - optional
+  level?: number; // Legacy level field for backward compatibility
+  stats: {
+    strength: number;
+    agility: number;
+    constitution: number;
+    intelligence: number;
+    wisdom: number;
+    charisma: number;
+    modifiers: {
+      strength: number;
+      agility: number;
+      intelligence: number;
+      constitution: number;
+      wisdom: number;
+      charisma: number;
+    }
+  };
+  health: { current: number; max: number };
+  armorClass: number; // AC trong DnD
+  attacks: Attack[];
+  abilities?: SpecialAbility[];
+}
+
+export interface Attack {
+  name: string;
+  attackBonus: number;
+  damage: string; // dice notation (e.g., "1d8+2")
+  damageType: 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic';
+  range?: number; // range in feet, undefined for melee
+}
+
+export interface SpecialAbility {
+  id: string;
+  name: string;
+  description: string;
+  type: 'passive' | 'active' | 'reaction';
+  cooldown?: number; // số turn
+  effect: string; // mô tả effect
+}
+
+// Enemy interface - kế thừa combat stats
+export interface Enemy extends CombatStats {
+  id: string;
+  name: string;
+  description: string;
+  type: 'beast' | 'humanoid' | 'undead' | 'demon' | 'elemental' | 'construct' | 'other';
+  loot?: InventoryItem[];
+  experienceReward: number;
+  // Optional: NPC reference nếu enemy này là NPC
+  npcId?: string;
+  // Legacy level field for backward compatibility
+  level?: number;
+}
+
 // NPC Relationship System
 export interface NPCRelationship {
   id: string;
   name: string;
   description?: string;
+  level?: number; // Character Level (tổng thể)
   relationshipLevel: number; // -100 to 100 (hate to love)
   reputation: number; // -100 to 100 (terrible to excellent)
   status: 'neutral' | 'friendly' | 'hostile' | 'rival' | 
@@ -357,49 +437,6 @@ export interface NPCRelationship {
   isLocationSignature?: boolean; // true if this NPC is the signature NPC for a location
   signatureLocationId?: string; // ID of the location this NPC is signature for
   signatureQuestId?: string; // ID of the signature quest this NPC offers
-  // Enhanced NPC information - revealed progressively
-  personalInfo?: {
-    age?: {
-      value?: number;
-      revealed: boolean; // whether this info has been revealed through interaction
-      source?: string; // how this info was revealed (e.g., "asked_directly", "overheard", "told_by_others")
-    };
-    occupation?: {
-      value?: string;
-      revealed: boolean;
-      source?: string;
-    };
-    address?: {
-      value?: string;
-      revealed: boolean;
-      source?: string;
-    };
-    family?: {
-      value?: string; // family information
-      revealed: boolean;
-      source?: string;
-    };
-    background?: {
-      value?: string; // personal background/history
-      revealed: boolean;
-      source?: string;
-    };
-    personality?: {
-      value?: string; // detailed personality traits
-      revealed: boolean;
-      source?: string;
-    };
-    goals?: {
-      value?: string; // personal goals and motivations
-      revealed: boolean;
-      source?: string;
-    };
-    secrets?: {
-      value?: string; // secrets or hidden information
-      revealed: boolean;
-      source?: string;
-    };
-  };
   // Arousal system for 18+ content
   arousal?: {
     level: number; // 0 to 100 (not interested to very aroused)
@@ -407,6 +444,16 @@ export interface NPCRelationship {
     arousalHistory: ArousalEvent[];
     personality: ArousalPersonality;
     preferences: ArousalPreferences;
+  };
+  
+  // NEW: Combat stats for NPCs
+  combatStats?: CombatStats; // Optional, chỉ có khi NPC có thể combat
+  canBeCombatant?: boolean; // true nếu NPC này có thể tham gia combat
+  combatBehavior?: {
+    aggression: number; // 0-100, độ hung hăng
+    cowardice: number; // 0-100, độ nhút nhát (chạy sớm)
+    strategy: 'aggressive' | 'defensive' | 'balanced' | 'tactical';
+    preferredRange: 'melee' | 'ranged' | 'mixed';
   };
 }
 

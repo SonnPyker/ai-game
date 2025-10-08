@@ -31,6 +31,258 @@ class NPCRelationshipService {
     return NPCRelationshipService.instance;
   }
 
+  // Generate combat stats for new NPCs
+  public generateCombatStatsForNPC(npcName: string, npcData?: any): any {
+    // Use NPC name as seed for consistent stats
+    const seed = npcName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const random = (seed * 9301 + 49297) % 233280 / 233280;
+    
+    // Generate Character Level (tổng thể)
+    const characterLevel = Math.floor(random * 8) + 3; // Character Level 3-10
+    
+    // Generate Combat Level based on NPC background
+    const combatLevel = this.calculateCombatLevelFromBackground(npcData, random);
+    
+    console.log(`Generated stats for ${npcName}: Character Level ${characterLevel}, Combat Level ${combatLevel}`);
+    
+    // Generate stats based on combat level (for combat mechanics)
+    const baseStats = 8 + Math.floor(combatLevel * 2);
+    const statVariation = Math.floor(random * 6) - 3; // -3 to +3 variation
+    
+    const strength = Math.max(8, Math.min(20, baseStats + statVariation));
+    const agility = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
+    const constitution = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
+    const intelligence = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
+    const wisdom = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
+    const charisma = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
+    
+    const stats = {
+      strength,
+      agility,
+      constitution,
+      intelligence,
+      wisdom,
+      charisma,
+      modifiers: {
+        strength: Math.floor((strength - 10) / 2),
+        agility: Math.floor((agility - 10) / 2),
+        constitution: Math.floor((constitution - 10) / 2),
+        intelligence: Math.floor((intelligence - 10) / 2),
+        wisdom: Math.floor((wisdom - 10) / 2),
+        charisma: Math.floor((charisma - 10) / 2)
+      }
+    };
+    
+    // HP based on combat level
+    const maxHP = 20 + (combatLevel * 5) + stats.modifiers.constitution;
+    const currentHP = maxHP;
+    
+    const armorClass = 10 + stats.modifiers.agility + Math.floor(random * 3);
+    
+    // Generate attacks based on NPC type and combat level with AI
+    const attacks = this.generateAttacksForNPC(npcName, combatLevel, stats, npcData);
+    
+    return {
+      combatLevel, // Combat Level (chỉ cho chiến đấu)
+      characterLevel, // Character Level (tổng thể)
+      stats,
+      health: {
+        current: currentHP,
+        max: maxHP
+      },
+      armorClass,
+      attacks,
+      abilities: []
+    };
+  }
+
+  // Generate attacks for NPC based on name, profession, and context using AI
+  private async generateAttacksForNPC(npcName: string, level: number, stats: any, npcData?: any): Promise<any[]> {
+    try {
+      // Try to get AI-generated weapon first
+      const aiWeapon = await this.generateWeaponWithAI(npcName, level, stats, npcData);
+      if (aiWeapon) {
+        return [aiWeapon];
+      }
+    } catch (error) {
+      console.warn('Failed to generate AI weapon, falling back to basic logic:', error);
+    }
+
+    // Fallback to basic logic if AI fails
+    return this.generateBasicAttacksForNPC(npcName, level, stats);
+  }
+
+  // Generate weapon using AI based on NPC context
+  private async generateWeaponWithAI(npcName: string, level: number, stats: any, npcData?: any): Promise<any | null> {
+    try {
+      const { geminiService } = await import('../services/geminiService');
+      
+      const prompt = this.buildWeaponGenerationPrompt(npcName, level, stats, npcData);
+      const response = await geminiService.generateContent(prompt);
+      
+      if (!response) return null;
+      
+      // Parse AI response to extract weapon data
+      const weaponData = this.parseWeaponResponse(response);
+      return weaponData;
+    } catch (error) {
+      console.error('Error generating weapon with AI:', error);
+      return null;
+    }
+  }
+
+  // Build prompt for AI weapon generation
+  private buildWeaponGenerationPrompt(npcName: string, level: number, stats: any, npcData?: any): string {
+    const description = npcData?.description || '';
+    const occupation = npcData?.personalInfo?.occupation?.value || '';
+    const faction = npcData?.faction || '';
+    const location = npcData?.location || '';
+    const tags = npcData?.tags || [];
+    
+    return `Tạo vũ khí phù hợp cho NPC dựa trên thông tin sau:
+
+THÔNG TIN NPC:
+- Tên: "${npcName}"
+- Mô tả: "${description}"
+- Nghề nghiệp: "${occupation}"
+- Phe phái: "${faction}"
+- Vị trí: "${location}"
+- Tags: ${tags.join(', ')}
+- Combat Level: ${level}
+- Stats: STR ${stats.strength} (${stats.modifiers.strength}), AGI ${stats.agility} (${stats.modifiers.agility}), INT ${stats.intelligence} (${stats.modifiers.intelligence})
+
+QUY TẮC TẠO VŨ KHÍ PHÙ HỢP:
+
+1. **Dựa trên nghề nghiệp:**
+   - Quân sự/Guard: Kiếm, giáo, cung tên, khiên
+   - Thương gia: Dao găm, gậy, vũ khí ẩn
+   - Thầy tu/Clergy: Gậy thánh, vũ khí thiêng
+   - Thợ thủ công: Búa, dao, công cụ
+   - Nông dân: Liềm, cuốc, gậy
+   - Thợ săn: Cung tên, dao, lao
+   - Pháp sư: Gậy phép, quyển sách, pha lê
+   - Kẻ trộm: Dao găm, phi tiêu, vũ khí nhỏ
+
+2. **Dựa trên phe phái:**
+   - Hội Tuần Đêm: Kiếm dài, cung tên, áo giáp
+   - Thành phố: Vũ khí dân sự, gậy, dao
+   - Bandit: Vũ khí cướp được, dao, cung
+   - Noble: Kiếm đắt tiền, vũ khí trang trí
+
+3. **Dựa trên vị trí:**
+   - Rừng: Cung tên, dao, lao
+   - Thành phố: Vũ khí dân sự, gậy
+   - Núi: Búa, cuốc, vũ khí nặng
+   - Biển: Dao, lao, vũ khí nhỏ
+
+4. **Dựa trên level:**
+   - Level 1-2: Vũ khí cơ bản, đơn giản
+   - Level 3-4: Vũ khí chất lượng tốt
+   - Level 5+: Vũ khí đặc biệt, ma thuật
+
+5. **Dựa trên stats:**
+   - STR cao: Vũ khí nặng (kiếm, búa, giáo)
+   - AGI cao: Vũ khí nhanh (dao, cung, phi tiêu)
+   - INT cao: Vũ khí ma thuật (gậy, quyển sách)
+
+Hãy tạo 1 vũ khí phù hợp nhất theo format JSON:
+{
+  "name": "Tên vũ khí (tiếng Việt)",
+  "attackBonus": ${2 + Math.max(stats.modifiers.strength, stats.modifiers.agility) + Math.floor(level / 2)},
+  "damage": "${Math.floor(level / 2) + 1}d6+${Math.max(stats.modifiers.strength, stats.modifiers.agility)}",
+  "damageType": "physical|magical|fire|cold|lightning|poison|psychic",
+  "range": ${stats.modifiers.agility > stats.modifiers.strength ? 60 : undefined},
+  "description": "Mô tả ngắn về vũ khí"
+}
+
+Chỉ trả về JSON, không có text khác.`;
+  }
+
+  // Parse AI response to extract weapon data
+  private parseWeaponResponse(response: string): any | null {
+    try {
+      // Try to extract JSON from response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return null;
+      
+      const weaponData = JSON.parse(jsonMatch[0]);
+      
+      // Validate required fields
+      if (!weaponData.name || !weaponData.attackBonus || !weaponData.damage || !weaponData.damageType) {
+        return null;
+      }
+      
+      return weaponData;
+    } catch (error) {
+      console.error('Error parsing weapon response:', error);
+      return null;
+    }
+  }
+
+  // Fallback basic attack generation
+  private generateBasicAttacksForNPC(npcName: string, level: number, stats: any): any[] {
+    const attacks = [];
+    const nameLower = npcName.toLowerCase();
+    
+    // Determine attack type based on NPC name/description
+    if (nameLower.includes('warrior') || nameLower.includes('knight') || nameLower.includes('guard')) {
+      attacks.push({
+        name: "Kiếm",
+        attackBonus: 2 + stats.modifiers.strength + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d6+${stats.modifiers.strength}`,
+        damageType: "physical" as const
+      });
+    } else if (nameLower.includes('archer') || nameLower.includes('ranger') || nameLower.includes('hunter')) {
+      attacks.push({
+        name: "Cung tên",
+        attackBonus: 2 + stats.modifiers.agility + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d6+${stats.modifiers.agility}`,
+        damageType: "physical" as const,
+        range: 60
+      });
+    } else if (nameLower.includes('mage') || nameLower.includes('wizard') || nameLower.includes('sorcerer')) {
+      attacks.push({
+        name: "Bola lửa",
+        attackBonus: 2 + stats.modifiers.intelligence + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d6+${stats.modifiers.intelligence}`,
+        damageType: "fire" as const,
+        range: 30
+      });
+    } else if (nameLower.includes('rogue') || nameLower.includes('thief') || nameLower.includes('assassin')) {
+      attacks.push({
+        name: "Dao găm",
+        attackBonus: 2 + stats.modifiers.agility + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d4+${stats.modifiers.agility}`,
+        damageType: "physical" as const
+      });
+    } else {
+      // Default attack for unknown NPCs
+      attacks.push({
+        name: "Tấn công cơ bản",
+        attackBonus: 2 + Math.max(stats.modifiers.strength, stats.modifiers.agility) + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d4+${Math.max(stats.modifiers.strength, stats.modifiers.agility)}`,
+        damageType: "physical" as const
+      });
+    }
+    
+    return attacks;
+  }
+
+  // Test function to add combat stats to existing NPCs
+  public addCombatStatsToNPC(npcId: string): boolean {
+    const npc = this.relationships.get(npcId);
+    if (!npc) return false;
+
+    // Add combat stats if not already present
+    if (!npc.canBeCombatant || !npc.combatStats) {
+      npc.canBeCombatant = true;
+      npc.combatStats = this.generateCombatStatsForNPC(npc.name);
+      this.saveToStorage();
+      return true;
+    }
+    return false;
+  }
+
   // Load data from localStorage
   private loadFromStorage(): void {
     try {
@@ -39,16 +291,12 @@ class NPCRelationshipService {
         const relationships = JSON.parse(relationshipsData);
         this.relationships = new Map(relationships.map((r: any) => [r.id, {
           ...r,
-          lastInteraction: new Date(r.lastInteraction),
-          // Ensure personalInfo is initialized for existing NPCs
-          personalInfo: r.personalInfo || {}
+          lastInteraction: new Date(r.lastInteraction)
         }]));
         
         // Auto-fix any incorrect statuses after loading
         setTimeout(() => {
           this.fixAllNPCStatuses();
-          // Migrate existing NPCs to include personalInfo field
-          this.migrateNPCsToPersonalInfo();
         }, 1000); // Wait 1 second to ensure everything is loaded
       }
 
@@ -86,11 +334,16 @@ class NPCRelationshipService {
   addOrUpdateRelationship(npcData: Partial<NPCRelationship>): NPCRelationship {
     const id = npcData.id || this.generateId();
     const existing = this.relationships.get(id);
+    const isNewNPC = !existing;
+    
+    // Generate combat stats for new NPCs or use existing
+    const combatStats = npcData.combatStats ?? (isNewNPC ? this.generateCombatStatsForNPC(npcData.name || 'Unknown NPC', npcData) : existing?.combatStats);
     
     const relationship: NPCRelationship = {
       id,
       name: npcData.name || 'Unknown NPC',
       description: npcData.description,
+      level: npcData.level ?? (combatStats?.characterLevel ?? existing?.level), // Character Level
       relationshipLevel: npcData.relationshipLevel ?? (existing?.relationshipLevel ?? 0),
       reputation: npcData.reputation ?? (existing?.reputation ?? 0),
       status: npcData.status ?? (existing?.status ?? 'neutral'),
@@ -100,7 +353,10 @@ class NPCRelationshipService {
       tags: npcData.tags ?? existing?.tags ?? [],
       location: npcData.location,
       faction: npcData.faction,
-      personalInfo: npcData.personalInfo ?? existing?.personalInfo ?? {}
+      // Auto-add combat stats for new NPCs
+      canBeCombatant: npcData.canBeCombatant ?? (isNewNPC ? true : existing?.canBeCombatant ?? false),
+      combatStats: combatStats,
+      combatBehavior: npcData.combatBehavior ?? existing?.combatBehavior
     };
 
     this.relationships.set(id, relationship);
@@ -2575,6 +2831,74 @@ OUTPUT JSON:
     }));
   }
 
+  // Calculate combat level based on NPC background
+  private calculateCombatLevelFromBackground(npcData: any, random: number): number {
+    if (!npcData) return 1; // Default for unknown NPCs
+    
+    let baseCombatLevel = 1; // Default minimum
+    const description = (npcData.description || '').toLowerCase();
+    const occupation = (npcData.personalInfo?.occupation?.value || '').toLowerCase();
+    const faction = (npcData.faction || '').toLowerCase();
+    const tags = (npcData.tags || []).map((tag: string) => tag.toLowerCase());
+    
+    // Combat professions (high combat level)
+    const combatProfessions = [
+      'guard', 'soldier', 'knight', 'warrior', 'fighter', 'mercenary', 
+      'guardian', 'protector', 'vệ binh', 'lính', 'hiệp sĩ', 'chiến binh',
+      'thợ săn', 'hunter', 'ranger', 'scout'
+    ];
+    
+    // Civilian professions (low combat level)
+    const civilianProfessions = [
+      'merchant', 'trader', 'shopkeeper', 'thương gia', 'chủ cửa hàng',
+      'cook', 'chef', 'đầu bếp', 'nông dân', 'farmer',
+      'phục vụ', 'waitress', 'waiter', 'servant', 'người hầu',
+      'bartender', 'chủ quán', 'innkeeper', 'quản lý quán trọ'
+    ];
+    
+    // Check occupation
+    for (const prof of combatProfessions) {
+      if (occupation.includes(prof) || description.includes(prof)) {
+        baseCombatLevel = Math.floor(random * 4) + 4; // Level 4-7
+        break;
+      }
+    }
+    
+    for (const prof of civilianProfessions) {
+      if (occupation.includes(prof) || description.includes(prof)) {
+        baseCombatLevel = Math.floor(random * 2) + 1; // Level 1-2
+        break;
+      }
+    }
+    
+    // Check tags
+    for (const tag of tags) {
+      if (['vệ binh', 'lính', 'hiệp sĩ', 'chiến binh', 'thợ săn'].includes(tag)) {
+        baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 3) + 3); // Level 3-5
+      } else if (['phục vụ', 'nhân viên quán trọ', 'đầu bếp', 'nông dân'].includes(tag)) {
+        baseCombatLevel = Math.min(baseCombatLevel, Math.floor(random * 2) + 1); // Level 1-2
+      }
+    }
+    
+    // Check faction
+    if (faction.includes('hội tuần đêm') || faction.includes('night\'s watch')) {
+      baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 3) + 3); // Level 3-5
+    } else if (faction.includes('thành phố') || faction.includes('civilians')) {
+      baseCombatLevel = Math.min(baseCombatLevel, Math.floor(random * 2) + 1); // Level 1-2
+    }
+    
+    // Check description for combat keywords
+    const combatKeywords = ['võ thuật', 'chiến đấu', 'vũ khí', 'giáp', 'martial', 'combat', 'weapon', 'armor'];
+    const hasCombatKeywords = combatKeywords.some(keyword => description.includes(keyword));
+    
+    if (hasCombatKeywords) {
+      baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 2) + 2); // Level 2-3
+    }
+    
+    // Ensure reasonable range
+    return Math.max(1, Math.min(8, baseCombatLevel));
+  }
+
   // Generate NPC personality traits for more realistic analysis
   private generateNPCPersonality(npcName: string): string {
     // Use NPC name as seed for consistent personality
@@ -2598,83 +2922,7 @@ OUTPUT JSON:
     return selectedPersonality;
   }
 
-  // Enhanced NPC Personal Information Management
-  /**
-   * Clean and normalize personal information value
-   */
-  private cleanPersonalInfoValue(value: string, infoType: string): string {
-    let cleaned = value.trim();
-    
-    // Remove common prefixes and suffixes
-    cleaned = cleaned.replace(/^(là|từng là|trước đây là|nghề cũ là|chủ|quản lý)\s*/i, '');
-    cleaned = cleaned.replace(/\s*(chuyên|về|tại|ở|này|đó|đây)$/i, '');
-    cleaned = cleaned.replace(/\s*[,.]*$/, ''); // Remove trailing punctuation
-    
-    // Specific cleaning for different info types
-    switch (infoType) {
-      case 'age':
-        // Extract only the number
-        const ageMatch = cleaned.match(/(\d+)/);
-        cleaned = ageMatch ? ageMatch[1] : cleaned;
-        break;
-      case 'occupation':
-        // Clean occupation text
-        cleaned = cleaned.replace(/^(người|một người)\s*/i, '');
-        cleaned = cleaned.replace(/\s*(của|tại|ở).*$/i, '');
-        break;
-      case 'address':
-        // Clean address text
-        cleaned = cleaned.replace(/^(tại|ở|sống tại)\s*/i, '');
-        cleaned = cleaned.replace(/\s*(khu phố|quận|huyện|tỉnh|thành phố).*$/i, '');
-        break;
-    }
-    
-    return cleaned;
-  }
 
-  /**
-   * Reveal personal information about an NPC based on AI response
-   */
-  public revealPersonalInfo(npcId: string, infoType: keyof NonNullable<NPCRelationship['personalInfo']>, value: string, source: string = 'ai_response'): void {
-    const npc = this.relationships.get(npcId);
-    if (!npc) return;
-
-    if (!npc.personalInfo) {
-      npc.personalInfo = {};
-    }
-
-    // Clean and normalize the value
-    const cleanedValue = this.cleanPersonalInfoValue(value, infoType);
-    
-    // Only save if the cleaned value is meaningful
-    if (cleanedValue.length > 0 && cleanedValue.length < 200) {
-      (npc.personalInfo as any)[infoType] = {
-        value: cleanedValue,
-        revealed: true,
-        source: source
-      };
-
-      this.saveToStorage();
-    }
-  }
-
-  /**
-   * Check if specific personal information has been revealed
-   */
-  public isPersonalInfoRevealed(npcId: string, infoType: keyof NonNullable<NPCRelationship['personalInfo']>): boolean {
-    const npc = this.relationships.get(npcId);
-    if (!npc?.personalInfo?.[infoType]) return false;
-    return npc.personalInfo[infoType]!.revealed;
-  }
-
-  /**
-   * Get revealed personal information
-   */
-  public getPersonalInfo(npcId: string, infoType: keyof NonNullable<NPCRelationship['personalInfo']>): string | null {
-    const npc = this.relationships.get(npcId);
-    if (!npc?.personalInfo?.[infoType]?.revealed) return null;
-    return String(npc.personalInfo[infoType]!.value || '');
-  }
 
   /**
    * Get all NPCs in a specific location
@@ -2693,363 +2941,8 @@ OUTPUT JSON:
     return Array.from(this.relationships.values());
   }
 
-  /**
-   * Migrate existing NPCs to include personalInfo field
-   */
-  public migrateNPCsToPersonalInfo(): void {
-    let hasChanges = false;
-    this.relationships.forEach((npc) => {
-      if (!npc.personalInfo) {
-        npc.personalInfo = {};
-        hasChanges = true;
-      }
-    });
-    
-    if (hasChanges) {
-      this.saveToStorage();
-      console.log('✅ Migrated existing NPCs to include personalInfo field');
-    }
-  }
 
 
-  /**
-   * Check if narrative contains personal information keywords
-   */
-  private containsPersonalInfoKeywords(narrative: string): boolean {
-    const personalInfoKeywords = [
-      // Age keywords - more specific patterns
-      'tuổi', 'khoảng', 'ngoài', 'trên', 'dưới', 'năm tuổi', 'tuổi đời',
-      'độ tuổi', 'trẻ', 'già', 'trung niên', 'thanh niên',
-      // Occupation keywords - more comprehensive
-      'nghề nghiệp', 'công việc', 'làm', 'chủ', 'quản lý', 'chuyên về',
-      'thợ', 'bác sĩ', 'luật sư', 'giáo viên', 'cảnh sát', 'lính', 'thương gia',
-      'nghệ sĩ', 'ca sĩ', 'diễn viên', 'nhà văn', 'họa sĩ', 'kiến trúc sư',
-      // Address keywords - more specific
-      'sống tại', 'ở', 'địa chỉ', 'nhà ở', 'cư trú', 'sinh sống',
-      'khu phố', 'quận', 'huyện', 'tỉnh', 'thành phố', 'đường', 'phố',
-      // Family keywords - more comprehensive
-      'chồng', 'vợ', 'con', 'cha', 'mẹ', 'anh', 'chị', 'em', 'bà', 'ông', 'gia đình',
-      'người thân', 'họ hàng', 'con trai', 'con gái', 'anh trai', 'chị gái', 'em trai', 'em gái',
-      'bố', 'mẹ', 'bà nội', 'ông nội', 'bà ngoại', 'ông ngoại',
-      // Background keywords - more specific
-      'trước đây', 'trong quá khứ', 'xuất thân', 'lớn lên', 'sinh ra', 'học tại', 'từng làm',
-      'kinh nghiệm', 'học vấn', 'bằng cấp', 'trường học', 'đại học', 'cao đẳng',
-      'nghề cũ', 'công việc trước', 'thời trẻ', 'thời thanh niên',
-      // Personality keywords - more specific
-      'tính cách', 'con người', 'bản chất', 'đặc điểm', 'tính tình', 'phẩm chất',
-      'thông minh', 'khôn ngoan', 'tốt bụng', 'lạnh lùng', 'nhiệt tình', 'cẩn thận',
-      'bốc đồng', 'kiên nhẫn', 'kiên trì', 'dũng cảm', 'nhút nhát', 'tự tin',
-      // Goals keywords - more comprehensive
-      'mục tiêu', 'ước mơ', 'kế hoạch', 'dự định', 'hy vọng', 'mong muốn',
-      'tham vọng', 'hoài bão', 'lý tưởng', 'chí hướng', 'nguyện vọng',
-      'muốn trở thành', 'muốn làm', 'muốn có', 'muốn đạt được',
-      // Secrets keywords - more specific
-      'bí mật', 'không ai biết', 'chỉ mình tôi biết', 'giấu giếm', 'ẩn giấu',
-      'che giấu', 'không tiết lộ', 'không nói ra', 'im lặng về',
-      'quá khứ đen tối', 'việc làm bí mật', 'tổ chức bí mật'
-    ];
-    
-    return personalInfoKeywords.some(keyword => 
-      narrative.toLowerCase().includes(keyword.toLowerCase())
-    );
-  }
-
-  /**
-   * Analyze AI response for personal information revelation
-   */
-  public analyzePersonalInfoRevelation(npcId: string, _aiResponse: string, narrative: string): void {
-    const npc = this.relationships.get(npcId);
-    if (!npc) return;
-
-    // Only analyze if narrative actually contains personal information
-    if (!this.containsPersonalInfoKeywords(narrative)) {
-      console.log(`🔍 No personal info keywords found in narrative for ${npc.name}`);
-      return;
-    }
-
-    console.log(`🔍 Analyzing personal info for ${npc.name}...`);
-    let hasNewInfo = false;
-
-    // Age detection patterns - improved accuracy
-    const agePatterns = [
-      /(\d+)\s*tuổi/i,
-      /khoảng\s*(\d+)/i,
-      /ngoài\s*(\d+)/i,
-      /trên\s*(\d+)/i,
-      /dưới\s*(\d+)/i,
-      /(\d+)\s*năm\s*tuổi/i,
-      /(\d+)\s*tuổi\s*đời/i,
-      /độ\s*tuổi\s*(\d+)/i,
-      /(\d+)\s*tuổi\s*đời/i,
-      /khoảng\s*(\d+)\s*tuổi/i,
-      /ngoài\s*(\d+)\s*tuổi/i,
-      /trên\s*(\d+)\s*tuổi/i,
-      /dưới\s*(\d+)\s*tuổi/i
-    ];
-
-    // Occupation detection patterns - improved accuracy
-    const occupationPatterns = [
-      /là\s*(?:một\s*)?(?:người\s*)?([^,.\n]+?)(?:\s*chuyên|$)/i,
-      /nghề\s*nghiệp[:\s]*([^,.\n]+)/i,
-      /công\s*việc[:\s]*([^,.\n]+)/i,
-      /làm\s*([^,.\n]+?)(?:\s*tại|$)/i,
-      /chủ\s*([^,.\n]+)/i,
-      /quản\s*lý\s*([^,.\n]+)/i,
-      /từng\s*là\s*([^,.\n]+)/i,
-      /trước\s*đây\s*là\s*([^,.\n]+)/i,
-      /nghề\s*cũ\s*là\s*([^,.\n]+)/i,
-      /chuyên\s*về\s*([^,.\n]+)/i,
-      /hoạt\s*động\s*trong\s*lĩnh\s*vực\s*([^,.\n]+)/i
-    ];
-
-    // Address detection patterns - improved accuracy
-    const addressPatterns = [
-      /sống\s*tại\s*([^,.\n]+)/i,
-      /ở\s*([^,.\n]+)/i,
-      /địa\s*chỉ[:\s]*([^,.\n]+)/i,
-      /nhà\s*ở\s*([^,.\n]+)/i,
-      /cư\s*trú\s*tại\s*([^,.\n]+)/i,
-      /sinh\s*sống\s*tại\s*([^,.\n]+)/i,
-      /khu\s*phố\s*([^,.\n]+)/i,
-      /quận\s*([^,.\n]+)/i,
-      /huyện\s*([^,.\n]+)/i,
-      /tỉnh\s*([^,.\n]+)/i,
-      /thành\s*phố\s*([^,.\n]+)/i,
-      /đường\s*([^,.\n]+)/i,
-      /phố\s*([^,.\n]+)/i
-    ];
-
-    // Family detection patterns - improved accuracy
-    const familyPatterns = [
-      /có\s*(?:một\s*)?(?:người\s*)?(?:chồng|vợ|con|cha|mẹ|anh|chị|em|bà|ông)/i,
-      /gia\s*đình[:\s]*([^,.\n]+)/i,
-      /vợ\s*chồng/i,
-      /con\s*cái/i,
-      /cha\s*mẹ/i,
-      /người\s*thân/i,
-      /họ\s*hàng/i,
-      /con\s*trai/i,
-      /con\s*gái/i,
-      /anh\s*trai/i,
-      /chị\s*gái/i,
-      /em\s*trai/i,
-      /em\s*gái/i,
-      /bà\s*nội/i,
-      /ông\s*nội/i,
-      /bà\s*ngoại/i,
-      /ông\s*ngoại/i
-    ];
-
-    // Background detection patterns - improved accuracy
-    const backgroundPatterns = [
-      /trước\s*đây/i,
-      /trong\s*quá\s*khứ/i,
-      /xuất\s*thân/i,
-      /lớn\s*lên\s*ở/i,
-      /sinh\s*ra\s*tại/i,
-      /học\s*tại/i,
-      /từng\s*làm/i,
-      /kinh\s*nghiệm/i,
-      /học\s*vấn/i,
-      /bằng\s*cấp/i,
-      /trường\s*học/i,
-      /đại\s*học/i,
-      /cao\s*đẳng/i,
-      /nghề\s*cũ/i,
-      /công\s*việc\s*trước/i,
-      /thời\s*trẻ/i,
-      /thời\s*thanh\s*niên/i
-    ];
-
-    // Personality detection patterns - improved accuracy
-    const personalityPatterns = [
-      /tính\s*cách/i,
-      /con\s*người/i,
-      /bản\s*chất/i,
-      /đặc\s*điểm/i,
-      /tính\s*tình/i,
-      /phẩm\s*chất/i,
-      /thông\s*minh/i,
-      /khôn\s*ngoan/i,
-      /tốt\s*bụng/i,
-      /lạnh\s*lùng/i,
-      /nhiệt\s*tình/i,
-      /cẩn\s*thận/i,
-      /bốc\s*đồng/i,
-      /kiên\s*nhẫn/i,
-      /kiên\s*trì/i,
-      /dũng\s*cảm/i,
-      /nhút\s*nhát/i,
-      /tự\s*tin/i
-    ];
-
-    // Goals detection patterns - improved accuracy
-    const goalsPatterns = [
-      /mục\s*tiêu/i,
-      /ước\s*mơ/i,
-      /kế\s*hoạch/i,
-      /dự\s*định/i,
-      /hy\s*vọng/i,
-      /mong\s*muốn/i,
-      /tham\s*vọng/i,
-      /hoài\s*bão/i,
-      /lý\s*tưởng/i,
-      /chí\s*hướng/i,
-      /nguyện\s*vọng/i,
-      /muốn\s*trở\s*thành/i,
-      /muốn\s*làm/i,
-      /muốn\s*có/i,
-      /muốn\s*đạt\s*được/i
-    ];
-
-    // Secrets detection patterns - improved accuracy
-    const secretsPatterns = [
-      /bí\s*mật/i,
-      /không\s*ai\s*biết/i,
-      /chỉ\s*mình\s*tôi\s*biết/i,
-      /giấu\s*giếm/i,
-      /ẩn\s*giấu/i,
-      /che\s*giấu/i,
-      /không\s*tiết\s*lộ/i,
-      /không\s*nói\s*ra/i,
-      /im\s*lặng\s*về/i,
-      /quá\s*khứ\s*đen\s*tối/i,
-      /việc\s*làm\s*bí\s*mật/i,
-      /tổ\s*chức\s*bí\s*mật/i
-    ];
-
-    // Check for age information
-    for (const pattern of agePatterns) {
-      const match = narrative.match(pattern);
-      if (match && match[1]) {
-        const age = parseInt(match[1]);
-        if (age >= 1 && age <= 150) {
-          if (!npc.personalInfo?.age?.revealed) {
-            this.revealPersonalInfo(npcId, 'age', age.toString(), 'ai_response');
-            console.log(`✅ Revealed age: ${age} for ${npc.name}`);
-            hasNewInfo = true;
-          }
-          break;
-        }
-      }
-    }
-
-    // Check for occupation information
-    for (const pattern of occupationPatterns) {
-      const match = narrative.match(pattern);
-      if (match && match[1]) {
-        const occupation = match[1].trim();
-        if (occupation.length > 2 && occupation.length < 50) {
-          if (!npc.personalInfo?.occupation?.revealed) {
-            this.revealPersonalInfo(npcId, 'occupation', occupation, 'ai_response');
-            console.log(`✅ Revealed occupation: ${occupation} for ${npc.name}`);
-            hasNewInfo = true;
-          }
-          break;
-        }
-      }
-    }
-
-    // Check for address information
-    for (const pattern of addressPatterns) {
-      const match = narrative.match(pattern);
-      if (match && match[1]) {
-        const address = match[1].trim();
-        if (address.length > 3 && address.length < 100) {
-          if (!npc.personalInfo?.address?.revealed) {
-            this.revealPersonalInfo(npcId, 'address', address, 'ai_response');
-            console.log(`✅ Revealed address: ${address} for ${npc.name}`);
-            hasNewInfo = true;
-          }
-          break;
-        }
-      }
-    }
-
-    // Check for family information
-    for (const pattern of familyPatterns) {
-      if (pattern.test(narrative)) {
-        // Extract family context around the match
-        const familyMatch = narrative.match(new RegExp(`.{0,50}${pattern.source}.{0,50}`, 'i'));
-        if (familyMatch) {
-          if (!npc.personalInfo?.family?.revealed) {
-            this.revealPersonalInfo(npcId, 'family', familyMatch[0].trim(), 'ai_response');
-            console.log(`✅ Revealed family: ${familyMatch[0].trim()} for ${npc.name}`);
-            hasNewInfo = true;
-          }
-          break;
-        }
-      }
-    }
-
-    // Check for background information
-    for (const pattern of backgroundPatterns) {
-      if (pattern.test(narrative)) {
-        // Extract background context around the match
-        const backgroundMatch = narrative.match(new RegExp(`.{0,100}${pattern.source}.{0,100}`, 'i'));
-        if (backgroundMatch) {
-          if (!npc.personalInfo?.background?.revealed) {
-            this.revealPersonalInfo(npcId, 'background', backgroundMatch[0].trim(), 'ai_response');
-            console.log(`✅ Revealed background: ${backgroundMatch[0].trim()} for ${npc.name}`);
-            hasNewInfo = true;
-          }
-          break;
-        }
-      }
-    }
-
-    // Check for personality information
-    for (const pattern of personalityPatterns) {
-      if (pattern.test(narrative)) {
-        // Extract personality context around the match
-        const personalityMatch = narrative.match(new RegExp(`.{0,100}${pattern.source}.{0,100}`, 'i'));
-        if (personalityMatch) {
-          if (!npc.personalInfo?.personality?.revealed) {
-            this.revealPersonalInfo(npcId, 'personality', personalityMatch[0].trim(), 'ai_response');
-            console.log(`✅ Revealed personality: ${personalityMatch[0].trim()} for ${npc.name}`);
-            hasNewInfo = true;
-          }
-          break;
-        }
-      }
-    }
-
-    // Check for goals information
-    for (const pattern of goalsPatterns) {
-      if (pattern.test(narrative)) {
-        // Extract goals context around the match
-        const goalsMatch = narrative.match(new RegExp(`.{0,100}${pattern.source}.{0,100}`, 'i'));
-        if (goalsMatch) {
-          if (!npc.personalInfo?.goals?.revealed) {
-            this.revealPersonalInfo(npcId, 'goals', goalsMatch[0].trim(), 'ai_response');
-            console.log(`✅ Revealed goals: ${goalsMatch[0].trim()} for ${npc.name}`);
-            hasNewInfo = true;
-          }
-          break;
-        }
-      }
-    }
-
-    // Check for secrets information
-    for (const pattern of secretsPatterns) {
-      if (pattern.test(narrative)) {
-        // Extract secrets context around the match
-        const secretsMatch = narrative.match(new RegExp(`.{0,100}${pattern.source}.{0,100}`, 'i'));
-        if (secretsMatch) {
-          if (!npc.personalInfo?.secrets?.revealed) {
-            this.revealPersonalInfo(npcId, 'secrets', secretsMatch[0].trim(), 'ai_response');
-            console.log(`✅ Revealed secrets: ${secretsMatch[0].trim()} for ${npc.name}`);
-            hasNewInfo = true;
-          }
-          break;
-        }
-      }
-    }
-    
-    if (!hasNewInfo) {
-      console.log(`ℹ️ No new personal info revealed for ${npc.name}`);
-    }
-  }
 }
 
 export const npcRelationshipService = NPCRelationshipService.getInstance();

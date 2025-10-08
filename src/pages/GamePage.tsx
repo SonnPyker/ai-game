@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, AlertCircle, Play, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History, Moon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Send, Loader2, AlertCircle, Play, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History, Moon, Sword } from 'lucide-react';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
 import { WorldTime, SCCContext, ChatMessage, ContentFlags, PlayerLocation, InventoryItem } from '../types';
@@ -63,6 +64,7 @@ interface GameState {
 }
 
 export function GamePage() {
+  const navigate = useNavigate();
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -571,30 +573,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
   };
 
   // Check if narrative contains personal information keywords
-  const checkForPersonalInfoKeywords = (narrative: string): boolean => {
-    const personalInfoKeywords = [
-      // Age keywords
-      'tuổi', 'khoảng', 'ngoài', 'trên', 'dưới', 'năm tuổi',
-      // Occupation keywords  
-      'nghề nghiệp', 'công việc', 'làm', 'chủ', 'quản lý',
-      // Address keywords
-      'sống tại', 'ở', 'địa chỉ', 'nhà ở', 'cư trú',
-      // Family keywords
-      'chồng', 'vợ', 'con', 'cha', 'mẹ', 'anh', 'chị', 'em', 'bà', 'ông', 'gia đình',
-      // Background keywords
-      'trước đây', 'trong quá khứ', 'xuất thân', 'lớn lên', 'sinh ra', 'học tại', 'từng làm',
-      // Personality keywords
-      'tính cách', 'con người', 'bản chất', 'đặc điểm', 'tính tình',
-      // Goals keywords
-      'mục tiêu', 'ước mơ', 'kế hoạch', 'dự định', 'hy vọng', 'mong muốn',
-      // Secrets keywords
-      'bí mật', 'không ai biết', 'chỉ mình tôi biết', 'giấu giếm', 'ẩn giấu'
-    ];
-    
-    return personalInfoKeywords.some(keyword => 
-      narrative.toLowerCase().includes(keyword.toLowerCase())
-    );
-  };
 
   // Hàm validation AI response toàn diện
   const validateAIResponse = (response: any): { isValid: boolean; error?: string } => {
@@ -1353,18 +1331,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           // Parse NPCs from AI response
           npcRelationshipService.parseNPCsFromAIResponse(response, newSceneState.location);
           
-          // Analyze personal information revelation from AI response
-          if (response.narrative) {
-            // Only analyze if narrative contains personal information keywords
-            const hasPersonalInfoKeywords = checkForPersonalInfoKeywords(response.narrative);
-            if (hasPersonalInfoKeywords) {
-              // Get all NPCs (not just current location) to analyze personal info
-              const allNPCs = npcRelationshipService.getAllRelationships();
-              allNPCs.forEach((npc: any) => {
-                npcRelationshipService.analyzePersonalInfoRevelation(npc.id, response.narrative, response.narrative);
-              });
-            }
-          }
           
           // Parse items from AI response
           inventoryService.parseItemsFromAIResponse(response);
@@ -2415,6 +2381,24 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 }
               >
                 <Save className="w-4 h-4" />
+              </button>
+              
+              {/* Combat Test Button */}
+              <button
+                onClick={() => navigate('/combat')}
+                disabled={isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions}
+                className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
+                  isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
+                    ? 'bg-gray-600/20 border-gray-500/30 text-gray-400 cursor-not-allowed'
+                    : 'bg-red-600/20 border-red-500/30 text-red-300 hover:bg-red-600/30'
+                }`}
+                title={
+                  isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
+                    ? "Đang xử lý, không thể vào combat"
+                    : "Test Combat System"
+                }
+              >
+                <Sword className="w-4 h-4" />
               </button>
             </div>
           </div>

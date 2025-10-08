@@ -162,7 +162,13 @@ class InventoryService {
       stats: itemData.stats || {},
       slot: itemData.slot,
       isEquipped: false,
-      tags: itemData.tags || [] // Hỗ trợ tags array
+      tags: itemData.tags || [], // Hỗ trợ tags array
+      
+      // NEW: Combat stats
+      damage: itemData.damage || this.autoDetectDamage(itemData),
+      attackBonus: itemData.attackBonus,
+      damageType: itemData.damageType || this.autoDetectDamageType(itemData),
+      weaponProperties: itemData.weaponProperties
     };
 
     return item;
@@ -553,6 +559,107 @@ class InventoryService {
     );
 
     return { totalItems, totalValue, equippedItems };
+  }
+
+  // NEW: Auto-detect damage for weapons
+  private autoDetectDamage(itemData: any): string | undefined {
+    if (itemData.damage) return itemData.damage;
+    
+    const name = itemData.name.toLowerCase();
+    const type = this.determineItemType(itemData);
+    
+    // Only auto-detect for weapons and damaging consumables
+    if (type !== 'weapon' && type !== 'consumable') return undefined;
+    
+    // Weapon damage based on name keywords
+    if (type === 'weapon') {
+      if (name.includes('dagger') || name.includes('knife') || name.includes('dao')) {
+        return '1d4';
+      }
+      if (name.includes('sword') || name.includes('kiếm') || name.includes('blade')) {
+        return '1d8';
+      }
+      if (name.includes('axe') || name.includes('rìu') || name.includes('búa')) {
+        return '1d8';
+      }
+      if (name.includes('mace') || name.includes('club') || name.includes('gậy')) {
+        return '1d6';
+      }
+      if (name.includes('spear') || name.includes('giáo') || name.includes('lance')) {
+        return '1d8';
+      }
+      if (name.includes('bow') || name.includes('cung') || name.includes('arrow')) {
+        return '1d6';
+      }
+      if (name.includes('crossbow') || name.includes('nỏ')) {
+        return '1d8';
+      }
+      if (name.includes('staff') || name.includes('gậy phép') || name.includes('wand')) {
+        return '1d4';
+      }
+      if (name.includes('great') || name.includes('two-handed') || name.includes('hai tay')) {
+        return '2d6';
+      }
+    }
+    
+    // Consumable damage (potions, scrolls, etc.)
+    if (type === 'consumable') {
+      if (name.includes('bomb') || name.includes('explosive') || name.includes('bom')) {
+        return '2d6';
+      }
+      if (name.includes('poison') || name.includes('độc')) {
+        return '1d4';
+      }
+      if (name.includes('acid') || name.includes('axit')) {
+        return '1d6';
+      }
+      if (name.includes('fire') || name.includes('lửa') || name.includes('flame')) {
+        return '1d8';
+      }
+    }
+    
+    return undefined;
+  }
+
+  // NEW: Auto-detect damage type
+  private autoDetectDamageType(itemData: any): 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic' {
+    if (itemData.damageType) return itemData.damageType;
+    
+    const name = itemData.name.toLowerCase();
+    const type = this.determineItemType(itemData);
+    
+    // Default to physical for weapons
+    if (type === 'weapon') {
+      if (name.includes('fire') || name.includes('lửa') || name.includes('flame')) return 'fire';
+      if (name.includes('ice') || name.includes('băng') || name.includes('cold')) return 'cold';
+      if (name.includes('lightning') || name.includes('sét') || name.includes('electric')) return 'lightning';
+      if (name.includes('poison') || name.includes('độc') || name.includes('venom')) return 'poison';
+      if (name.includes('magic') || name.includes('phép') || name.includes('spell')) return 'magical';
+      if (name.includes('mind') || name.includes('tâm') || name.includes('psychic')) return 'psychic';
+      return 'physical';
+    }
+    
+    // Consumables
+    if (type === 'consumable') {
+      if (name.includes('fire') || name.includes('lửa') || name.includes('bomb')) return 'fire';
+      if (name.includes('ice') || name.includes('băng') || name.includes('cold')) return 'cold';
+      if (name.includes('lightning') || name.includes('sét')) return 'lightning';
+      if (name.includes('poison') || name.includes('độc')) return 'poison';
+      if (name.includes('magic') || name.includes('phép') || name.includes('scroll')) return 'magical';
+      if (name.includes('acid') || name.includes('axit')) return 'physical';
+      return 'physical';
+    }
+    
+    return 'physical';
+  }
+
+  // NEW: Validate damage notation format
+  public validateDamageNotation(damage: string): boolean {
+    if (!damage) return true; // Empty is valid
+    
+    // Match patterns like "1d8", "2d6+3", "1d4-1", etc.
+    const damagePattern = /^\d+d\d+(?:[+-]\d+)?$/;
+    return damagePattern.test(damage);
   }
 }
 
