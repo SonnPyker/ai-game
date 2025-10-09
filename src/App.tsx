@@ -3,6 +3,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Suspense, lazy } from 'react';
 import { Layout } from './components/Layout';
 import { ResponsiveProvider } from './contexts/ResponsiveContext';
+import { AnimationController } from './components/AnimationController';
 // import { useRefreshHandler } from './hooks/useRefreshHandler';
 
 // Lazy load các pages lớn để giảm kích thước bundle chính
@@ -21,6 +22,7 @@ function App() {
 
   return (
     <ResponsiveProvider>
+      <AnimationController />
       <Layout>
         <Suspense fallback={
           <div className="min-h-screen bg-black flex items-center justify-center">

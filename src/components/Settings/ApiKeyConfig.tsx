@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { MotionWrapper } from '../MotionWrapper';
 import { Key, Eye, EyeOff, Check, X, AlertCircle } from 'lucide-react';
 import { geminiService } from '../../services/geminiService';
 
@@ -61,7 +61,7 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
   };
 
   return (
-    <motion.div
+    <MotionWrapper
       className="glass-effect p-6 rounded-xl"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -101,25 +101,25 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
         </div>
 
         {status === 'error' && (
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center space-x-2 p-3 bg-red-500/20 border border-red-500/30 rounded-lg"
           >
             <AlertCircle className="w-5 h-5 text-red-400" />
             <span className="text-red-300 text-sm">{errorMessage}</span>
-          </motion.div>
+          </MotionWrapper>
         )}
 
         {status === 'success' && (
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center space-x-2 p-3 bg-green-500/20 border border-green-500/30 rounded-lg"
           >
             <Check className="w-5 h-5 text-green-400" />
             <span className="text-green-300 text-sm">API key đã được lưu thành công!</span>
-          </motion.div>
+          </MotionWrapper>
         )}
 
         <div className="flex space-x-3">
@@ -160,6 +160,6 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
           </ol>
         </div>
       </div>
-    </motion.div>
+    </MotionWrapper>
   );
 }

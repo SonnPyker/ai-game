@@ -113,12 +113,12 @@ class NPCRelationshipService {
   }
 
   // Generate weapon using AI based on NPC context
-  private async generateWeaponWithAI(npcName: string, level: number, stats: any, npcData?: any): Promise<any | null> {
+  private async generateWeaponWithAI(npcName: string, level: number, stats: any, npcData?: any, additionalContext?: any): Promise<any | null> {
     try {
       const { geminiService } = await import('../services/geminiService');
       
       const prompt = this.buildWeaponGenerationPrompt(npcName, level, stats, npcData);
-      const response = await geminiService.generateContent(prompt);
+      const response = await geminiService.generateContent(prompt, additionalContext?.contentFlags);
       
       if (!response) return null;
       
@@ -327,6 +327,18 @@ Chỉ trả về JSON, không có text khác.`;
 
   // Public method to save data
   public saveData(): void {
+    this.saveToStorage();
+  }
+
+  // Initialize arousal for all NPCs when 18+ mode is enabled
+  public async initializeArousalForAllNPCs(): Promise<void> {
+    const { npcArousalService } = await import('./npcArousalService');
+    
+    for (const [, npc] of this.relationships) {
+      if (!npc.arousal) {
+        npcArousalService.initializeArousalForNPC(npc);
+      }
+    }
     this.saveToStorage();
   }
 
@@ -617,7 +629,7 @@ OUTPUT JSON:
   ]
 }`;
 
-      const responseText = await geminiService.generateContent(prompt);
+      const responseText = await geminiService.generateContent(prompt, additionalContext?.contentFlags);
       const result = this.parseJsonResponse(responseText, { npcs: [] });
 
       // Cache the result for future use
@@ -1043,7 +1055,7 @@ OUTPUT JSON:
   "arousalIntensity": "low|medium|high"` : ''}
 }`;
 
-    const responseText = await geminiService.generateContent(prompt);
+    const responseText = await geminiService.generateContent(prompt, additionalContext?.contentFlags);
     const result = this.parseJsonResponse(responseText, {
       relationshipChange: 0,
       reputationChange: 0,

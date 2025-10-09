@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { 
   Trash2, 
   AlertTriangle,
@@ -13,6 +12,7 @@ import {
   Download,
 } from 'lucide-react';
 import { SaveSlot } from '../types/saveGame';
+import { MotionWrapper } from '../components/MotionWrapper';
 import { localSaveService } from '../services/saveStorage/localSaveService';
 import { cloudSyncService } from '../services/saveStorage/cloudSyncService';
 import { authService, AuthState } from '../services/saveStorage/authService';
@@ -336,7 +336,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
   };
 
   return (
-    <motion.div
+    <MotionWrapper
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -368,19 +368,19 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
 
       {/* Status Banner */}
       {!authState.isAuthenticated && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 rounded-lg flex items-center space-x-3"
         >
           <AlertTriangle className="w-5 h-5" />
           <span className="font-medium">Chưa đăng nhập - Dữ liệu sẽ được lưu cục bộ</span>
-        </motion.div>
+        </MotionWrapper>
       )}
 
       {/* Conflict Banner */}
       {conflicts.some(c => c.hasConflict) && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg flex items-center space-x-3"
@@ -399,34 +399,34 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
           >
             Giải quyết
           </button>
-        </motion.div>
+        </MotionWrapper>
       )}
 
       {/* Error/Success Messages */}
       {error && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg flex items-center space-x-3"
         >
           <XCircle className="w-5 h-5" />
           <span>{error}</span>
-        </motion.div>
+        </MotionWrapper>
       )}
       {success && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg flex items-center space-x-3"
         >
           <CheckCircle className="w-5 h-5" />
           <span>{success}</span>
-        </motion.div>
+        </MotionWrapper>
       )}
 
       {/* Cloud Save Slots - Only show if authenticated */}
       {authState.isAuthenticated && !authState.isLoading && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
@@ -544,11 +544,11 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
           );
         })}
           </div>
-        </motion.div>
+        </MotionWrapper>
       )}
 
       {/* Local Save Slots - Always show */}
-      <motion.div
+      <MotionWrapper
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.7 }}
@@ -658,21 +658,21 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
             );
           })}
         </div>
-      </motion.div>
+      </MotionWrapper>
 
       {/* Conflict Resolution Modal */}
       {showConflictModal && conflictSlot && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-gray-900 flex items-center justify-center p-4 z-50"
           onClick={() => setShowConflictModal(false)}
         >
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             className="glass-effect rounded-2xl p-6 max-w-md w-full"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <h3 className="text-xl font-bold text-white mb-4">Giải quyết xung đột</h3>
             <p className="text-gray-300 mb-6">
@@ -703,9 +703,9 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                 Giữ cả hai (Local + Cloud)
               </button>
             </div>
-          </motion.div>
-        </motion.div>
+          </MotionWrapper>
+        </MotionWrapper>
       )}
-    </motion.div>
+    </MotionWrapper>
   );
 }

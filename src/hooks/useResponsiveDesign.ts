@@ -73,11 +73,52 @@ export function useResponsiveDesign() {
     return effectiveMode === 'desktop';
   }, [getEffectiveUIMode]);
 
+  // Check if animations should be enabled
+  const shouldUseAnimations = useCallback(() => {
+    const effectiveMode = getEffectiveUIMode();
+    return effectiveMode === 'desktop';
+  }, [getEffectiveUIMode]);
+
+  // Get motion props for framer-motion components
+  const getMotionProps = useCallback((defaultProps: any = {}) => {
+    if (!shouldUseAnimations()) {
+      return {
+        ...defaultProps,
+        initial: false,
+        animate: false,
+        exit: false,
+        transition: { duration: 0 },
+        whileHover: {},
+        whileTap: {},
+        whileInView: {},
+        layout: false,
+      };
+    }
+    return defaultProps;
+  }, [shouldUseAnimations]);
+
+  // Get CSS classes for transitions
+  const getTransitionClass = useCallback((baseClass: string = '') => {
+    if (!shouldUseAnimations()) {
+      return `${baseClass} mobile-no-transition mobile-no-animation`.trim();
+    }
+    return baseClass;
+  }, [shouldUseAnimations]);
+
+  // Get animation class for conditional CSS
+  const getAnimationClass = useCallback(() => {
+    return shouldUseAnimations() ? 'animations-enabled' : 'animations-disabled';
+  }, [shouldUseAnimations]);
+
   return {
     ...state,
     setUIMode,
     getEffectiveUIMode,
     shouldUseMobileLayout,
     shouldUseDesktopLayout,
+    shouldUseAnimations,
+    getMotionProps,
+    getTransitionClass,
+    getAnimationClass,
   };
 }

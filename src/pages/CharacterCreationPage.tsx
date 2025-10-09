@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Character } from '../types';
+import { MotionWrapper } from '../components/MotionWrapper';
 import { geminiService } from '../services/geminiService';
 import { nameGenerationService, NameGenerationOptions, GeneratedName } from '../services/nameGenerationService';
 import { levelSystemService } from '../services/levelSystemService';
@@ -474,7 +474,7 @@ export function CharacterCreationPage() {
   if (currentStep === 'description') {
     return (
       <div className="max-w-4xl mx-auto">
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -486,11 +486,11 @@ export function CharacterCreationPage() {
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Hãy mô tả nhân vật của bạn bằng ngôn ngữ tự do. AI sẽ phân tích và tự động điền vào form tạo nhân vật.
           </p>
-        </motion.div>
+        </MotionWrapper>
 
         {/* World Description Reference */}
         {worldDescription && (
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
@@ -510,10 +510,10 @@ export function CharacterCreationPage() {
             <p className="text-xs text-gray-400 mt-2">
               💡 Tham khảo thông tin thế giới ở trên để mô tả nhân vật phù hợp với bối cảnh
             </p>
-          </motion.div>
+          </MotionWrapper>
         )}
 
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -570,7 +570,7 @@ export function CharacterCreationPage() {
               }
             })()}
           </div>
-        </motion.div>
+        </MotionWrapper>
 
       </div>
     );
@@ -578,7 +578,7 @@ export function CharacterCreationPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <motion.div
+      <MotionWrapper
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
@@ -605,11 +605,11 @@ export function CharacterCreationPage() {
             </button>
           </div>
         </div>
-      </motion.div>
+      </MotionWrapper>
 
       <div className="space-y-6">
         {/* Main Content */}
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -1016,7 +1016,7 @@ export function CharacterCreationPage() {
               ))}
             </div>
           </div>
-        </motion.div>
+        </MotionWrapper>
 
         {/* Help Tooltip */}
         <HelpTooltip
@@ -1038,7 +1038,7 @@ export function CharacterCreationPage() {
       </div>
 
       {/* Action Buttons */}
-      <motion.div
+      <MotionWrapper
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.6 }}
@@ -1067,7 +1067,7 @@ export function CharacterCreationPage() {
           <Check className="w-4 h-4" />
           <span>Chấp Nhận & Vào Game</span>
         </button>
-      </motion.div>
+      </MotionWrapper>
     </div>
   );
 }

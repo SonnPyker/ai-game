@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Mail, 
@@ -13,6 +13,7 @@ import {
   Chrome
 } from 'lucide-react';
 import { authService, AuthState } from '../../services/saveStorage/authService';
+import { MotionWrapper } from '../MotionWrapper';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -117,19 +118,19 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
   return (
     <AnimatePresence>
-      <motion.div
+      <MotionWrapper
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-gray-900 flex items-center justify-center p-4 z-50"
         onClick={onClose}
       >
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           className="glass-effect rounded-2xl p-6 max-w-md w-full"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -148,7 +149,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
           {/* Status Messages */}
           {message && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`mb-4 p-3 rounded-lg border ${
@@ -164,7 +165,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 {message.type === 'error' && <AlertCircle className="w-4 h-4" />}
                 <span className="text-sm">{message.text}</span>
               </div>
-            </motion.div>
+            </MotionWrapper>
           )}
 
           {/* Auth State Display */}
@@ -347,8 +348,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               </div>
             </div>
           )}
-        </motion.div>
-      </motion.div>
+        </MotionWrapper>
+      </MotionWrapper>
     </AnimatePresence>
   );
 }

@@ -1,7 +1,7 @@
 // import React from 'react';
-import { motion } from 'framer-motion';
 import { Heart, Shield, Sword, Target } from 'lucide-react';
 import { Combatant } from '../../services/combatService';
+import { MotionWrapper } from '../MotionWrapper';
 
 interface CombatantCardProps {
   combatant: Combatant;
@@ -46,7 +46,7 @@ export function CombatantCard({
   };
 
   return (
-    <motion.div
+    <MotionWrapper
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={`
@@ -96,12 +96,14 @@ export function CombatantCard({
         </div>
         
         <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-          <motion.div
+          <MotionWrapper
             className={`h-full ${getHPBarColor(hpPercentage)}`}
             initial={{ width: '100%' }}
             animate={{ width: `${hpPercentage}%` }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
-          />
+          >
+            <div className={`h-full ${getHPBarColor(hpPercentage)}`} />
+          </MotionWrapper>
         </div>
       </div>
 
@@ -171,7 +173,7 @@ export function CombatantCard({
 
       {/* Death Overlay */}
       {!isAlive && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="absolute inset-0 bg-red-900/20 rounded-lg flex items-center justify-center"
@@ -180,8 +182,8 @@ export function CombatantCard({
             <div className="text-4xl mb-2">💀</div>
             <div className="text-red-400 font-bold">Bị đánh bại</div>
           </div>
-        </motion.div>
+        </MotionWrapper>
       )}
-    </motion.div>
+    </MotionWrapper>
   );
 }

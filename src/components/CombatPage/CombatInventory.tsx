@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Sword, 
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { InventoryItem } from '../../types';
 import { Combatant } from '../../services/combatService';
+import { MotionWrapper } from '../MotionWrapper';
 
 interface CombatInventoryProps {
   inventory: InventoryItem[];
@@ -156,7 +157,7 @@ export function CombatInventory({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {usableItems.map((item) => (
-                <motion.div
+                <MotionWrapper
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -218,7 +219,7 @@ export function CombatInventory({
                       </button>
                     </div>
                   </div>
-                </motion.div>
+                </MotionWrapper>
               ))}
             </div>
           )}
@@ -228,19 +229,19 @@ export function CombatInventory({
       {/* Target Selection Modal */}
       <AnimatePresence>
         {showTargetSelection && (
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             onClick={handleCancelTargetSelection}
           >
-            <motion.div
+            <MotionWrapper
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className="bg-gray-900 rounded-lg shadow-2xl w-full max-w-md p-6"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                 <Target className="w-5 h-5 mr-2" />
@@ -275,8 +276,8 @@ export function CombatInventory({
               >
                 Hủy
               </button>
-            </motion.div>
-          </motion.div>
+            </MotionWrapper>
+          </MotionWrapper>
         )}
       </AnimatePresence>
     </>

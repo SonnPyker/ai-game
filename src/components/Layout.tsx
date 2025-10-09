@@ -41,10 +41,17 @@ export function Layout({ children }: LayoutProps) {
 
   // Auto-close sidebar on mobile when navigating
   const handleSidebarClose = () => {
-    if (shouldUseMobileLayout()) {
+    setSidebarOpen(false);
+  };
+
+  // Auto-close sidebar on mobile when route changes
+  useEffect(() => {
+    if (shouldUseMobileLayout() && sidebarOpen) {
       setSidebarOpen(false);
     }
-  };
+  }, [location.pathname, shouldUseMobileLayout]);
+
+
 
   return (
     <div className="min-h-screen bg-black">
@@ -52,12 +59,18 @@ export function Layout({ children }: LayoutProps) {
       {sidebarOpen && shouldUseMobileLayout() && (
         <div 
           className="fixed inset-0 bg-black/50 z-40"
-          onClick={closeSidebar}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeSidebar();
+          }}
+          style={{ zIndex: 40 }}
         />
       )}
       
       <div className="flex">
         <Sidebar 
+          key={sidebarOpen ? 'open' : 'closed'}
           isOpen={sidebarOpen} 
           onClose={handleSidebarClose}
           onToggle={toggleSidebar}

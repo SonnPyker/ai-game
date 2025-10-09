@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Send, Loader2, AlertCircle, Play, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History, Moon, Sword } from 'lucide-react';
 import { worldTimeService } from '../services/worldTimeService';
@@ -15,6 +14,7 @@ import { actionSuggestionService, SuggestedAction, ActionLogEntry } from '../ser
 import { locationService } from '../services/locationService';
 import { inventoryService } from '../services/inventoryService';
 import { ItemSelectionModal } from '../components/ItemSelectionModal/ItemSelectionModal';
+import { MotionWrapper } from '../components/MotionWrapper';
 
 // Lazy load các services lớn để giảm kích thước bundle chính
 let geminiService: any;
@@ -245,19 +245,36 @@ export function GamePage() {
           const world = JSON.parse(worldData);
           const scenario = JSON.parse(scenarioData);
           
-          // Load content flags from SaveGame (không từ localStorage riêng)
+          // Load content flags - ưu tiên world_gen_result để đảm bảo consistency
           let contentFlags: ContentFlags | null = null;
-          // Kiểm tra nếu có save game đã load trước đó
-          const existingSave = localStorage.getItem('save_local1') || 
-                              localStorage.getItem('save_local2') || 
-                              localStorage.getItem('save_local3');
           
-          if (existingSave) {
+          // Ưu tiên load từ world_gen_result (dữ liệu chính thức)
+          if (worldData) {
             try {
-              const saveData = JSON.parse(existingSave);
-              contentFlags = saveData.contentFlags || null;
+              const worldDataParsed = JSON.parse(worldData);
+              if (worldDataParsed.contentFlags) {
+                contentFlags = worldDataParsed.contentFlags;
+                console.log('✅ Loaded contentFlags from world_gen_result in load game:', contentFlags);
+              }
             } catch (error) {
-              console.error('Lỗi load content flags từ save:', error);
+              console.error('Lỗi parse world_gen_result trong load game:', error);
+            }
+          }
+          
+          // Fallback: load từ save game nếu không có trong world_gen_result
+          if (!contentFlags) {
+            const existingSave = localStorage.getItem('save_local1') || 
+                                localStorage.getItem('save_local2') || 
+                                localStorage.getItem('save_local3');
+            
+            if (existingSave) {
+              try {
+                const saveData = JSON.parse(existingSave);
+                contentFlags = saveData.contentFlags || null;
+                console.log('✅ Loaded contentFlags from save game fallback:', contentFlags);
+              } catch (error) {
+                console.error('Lỗi load content flags từ save:', error);
+              }
             }
           }
           
@@ -336,9 +353,7 @@ export function GamePage() {
         {
           id: 'immediate_1',
           text: 'Khám phá khu vực xung quanh',
-          summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
-          pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
-          cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
+          summary: 'Tìm hiểu môi trường xung quanh',
           durationMinutes: generateSuggestionDuration(),
           impactTags: ['exploration'],
           source: 'heuristic' as const
@@ -346,19 +361,15 @@ export function GamePage() {
         {
           id: 'immediate_2', 
           text: 'Nghỉ ngơi và suy nghĩ',
-          summary: 'Dành thời gian để lên kế hoạch tiếp theo',
-          pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
-          cons: ['Mất thời gian'],
+          summary: 'Lên kế hoạch tiếp theo',
           durationMinutes: generateSuggestionDuration(),
           impactTags: ['planning'],
           source: 'heuristic' as const
         },
         {
           id: 'immediate_3',
-          text: 'Tìm kiếm thông tin từ người dân địa phương',
-          summary: 'Hỏi thăm thông tin từ NPC',
-          pros: ['Thu thập thông tin', 'Xây dựng mối quan hệ'],
-          cons: ['Có thể bị lừa', 'Mất tiền'],
+          text: 'Hỏi thăm người dân địa phương',
+          summary: 'Thu thập thông tin từ NPC',
           durationMinutes: generateSuggestionDuration(),
           impactTags: ['social'],
           source: 'heuristic' as const
@@ -366,9 +377,7 @@ export function GamePage() {
         {
           id: 'immediate_4',
           text: 'Kiểm tra khu vực nguy hiểm',
-          summary: 'Thăm dò những nơi có thể có rủi ro',
-          pros: ['Phát hiện mối nguy', 'Chuẩn bị tốt hơn'],
-          cons: ['Rất nguy hiểm', 'Có thể bị thương'],
+          summary: 'Thăm dò nơi có rủi ro',
           durationMinutes: generateSuggestionDuration(),
           impactTags: ['risk'],
           source: 'heuristic' as const
@@ -436,9 +445,7 @@ export function GamePage() {
         {
           id: 'fallback_1',
           text: 'Khám phá khu vực xung quanh',
-          summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
-          pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
-          cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
+          summary: 'Tìm hiểu môi trường xung quanh',
           durationMinutes: generateSuggestionDuration(),
           impactTags: ['exploration'],
           source: 'heuristic' as const
@@ -446,9 +453,7 @@ export function GamePage() {
         {
           id: 'fallback_2', 
           text: 'Nghỉ ngơi và suy nghĩ',
-          summary: 'Dành thời gian để lên kế hoạch tiếp theo',
-          pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
-          cons: ['Mất thời gian'],
+          summary: 'Lên kế hoạch tiếp theo',
           durationMinutes: generateSuggestionDuration(),
           impactTags: ['planning'],
           source: 'heuristic' as const
@@ -521,7 +526,7 @@ Context hiện tại:
 
 Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
-      const response = await geminiService.generateContent(prompt);
+      const response = await geminiService.generateContent(prompt, gameState.contentFlags);
       return response || `Thực hiện hành động: ${actionText}`;
     } catch (error) {
       console.error('Error generating action summary:', error);
@@ -685,31 +690,35 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         throw new Error('Không tìm thấy dữ liệu thế giới hoặc nhân vật. Vui lòng tạo lại.');
       }
 
-      // Load content flags từ currentWorldData (từ WorldBuilder)
+      // Load content flags - ưu tiên world_gen_result để đảm bảo consistency
       let contentFlags: ContentFlags = { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true };
       
-      // Ưu tiên load từ currentWorldData (từ WorldBuilder)
-      const currentWorldData = localStorage.getItem('currentWorldData');
-      if (currentWorldData) {
-        try {
-          const currentWorldParsed = JSON.parse(currentWorldData);
-          if (currentWorldParsed.contentFlags) {
-            contentFlags = currentWorldParsed.contentFlags;
-          }
-        } catch (error) {
-          console.error('Lỗi parse currentWorldData:', error);
-        }
-      }
-      
-      // Fallback: load từ world_gen_result nếu không có currentWorldData
-      if (!currentWorldData && worldData) {
+      // Ưu tiên load từ world_gen_result (dữ liệu chính thức)
+      if (worldData) {
         try {
           const worldDataParsed = JSON.parse(worldData);
           if (worldDataParsed.contentFlags) {
             contentFlags = worldDataParsed.contentFlags;
+            console.log('✅ Loaded contentFlags from world_gen_result:', contentFlags);
           }
         } catch (error) {
           console.error('Lỗi parse world_gen_result:', error);
+        }
+      }
+      
+      // Fallback: load từ currentWorldData nếu không có trong world_gen_result
+      if (!contentFlags || contentFlags.adult_enabled === false) {
+        const currentWorldData = localStorage.getItem('currentWorldData');
+        if (currentWorldData) {
+          try {
+            const currentWorldParsed = JSON.parse(currentWorldData);
+            if (currentWorldParsed.contentFlags) {
+              contentFlags = currentWorldParsed.contentFlags;
+              console.log('✅ Loaded contentFlags from currentWorldData fallback:', contentFlags);
+            }
+          } catch (error) {
+            console.error('Lỗi parse currentWorldData:', error);
+          }
         }
       }
 
@@ -830,9 +839,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           {
             id: 'fallback_1',
             text: 'Khám phá khu vực xung quanh',
-            summary: 'Tìm hiểu môi trường xung quanh để thu thập thông tin',
-            pros: ['Tìm thấy manh mối', 'Hiểu rõ tình huống'],
-            cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
+            summary: 'Tìm hiểu môi trường xung quanh',
             durationMinutes: generateSuggestionDuration(),
             impactTags: ['exploration'],
             source: 'heuristic' as const
@@ -840,19 +847,15 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           {
             id: 'fallback_2', 
             text: 'Nghỉ ngơi và suy nghĩ',
-            summary: 'Dành thời gian để lên kế hoạch tiếp theo',
-            pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
-            cons: ['Mất thời gian'],
+            summary: 'Lên kế hoạch tiếp theo',
             durationMinutes: generateSuggestionDuration(),
             impactTags: ['planning'],
             source: 'heuristic' as const
           },
           {
             id: 'fallback_3',
-            text: 'Tìm kiếm thông tin từ người dân địa phương',
-            summary: 'Hỏi thăm thông tin từ NPC',
-            pros: ['Thu thập thông tin', 'Xây dựng mối quan hệ'],
-            cons: ['Có thể bị lừa', 'Mất tiền'],
+            text: 'Hỏi thăm người dân địa phương',
+            summary: 'Thu thập thông tin từ NPC',
             durationMinutes: generateSuggestionDuration(),
             impactTags: ['social'],
             source: 'heuristic' as const
@@ -860,9 +863,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           {
             id: 'fallback_4',
             text: 'Kiểm tra khu vực nguy hiểm',
-            summary: 'Thăm dò những nơi có thể có rủi ro',
-            pros: ['Phát hiện mối nguy', 'Chuẩn bị tốt hơn'],
-            cons: ['Rất nguy hiểm', 'Có thể bị thương'],
+            summary: 'Thăm dò nơi có rủi ro',
             durationMinutes: generateSuggestionDuration(),
             impactTags: ['risk'],
             source: 'heuristic' as const
@@ -1224,8 +1225,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 actionId: selectedSuggestionId,
                 text: currentMessage.trim(),
                 summary: selectedSuggestion.summary,
-                pros: selectedSuggestion.pros,
-                cons: selectedSuggestion.cons,
                 durationMinutes: durationMinutes,
                 startedAt: gameState.worldTime,
                 endedAt: newTime,
@@ -1269,8 +1268,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               actionId: undefined,
               text: currentMessage.trim(),
               summary: actionSummary,
-              pros: ['Thực hiện theo ý muốn', 'Linh hoạt trong hành động'],
-              cons: ['Có thể có rủi ro không lường trước', 'Cần thời gian để thực hiện'],
               durationMinutes: finalDurationMinutes,
               startedAt: gameState.worldTime,
               endedAt: finalEndedAt,
@@ -1895,6 +1892,19 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       contentFlags: newFlags
     }));
     
+    // Cập nhật vào world_gen_result (dữ liệu chính thức)
+    const worldGenResult = localStorage.getItem('world_gen_result');
+    if (worldGenResult) {
+      try {
+        const worldData = JSON.parse(worldGenResult);
+        worldData.contentFlags = newFlags;
+        localStorage.setItem('world_gen_result', JSON.stringify(worldData));
+        console.log('✅ Updated contentFlags in world_gen_result:', newFlags);
+      } catch (error) {
+        console.error('❌ Error updating contentFlags in world_gen_result:', error);
+      }
+    }
+    
     // Cập nhật vào currentWorldData để persist
     const currentWorldData = localStorage.getItem('currentWorldData');
     if (currentWorldData) {
@@ -1902,6 +1912,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         const worldData = JSON.parse(currentWorldData);
         worldData.contentFlags = newFlags;
         localStorage.setItem('currentWorldData', JSON.stringify(worldData));
+        console.log('✅ Updated contentFlags in currentWorldData:', newFlags);
       } catch (error) {
         console.error('❌ Error updating contentFlags in currentWorldData:', error);
       }
@@ -2164,7 +2175,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
   if (!gameState.isInitialized) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass-effect p-8 rounded-2xl max-w-md w-full text-center"
@@ -2177,7 +2188,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           </p>
           
           {error && (
-            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+            <div className="mb-4 p-3 bg-red-800 border border-red-500 rounded-lg">
               <div className="flex items-center space-x-2 text-red-300">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-sm">{error}</span>
@@ -2188,7 +2199,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           <button
             onClick={initializeGame}
             disabled={isLoading}
-            className="w-full py-3 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="w-full py-3 bg-blue-600 border border-blue-500 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {isLoading ? (
               <>
@@ -2202,7 +2213,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               </>
             )}
           </button>
-        </motion.div>
+        </MotionWrapper>
       </div>
     );
   }
@@ -2213,10 +2224,10 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       <div className="fixed top-0 left-0 right-0 z-50 bg-black">
         {/* Summary Banner */}
         {gameState.showSummaryBanner && (
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-blue-500/20 border-b border-blue-500/30 p-3"
+            className="bg-blue-600 border-b border-blue-500 p-3"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2 text-sm text-blue-300">
@@ -2226,25 +2237,25 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handleUndoSummary}
-                  className="px-2 py-1 bg-yellow-600/20 border border-yellow-500/30 text-yellow-300 rounded text-xs hover:bg-yellow-600/30 transition-colors duration-200"
+                  className="px-2 py-1 bg-yellow-600 border border-yellow-500 text-white rounded text-xs hover:bg-yellow-700 transition-colors duration-200"
                   title="Hoàn tác tóm tắt"
                 >
                   <Undo2 className="w-3 h-3" />
                 </button>
                 <button
                   onClick={handleDismissBanner}
-                  className="px-2 py-1 bg-gray-600/20 border border-gray-500/30 text-gray-300 rounded text-xs hover:bg-gray-600/30 transition-colors duration-200"
+                  className="px-2 py-1 bg-gray-600 border border-gray-500 text-white rounded text-xs hover:bg-gray-700 transition-colors duration-200"
                   title="Đóng"
                 >
                   ×
                 </button>
               </div>
             </div>
-          </motion.div>
+          </MotionWrapper>
         )}
 
         {/* Icon-only Header Menu */}
-        <div className="glass-effect border-b border-gray-700/50 p-2 mobile-padding">
+        <div className="glass-effect border-b border-gray-800 p-2 mobile-padding">
           <div className="flex items-center justify-between">
             {/* World Time & Turn Counter Display - Only on desktop */}
             {!shouldUseMobileLayout() && (
@@ -2271,7 +2282,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                   <span className="text-gray-500">•</span>
                   <button
                     onClick={gameState.contentFlags.adult_enabled ? toggleAdultIntensity : toggleAdultContent}
-                    className="flex items-center space-x-1 hover:bg-white/5 px-2 py-1 rounded transition-colors"
+                    className="flex items-center space-x-1 hover:bg-gray-900 px-2 py-1 rounded transition-colors"
                     title={gameState.contentFlags.adult_enabled 
                       ? "Click để thay đổi mức độ nội dung" 
                       : "Click để bật nội dung 18+"
@@ -2333,8 +2344,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 }}
                 className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
                   isInfoMenuPinned 
-                    ? 'bg-blue-600/30 border-blue-500/50 text-blue-200' 
-                    : 'bg-blue-600/20 border-blue-500/30 text-blue-300 hover:bg-blue-600/30'
+                    ? 'bg-blue-900 border-blue-700 text-blue-100' 
+                    : 'bg-blue-800 border-blue-700 text-white hover:bg-blue-900'
                 }`}
                 title={isInfoMenuPinned ? "Bỏ ghim menu" : "Thông tin game"}
               >
@@ -2343,7 +2354,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               {/* Action Log Button */}
               <button
                 onClick={() => setShowActionLog(true)}
-                className="p-2 bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-600/30 transition-colors duration-200 mobile-button touch-feedback"
+                className="p-2 bg-purple-800 border border-purple-700 text-white rounded-lg hover:bg-purple-900 transition-colors duration-200 mobile-button touch-feedback"
                 title="Lịch sử hành động"
               >
                 <History className="w-4 h-4" />
@@ -2354,8 +2365,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 disabled={isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions}
                 className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
-                    ? 'bg-gray-600/20 border-gray-500/30 text-gray-400 cursor-not-allowed'
-                    : 'bg-purple-600/20 border-purple-500/30 text-purple-300 hover:bg-purple-600/30'
+                    ? 'bg-gray-800 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-purple-800 border-purple-700 text-white hover:bg-purple-900'
                 }`}
                 title={
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
@@ -2371,8 +2382,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 disabled={isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions}
                 className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
-                    ? 'bg-gray-600/20 border-gray-500/30 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-600/20 border-green-500/30 text-green-300 hover:bg-green-600/30'
+                    ? 'bg-gray-800 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-800 border-green-700 text-white hover:bg-green-900'
                 }`}
                 title={
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
@@ -2389,8 +2400,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 disabled={isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions}
                 className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
-                    ? 'bg-gray-600/20 border-gray-500/30 text-gray-400 cursor-not-allowed'
-                    : 'bg-red-600/20 border-red-500/30 text-red-300 hover:bg-red-600/30'
+                    ? 'bg-gray-800 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-red-800 border-red-700 text-white hover:bg-red-900'
                 }`}
                 title={
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
@@ -2412,7 +2423,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
         }`}>
           {chatHistory.map((message, index) => (
-            <motion.div
+            <MotionWrapper
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2426,14 +2437,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                     disabled={isLoading}
                     className={`mt-1 p-2 md:p-1.5 rounded-md transition-all duration-200 min-w-[40px] min-h-[40px] md:min-w-[32px] md:min-h-[32px] flex items-center justify-center ${
                       resendingMessageIndex === index
-                        ? 'opacity-100 bg-green-500/20 text-green-400'
+                        ? 'opacity-100 bg-green-800 text-green-100'
                         : showResendButton === index 
                           ? 'opacity-100' 
                           : 'opacity-70 md:opacity-0 md:group-hover:opacity-100'
                     } ${
                       isLoading 
                         ? 'text-gray-500 cursor-not-allowed' 
-                        : 'text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 active:bg-blue-500/30'
+                        : 'text-blue-400 hover:text-blue-300 hover:bg-blue-800 active:bg-blue-900'
                     } touch-manipulation`}
                     title={
                       resendingMessageIndex === index 
@@ -2453,8 +2464,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 <div
                   className={`max-w-3xl px-3 sm:px-4 py-3 rounded-lg cursor-pointer md:cursor-default mobile-padding ${
                     message.role === 'player'
-                      ? 'bg-blue-500/20 border border-blue-500/50 text-blue-100'
-                      : 'bg-gray-800/50 border border-gray-700/50 text-gray-100'
+                      ? 'bg-blue-800 border border-blue-700 text-blue-100'
+                      : 'bg-gray-900 border border-gray-800 text-gray-100'
                   }`}
                   onClick={() => handleMessageTap(index, message.role)}
                 >
@@ -2464,51 +2475,40 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                       isPlayer={message.role === 'player'} 
                     />
                   </div>
-                  <div className="text-xs opacity-60 mt-2 flex items-center justify-between">
-                    <span>{message.timestamp.toLocaleTimeString()}</span>
-                    {message.role === 'player' && (
-                      <span className="text-xs opacity-40 ml-2">
-                        <span className="hidden md:inline">Hover để gửi lại</span>
-                        <span className="md:hidden">
-                          {showResendButton === index ? 'Tap nút ↻ để gửi lại' : 'Tap để hiện nút gửi lại'}
-                        </span>
-                      </span>
-                    )}
-                  </div>
                 </div>
               </div>
-            </motion.div>
+            </MotionWrapper>
           ))}
           
           {isLoading && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex justify-start"
             >
-              <div className="bg-gray-800/50 border border-gray-700/50 text-gray-100 px-4 py-3 rounded-lg">
+              <div className="bg-gray-900 border border-gray-800 text-gray-100 px-4 py-3 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>AI đang suy nghĩ...</span>
                 </div>
               </div>
-            </motion.div>
+            </MotionWrapper>
           )}
 
           {/* NPC Analysis indicator */}
           {isNPCAnalysisProcessing && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex justify-start"
             >
-              <div className="bg-yellow-800/50 border border-yellow-700/50 text-yellow-100 px-4 py-2 rounded-lg">
+              <div className="bg-yellow-800 border border-yellow-700 text-yellow-100 px-4 py-2 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   <span className="text-sm">Phân tích quan hệ NPC...</span>
                 </div>
               </div>
-            </motion.div>
+            </MotionWrapper>
           )}
           
           <div ref={chatEndRef} />
@@ -2519,7 +2519,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-black">
         {/* Error Display */}
         {error && (
-          <div className={`mx-4 mb-2 p-3 bg-red-500/20 border border-red-500/50 rounded-lg transition-all duration-300 ${
+          <div className={`mx-4 mb-2 p-3 bg-red-800 border border-red-500 rounded-lg transition-all duration-300 ${
             isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
           }`}>
             <div className="flex items-center space-x-2 text-red-300">
@@ -2531,7 +2531,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
         {/* Save Message Display */}
         {saveMessage && (
-          <div className={`mx-4 mb-2 p-3 bg-green-500/20 border border-green-500/50 rounded-lg transition-all duration-300 ${
+          <div className={`mx-4 mb-2 p-3 bg-green-800 border border-green-500 rounded-lg transition-all duration-300 ${
             isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
           }`}>
             <div className="flex items-center space-x-2 text-green-300">
@@ -2542,11 +2542,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         )}
 
         {/* Input Area */}
-        <div className={`glass-effect border-t border-gray-700/50 p-3 sm:p-4 mobile-padding transition-all duration-300 ${
+        <div className={`glass-effect border-t border-gray-800 p-3 sm:p-4 mobile-padding transition-all duration-300 ${
           isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
         }`}>
           {/* Action Suggestions */}
-          <Suspense fallback={<div className="mb-4 h-20 bg-gray-800/30 rounded-lg animate-pulse"></div>}>
+          <Suspense fallback={<div className="mb-4 h-20 bg-gray-900 rounded-lg animate-pulse"></div>}>
             <ActionSuggestions
               suggestions={actionSuggestions}
               onPick={handleSuggestionPick}
@@ -2584,16 +2584,16 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                     ? "AI đang xử lý - bạn có thể gõ sẵn hành động..." 
                     : "Mô tả hành động của bạn..."
               }
-              className={`flex-1 px-3 sm:px-4 py-2.5 bg-gray-800/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none resize-none transition-colors ${
+              className={`flex-1 px-3 sm:px-4 py-2.5 bg-gray-900 border rounded-lg text-white placeholder-gray-400 focus:outline-none resize-none transition-colors ${
                 shouldUseMobileLayout() ? 'text-sm' : 'text-base'
               } ${
                 selectedSuggestionId
-                  ? 'border-blue-500/50 focus:border-blue-500 opacity-75'
+                  ? 'border-blue-700 focus:border-blue-700 opacity-75'
                   : resendingMessageIndex !== null 
-                    ? 'border-green-500/50 focus:border-green-500' 
+                    ? 'border-green-700 focus:border-green-700' 
                     : (isAIProcessing || isNPCAnalysisProcessing)
-                      ? 'border-yellow-500/50 focus:border-yellow-500'
-                      : 'border-gray-600/50 focus:border-blue-500'
+                      ? 'border-yellow-700 focus:border-yellow-700'
+                      : 'border-gray-800 focus:border-blue-700'
               }`}
               rows={2}
               disabled={!!selectedSuggestionId}
@@ -2603,8 +2603,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               disabled={!currentMessage.trim() || isLoading || isAIProcessing || isNPCAnalysisProcessing}
               className={`px-3 sm:px-4 py-3 border rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${shouldUseMobileLayout() ? 'min-h-[48px] min-w-[48px]' : 'mobile-button'} touch-feedback ${
                 isAIProcessing || isNPCAnalysisProcessing
-                  ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300'
-                  : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30'
+                  ? 'bg-yellow-800 border-yellow-700 text-white'
+                  : 'bg-blue-800 border-blue-700 text-white hover:bg-blue-900'
               }`}
             >
               <Send className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -2640,7 +2640,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       {/* Info Menu - Only render when needed */}
       {(showInfoMenu || isInfoMenuPinned) && (
         <Suspense fallback={
-          <div className="fixed top-0 right-0 h-screen bg-black/95 backdrop-blur-sm border-l border-gray-700/50 z-50 flex items-center justify-center w-96">
+          <div className="fixed top-0 right-0 h-screen bg-gray-900 border-l border-gray-600 z-50 flex items-center justify-center w-96">
             <div className="glass-effect p-8 rounded-2xl text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
               <p className="text-white text-sm">Đang tải menu...</p>
@@ -2715,7 +2715,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
       {/* Skip Time Modal */}
       {showSkipTimeModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
           <div className="glass-effect p-6 rounded-2xl max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white flex items-center">
@@ -2781,13 +2781,13 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               <div className="flex space-x-3 pt-2">
                 <button
                   onClick={() => setShowSkipTimeModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-600/20 border border-gray-500/30 text-gray-300 rounded-lg hover:bg-gray-600/30 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-600 border border-gray-500 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   onClick={handleSkipTime}
-                  className="flex-1 px-4 py-2 bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-600/30 transition-colors"
+                  className="flex-1 px-4 py-2 bg-purple-600 border border-purple-500 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   Xác nhận
                 </button>

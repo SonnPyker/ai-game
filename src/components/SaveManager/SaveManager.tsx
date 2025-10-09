@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
   Save, 
   Download, 
@@ -19,6 +19,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { SaveSlot, SaveGame, SyncStatus, ConflictInfo } from '../../types/saveGame';
+import { MotionWrapper } from '../MotionWrapper';
 import { saveGameService } from '../../services/saveStorage/saveGameService';
 import { syncService } from '../../services/saveStorage/syncService';
 import { authService, AuthState } from '../../services/saveStorage/authService';
@@ -322,19 +323,19 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
 
   return (
     <AnimatePresence>
-      <motion.div
+      <MotionWrapper
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
         onClick={onClose}
       >
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           className="glass-effect rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -384,7 +385,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
 
           {/* Sync Status Banner */}
           {syncStatus && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`mb-4 p-3 rounded-lg border ${
@@ -409,12 +410,12 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                     : 'Dữ liệu đã đồng bộ'}
                 </span>
               </div>
-            </motion.div>
+            </MotionWrapper>
           )}
 
           {/* Status Messages */}
           {error && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg"
@@ -423,11 +424,11 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                 <AlertTriangle className="w-4 h-4" />
                 <span className="text-sm">{error}</span>
               </div>
-            </motion.div>
+            </MotionWrapper>
           )}
 
           {success && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg"
@@ -436,7 +437,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                 <CheckCircle className="w-4 h-4" />
                 <span className="text-sm">{success}</span>
               </div>
-            </motion.div>
+            </MotionWrapper>
           )}
 
           {/* Slots Grid */}
@@ -448,7 +449,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
               };
 
               return (
-                <motion.div
+                <MotionWrapper
                   key={slotId}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -579,14 +580,14 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                       </button>
                     )}
                   </div>
-                </motion.div>
+                </MotionWrapper>
               );
             })}
           </div>
 
           {/* Import/Export Section */}
           {selectedSlot && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="border-t border-gray-600/50 pt-4"
@@ -616,7 +617,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                   />
                 </label>
               </div>
-            </motion.div>
+            </MotionWrapper>
           )}
 
           {/* Footer */}
@@ -625,8 +626,8 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
               Hệ thống tự động chọn Cloud (Supabase) hoặc Local (LocalStorage) dựa trên kết nối
             </p>
           </div>
-        </motion.div>
-      </motion.div>
+        </MotionWrapper>
+      </MotionWrapper>
 
       {/* Auth Modal */}
       <AuthModal
@@ -640,19 +641,19 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
 
       {/* Conflict Resolution Modal */}
       {showConflictModal && conflicts.length > 0 && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-60"
           onClick={() => setShowConflictModal(false)}
         >
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="glass-effect rounded-2xl p-6 max-w-2xl w-full"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-white">Giải Quyết Xung Đột Dữ Liệu</h3>
@@ -718,8 +719,8 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                 </div>
               ))}
             </div>
-          </motion.div>
-        </motion.div>
+          </MotionWrapper>
+        </MotionWrapper>
       )}
     </AnimatePresence>
   );

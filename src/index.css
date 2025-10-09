@@ -3,24 +3,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700;900&display=swap');
 
-/* SVN-Determination Sans Font */
-@font-face {
-  font-family: 'SVN-Determination Sans';
-  src: url('/fonts/SVN-DeterminationSans-Regular.woff2') format('woff2'),
-       url('/fonts/SVN-DeterminationSans-Regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'SVN-Determination Sans';
-  src: url('/fonts/SVN-DeterminationSans-Bold.woff2') format('woff2'),
-       url('/fonts/SVN-DeterminationSans-Bold.woff') format('woff');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
 
 @tailwind base;
 @tailwind components;
@@ -37,8 +19,8 @@
   }
   
   body {
-    @apply bg-black text-white;
-    font-family: 'SVN-Determination Sans', 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    @apply bg-gray-950 text-gray-100;
+    font-family: 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 18px;
     min-height: 100vh;
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
@@ -53,7 +35,7 @@
   
   /* Special handling for Vietnamese characters */
   h1, h2, h3, h4, h5, h6, .font-bold-vietnamese, .font-extrabold-vietnamese {
-    font-family: 'SVN-Determination Sans', 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -63,7 +45,7 @@
 
 @layer components {
   .glass-effect {
-    @apply bg-gray-900/80 backdrop-blur-md border border-gray-700/50;
+    @apply bg-gray-950 border border-gray-800;
   }
   
   .card-hover {
@@ -83,11 +65,11 @@
   }
   
   .tab-active {
-    @apply bg-blue-600/20 border border-blue-500/50 text-blue-300 shadow-lg;
+    @apply bg-blue-800 border border-blue-700 text-white shadow-lg;
   }
   
   .tab-inactive {
-    @apply bg-gray-800/50 border border-gray-700/50 text-gray-300 hover:bg-gray-700/50 hover:border-gray-600/50 transition-all duration-200;
+    @apply bg-gray-900 border border-gray-800 text-gray-300 hover:bg-gray-800 hover:border-gray-700 transition-all duration-200;
   }
   
   
@@ -100,17 +82,32 @@
     display: none;
   }
   
-  /* Sidebar Animation */
+  /* Sidebar Animation - now handled by inline styles */
   .sidebar-transition {
-    @apply transform transition-transform duration-300 ease-in-out;
+    /* Handled by inline styles */
   }
   
+  /* Sidebar states - now handled by inline styles */
   .sidebar-open {
-    @apply translate-x-0;
+    /* Handled by inline style */
   }
   
   .sidebar-closed {
-    @apply -translate-x-full;
+    /* Handled by inline style */
+  }
+  
+  /* Mobile sidebar specific styles */
+  @media (max-width: 768px) {
+    /* Ensure sidebar is always on top on mobile */
+    .sidebar-mobile {
+      z-index: 9999 !important;
+    }
+    
+    /* Make sure close button is clickable */
+    .sidebar-close-btn {
+      z-index: 10000 !important;
+      position: relative;
+    }
   }
   
   /* Main Content Animation */
@@ -140,7 +137,7 @@
   
   /* Vietnamese Font Utilities */
   .font-vietnamese {
-    font-family: 'SVN-Determination Sans', 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -148,7 +145,7 @@
   }
   
   .font-bold-vietnamese {
-    font-family: 'SVN-Determination Sans', 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-weight: 700;
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
     text-rendering: optimizeLegibility;
@@ -157,7 +154,7 @@
   }
   
   .font-extrabold-vietnamese {
-    font-family: 'SVN-Determination Sans', 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-weight: 800;
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
     text-rendering: optimizeLegibility;
@@ -245,6 +242,31 @@
   /* Mobile-first spacing */
   .mobile-spacing {
     @apply p-2 sm:p-4;
+  }
+
+  /* Animation control classes */
+  .mobile-no-transition {
+    transition: none !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+
+  .mobile-no-animation {
+    animation: none !important;
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+
+  /* Global animation control based on body class */
+  .animations-disabled * {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .animations-disabled .mobile-no-transition,
+  .animations-disabled .mobile-no-animation {
+    /* These classes are redundant when animations are globally disabled */
   }
 }
 

@@ -109,7 +109,7 @@ export function InfoMenu({
   onViewItemDetails
 }: InfoMenuProps) {
   // Responsive design context
-  const { shouldUseMobileLayout } = useResponsiveContext();
+  const { shouldUseMobileLayout, getTransitionClass } = useResponsiveContext();
   
   // Function to highlight names and locations with /.../ syntax
   const highlightNames = (text: string) => {
@@ -283,7 +283,7 @@ export function InfoMenu({
                 <span className="text-gray-400">Nội dung 18+:</span>
                 <button
                   onClick={onToggleAdultContent}
-                  className="flex items-center space-x-2 hover:bg-white/5 px-3 py-2 rounded transition-colors"
+                  className={getTransitionClass("flex items-center space-x-2 hover:bg-white/5 px-3 py-2 rounded transition-colors")}
                 >
                   {contentFlags.adult_enabled ? (
                     contentFlags.adult_intensity === 'direct' ? (
@@ -314,7 +314,7 @@ export function InfoMenu({
                   <span className="text-gray-400">Mức độ:</span>
                   <button
                     onClick={onToggleAdultIntensity}
-                    className="flex items-center space-x-2 hover:bg-white/5 px-3 py-2 rounded transition-colors"
+                    className={getTransitionClass("flex items-center space-x-2 hover:bg-white/5 px-3 py-2 rounded transition-colors")}
                   >
                     <span className="text-sm text-orange-300">
                       {contentFlags.adult_intensity === 'direct' ? 'Tả thực' : 'An toàn'}
@@ -379,44 +379,44 @@ export function InfoMenu({
         <div className="flex border-b border-gray-700/50">
           <button
             onClick={() => setCharacterSubSection('info')}
-            className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
+            className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
               characterSubSection === 'info'
                 ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-            }`}
+            }`)}
           >
             <User className="w-4 h-4" />
             <span>Thông tin</span>
           </button>
           <button
             onClick={() => setCharacterSubSection('inventory')}
-            className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
+            className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
               characterSubSection === 'inventory'
                 ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-            }`}
+            }`)}
           >
             <Shield className="w-4 h-4" />
             <span>Túi đồ</span>
           </button>
           <button
             onClick={() => setCharacterSubSection('equipment')}
-            className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
+            className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
               characterSubSection === 'equipment'
                 ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-            }`}
+            }`)}
           >
             <Sword className="w-4 h-4" />
             <span>Trang bị</span>
           </button>
           <button
             onClick={() => setCharacterSubSection('currency')}
-            className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
+            className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
               characterSubSection === 'currency'
                 ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-            }`}
+            }`)}
           >
             <Coins className="w-4 h-4" />
             <span>Tiền tệ</span>
@@ -1079,40 +1079,18 @@ export function InfoMenu({
     );
   };
 
-   // Helper function để làm sạch và hiển thị notes
-   const cleanNotes = (notes: string[]): string[] => {
-     if (!notes || notes.length === 0) return ['Chưa có ghi chú đặc biệt'];
-     
-     return notes
-       .map((note: any) => {
-         if (typeof note === 'string') {
-           // Xử lý [object Object] trong string
-           if (note.includes('[object Object]')) {
-             return note.replace(/\[object Object\]/g, 'đối tượng');
-           }
-           return note;
-         } else if (typeof note === 'object' && note !== null) {
-           // Nếu là object, cố gắng lấy thông tin hữu ích
-           if (note.name) {
-             return `Đối tượng: ${note.name}`;
-           } else if (note.description) {
-             return `Mô tả: ${note.description}`;
-           } else {
-             return JSON.stringify(note);
-           }
-         } else {
-           return String(note);
-         }
-       })
-       .filter(note => note && note.trim().length > 0)
-       .map(note => note.trim())
-       .filter((note, index, arr) => arr.indexOf(note) === index); // Loại bỏ trùng lặp
-   };
 
   // Tối ưu relationships data với useMemo
   const relationships = useMemo(() => {
     return npcRelationshipService.getAllRelationships();
   }, [forceUpdate]);
+
+  // Initialize arousal for all NPCs when 18+ mode is enabled
+  useEffect(() => {
+    if (contentFlags?.adult_enabled && contentFlags?.adult_intensity === 'direct') {
+      npcRelationshipService.initializeArousalForAllNPCs().catch(console.error);
+    }
+  }, [contentFlags?.adult_enabled, contentFlags?.adult_intensity]);
 
   // Render section quan hệ NPC - tối ưu với useMemo
   const renderRelationshipsSection = useMemo(() => {
@@ -1165,13 +1143,13 @@ export function InfoMenu({
               <div className="flex gap-2">
                 <button
                   onClick={handleExpandAll}
-                  className="px-3 py-1 bg-green-600/20 border border-green-500/50 text-green-300 rounded text-sm hover:bg-green-600/30 transition-colors flex items-center space-x-1"
+                  className={getTransitionClass("px-3 py-1 bg-green-600/20 border border-green-500/50 text-green-300 rounded text-sm hover:bg-green-600/30 transition-colors flex items-center space-x-1")}
                 >
                   <span>Mở tất cả</span>
                 </button>
                 <button
                   onClick={handleCollapseAll}
-                  className="px-3 py-1 bg-gray-600/20 border border-gray-500/50 text-gray-300 rounded text-sm hover:bg-gray-600/30 transition-colors flex items-center space-x-1"
+                  className={getTransitionClass("px-3 py-1 bg-gray-600/20 border border-gray-500/50 text-gray-300 rounded text-sm hover:bg-gray-600/30 transition-colors flex items-center space-x-1")}
                 >
                   <span>Thu tất cả</span>
                 </button>
@@ -1208,7 +1186,7 @@ export function InfoMenu({
                 return (
                 <div key={relationship.id} className="bg-gray-700/50 rounded-lg p-3">
                   <div 
-                    className="flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-600/30 rounded p-1 -m-1 transition-colors"
+                    className={getTransitionClass("flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-600/30 rounded p-1 -m-1 transition-colors")}
                     onClick={() => toggleNPC(relationship.id)}
                   >
                     <div className="flex items-center space-x-2">
@@ -1255,7 +1233,7 @@ export function InfoMenu({
                             e.stopPropagation();
                             handleCombatWithNPC(relationship);
                           }}
-                          className="p-1 text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 rounded transition-colors"
+                          className={getTransitionClass("p-1 text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 rounded transition-colors")}
                           title={`Tấn công ${relationship.name}`}
                         >
                           <Sword className="w-4 h-4" />
@@ -1266,7 +1244,7 @@ export function InfoMenu({
                           e.stopPropagation();
                           handleRemoveNPC(relationship.id, relationship.name);
                         }}
-                        className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                        className={getTransitionClass("p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded transition-colors")}
                         title={`Xóa quan hệ với ${relationship.name}`}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1274,7 +1252,7 @@ export function InfoMenu({
                       <span className="text-gray-400 text-xs">
                         {isExpanded ? 'Thu gọn' : 'Mở rộng'}
                       </span>
-                      <div className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                      <div className={getTransitionClass(`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`)}>
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
@@ -1283,7 +1261,7 @@ export function InfoMenu({
                   </div>
                   
                   {/* Chi tiết NPC - chỉ hiển thị khi expanded */}
-                  <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <div className={getTransitionClass(`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`)}>
                     <div className="mt-3 space-y-3 min-w-0">
                       {relationship.description && (
                         <p className="text-gray-300 text-sm break-words overflow-wrap-anywhere">
@@ -1340,11 +1318,13 @@ export function InfoMenu({
                       </div>
 
                       {/* Arousal Bar - chỉ hiển thị khi 18+ ON */}
-                      <NPCArousalBar 
-                        npc={relationship} 
-                        contentFlags={contentFlags}
-                        className="mt-3"
-                      />
+                      {contentFlags?.adult_enabled && contentFlags?.adult_intensity === 'direct' && (
+                        <NPCArousalBar 
+                          npc={relationship} 
+                          contentFlags={contentFlags}
+                          className="mt-3"
+                        />
+                      )}
 
                       {/* Combat Stats - chỉ hiển thị khi NPC có thể combat */}
                       {relationship.canBeCombatant && relationship.combatStats && (
@@ -1432,25 +1412,6 @@ export function InfoMenu({
                         </div>
                       )}
 
-                      {relationship.notes && relationship.notes.length > 0 && (
-                        <div className="min-w-0">
-                          <div className="text-gray-400 text-xs mb-1 font-medium">
-                            Ghi chú ({relationship.notes.length}):
-                          </div>
-                          <div className="text-gray-300 text-xs bg-gray-600/50 p-3 rounded max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-700 min-w-0 break-words border border-gray-500/30">
-                            {cleanNotes(relationship.notes).map((note, noteIndex) => {
-                              // Remove forward slashes from note
-                              const cleanedNote = note.replace(/\//g, '');
-                              return (
-                                <div key={noteIndex} className="mb-2 last:mb-0 break-words overflow-wrap-anywhere min-w-0 leading-relaxed">
-                                  <span className="text-gray-400 mr-2">•</span>
-                                  <span className="text-gray-300">{cleanedNote}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -1539,7 +1500,7 @@ export function InfoMenu({
   };
 
   return (
-    <div className={`fixed top-0 right-0 h-screen bg-black/95 backdrop-blur-sm border-l border-gray-700/50 z-50 flex flex-col transition-all duration-300 ${
+    <div className={`fixed top-0 right-0 h-screen bg-gray-900 border-l border-gray-600 z-50 flex flex-col transition-all duration-300 ${
       shouldUseMobileLayout() 
         ? 'w-full max-w-sm' // Full width on mobile with max constraint
         : 'w-96' // Fixed width on desktop
@@ -1552,11 +1513,11 @@ export function InfoMenu({
         <div className="flex items-center space-x-2">
           <button
             onClick={onTogglePin}
-            className={`p-2 rounded-lg transition-colors duration-200 ${
+            className={getTransitionClass(`p-2 rounded-lg transition-colors duration-200 ${
               isPinned 
                 ? 'bg-blue-600/30 border border-blue-500/50 text-blue-200' 
                 : 'bg-gray-600/20 border border-gray-500/30 text-gray-300 hover:bg-gray-600/30'
-            }`}
+            }`)}
             title={isPinned ? 'Bỏ ghim' : 'Ghim menu'}
           >
             {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
@@ -1579,11 +1540,11 @@ export function InfoMenu({
           <button
             key={section.id}
             onClick={() => updateActiveSection(section.id)}
-            className={`flex items-center space-x-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-200 ${
+            className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-200 ${
               activeSection === section.id
                 ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-            }`}
+            }`)}
           >
             {section.icon}
             <span>{section.title}</span>

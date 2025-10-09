@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { MotionWrapper } from '../MotionWrapper';
 import { LogIn, User, LogOut } from 'lucide-react';
 import { authService, AuthState } from '../../services/saveStorage/authService';
 
@@ -21,7 +21,7 @@ export function AuthButton({ onOpenAuthModal }: AuthButtonProps) {
 
   return (
     <>
-      <motion.div
+      <MotionWrapper
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -58,7 +58,7 @@ export function AuthButton({ onOpenAuthModal }: AuthButtonProps) {
             <span className="text-sm">Đăng nhập</span>
           </button>
         )}
-      </motion.div>
+      </MotionWrapper>
     </>
   );
 }

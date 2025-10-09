@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { MotionWrapper, MotionButton } from '../MotionWrapper';
 import { 
   Sword, 
   Shield, 
@@ -93,19 +93,19 @@ export function ActionMenu({
     <div className="space-y-4">
       {/* Target Selection Modal */}
       {showTargetSelection && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={handleCancelTargetSelection}
         >
-          <motion.div
+          <MotionWrapper
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             className="bg-gray-900 rounded-lg shadow-2xl w-full max-w-md p-6"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
               <Target className="w-5 h-5 mr-2" />
@@ -138,15 +138,15 @@ export function ActionMenu({
             >
               Hủy
             </button>
-          </motion.div>
-        </motion.div>
+          </MotionWrapper>
+        </MotionWrapper>
       )}
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3">
         {/* Attack Actions */}
         {combatant.attacks.map((attack, index) => (
-          <motion.button
+          <MotionButton
             key={index}
             onClick={() => handleAttack(index)}
             disabled={isProcessing || enemies.length === 0}
@@ -161,11 +161,11 @@ export function ActionMenu({
                 +{attack.attackBonus} to hit, {attack.damage}
               </div>
             </div>
-          </motion.button>
+          </MotionButton>
         ))}
 
         {/* Defend Action */}
-        <motion.button
+        <MotionButton
           onClick={onDefend}
           disabled={isProcessing}
           className={getActionButtonClass(isProcessing)}
@@ -179,10 +179,10 @@ export function ActionMenu({
               Giảm 50% sát thương nhận vào
             </div>
           </div>
-        </motion.button>
+        </MotionButton>
 
         {/* Use Item Action */}
-        <motion.button
+        <MotionButton
           onClick={() => onUseItem?.('', '')}
           disabled={isProcessing}
           className={getActionButtonClass(isProcessing)}
@@ -196,10 +196,10 @@ export function ActionMenu({
               Mở túi đồ
             </div>
           </div>
-        </motion.button>
+        </MotionButton>
 
         {/* Run Action */}
-        <motion.button
+        <MotionButton
           onClick={onRun}
           disabled={isProcessing}
           className={`
@@ -217,12 +217,12 @@ export function ActionMenu({
               Thoát khỏi combat
             </div>
           </div>
-        </motion.button>
+        </MotionButton>
       </div>
 
       {/* Selected Target Display */}
       {selectedTarget && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-yellow-900/20 border border-yellow-400/50 rounded-lg p-3"
@@ -239,33 +239,33 @@ export function ActionMenu({
               <X className="w-4 h-4" />
             </button>
           </div>
-        </motion.div>
+        </MotionWrapper>
       )}
 
       {/* Processing Indicator */}
       {isProcessing && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="bg-blue-900/20 border border-blue-400/50 rounded-lg p-3"
         >
           <div className="flex items-center space-x-2">
-            <motion.div
+            <MotionWrapper
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             >
               <RotateCcw className="w-4 h-4 text-blue-400" />
-            </motion.div>
+            </MotionWrapper>
             <span className="text-sm text-blue-300">
               Đang xử lý hành động...
             </span>
           </div>
-        </motion.div>
+        </MotionWrapper>
       )}
 
       {/* No Enemies Warning */}
       {enemies.length === 0 && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="bg-green-900/20 border border-green-400/50 rounded-lg p-3"
@@ -276,7 +276,7 @@ export function ActionMenu({
               Tất cả kẻ thù đã bị đánh bại!
             </span>
           </div>
-        </motion.div>
+        </MotionWrapper>
       )}
     </div>
   );

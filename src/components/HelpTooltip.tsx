@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { HelpCircle, X } from 'lucide-react';
+import { MotionWrapper } from './MotionWrapper';
 
 interface HelpTooltipProps {
   title: string;
@@ -27,7 +28,7 @@ export function HelpTooltip({ title, content, className = '' }: HelpTooltipProps
       {/* Icon Help */}
       <button
         onClick={handleToggle}
-        className="fixed top-4 right-4 z-50 p-3 bg-blue-500/20 border-2 border-blue-500/50 rounded-full text-blue-300 hover:bg-blue-500/30 hover:border-blue-400 transition-all duration-200 shadow-lg backdrop-blur-sm"
+        className="fixed top-4 right-4 z-50 p-3 bg-blue-600 border-2 border-blue-500 rounded-full text-white hover:bg-blue-700 hover:border-blue-400 transition-all duration-200 shadow-lg"
         title="Hướng dẫn"
       >
         <HelpCircle className="w-6 h-6" />
@@ -38,20 +39,22 @@ export function HelpTooltip({ title, content, className = '' }: HelpTooltipProps
         {isOpen && (
           <>
             {/* Overlay */}
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-gray-900 z-40"
               onClick={handleClose}
-            />
+            >
+              <div />
+            </MotionWrapper>
 
             {/* Tooltip Panel */}
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, scale: 0.9, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: -20 }}
-              className="fixed top-4 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] bg-gray-900/95 border border-gray-700/50 rounded-xl shadow-2xl backdrop-blur-sm overflow-hidden"
+              className="fixed top-4 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] bg-gray-800 border border-gray-600 rounded-xl shadow-2xl overflow-hidden"
             >
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
@@ -70,7 +73,7 @@ export function HelpTooltip({ title, content, className = '' }: HelpTooltipProps
               <div className="p-4 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hide">
                 <div className="space-y-4">
                   {contentArray.map((item, index) => (
-                    <motion.div
+                    <MotionWrapper
                       key={index}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -90,7 +93,7 @@ export function HelpTooltip({ title, content, className = '' }: HelpTooltipProps
                           <p>{String(item)}</p>
                         )}
                       </div>
-                    </motion.div>
+                    </MotionWrapper>
                   ))}
                 </div>
               </div>
@@ -101,7 +104,7 @@ export function HelpTooltip({ title, content, className = '' }: HelpTooltipProps
                   Nhấn vào bất kỳ đâu bên ngoài để đóng
                 </p>
               </div>
-            </motion.div>
+            </MotionWrapper>
           </>
         )}
       </AnimatePresence>

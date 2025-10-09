@@ -186,37 +186,6 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                             ))}
                           </div>
 
-                          {/* Pros and Cons */}
-                          {(entry.pros.length > 0 || entry.cons.length > 0) && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {entry.pros.length > 0 && (
-                                <div>
-                                  <h4 className="text-xs font-medium text-green-400 mb-1">Lợi ích:</h4>
-                                  <ul className="text-xs text-green-300 space-y-1">
-                                    {entry.pros.map((pro, index) => (
-                                      <li key={index} className="flex items-start">
-                                        <span className="text-green-400 mr-1">+</span>
-                                        {pro}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              {entry.cons.length > 0 && (
-                                <div>
-                                  <h4 className="text-xs font-medium text-red-400 mb-1">Rủi ro:</h4>
-                                  <ul className="text-xs text-red-300 space-y-1">
-                                    {entry.cons.map((con, index) => (
-                                      <li key={index} className="flex items-start">
-                                        <span className="text-red-400 mr-1">-</span>
-                                        {con}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
                       </div>
                     )}

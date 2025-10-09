@@ -1,5 +1,6 @@
 import { NPCRelationship, ContentFlags } from '../types';
 import { npcArousalService } from '../services/npcArousalService';
+import { npcRelationshipService } from '../services/npcRelationshipService';
 
 interface NPCArousalBarProps {
   npc: NPCRelationship;
@@ -9,11 +10,21 @@ interface NPCArousalBarProps {
 
 export function NPCArousalBar({ npc, contentFlags, className = '' }: NPCArousalBarProps) {
   // Only show if adult content is enabled and in direct mode
-  if (!npcArousalService.shouldShowArousalBar(contentFlags) || !npc.arousal) {
+  if (!npcArousalService.shouldShowArousalBar(contentFlags)) {
     return null;
   }
 
+  // Initialize arousal data if not exists
+  if (!npc.arousal) {
+    npcArousalService.initializeArousalForNPC(npc);
+    // Save the updated NPC data
+    npcRelationshipService.saveData();
+  }
+
   const arousal = npc.arousal;
+  if (!arousal) {
+    return null; // Safety check
+  }
   const description = npcArousalService.getArousalDescription(arousal.level);
   const color = npcArousalService.getArousalColor(arousal.level);
   const barColor = npcArousalService.getArousalBarColor(arousal.level);

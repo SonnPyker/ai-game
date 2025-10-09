@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
   Sword, 
   X, 
@@ -12,6 +12,7 @@ import {
   Shield
 } from 'lucide-react';
 import { NPCRelationship } from '../../types';
+import { MotionWrapper } from '../MotionWrapper';
 
 interface CombatConfirmationModalProps {
   isOpen: boolean;
@@ -63,19 +64,19 @@ export function CombatConfirmationModal({
 
   return (
     <AnimatePresence>
-      <motion.div
+      <MotionWrapper
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
         onClick={onClose}
       >
-        <motion.div
+        <MotionWrapper
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           className="bg-gray-900 rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
@@ -274,8 +275,8 @@ export function CombatConfirmationModal({
               </div>
             </div>
           </div>
-        </motion.div>
-      </motion.div>
+        </MotionWrapper>
+      </MotionWrapper>
     </AnimatePresence>
   );
 }

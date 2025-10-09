@@ -5,8 +5,6 @@ export interface SuggestedAction {
   id: string;
   text: string;        // câu sẽ chèn vào input
   summary: string;     // mô tả 1-2 câu
-  pros: string[];      // lợi
-  cons: string[];      // hại
   durationMinutes: number; // >= 10
   impactTags: string[];    // ví dụ: ['story','risk','relationship']
   source: 'ai' | 'quest' | 'heuristic';
@@ -17,8 +15,6 @@ export interface ActionLogEntry {
   actionId?: string;
   text: string;
   summary: string;
-  pros: string[];
-  cons: string[];
   durationMinutes: number;
   startedAt: WorldTime;
   endedAt: WorldTime;
@@ -78,7 +74,20 @@ class ActionSuggestionService {
     const npcRelationships = this.getJsonFromStorage('npc_relationships');
     const factionReputations = this.getJsonFromStorage('faction_reputations') || [];
     const worldTime = this.getWorldTimeFromStorage();
-    const contentFlags = this.getJsonFromStorage('currentWorldData')?.contentFlags || { adult_enabled: false, adult_intensity: 'fade' };
+    // Ưu tiên đọc contentFlags từ world_gen_result để đảm bảo consistency
+    let contentFlags: ContentFlags = { adult_enabled: false, adult_intensity: 'fade' };
+    
+    // Thử đọc từ world_gen_result trước
+    const worldGenResult = this.getJsonFromStorage('world_gen_result');
+    if (worldGenResult?.contentFlags) {
+      contentFlags = worldGenResult.contentFlags;
+    } else {
+      // Fallback: đọc từ currentWorldData
+      const currentWorldData = this.getJsonFromStorage('currentWorldData');
+      if (currentWorldData?.contentFlags) {
+        contentFlags = currentWorldData.contentFlags;
+      }
+    }
 
     return {
       worldData,
@@ -153,7 +162,7 @@ class ActionSuggestionService {
         const geminiService = await this.getGeminiService();
         
         const prompt = this.buildSuggestionPrompt(context, contentFlags);
-        const response = await geminiService.generateContent(prompt);
+        const response = await geminiService.generateContent(prompt, contentFlags);
         
         const suggestions = this.parseSuggestionsFromResponse(response);
         return this.filterByContentFlags(suggestions, contentFlags);
@@ -238,7 +247,10 @@ class ActionSuggestionService {
     // Location context
     const locationContext = this.buildLocationContext();
     
-    return `Bạn là AI trợ lý cho game RPG text-based. Hãy tạo 4 gợi ý hành động ngắn gọn (1-2 câu) cho người chơi dựa trên context hiện tại.
+    // Phân tích context 18+ từ chat history và scene state
+    const adultContext = this.analyzeAdultContext(chatHistory, sceneState, contentFlags);
+    
+    return `Bạn là AI trợ lý cho game RPG text-based. Hãy tạo 4 gợi ý hành động NGẮN GỌN (CHỈ 1 CÂU) cho người chơi dựa trên context hiện tại.
 
 QUAN TRỌNG: ƯU TIÊN HÀNH ĐỘNG GẦN ĐÂY CỦA NGƯỜI CHƠI - Không ép buộc vào quest nếu người chơi đang làm việc khác.
 
@@ -257,6 +269,8 @@ CONTEXT GAME:
 - Tóm tắt cốt truyện: ${summary?.content || 'Chưa có'}
 - Chat gần đây: ${chatHistory.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
 
+${adultContext}
+
 ${questContext}
 
 ${locationContext}
@@ -264,14 +278,17 @@ ${locationContext}
 ${contentGuidance}
 
 YÊU CẦU:
-1. Thời lượng phải HỢP LÝ và THỰC TẾ:
+1. HÀNH ĐỘNG PHẢI NGẮN GỌN CHỈ 1 CÂU (tối đa 10-15 từ):
+   - Ví dụ: "Khám phá khu vực xung quanh", "Nói chuyện với người dân địa phương", "Kiểm tra cửa hàng gần đó"
+   - KHÔNG được dài dòng hoặc mô tả chi tiết
+   - Tập trung vào hành động cụ thể, rõ ràng
+2. Thời lượng phải HỢP LÝ và THỰC TẾ:
    - Hành động đơn giản: 5-15 phút (gọi, mua, uống, ăn, ngồi, đứng, nhìn, chào, hỏi)
    - Hành động trung bình: 15-30 phút (trò chuyện, nói chuyện, bắt chuyện, làm quen, khám phá)
    - Hành động phức tạp: 30-60 phút (điều tra, truy tìm, theo dõi, chiến đấu, lập kế hoạch)
    - Hành động rất phức tạp: 60-90 phút (chỉ khi thực sự cần thiết)
-2. Có lợi và hại rõ ràng
 3. Phù hợp với tình huống hiện tại
-4. Ngắn gọn, dễ hiểu
+4. Dễ hiểu và rõ ràng
 5. Có thể thực hiện ngay
 6. ƯU TIÊN: Dựa trên hành động và context gần đây của người chơi
 7. Quest chỉ là tham khảo, không ép buộc - chỉ đề xuất nếu phù hợp với hướng đi hiện tại
@@ -281,10 +298,8 @@ TRẢ VỀ JSON:
 {
   "suggestions": [
     {
-      "text": "Hành động cụ thể để chèn vào input",
-      "summary": "Mô tả ngắn gọn 1-2 câu",
-      "pros": ["Lợi ích 1", "Lợi ích 2"],
-      "cons": ["Rủi ro 1", "Rủi ro 2"],
+      "text": "Hành động ngắn gọn 1 câu (10-15 từ)",
+      "summary": "Mô tả ngắn gọn 1 câu",
       "durationMinutes": 30,
       "impactTags": ["story", "risk", "relationship"],
       "source": "ai"
@@ -376,6 +391,47 @@ TRẢ VỀ JSON:
     }
   }
 
+  private analyzeAdultContext(chatHistory: any[], sceneState: any, contentFlags: ContentFlags): string {
+    if (!contentFlags.adult_enabled) {
+      return '';
+    }
+
+    // Phân tích chat history để tìm context 18+
+    const recentMessages = chatHistory.slice(-3);
+    const adultKeywords = ['hôn', 'ôm', 'chạm', 'thân mật', 'quan hệ', 'arousal', 'hấp dẫn', 'tình cảm', 'lãng mạn', 'kiss', 'touch', 'intimate', 'romance'];
+    
+    let hasAdultContext = false;
+    let adultContextDescription = '';
+    
+    // Kiểm tra chat history
+    for (const message of recentMessages) {
+      const content = message.content.toLowerCase();
+      if (adultKeywords.some(keyword => content.includes(keyword))) {
+        hasAdultContext = true;
+        adultContextDescription += `- Chat gần đây có nội dung 18+: "${message.content.substring(0, 100)}..."\n`;
+        break;
+      }
+    }
+    
+    // Kiểm tra scene state
+    if (sceneState && sceneState.npcs) {
+      for (const npc of sceneState.npcs) {
+        if (npc.arousal && npc.arousal.level > 0) {
+          hasAdultContext = true;
+          adultContextDescription += `- NPC ${npc.name} có arousal level ${npc.arousal.level}\n`;
+        }
+      }
+    }
+    
+    if (hasAdultContext) {
+      return `CONTEXT 18+ HIỆN TẠI:
+${adultContextDescription}
+→ ƯU TIÊN: Gợi ý hành động 18+ phù hợp với tình huống hiện tại, không chuyển sang chủ đề khác`;
+    }
+    
+    return '';
+  }
+
   private getContentGuidance(contentFlags: ContentFlags): string {
     if (!contentFlags.adult_enabled) {
       return "HẠN CHẾ NỘI DUNG: Không tạo gợi ý có nội dung 18+, bạo lực, hoặc không phù hợp. Tập trung vào hành động phiêu lưu, khám phá, tương tác xã hội an toàn.";
@@ -385,7 +441,12 @@ TRẢ VỀ JSON:
       return "HẠN CHẾ NỘI DUNG: Có thể đề cập đến nội dung 18+ nhưng phải nhẹ nhàng, ẩn ý, không tả thực. Tập trung vào tình cảm, mối quan hệ.";
     }
     
-    return "NỘI DUNG: Có thể tạo gợi ý với nội dung 18+ phù hợp với cốt truyện, nhưng phải có ý nghĩa và không chỉ là fan service.";
+    return `NỘI DUNG 18+: Có thể tạo gợi ý với nội dung 18+ phù hợp với cốt truyện.
+
+QUAN TRỌNG VỀ CẢNH 18+:
+- Nếu cảnh trước đang diễn ra tình huống 18+ (quan hệ, hấp dẫn, thân mật), hãy gợi ý hành động tiếp theo phù hợp với tình huống đó
+- Cân nhắc mức độ arousal của NPCs và phản ứng phù hợp
+- Gợi ý hành động từ nhẹ nhàng đến mạnh mẽ tùy theo tình huống`;
   }
 
   private parseSuggestionsFromResponse(response: string): SuggestedAction[] {
@@ -403,8 +464,6 @@ TRẢ VỀ JSON:
         id: `ai_${Date.now()}_${index}`,
         text: s.text || '',
         summary: s.summary || '',
-        pros: Array.isArray(s.pros) ? s.pros : [],
-        cons: Array.isArray(s.cons) ? s.cons : [],
         durationMinutes: Math.max(5, Math.min(90, s.durationMinutes || 15)),
         impactTags: Array.isArray(s.impactTags) ? s.impactTags : ['story'],
         source: 'ai' as const
@@ -455,10 +514,8 @@ TRẢ VỀ JSON:
         if (nextObjective && !declinedQuestTitles.includes(quest.title)) {
           suggestions.push({
             id: `quest_${Date.now()}`,
-            text: `Tiếp tục nhiệm vụ "${quest.title}": ${nextObjective.description}`,
-            summary: `Tiếp tục nhiệm vụ chính: ${nextObjective.description}`,
-            pros: ['Tiến bộ cốt truyện', 'Phần thưởng kinh nghiệm'],
-            cons: ['Có thể gặp nguy hiểm'],
+            text: `Tiếp tục nhiệm vụ "${quest.title}"`,
+            summary: `Làm nhiệm vụ: ${nextObjective.description}`,
             durationMinutes: this.generateSuggestionDuration(),
             impactTags: ['quest', 'story'],
             source: 'quest'
@@ -470,26 +527,20 @@ TRẢ VỀ JSON:
     // Heuristic suggestions
     const heuristicSuggestions = [
       {
-        text: 'Khám phá khu vực xung quanh để tìm manh mối',
-        summary: 'Khám phá môi trường xung quanh',
-        pros: ['Tìm thấy thông tin mới', 'Có thể gặp NPC'],
-        cons: ['Mất thời gian', 'Có thể gặp nguy hiểm'],
+        text: 'Khám phá khu vực xung quanh',
+        summary: 'Tìm hiểu môi trường xung quanh',
         durationMinutes: this.generateSuggestionDuration(),
         impactTags: ['exploration', 'discovery']
       },
       {
-        text: 'Nghỉ ngơi và suy nghĩ về tình huống hiện tại',
-        summary: 'Dành thời gian suy nghĩ và lên kế hoạch',
-        pros: ['Tăng sự hiểu biết', 'Lên kế hoạch tốt hơn'],
-        cons: ['Mất thời gian', 'Có thể bỏ lỡ cơ hội'],
+        text: 'Nghỉ ngơi và suy nghĩ',
+        summary: 'Lên kế hoạch tiếp theo',
         durationMinutes: this.generateSuggestionDuration(),
         impactTags: ['planning', 'reflection']
       },
       {
-        text: 'Tìm kiếm thông tin từ người dân địa phương',
-        summary: 'Hỏi thăm thông tin từ NPC',
-        pros: ['Thu thập thông tin', 'Xây dựng mối quan hệ'],
-        cons: ['Có thể bị lừa', 'Mất tiền'],
+        text: 'Hỏi thăm người dân địa phương',
+        summary: 'Thu thập thông tin từ NPC',
         durationMinutes: this.generateSuggestionDuration(),
         impactTags: ['social', 'information']
       }
@@ -500,8 +551,6 @@ TRẢ VỀ JSON:
         id: `heuristic_${Date.now()}_${index}`,
         text: s.text,
         summary: s.summary,
-        pros: s.pros,
-        cons: s.cons,
         durationMinutes: s.durationMinutes,
         impactTags: s.impactTags,
         source: 'heuristic'
@@ -552,7 +601,7 @@ YÊU CẦU:
 
 Chỉ trả về số phút, không giải thích.`;
 
-        const response = await geminiService.generateContent(prompt);
+        const response = await geminiService.generateContent(prompt, _contentFlags);
         const minutes = parseInt(response.trim());
         
         // Nếu AI trả về số hợp lệ, sử dụng nó

@@ -295,6 +295,44 @@ class GeminiService {
     return this.useMultiKeyService;
   }
 
+  // Tạo model động dựa trên contentFlags
+  private getModelForContentFlags(contentFlags?: ContentFlags): any {
+    if (!this.genAI) {
+      throw new Error('Gemini API chưa được cấu hình');
+    }
+
+    // Nếu chế độ 18+ được bật, tắt hoàn toàn safety settings
+    if (contentFlags?.adult_enabled) {
+      return this.genAI.getGenerativeModel({ 
+        model: 'gemini-2.5-flash',
+        safetySettings: [] // Tắt hoàn toàn safety settings
+      });
+    }
+
+    // Mặc định: sử dụng safety settings với BLOCK_NONE
+    return this.genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash',
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        }
+      ]
+    });
+  }
+
   // Helper function to generate content guidance based on flags
   private getContentGuidance(contentFlags?: ContentFlags): string {
     if (!contentFlags || !contentFlags.adult_enabled) {
@@ -387,10 +425,10 @@ class GeminiService {
   }
 
 
-  async generateContent(prompt: string): Promise<string> {
+  async generateContent(prompt: string, contentFlags?: ContentFlags): Promise<string> {
     if (this.useMultiKeyService) {
       try {
-        return await multiApiKeyService.generateContent(prompt);
+        return await multiApiKeyService.generateContent(prompt, contentFlags);
       } catch (error) {
         console.error('Multi-key service error:', error);
         
@@ -398,7 +436,7 @@ class GeminiService {
         try {
           const switchSuccess = await this.autoSwitchOnError();
           if (switchSuccess) {
-            return await multiApiKeyService.generateContent(prompt);
+            return await multiApiKeyService.generateContent(prompt, contentFlags);
           }
         } catch (switchError) {
           console.error('❌ Auto-switch failed:', switchError);
@@ -413,7 +451,9 @@ class GeminiService {
     }
 
     try {
-      const result = await this.model.generateContent(prompt);
+      // Tạo model động dựa trên contentFlags
+      const model = this.getModelForContentFlags(contentFlags);
+      const result = await model.generateContent(prompt);
       return result.response.text();
     } catch (error) {
       console.error('Error generating content:', error);
@@ -447,7 +487,7 @@ class GeminiService {
     `;
 
     try {
-      return await this.generateContent(prompt);
+      return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo thế giới:', error);
       throw new Error('Không thể tạo thế giới. Vui lòng kiểm tra API key và thử lại.');
@@ -484,7 +524,7 @@ class GeminiService {
     `;
 
     try {
-      return await this.generateContent(prompt);
+      return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo câu chuyện nền:', error);
       throw new Error('Không thể tạo câu chuyện nền. Vui lòng kiểm tra API key và thử lại.');
@@ -521,7 +561,7 @@ class GeminiService {
     `;
 
     try {
-      return await this.generateContent(prompt);
+      return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo tình huống game:', error);
       throw new Error('Không thể tạo tình huống game. Vui lòng kiểm tra API key và thử lại.');
@@ -560,7 +600,7 @@ class GeminiService {
     `;
 
     try {
-      const text = await this.generateContent(prompt);
+      const text = await this.generateContent(prompt, undefined);
       
       // Parse JSON với fallback
       const fallbackData = {
@@ -591,7 +631,7 @@ QUAN TRỌNG:
 - Ví dụ: "Thành phố New York", "Hiệp sĩ Arthur", "Học viện Hogwarts"`;
 
     try {
-      return await this.generateContent(prompt);
+      return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo ý tưởng cốt lõi:', error);
       throw new Error('Không thể tạo ý tưởng cốt lõi. Vui lòng thử lại.');
@@ -624,7 +664,7 @@ Xuất ra JSON đúng SCHEMA, không thêm văn bản ngoài JSON:
 }`;
 
     try {
-      const response = await this.generateContent(prompt);
+      const response = await this.generateContent(prompt, undefined);
       
       // Parse JSON response với fallback
       const fallbackData = {
@@ -669,7 +709,7 @@ Xuất ra JSON đúng schema sau, không thêm văn bản ngoài JSON:
 ]`;
 
     try {
-      return await this.generateContent(prompt);
+      return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo nguyên tắc cốt lõi:', error);
       throw new Error('Không thể tạo nguyên tắc cốt lõi. Vui lòng thử lại.');
@@ -726,7 +766,7 @@ Xuất ra JSON đúng schema sau, không thêm văn bản ngoài JSON:
 ]`;
 
     try {
-      return await this.generateContent(prompt);
+      return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo thực thể nền tảng:', error);
       throw new Error('Không thể tạo thực thể nền tảng. Vui lòng thử lại.');
@@ -809,7 +849,7 @@ Yêu cầu bổ sung:
 - Không xuất gì ngoài JSON.`;
 
     try {
-      const responseText = await this.generateContent(prompt);
+      const responseText = await this.generateContent(prompt, undefined);
       
       // Parse JSON với fallback
       const fallbackData = {
@@ -939,7 +979,7 @@ Trả về JSON theo format:
 Chỉ trả về JSON, không có text khác.`;
 
     try {
-      const responseText = await this.generateContent(prompt);
+      const responseText = await this.generateContent(prompt, undefined);
       
       // Parse JSON với fallback
       const fallbackData = {
@@ -1007,7 +1047,7 @@ Rules:
 - Chỉ xuất JSON.`;
 
     try {
-      const responseText = await this.generateContent(prompt);
+      const responseText = await this.generateContent(prompt, undefined);
       
       // Parse JSON với fallback
       const fallbackData = {
@@ -1487,7 +1527,7 @@ SCHEMA JSON (bắt buộc):
 }`;
 
     try {
-      return await this.generateContent(prompt);
+      return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo thế giới hoàn chỉnh:', error);
       throw new Error('Không thể tạo thế giới. Vui lòng thử lại.');
@@ -1573,7 +1613,7 @@ SCHEMA:
   "openingSeed": "tình huống mở đầu cô đọng để dùng cho lời mở đầu"
 }`;
 
-      const response = await this.generateContent(prompt);
+      const response = await this.generateContent(prompt, undefined);
       
       // Parse JSON response với fallback
       const fallbackData = {
@@ -1637,7 +1677,7 @@ QUEST_INFO:
 
 Chỉ xuất văn xuôi, không thêm lời dẫn.`;
 
-      const response = await this.generateContent(prompt);
+      const response = await this.generateContent(prompt, undefined);
       return response.trim();
     } catch (error) {
       console.error('Lỗi khi tạo opening narrative:', error);
@@ -1695,7 +1735,7 @@ SCHEMA:
 }`;
 
     try {
-      const responseText = await this.generateContent(prompt);
+      const responseText = await this.generateContent(prompt, undefined);
       
       // Parse JSON response với fallback
       const fallbackData = {
@@ -1786,12 +1826,21 @@ Hãy kể tiếp câu chuyện dựa trên:
 - GAME_TIME: thời gian trong game (ảnh hưởng đến phản ứng của thế giới và NPC).
 
 QUAN TRỌNG VỀ HÀNH ĐỘNG NGƯỜI CHƠI:
-- ƯU TIÊN: Hành động của người chơi (PLAYER_ACTION) là yếu tố quan trọng nhất
+- ƯU TIÊN TUYỆT ĐỐI: Hành động của người chơi (PLAYER_ACTION) là yếu tố quan trọng nhất
 - PHẢI phản hồi trực tiếp và cụ thể với hành động mà người chơi vừa thực hiện
-- KHÔNG được bỏ qua hoặc làm lơ hành động của người chơi
-- Mô tả kết quả, phản ứng, và hệ quả của hành động đó một cách chi tiết
-- Nếu hành động của người chơi thay đổi tình huống, hãy phản ánh sự thay đổi đó
+- KHÔNG được bỏ qua, làm lơ, hoặc né tránh hành động của người chơi
+- Mô tả kết quả, phản ứng, và hệ quả của hành động đó một cách chi tiết và thực tế
+- Nếu hành động của người chơi thay đổi tình huống, hãy phản ánh sự thay đổi đó ngay lập tức
 - Luôn bắt đầu narrative bằng việc phản hồi hành động của người chơi trước, sau đó mới mở rộng câu chuyện
+
+QUAN TRỌNG VỀ CẢNH 18+:
+- Khi người chơi thực hiện hành động 18+, NPCs PHẢI phản ứng theo yêu cầu của người chơi
+- KHÔNG được né tránh, từ chối, hoặc chuyển hướng khỏi hành động 18+ của người chơi
+- NPCs nên thực hiện theo yêu cầu người chơi dựa trên mức arousal và tính cách của họ
+- Nếu NPC có arousal cao, họ sẽ phản ứng tích cực và thực hiện theo yêu cầu
+- Nếu NPC có arousal thấp, họ có thể ngại ngùng nhưng vẫn thực hiện theo yêu cầu (có thể cần thuyết phục nhẹ)
+- Luôn mô tả phản ứng của NPCs một cách chi tiết và thực tế
+- Tôn trọng ranh giới nhưng ưu tiên thực hiện yêu cầu của người chơi
 
 QUAN TRỌNG VỀ GAME TIME:
 - Game time ảnh hưởng trực tiếp đến phản ứng của thế giới và NPC
@@ -1857,10 +1906,11 @@ HƯỚNG DẪN VỀ QUAN HỆ NPC:
 HƯỚNG DẪN VỀ HỆ THỐNG HỨNG TÌNH (18+):
 - Chỉ áp dụng khi nội dung 18+ được bật và ở chế độ tả thực
 - Sử dụng thông tin hứng tình để định hình phản ứng của NPCs
-- NPCs có mức hứng tình cao sẽ phản ứng tích cực hơn với hành động thân mật
-- NPCs có mức hứng tình thấp sẽ tỏ ra lạnh nhạt hoặc từ chối
-- Tôn trọng tính cách và sở thích của từng NPC
+- NPCs có mức hứng tình cao sẽ phản ứng tích cực và nhiệt tình với hành động thân mật
+- NPCs có mức hứng tình thấp sẽ ngại ngùng nhưng VẪN thực hiện theo yêu cầu (có thể cần thuyết phục nhẹ)
+- Tôn trọng tính cách và sở thích của từng NPC nhưng ưu tiên thực hiện yêu cầu người chơi
 - Mô tả phản ứng một cách chân thực và nhất quán với mức hứng tình hiện tại
+- KHÔNG được né tránh hoặc chuyển hướng khỏi hành động 18+ của người chơi
 
 HƯỚNG DẪN TẠO CÁC CHỈ SỐ AROUSAL CHO NPC (THỰC TẾ VÀ PHỤ THUỘC NGỮ CẢNH):
 
@@ -2062,7 +2112,7 @@ VÍ DỤ SAI:
 
 Quy tắc:
 - Nếu có xung đột thông tin: ưu tiên PLAYER_ACTION trước tiên, sau đó đến SCENE_STATE, rồi SUMMARY, cuối cùng mới tới CHAT_DELTA.
-- Văn xuôi 120–220 từ, không bullet/emoji/markdown, mô tả hệ quả cụ thể, cảm quan, và tiến độ cốt truyện.
+- Văn xuôi 120–200 từ (TỐI ĐA 200 TỪ), không bullet/emoji/markdown, mô tả hệ quả cụ thể, cảm quan, và tiến độ cốt truyện.
 - Tôn trọng continuityRules, tone, mainThreads trong SCENARIO; định hướng mềm tới các keyBeats/twist/kết thúc, nhưng không ép buộc tự do người chơi.
 - KHÔNG nhắc đến "prompt/JSON/meta".
 - QUAN TRỌNG: Sử dụng đúng ngôi kể đã được cài đặt trong WORLD (narration field). Nếu narration là "Ngôi thứ hai", hãy kể bằng "Bạn" thay vì "Anh ấy/Cô ấy". Nếu narration là "Ngôi thứ nhất", hãy kể bằng "Tôi". Nếu narration là "Ngôi thứ ba", hãy kể bằng "Anh ấy/Cô ấy".
@@ -2256,7 +2306,7 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
 
 ĐẦU RA (JSON, không thêm chữ khác):
 {
-  "narrative": "văn xuôi 120–220 từ, liền mạch, không bullet/emoji",
+  "narrative": "văn xuôi 120–200 từ (TỐI ĐA 200 TỪ), liền mạch, không bullet/emoji",
   "softGuidance": "1–2 câu định hướng kín đáo (có thể rỗng)",
   "sceneState": { "các trường cần cập nhật (vị trí, NPC, manh mối, rủi ro, đồng hồ, inventory…)" },
   "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện" },
@@ -2307,7 +2357,7 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
 }`;
 
     try {
-      const responseText = await this.generateContent(prompt);
+      const responseText = await this.generateContent(prompt, undefined);
       
       // Parse JSON response với fallback
       const fallbackResult = {
@@ -2488,7 +2538,7 @@ Trả về JSON format:
 }`;
 
     try {
-      return await this.generateContent(prompt);
+      return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Error generating world details:', error);
       throw new Error('Có lỗi xảy ra khi tạo chi tiết thế giới');
@@ -2497,3 +2547,4 @@ Trả về JSON format:
 }
 
 export const geminiService = new GeminiService();
+

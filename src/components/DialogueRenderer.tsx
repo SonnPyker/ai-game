@@ -168,19 +168,14 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
         if (segment.type === 'dialogue') {
           return (
             <div key={index} className="my-4">
-              {segment.speaker && (
-                <div className="text-xs text-gray-400 mb-2 opacity-70 font-medium">
-                  {segment.speaker}
-                </div>
-              )}
               <div className={`${
                 isPlayer 
-                  ? 'bg-green-500/10 border-l-4 border-green-400/60 text-green-100' 
-                  : 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-l-4 border-blue-400/60 text-blue-100'
-              } pl-4 py-3 italic rounded-r-lg shadow-sm`}>
+                  ? 'bg-green-800 border-l-4 border-green-600 text-green-100 pl-4 py-3 italic rounded-r-lg shadow-sm' 
+                  : 'text-gray-400 italic'
+              }`}>
                 <div className="flex items-start">
                   <span className={`${
-                    isPlayer ? 'text-green-300' : 'text-blue-300'
+                    isPlayer ? 'text-green-200' : 'text-gray-500'
                   } mr-2 text-lg leading-none`}>"</span>
                   <span className="flex-1 leading-relaxed">
                     {highlightNames(segment.content).map((part, partIndex) => {
@@ -199,7 +194,7 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
                     })}
                   </span>
                   <span className={`${
-                    isPlayer ? 'text-green-300' : 'text-blue-300'
+                    isPlayer ? 'text-green-200' : 'text-gray-500'
                   } ml-2 text-lg leading-none`}>"</span>
                 </div>
               </div>

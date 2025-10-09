@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, RotateCcw, Zap, Shield, Sword, Target, Plus, Minus } from 'lucide-react';
 import { DiceRoller, DiceRoll, DiceRollResult } from '../../utils/diceRoller';
+import { MotionWrapper } from '../MotionWrapper';
 
 interface DiceRollerProps {
   isOpen: boolean;
@@ -157,19 +158,19 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
   if (!isOpen) return null;
 
   return (
-    <motion.div
+    <MotionWrapper
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
-      <motion.div
+      <MotionWrapper
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         className="bg-gray-900 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
@@ -249,12 +250,12 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
                     className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
                   >
                     {isRolling ? (
-                      <motion.div
+                      <MotionWrapper
                         animate={{ rotate: 360 }}
                         transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}
                       >
                         <RotateCcw className="w-4 h-4" />
-                      </motion.div>
+                      </MotionWrapper>
                     ) : (
                       <Dice1 className="w-4 h-4" />
                     )}
@@ -338,7 +339,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 <AnimatePresence>
                   {rollHistory.map((roll, index) => (
-                    <motion.div
+                    <MotionWrapper
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -354,7 +355,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
                         </span>
                       </div>
                       {formatRollResult(roll)}
-                    </motion.div>
+                    </MotionWrapper>
                   ))}
                 </AnimatePresence>
                 
@@ -368,8 +369,8 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
             </div>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </MotionWrapper>
+    </MotionWrapper>
   );
 };
 

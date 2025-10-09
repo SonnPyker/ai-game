@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
   Key, 
   Plus, 
@@ -14,6 +14,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { geminiService } from '../../services/geminiService';
+import { MotionWrapper } from '../MotionWrapper';
 import { ApiKeyInfo, ApiKeyStats } from '../../services/multiApiKeyService';
 
 interface MultiApiKeyManagerProps {
@@ -373,7 +374,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
       {/* Add Form */}
       <AnimatePresence>
         {showAddForm && (
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -423,7 +424,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </MotionWrapper>
         )}
       </AnimatePresence>
 
@@ -442,7 +443,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
           </div>
         ) : (
           apiKeys.map((key) => (
-            <motion.div
+            <MotionWrapper
               key={key.id}
               className="glass-effect p-4 rounded-lg"
               initial={{ opacity: 0, y: 20 }}
@@ -579,30 +580,30 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                   )}
                 </div>
               )}
-            </motion.div>
+            </MotionWrapper>
           ))
         )}
       </div>
 
       {/* Messages */}
       {successMessage && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-green-300"
         >
           {successMessage}
-        </motion.div>
+        </MotionWrapper>
       )}
       
       {errorMessage && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300"
         >
           {errorMessage}
-        </motion.div>
+        </MotionWrapper>
       )}
     </div>
   );

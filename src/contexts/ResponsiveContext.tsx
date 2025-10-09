@@ -12,6 +12,10 @@ interface ResponsiveContextType {
   getEffectiveUIMode: () => 'mobile' | 'desktop';
   shouldUseMobileLayout: () => boolean;
   shouldUseDesktopLayout: () => boolean;
+  shouldUseAnimations: () => boolean;
+  getMotionProps: (defaultProps?: any) => any;
+  getTransitionClass: (baseClass?: string) => string;
+  getAnimationClass: () => string;
 }
 
 const ResponsiveContext = createContext<ResponsiveContextType | undefined>(undefined);

@@ -1,5 +1,5 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Settings,
   X,
@@ -22,7 +22,23 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { shouldUseMobileLayout } = useResponsiveContext();
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  // Force update transform when isOpen changes
+  useEffect(() => {
+    if (sidebarRef.current) {
+      if (isOpen) {
+        sidebarRef.current.style.display = 'block';
+        sidebarRef.current.style.transform = 'translateX(0)';
+      } else {
+        sidebarRef.current.style.transform = 'translateX(-100%)';
+        // Immediate hiding without delay
+        sidebarRef.current.style.display = 'none';
+      }
+    }
+  }, [isOpen]);
 
   // Function to check if user is in game creation process
   const isInGameCreationProcess = () => {
@@ -70,25 +86,32 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
         )}
       </button>
 
-      <aside className={`fixed left-0 top-0 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-50 sidebar-transition ${
-        shouldUseMobileLayout() 
-          ? 'w-80' // Wider on mobile for better usability
-          : 'w-64 sm:w-72'
-      } ${
-        isOpen ? 'sidebar-open' : 'sidebar-closed'
-      }`}>
+      <aside 
+        className={`fixed left-0 top-0 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-50 ${
+          shouldUseMobileLayout() 
+            ? 'w-80 sidebar-mobile' // Wider on mobile for better usability
+            : 'w-64 sm:w-72'
+        }`}
+        style={{
+          willChange: 'transform'
+        }}
+        ref={sidebarRef}
+      >
         <nav className="p-3 sm:p-4 h-full flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold-vietnamese text-white uppercase">MENU</h2>
             <div className="flex items-center space-x-2">
               <button
-                onClick={onClose}
-                className={`p-2 text-gray-300 hover:text-white transition-colors duration-200 border border-gray-600/50 rounded-lg hover:border-gray-500/50 ${
-                  shouldUseMobileLayout() ? 'block' : 'lg:hidden'
-                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className="p-3 text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors duration-200 border-2 border-red-500/50 rounded-lg sidebar-close-btn"
                 title="Đóng menu"
+                style={{ zIndex: 10001 }}
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
           </div>
@@ -112,21 +135,19 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
                 
                 if (isDisabled) return;
                 
+                // Đóng sidebar trước khi navigate
                 onClose();
                 
-              if (item.action === 'home') {
-                // Chuyển đến trang chủ
-                window.location.href = '/';
-              } else if (item.action === 'init') {
-                // Chuyển đến trang tiếp tục
-                window.location.href = '/init';
-              } else if (item.action === 'saveload') {
-                // Chuyển đến trang save/load
-                window.location.href = '/saveload';
-              } else {
-                // Chuyển đến path thông thường
-                window.location.href = item.path;
-              }
+                // Sử dụng React Router để navigate
+                if (item.action === 'home') {
+                  navigate('/');
+                } else if (item.action === 'init') {
+                  navigate('/init');
+                } else if (item.action === 'saveload') {
+                  navigate('/saveload');
+                } else {
+                  navigate(item.path);
+                }
               };
               
               return (

@@ -1,16 +1,32 @@
-import { motion } from 'framer-motion';
+import { MotionWrapper } from '../MotionWrapper';
 import { Package, Calendar, Code, GitBranch } from 'lucide-react';
 
 export function VersionInfo() {
-  const version = "3.2.0";
+  const version = "3.3.0";
   const now = new Date();
   const buildDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   const lastUpdate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
 const updateLog = [
     {
-      version: "3.2.0",
+      version: "3.3.0",
       date: now.toISOString().split('T')[0],
+      changes: [
+        "Tối ưu tốc độ xử lý prompt AI để ưu tiên thực hiện yêu cầu người chơi",
+        "Cải thiện hệ thống gợi ý hành động với phân tích context 18+ thông minh",
+        "Sửa lỗi NPCs né tránh hành động 18+ của người chơi trong cảnh thân mật",
+        "Tích hợp content flags vào action suggestions để gợi ý hành động phù hợp",
+        "Cải thiện prompt generateTurnResponseWithDelta ưu tiên tuyệt đối hành động người chơi",
+        "Thêm hướng dẫn cụ thể về xử lý cảnh 18+ trong AI response",
+        "Tối ưu hóa arousal system để NPCs thực hiện theo yêu cầu người chơi",
+        "Loại bỏ phần ghi chú NPC trong InfoMenu để giao diện gọn gàng hơn",
+        "Cải thiện phân tích adult context từ chat history và scene state",
+        "Tối ưu hóa performance và trải nghiệm người dùng tổng thể"
+      ]
+    },
+    {
+      version: "3.2.0",
+      date: "2025-01-01",
       changes: [
         "⚔️ Hệ thống Combat Level cho người chơi dựa trên số lần tham gia chiến đấu",
         "📊 Công thức level: Level 1-2 cần 1 battle, mỗi level sau cần số lẻ tiếp theo (3,5,7,9...)",
@@ -138,7 +154,6 @@ const updateLog = [
         "📱 Tối ưu hóa responsive design",
         "🎯 Loại bỏ nút 'Chơi mới' khỏi sidebar, chỉ bắt đầu từ trang chủ",
         "🔄 Cải thiện cơ chế refresh trang với các trường hợp ngoại lệ",
-        "🔤 Cập nhật font chữ sang 'SVN-Determination Sans'",
         "🐛 Sửa lỗi TypeScript và tối ưu hóa build"
       ]
     },
@@ -159,7 +174,7 @@ const updateLog = [
   ];
 
   return (
-    <motion.div
+    <MotionWrapper
       className="glass-effect p-6 rounded-xl"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -207,7 +222,7 @@ const updateLog = [
         <h4 className="text-lg font-semibold text-white mb-4">Lịch Sử Cập Nhật</h4>
         <div className="space-y-4">
           {updateLog.map((update, index) => (
-            <motion.div
+            <MotionWrapper
               key={update.version}
               className="bg-white/5 p-4 rounded-lg border border-white/10"
               initial={{ opacity: 0, x: -20 }}
@@ -230,7 +245,7 @@ const updateLog = [
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </MotionWrapper>
           ))}
         </div>
       </div>
@@ -246,6 +261,6 @@ const updateLog = [
           <div>• Build Tool: Vite</div>
         </div>
       </div>
-    </motion.div>
+    </MotionWrapper>
   );
 }

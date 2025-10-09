@@ -1,5 +1,5 @@
 // import React from 'react';
-import { motion } from 'framer-motion';
+import { MotionWrapper, MotionH1, MotionP, MotionButton } from '../MotionWrapper';
 import { 
   Trophy, 
   X, 
@@ -79,7 +79,7 @@ export function CombatResults({
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <motion.div
+      <MotionWrapper
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
@@ -90,32 +90,32 @@ export function CombatResults({
       >
         {/* Header */}
         <div className="text-center p-8">
-          <motion.div
+          <MotionWrapper
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="mb-4"
           >
             {victoryData.icon}
-          </motion.div>
+          </MotionWrapper>
           
-          <motion.h1
+          <MotionH1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="text-4xl font-bold text-white mb-2"
           >
             {victoryData.title}
-          </motion.h1>
+          </MotionH1>
           
-          <motion.p
+          <MotionP
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className={`text-lg ${victoryData.textColor}`}
           >
             {victoryData.subtitle}
-          </motion.p>
+          </MotionP>
         </div>
 
         {/* Combat Summary */}
@@ -145,7 +145,7 @@ export function CombatResults({
 
           {/* Rewards Section */}
           {isVictory && rewards && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -187,7 +187,7 @@ export function CombatResults({
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {rewards.items.map((item, index) => (
-                      <motion.div
+                      <MotionWrapper
                         key={index}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -213,7 +213,7 @@ export function CombatResults({
                             )}
                           </div>
                         </div>
-                      </motion.div>
+                      </MotionWrapper>
                     ))}
                   </div>
                 </div>
@@ -236,14 +236,14 @@ export function CombatResults({
                   </div>
                 </div>
               )}
-            </motion.div>
+            </MotionWrapper>
           )}
         </div>
 
         {/* Action Buttons */}
         <div className="px-8 pb-8">
           <div className="flex flex-col sm:flex-row gap-4">
-            <motion.button
+            <MotionButton
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
@@ -252,10 +252,10 @@ export function CombatResults({
             >
               <ArrowRight className="w-5 h-5" />
               <span>Tiếp Tục</span>
-            </motion.button>
+            </MotionButton>
 
             {isVictory && rewards && rewards.items && rewards.items.length > 0 && (
-              <motion.button
+              <MotionButton
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
@@ -264,10 +264,10 @@ export function CombatResults({
               >
                 <Package className="w-5 h-5" />
                 <span>Xem Chi Tiết Loot</span>
-              </motion.button>
+              </MotionButton>
             )}
 
-            <motion.button
+            <MotionButton
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
@@ -276,10 +276,10 @@ export function CombatResults({
             >
               <RotateCcw className="w-5 h-5" />
               <span>Thử Lại</span>
-            </motion.button>
+            </MotionButton>
           </div>
         </div>
-      </motion.div>
+      </MotionWrapper>
     </div>
   );
 }

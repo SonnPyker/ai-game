@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Play, Globe, User, ArrowRight, CheckCircle, Circle } from 'lucide-react';
 import { npcRelationshipService } from '../services/npcRelationshipService';
+import { MotionWrapper } from '../components/MotionWrapper';
 
 type InitStep = 'world' | 'character' | 'scenario';
 
@@ -202,7 +202,7 @@ export function InitPage() {
     <div className="min-h-screen bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <motion.div
+        <MotionWrapper
           className="text-center mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -214,12 +214,12 @@ export function InitPage() {
           <p className="text-gray-400">
             Theo dõi tiến trình tạo game và tiếp tục từ bước hiện tại
           </p>
-        </motion.div>
+        </MotionWrapper>
 
         {/* Progress Steps */}
         <div className="space-y-4">
           {steps.map((step, index) => (
-            <motion.div
+            <MotionWrapper
               key={step.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -285,12 +285,12 @@ export function InitPage() {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </MotionWrapper>
           ))}
         </div>
 
         {/* Status Summary */}
-        <motion.div
+        <MotionWrapper
           className="mt-8 glass-effect p-6 rounded-xl border border-gray-700/50"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -317,10 +317,10 @@ export function InitPage() {
               <p className="text-sm text-gray-300">Kịch bản</p>
             </div>
           </div>
-        </motion.div>
+        </MotionWrapper>
 
         {/* Help Text */}
-        <motion.div
+        <MotionWrapper
           className="mt-6 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -330,7 +330,7 @@ export function InitPage() {
             💡 Nếu bạn đang ở giữa quá trình tạo game và bị chuyển hướng, 
             hãy nhấn vào bước hiện tại để tiếp tục. Lưu ý: việc quay lại các bước trước có thể reset dữ liệu đã nhập.
           </p>
-        </motion.div>
+        </MotionWrapper>
       </div>
     </div>
   );

@@ -169,6 +169,44 @@ class MultiApiKeyService {
     }
   }
 
+  // Tạo model động dựa trên contentFlags
+  private getModelForContentFlags(contentFlags?: any): any {
+    if (!this.genAI) {
+      throw new Error('Gemini API chưa được cấu hình');
+    }
+
+    // Nếu chế độ 18+ được bật, tắt hoàn toàn safety settings
+    if (contentFlags?.adult_enabled) {
+      return this.genAI.getGenerativeModel({ 
+        model: 'gemini-2.5-flash',
+        safetySettings: [] // Tắt hoàn toàn safety settings
+      });
+    }
+
+    // Mặc định: sử dụng safety settings với BLOCK_NONE
+    return this.genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash',
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        }
+      ]
+    });
+  }
+
   // Gemini Service Integration
   private async initializeGemini() {
     if (this.apiKeys.length === 0) {
@@ -350,7 +388,7 @@ class MultiApiKeyService {
     return this.apiKeys.length > 0;
   }
 
-  async generateContent(prompt: string): Promise<string> {
+  async generateContent(prompt: string, contentFlags?: any): Promise<string> {
     if (!this.isConfigured()) {
       throw new Error('Không có API key nào được cấu hình hoặc tất cả đều bị lỗi');
     }
@@ -368,7 +406,9 @@ class MultiApiKeyService {
       }
 
       try {
-        const result = await this.model.generateContent(prompt);
+        // Tạo model động dựa trên contentFlags
+        const model = this.getModelForContentFlags(contentFlags);
+        const result = await model.generateContent(prompt);
         const response = result.response;
         const text = await response.text();
         

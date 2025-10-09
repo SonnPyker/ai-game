@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { 
   Sword, 
   Sparkles, 
@@ -9,6 +8,7 @@ import {
   ArrowRight,
   Play
 } from 'lucide-react';
+import { MotionWrapper } from '../components/MotionWrapper';
 import { npcRelationshipService } from '../services/npcRelationshipService';
 
 export function HomePage() {
@@ -78,20 +78,20 @@ export function HomePage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
-      <motion.div 
+      <MotionWrapper 
         className="text-center py-20"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
         <div className="mb-8">
-          <motion.div 
+          <MotionWrapper 
             className="w-24 h-24 mx-auto mb-6 bg-primary-500 rounded-full flex items-center justify-center"
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           >
             <Sword className="w-12 h-12 text-white" />
-          </motion.div>
+          </MotionWrapper>
           
           <h1 className="text-6xl font-extrabold-vietnamese text-white mb-6 uppercase">
             THẾ GIỚI HUYỀN BÍ
@@ -112,10 +112,10 @@ export function HomePage() {
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>
-      </motion.div>
+      </MotionWrapper>
 
       {/* Features Section */}
-      <motion.div 
+      <MotionWrapper 
         className="py-20"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -134,7 +134,7 @@ export function HomePage() {
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <motion.div
+              <MotionWrapper
                 key={feature.title}
                 className="glass-effect p-6 rounded-xl card-hover"
                 initial={{ opacity: 0, y: 20 }}
@@ -150,11 +150,11 @@ export function HomePage() {
                 <p className="text-gray-300 leading-relaxed">
                   {feature.description}
                 </p>
-              </motion.div>
+              </MotionWrapper>
             );
           })}
         </div>
-      </motion.div>
+      </MotionWrapper>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
   Target, 
   CheckCircle, 
@@ -22,6 +22,7 @@ import {
   Package
 } from 'lucide-react';
 import { QuestProgress, QuestSystem } from '../../types';
+import { MotionWrapper } from '../MotionWrapper';
 import { npcRelationshipService } from '../../services/npcRelationshipService';
 
 interface QuestTrackerProps {
@@ -191,7 +192,7 @@ export function QuestTracker({
     const isDeclined = quest.status === 'declined';
 
     return (
-      <motion.div
+      <MotionWrapper
         key={quest.id}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -248,7 +249,7 @@ export function QuestTracker({
         {/* Quest Content - Collapsible */}
         <AnimatePresence>
           {!collapsedQuests.has(quest.id) && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -467,10 +468,10 @@ export function QuestTracker({
           </div>
         )}
 
-            </motion.div>
+            </MotionWrapper>
           )}
         </AnimatePresence>
-      </motion.div>
+      </MotionWrapper>
     );
   };
 

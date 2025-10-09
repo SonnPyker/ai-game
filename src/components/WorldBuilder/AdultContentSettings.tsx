@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { MotionWrapper } from '../MotionWrapper';
 import { Shield, AlertTriangle, Eye, EyeOff, Info } from 'lucide-react';
 import { ContentFlags } from '../../types';
 
@@ -62,7 +62,7 @@ export function AdultContentSettings({
 
   return (
     <>
-      <motion.div
+      <MotionWrapper
         className="glass-effect p-6 rounded-xl border border-red-500/20"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -132,7 +132,7 @@ export function AdultContentSettings({
 
           {/* Mức độ nội dung khi bật */}
           {contentFlags.adult_enabled && (
-            <motion.div
+            <MotionWrapper
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -194,7 +194,7 @@ export function AdultContentSettings({
               </button>
 
               {showDetails && (
-                <motion.div
+                <MotionWrapper
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
@@ -217,15 +217,15 @@ export function AdultContentSettings({
                     <li>• 💫 Mô tả cảm xúc rõ ràng sinh động hơn, tránh né tránh</li>
                     <li>• 🔥 Mô tả cảnh thân mật/tình dục rõ ràng hơn, càng chi tiết càng tốt</li>
                   </ul>
-                </motion.div>
+                </MotionWrapper>
               )}
-            </motion.div>
+            </MotionWrapper>
           )}
         </div>
 
         {/* Banner trạng thái */}
         {contentFlags.adult_enabled && (
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg"
@@ -236,19 +236,19 @@ export function AdultContentSettings({
                 Adult Mode: ON ({contentFlags.adult_intensity === 'direct_safe' ? 'An toàn' : 'Tả thực'})
               </span>
             </div>
-          </motion.div>
+          </MotionWrapper>
         )}
-      </motion.div>
+      </MotionWrapper>
 
       {/* Age Gate Dialog */}
       {showAgeGate && (
-        <motion.div
+        <MotionWrapper
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <motion.div
+          <MotionWrapper
             className="bg-gray-900 border border-red-500/30 rounded-xl p-6 max-w-md mx-4"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -292,8 +292,8 @@ export function AdultContentSettings({
                 </button>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </MotionWrapper>
+        </MotionWrapper>
       )}
     </>
   );

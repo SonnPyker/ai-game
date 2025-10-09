@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { ApiKeyConfig } from '../components/Settings/ApiKeyConfig';
 import { MultiApiKeyManager } from '../components/Settings/MultiApiKeyManager';
 import { VersionInfo } from '../components/Settings/VersionInfo';
 import { geminiService } from '../services/geminiService';
 import { Key, Info } from 'lucide-react';
+import { MotionWrapper } from '../components/MotionWrapper';
 
 export function SettingsPage() {
   const [isApiConfigured, setIsApiConfigured] = useState(false);
@@ -78,7 +78,7 @@ export function SettingsPage() {
         return (
           <div className="space-y-8">
             {/* Toggle Button */}
-            <motion.div
+            <MotionWrapper
               className="flex justify-center mb-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -108,9 +108,9 @@ export function SettingsPage() {
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </MotionWrapper>
 
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -121,10 +121,10 @@ export function SettingsPage() {
               ) : (
                 <ApiKeyConfig onApiKeySet={handleApiKeySet} />
               )}
-            </motion.div>
+            </MotionWrapper>
 
             {/* API Status */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -172,10 +172,10 @@ export function SettingsPage() {
                   </ul>
                 </div>
               </div>
-            </motion.div>
+            </MotionWrapper>
 
             {/* Usage Information */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -205,7 +205,7 @@ export function SettingsPage() {
                   </ul>
                 </div>
               </div>
-            </motion.div>
+            </MotionWrapper>
           </div>
         );
       case 'info':
@@ -217,7 +217,7 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <motion.div
+      <MotionWrapper
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
@@ -226,10 +226,10 @@ export function SettingsPage() {
         <p className="text-xl text-gray-300 max-w-3xl mx-auto">
           Cấu hình API key và các tùy chọn khác để tối ưu hóa trải nghiệm game của bạn.
         </p>
-      </motion.div>
+      </MotionWrapper>
 
       {/* Tab Navigation */}
-      <motion.div
+      <MotionWrapper
         className="flex justify-center mb-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -259,17 +259,17 @@ export function SettingsPage() {
             })}
           </div>
         </div>
-      </motion.div>
+      </MotionWrapper>
 
       {/* Tab Content */}
-      <motion.div
+      <MotionWrapper
         key={activeTab}
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3 }}
       >
         {renderTabContent()}
-      </motion.div>
+      </MotionWrapper>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
   Shield, 
   Zap, 
@@ -15,6 +15,7 @@ import { Character, Enemy } from '../types';
 import { combatService, CombatState } from '../services/combatService';
 import { inventoryService } from '../services/inventoryService';
 import { combatLevelService } from '../services/combatLevelService';
+import { MotionWrapper } from '../components/MotionWrapper';
 
 // Combat Components
 import { CombatantCard } from '../components/CombatPage/CombatantCard';
@@ -557,19 +558,19 @@ export function CombatPage({}: CombatPageProps) {
       {/* Inventory Modal */}
       <AnimatePresence>
         {showInventory && (
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             onClick={() => setShowInventory(false)}
           >
-            <motion.div
+            <MotionWrapper
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className="bg-gray-900 rounded-lg shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <CombatInventory
                 inventory={inventoryService.getInventory()}
@@ -578,19 +579,19 @@ export function CombatPage({}: CombatPageProps) {
                 onSelectTarget={setSelectedTarget}
                 enemies={aliveEnemies}
               />
-            </motion.div>
-          </motion.div>
+            </MotionWrapper>
+          </MotionWrapper>
         )}
       </AnimatePresence>
 
       {/* Combat Log Menu */}
       <AnimatePresence>
         {showCombatLog && (
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className={`fixed top-20 right-4 w-96 h-[calc(100vh-120px)] bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-2xl z-40 ${
+            className={`fixed top-20 right-4 w-96 h-[calc(100vh-120px)] bg-gray-800 border border-gray-600 rounded-lg shadow-2xl z-40 ${
               isCombatLogPinned ? 'fixed' : 'absolute'
             }`}
           >
@@ -632,7 +633,7 @@ export function CombatPage({}: CombatPageProps) {
                 isInMenu={true}
               />
             </div>
-          </motion.div>
+          </MotionWrapper>
         )}
       </AnimatePresence>
 

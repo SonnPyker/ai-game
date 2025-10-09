@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { 
   Sparkles, 
   Play,
@@ -9,6 +8,7 @@ import {
   Upload
 } from 'lucide-react';
 import { geminiService } from '../../services/geminiService';
+import { MotionWrapper } from '../MotionWrapper';
 import { worldTimeService } from '../../services/worldTimeService';
 import { WorldData, ContentFlags } from '../../types';
 import { AdultContentSettings } from './AdultContentSettings';
@@ -694,7 +694,7 @@ export function WorldBuilder() {
           {/* Main Form */}
           <div className="space-y-4 lg:space-y-6">
             {/* Core Idea */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -716,10 +716,10 @@ export function WorldBuilder() {
                 placeholder="Mô tả ý tưởng cốt lõi của thế giới..."
                 className="w-full h-32 px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none resize-none"
               />
-            </motion.div>
+            </MotionWrapper>
 
             {/* Genre & Setting */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -748,10 +748,10 @@ export function WorldBuilder() {
                   />
                 </div>
               </div>
-            </motion.div>
+            </MotionWrapper>
 
             {/* Story Tone & Narration */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -786,10 +786,10 @@ export function WorldBuilder() {
                   </select>
                 </div>
               </div>
-            </motion.div>
+            </MotionWrapper>
 
             {/* Core Principles */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -843,10 +843,10 @@ export function WorldBuilder() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </MotionWrapper>
 
             {/* Foundation Entities */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -911,10 +911,10 @@ export function WorldBuilder() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </MotionWrapper>
 
             {/* Currencies */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -967,10 +967,10 @@ export function WorldBuilder() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </MotionWrapper>
 
             {/* Start Year & Difficulty */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1012,7 +1012,7 @@ export function WorldBuilder() {
                   <span>Sử dụng hệ thống cấp độ</span>
                 </label>
               </div>
-            </motion.div>
+            </MotionWrapper>
 
             {/* Adult Content Settings */}
             <AdultContentSettings
@@ -1021,7 +1021,7 @@ export function WorldBuilder() {
             />
 
             {/* Create World & Start Game */}
-            <motion.div
+            <MotionWrapper
               className="glass-effect p-6 rounded-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1041,7 +1041,7 @@ export function WorldBuilder() {
                   <span>{isGenerating ? 'Đang tạo thế giới...' : 'Tạo Thế Giới & Chuyển Tiếp'}</span>
                 </button>
               </div>
-            </motion.div>
+            </MotionWrapper>
           </div>
         </div>
 
@@ -1071,7 +1071,7 @@ export function WorldBuilder() {
       {/* Principle Selection Popup */}
       {showPrinciplePopup && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
@@ -1148,14 +1148,14 @@ export function WorldBuilder() {
                 Thêm ({selectedPrincipleIndices.length}) mục đã chọn
               </button>
             </div>
-          </motion.div>
+          </MotionWrapper>
         </div>
       )}
 
       {/* Entity Selection Popup */}
       {showEntityPopup && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
@@ -1239,14 +1239,14 @@ export function WorldBuilder() {
                 Thêm ({selectedEntityIndices.length}) mục đã chọn
               </button>
             </div>
-          </motion.div>
+          </MotionWrapper>
         </div>
       )}
 
       {/* World Description Popup */}
       {showWorldDescriptionPopup && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <motion.div
+          <MotionWrapper
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-4xl w-full mx-2 sm:mx-4 max-h-[95vh] sm:max-h-[80vh] overflow-y-auto"
@@ -1282,7 +1282,7 @@ export function WorldBuilder() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </MotionWrapper>
         </div>
       )}
     </div>

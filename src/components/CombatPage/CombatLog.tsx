@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { CombatLogEntry } from '../../services/combatService';
+import { MotionWrapper } from '../MotionWrapper';
 import { 
   Sword, 
   Heart, 
@@ -127,7 +128,7 @@ export function CombatLog({ log, isPlayerTurn = false, isInMenu = false }: Comba
         ) : (
           <AnimatePresence>
             {log.map((entry, index) => (
-              <motion.div
+              <MotionWrapper
                 key={entry.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -167,7 +168,7 @@ export function CombatLog({ log, isPlayerTurn = false, isInMenu = false }: Comba
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </MotionWrapper>
             ))}
           </AnimatePresence>
         )}
@@ -178,7 +179,7 @@ export function CombatLog({ log, isPlayerTurn = false, isInMenu = false }: Comba
 
       {/* Turn Indicator - only show if not in menu */}
       {isPlayerTurn && !isInMenu && (
-        <motion.div
+        <MotionWrapper
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="absolute bottom-4 right-4 bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg"
@@ -187,7 +188,7 @@ export function CombatLog({ log, isPlayerTurn = false, isInMenu = false }: Comba
             <Zap className="w-4 h-4" />
             <span className="text-sm font-medium">Lượt của bạn</span>
           </div>
-        </motion.div>
+        </MotionWrapper>
       )}
     </div>
   );

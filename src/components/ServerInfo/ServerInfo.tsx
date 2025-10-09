@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { MotionWrapper } from '../MotionWrapper';
 import { 
   Server, 
   Wifi, 
@@ -103,7 +103,7 @@ export function ServerInfo({ className = '' }: ServerInfoProps) {
   };
 
   return (
-    <motion.div
+    <MotionWrapper
       className={`glass-effect p-4 rounded-lg ${className}`}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -170,6 +170,6 @@ export function ServerInfo({ className = '' }: ServerInfoProps) {
           </div>
         )}
       </div>
-    </motion.div>
+    </MotionWrapper>
   );
 }

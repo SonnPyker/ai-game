@@ -68,7 +68,7 @@ export function ActionSuggestions({
             {Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="glass-effect border border-gray-600/50 rounded-lg px-3 py-2 animate-pulse"
+                className="glass-effect border border-gray-700 rounded-lg px-3 py-2 animate-pulse"
               >
                 <div className="h-3 bg-gray-700/50 rounded mb-1"></div>
                 <div className="h-3 bg-gray-700/30 rounded w-3/4"></div>
@@ -116,7 +116,7 @@ export function ActionSuggestions({
         {!isCollapsed && (
           <div className="space-y-2">
             {/* Error message */}
-            <div className="glass-effect border border-red-500/50 bg-red-500/10 rounded-lg p-3">
+            <div className="glass-effect border border-red-600 bg-red-900 rounded-lg p-3">
               <div className="flex items-start space-x-2">
                 <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
@@ -149,8 +149,8 @@ export function ActionSuggestions({
                     onClick={() => onPick(suggestion)}
                     className={`glass-effect border rounded-lg px-3 py-2 text-left transition-all duration-200 group min-h-[50px] touch-feedback active:scale-95 ${
                       isSelected 
-                        ? 'border-blue-500 bg-blue-500/20 shadow-lg shadow-blue-500/20' 
-                        : 'border-gray-600/50 hover:border-blue-500/50 hover:bg-blue-500/10'
+                        ? 'border-blue-600 bg-blue-700 shadow-lg shadow-blue-500/20' 
+                        : 'border-gray-700 hover:border-blue-600 hover:bg-blue-800'
                     }`}
                     title={`Thời gian: ${formatDuration(suggestion.durationMinutes)}${isSelected ? ' - Nhấn để hủy chọn' : ''}`}
                   >
@@ -243,8 +243,8 @@ export function ActionSuggestions({
                 onClick={() => onPick(suggestion)}
                 className={`glass-effect border rounded-lg px-3 py-2 text-left transition-all duration-200 group min-h-[50px] touch-feedback active:scale-95 ${
                   isSelected 
-                    ? 'border-blue-500 bg-blue-500/20 shadow-lg shadow-blue-500/20' 
-                    : 'border-gray-600/50 hover:border-blue-500/50 hover:bg-blue-500/10'
+                    ? 'border-blue-600 bg-blue-700 shadow-lg shadow-blue-500/20' 
+                    : 'border-gray-700 hover:border-blue-600 hover:bg-blue-800'
                 }`}
                 title={`Thời gian: ${formatDuration(suggestion.durationMinutes)}${isSelected ? ' - Nhấn để hủy chọn' : ''}`}
               >

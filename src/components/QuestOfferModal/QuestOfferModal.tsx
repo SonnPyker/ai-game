@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { MotionWrapper } from '../MotionWrapper';
 import { X, CheckCircle, Target, Gift } from 'lucide-react';
 
 interface QuestOfferModalProps {
@@ -32,19 +32,19 @@ export function QuestOfferModal({
   if (!isOpen || !questOffer) return null;
 
   return (
-    <motion.div
+    <MotionWrapper
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
-      <motion.div
+      <MotionWrapper
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         className="bg-gray-900 rounded-lg border border-gray-700 max-w-md w-full max-h-[80vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
@@ -144,7 +144,7 @@ export function QuestOfferModal({
             Từ chối
           </button>
         </div>
-      </motion.div>
-    </motion.div>
+      </MotionWrapper>
+    </MotionWrapper>
   );
 }
