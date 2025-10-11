@@ -41,6 +41,7 @@ interface SaveManagerProps {
     uiState?: any;
     contentFlags?: any;
     playerLocation?: any;
+    combatHistory?: any;
   };
   isProcessing?: boolean; // Thêm prop để kiểm tra trạng thái xử lý
 }
@@ -149,6 +150,10 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
       return;
     }
 
+    // Debug logging
+    console.log('🎯 SaveManager handleSave called with currentGameData:', currentGameData);
+    console.log('🎯 combatHistory from currentGameData:', currentGameData.combatHistory);
+
     // Kiểm tra nếu đang có tiến trình xử lý nào đang chạy
     if (isProcessing) {
       setError('Không thể lưu game khi đang xử lý. Vui lòng đợi hoàn tất.');
@@ -172,7 +177,8 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         undefined, // questSystemData - sẽ được thêm sau
         currentGameData.uiState,
         currentGameData.contentFlags,
-        currentGameData.playerLocation
+        currentGameData.playerLocation,
+        currentGameData.combatHistory
       );
 
       if (result.success) {

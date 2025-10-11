@@ -181,8 +181,12 @@ export class MigrationService {
     questSystemData?: any,
     uiState?: any,
     contentFlags?: any,
-    playerLocation?: any
+    playerLocation?: any,
+    combatHistory?: any
   ): SaveGame {
+    // Debug logging
+    console.log('🎯 createSaveGameFromRuntime called with combatHistory:', combatHistory);
+    
     // Cập nhật sceneState vào summary
     const updatedSummary = {
       ...summaryData,
@@ -192,12 +196,12 @@ export class MigrationService {
     // Get current NPC relationship data
     const npcRelationshipData = npcRelationshipService.exportForSaveGame();
 
-    return {
-      version: '1.0.0',
+    const saveGame = {
+      version: '4.1.0-beta',
       meta: {
         slotId,
         updatedAt: Date.now(),
-        source: 'local',
+        source: 'local' as const,
         pendingSync: true
       },
       world: worldData,
@@ -212,8 +216,12 @@ export class MigrationService {
       npcRelationships: npcRelationshipData,
       ui: uiState,
       contentFlags: contentFlags,
-      playerLocation: playerLocation
+      playerLocation: playerLocation,
+      combatHistory: combatHistory
     };
+    
+    console.log('🎯 Created SaveGame with combatHistory:', saveGame.combatHistory);
+    return saveGame;
   }
 
   // Export SaveGame thành JSON string

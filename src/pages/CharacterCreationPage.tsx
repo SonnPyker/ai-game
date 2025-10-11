@@ -24,6 +24,7 @@ interface CharacterData {
     constitution: number;
     wisdom: number;
     charisma: number;
+    armorClass: number;
     modifiers: {
       strength: number;
       agility: number;
@@ -72,6 +73,7 @@ export function CharacterCreationPage() {
       constitution: 10,
       wisdom: 10,
       charisma: 10,
+      armorClass: 10, // Base AC
       modifiers: {
         strength: 0,
         agility: 0,
@@ -282,6 +284,7 @@ export function CharacterCreationPage() {
       constitution: 10,
       wisdom: 10,
       charisma: 10,
+      armorClass: 10,
       modifiers: {
         strength: 0,
         agility: 0,
@@ -314,6 +317,12 @@ export function CharacterCreationPage() {
   };
 
   const handleAcceptAndStart = () => {
+    // Calculate final AC based on agility modifier
+    const finalCoreStats = {
+      ...characterData.coreStats,
+      armorClass: 10 + characterData.coreStats.modifiers.agility
+    };
+
     // Convert to Character type and save
     const character: Character = {
       name: characterData.name,
@@ -323,7 +332,7 @@ export function CharacterCreationPage() {
       appearance: characterData.appearance,
       personality: characterData.personality,
       personalityTraits: characterData.personalityTraits,
-      coreStats: characterData.coreStats,
+      coreStats: finalCoreStats,
       health: characterData.health,
       customStats: [],
       proficiencies: characterData.proficiencies

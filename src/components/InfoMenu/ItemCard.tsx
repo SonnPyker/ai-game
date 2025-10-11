@@ -72,7 +72,7 @@ export function ItemCard({
   };
 
   // Format stats bonuses
-  const formatStats = (stats?: { [key: string]: number }) => {
+  const formatStats = (stats?: { [key: string]: number | string }) => {
     if (!stats) return null;
     
     const statNames: { [key: string]: string } = {
@@ -81,14 +81,18 @@ export function ItemCard({
       intelligence: 'Trí tuệ',
       constitution: 'Thể chất',
       wisdom: 'Khôn ngoan',
-      charisma: 'Sức hút'
+      charisma: 'Sức hút',
+      attackBonus: 'Tấn công',
+      armorClass: 'Giáp',
+      healing: 'Hồi máu',
+      damage: 'Sát thương'
     };
 
     return Object.entries(stats)
-      .filter(([_, value]) => value !== 0)
+      .filter(([_, value]) => value !== 0 && value !== '')
       .map(([stat, value], index) => (
-        <span key={`${stat}-${index}`} className={`text-xs ${value > 0 ? 'text-green-400' : 'text-red-400'}`}>
-          {statNames[stat]}: {value > 0 ? '+' : ''}{value}
+        <span key={`${stat}-${index}`} className={`text-xs ${typeof value === 'number' && value > 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {statNames[stat]}: {typeof value === 'number' && value > 0 ? '+' : ''}{value}
         </span>
       ));
   };
@@ -247,7 +251,7 @@ export function ItemCard({
       )}
 
       {/* Combat Stats */}
-      {(item.damage || item.attackBonus) && (
+      {(item.damage || item.attackBonus || item.armorClass) && (
         <div className="mb-2">
           <div className="flex flex-wrap gap-2 text-xs">
             {item.damage && (
@@ -258,6 +262,11 @@ export function ItemCard({
             {item.attackBonus && (
               <span className="text-blue-400">
                 Tấn công: {item.attackBonus > 0 ? '+' : ''}{item.attackBonus}
+              </span>
+            )}
+            {item.armorClass && (
+              <span className="text-green-400">
+                AC: {item.armorClass}
               </span>
             )}
             {item.damageType && (

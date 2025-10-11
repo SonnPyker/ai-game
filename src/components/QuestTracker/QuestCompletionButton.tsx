@@ -80,7 +80,7 @@ export function QuestCompletionButton({ activeQuests, onQuestUpdate, questId, qu
       >
         {isChecking ? (
           <>
-            <RefreshCw className={isSmall ? "w-3 h-3" : "w-4 h-4"} animate-spin />
+            <RefreshCw className={`${isSmall ? "w-3 h-3" : "w-4 h-4"} animate-spin`} />
             <span className={isSmall ? "text-xs" : "text-sm"}>{isSmall ? "Đang kiểm tra..." : "Đang kiểm tra..."}</span>
           </>
         ) : (

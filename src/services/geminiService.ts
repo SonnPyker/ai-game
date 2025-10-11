@@ -4,6 +4,7 @@ import { SCCSummary, SCCState, ContentFlags } from '../types';
 import { npcRelationshipService } from './npcRelationshipService';
 import { nameGenerationService } from './nameGenerationService';
 import { locationService } from './locationService';
+import { questCombatService } from './questCombatService';
 
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
@@ -297,6 +298,16 @@ class GeminiService {
 
   // Tạo model động dựa trên contentFlags
   private getModelForContentFlags(contentFlags?: ContentFlags): any {
+    if (!this.isConfigured()) {
+      throw new Error('Gemini API chưa được cấu hình');
+    }
+    
+    if (this.useMultiKeyService) {
+      // For multi-key service, we don't need to return a model
+      // The generateContent will be handled by multiApiKeyService
+      throw new Error('Multi-key service should not call getModelForContentFlags');
+    }
+    
     if (!this.genAI) {
       throw new Error('Gemini API chưa được cấu hình');
     }
@@ -2522,8 +2533,30 @@ HƯỚNG DẪN VỀ VẬT PHẨM (ITEMS):
   * type: 'weapon' | 'armor' | 'consumable' | 'misc'
   * rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
   * quantity: số lượng
-  * stats (nếu có): { strength: +2, agility: -1, etc. }
   * slot (nếu là trang bị): 'weapon_main' | 'weapon_off' | 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'accessory1' | 'accessory2' | 'accessory3'
+  * armorClass (BẮT BUỘC cho armor): 10-20 (AC của áo giáp, dựa trên rarity)
+  * attackBonus (BẮT BUỘC cho weapon): +1 đến +5 (bonus tấn công)
+  * damage (BẮT BUỘC cho weapon): "1d6+1" (sát thương)
+  * damageType (BẮT BUỘC cho weapon): "physical|magical|fire|cold|lightning|poison|psychic"
+
+QUAN TRỌNG VỀ EQUIPMENT STATS:
+- KHÔNG tạo stats bonuses (strength, agility, intelligence, etc.) cho equipment
+- Equipment chỉ cung cấp: armorClass (cho armor), attackBonus/damage (cho weapons)
+- Stats bonuses không tồn tại trong hệ thống này
+
+QUAN TRỌNG VỀ WEAPON GENERATION:
+- TẤT CẢ weapons PHẢI có đầy đủ: attackBonus, damage, damageType
+- attackBonus: +1 đến +5 (dựa trên rarity)
+- damage: "1d4+1", "1d6+2", "2d6+3", etc. (dựa trên rarity)
+- damageType: "physical", "magical", "fire", "cold", "lightning", "poison", "psychic"
+- KHÔNG tạo weapon nào thiếu damage hoặc attackBonus
+
+QUAN TRỌNG VỀ ARMOR GENERATION:
+- TẤT CẢ armor với slot chest PHẢI có đầy đủ: armorClass
+- armorClass: 10-20 (dựa trên rarity và loại armor)
+- Common armor: AC 11-12, Uncommon: AC 12-13, Rare: AC 13-14, Epic: AC 14-15, Legendary: AC 15-16
+- Cloaks/robes: AC thấp hơn (10-12), Plate armor: AC cao hơn (13-16)
+- KHÔNG tạo armor nào thiếu armorClass
 
 QUAN TRỌNG - TÍNH HỢP LÝ CỦA VẬT PHẨM:
 - Items PHẢI phù hợp với bối cảnh thời đại và thế giới game:
@@ -2648,6 +2681,30 @@ MỤC ĐÍCH:
 [STORYTELLING MODE - EDUCATIONAL CASE STUDY]
 ` : '';
 
+    // Check for random combat encounter (every 3-4 turns)
+    const shouldCheckCombat = turnCounter && turnCounter > 0 && (turnCounter % 3 === 0 || turnCounter % 4 === 0);
+    
+    // Get world difficulty and calculate encounter chance
+    let encounterChance = 0.5; // Default 50% (trung bình)
+    try {
+      const worldData = JSON.parse(worldJson);
+      const difficulty = worldData.difficulty?.toLowerCase() || 'trung bình';
+      
+      if (difficulty.includes('dễ') || difficulty.includes('easy')) {
+        encounterChance = 0.75; // 25% chance (1 - 0.75 = 0.25)
+      } else if (difficulty.includes('khó') || difficulty.includes('hard')) {
+        encounterChance = 0.3; // 70% chance (1 - 0.3 = 0.7)
+      }
+      // Trung bình giữ nguyên 0.5 (50% chance)
+    } catch (error) {
+      console.error('Error parsing world data for encounter chance:', error);
+    }
+    
+    const combatEncounterChance = shouldCheckCombat ? Math.random() : 0;
+    const shouldTriggerCombat = combatEncounterChance > encounterChance;
+    
+    // Combat trigger check completed
+    
     const prompt = `${sexEdPrefix}Bạn là AI Storyteller trong box chat roleplay. 
 Hãy kể tiếp câu chuyện dựa trên:
 - WORLD, CHARACTER, SCENARIO (khung sườn),
@@ -2656,6 +2713,13 @@ Hãy kể tiếp câu chuyện dựa trên:
 - CHAT_DELTA: chỉ các lượt chat kể từ snapshot tới trước hành động hiện tại,
 - PLAYER_ACTION: hành động người chơi vừa nêu.
 - GAME_TIME: thời gian trong game (ảnh hưởng đến phản ứng của thế giới và NPC).
+${shouldTriggerCombat ? `
+⚠️ RANDOM COMBAT ENCOUNTER TRIGGERED (Turn ${turnCounter}):
+- Tích hợp một cuộc đối đầu bất ngờ phù hợp với sceneState và tình huống hiện tại
+- Enemy phải phù hợp với location, thời gian, và context của câu chuyện
+- Tạo narrative dẫn đến combat một cách tự nhiên
+- Sử dụng combatInitiation format trong sceneState để trigger combat
+` : ''}
 
 ${coreInstructions}
 
@@ -2797,6 +2861,8 @@ QUAN TRỌNG VỀ OUTPUT:
 
       const result = this.parseJsonResponse(fullResponse, fallbackResult);
       
+      // AI response parsed successfully
+      
       // Simulate streaming by chunking the narrative
       if (onChunk && result.narrative) {
         const words = result.narrative.split(' ');
@@ -2929,6 +2995,27 @@ QUAN TRỌNG VỀ OUTPUT:
         }
       }
 
+      // Handle random combat encounter if triggered
+      if (shouldTriggerCombat && result.sceneState) {
+        try {
+          // Generate random enemy based on sceneState and context
+          const enemy = await this.generateRandomCombatEnemy(sceneState, worldJson, characterJson);
+          
+          if (enemy) {
+            // Add combatInitiation to sceneState
+            result.sceneState.combatInitiation = {
+              type: 'random_encounter',
+              enemies: [enemy],
+              location: sceneState.location || 'Unknown',
+              reason: 'Cuộc đối đầu bất ngờ trong hành trình',
+              turn: turnCounter || 0
+            };
+          }
+        } catch (error) {
+          console.error('Error generating random combat encounter:', error);
+        }
+      }
+
       return {
         narrative: result.narrative || fallbackResult.narrative,
         softGuidance: result.softGuidance || '',
@@ -2942,6 +3029,208 @@ QUAN TRỌNG VỀ OUTPUT:
       throw new Error('Không thể tạo phản hồi. Vui lòng thử lại.');
     }
   }
+
+  /**
+   * Generate random combat enemy based on sceneState and context using AI
+   * Now integrates with quest combat objectives
+   */
+  private async generateRandomCombatEnemy(sceneState: any, worldJson: string, characterJson: string): Promise<any> {
+    try {
+      // Parse world and character data
+      const worldData = JSON.parse(worldJson);
+      const characterData = JSON.parse(characterJson);
+      
+      // Get current location and time
+      const location = sceneState.location || 'Unknown';
+      const worldTime = sceneState.worldTime || { hour: 12, minute: 0, day: 1 };
+      const isNight = worldTime.hour < 6 || worldTime.hour > 18;
+      
+      // Check for active quest combat objectives
+      const questObjective = questCombatService.getBestCombatObjectiveForEncounter();
+      let enemyData: any = null;
+      
+      if (questObjective) {
+        // Generate enemy based on quest objective
+        enemyData = await this.generateEnemyWithAI(
+          location, 
+          isNight, 
+          worldData, 
+          characterData,
+          questObjective.targetEnemyName,
+          questObjective.targetEnemyType
+        );
+        
+        if (enemyData) {
+          // Override enemy name to match quest objective
+          enemyData.name = questObjective.targetEnemyName;
+          enemyData.type = questObjective.targetEnemyType;
+        }
+      }
+      
+      // Fallback to random enemy if no quest objective or AI failed
+      if (!enemyData) {
+        enemyData = await this.generateEnemyWithAI(location, isNight, worldData, characterData);
+      }
+      
+      if (!enemyData) {
+        return null; // AI failed to generate enemy
+      }
+      
+      // Generate enemy stats based on character level
+      const enemyLevel = Math.max(1, characterData.level + Math.floor(Math.random() * 3) - 1); // ±1 level variation
+      
+      // Calculate stats
+      const baseHealth = 8 + (enemyLevel * 4);
+      const baseAC = 10 + Math.floor(enemyLevel / 2);
+      const attackBonus = 2 + Math.floor(enemyLevel / 2);
+      const damage = `${Math.floor(enemyLevel / 2) + 1}d4+${Math.floor(enemyLevel / 2)}`;
+      
+      return {
+        name: enemyData.name,
+        type: enemyData.type,
+        level: enemyLevel,
+        combatLevel: enemyLevel,
+        characterLevel: enemyLevel,
+        health: {
+          current: baseHealth,
+          max: baseHealth
+        },
+        armorClass: baseAC,
+        attacks: [{
+          name: enemyData.attackName,
+          attackBonus: attackBonus,
+          damage: damage,
+          damageType: enemyData.damageType || 'physical'
+        }],
+        stats: {
+          strength: 10 + Math.floor(enemyLevel * 1.5),
+          agility: 10 + Math.floor(enemyLevel * 1.2),
+          intelligence: 8 + Math.floor(enemyLevel * 0.8),
+          constitution: 10 + Math.floor(enemyLevel * 1.3),
+          wisdom: 8 + Math.floor(enemyLevel * 0.7),
+          charisma: 8 + Math.floor(enemyLevel * 0.5),
+          modifiers: {
+            strength: Math.floor((10 + Math.floor(enemyLevel * 1.5) - 10) / 2),
+            agility: Math.floor((10 + Math.floor(enemyLevel * 1.2) - 10) / 2),
+            intelligence: Math.floor((8 + Math.floor(enemyLevel * 0.8) - 10) / 2),
+            constitution: Math.floor((10 + Math.floor(enemyLevel * 1.3) - 10) / 2),
+            wisdom: Math.floor((8 + Math.floor(enemyLevel * 0.7) - 10) / 2),
+            charisma: Math.floor((8 + Math.floor(enemyLevel * 0.5) - 10) / 2)
+          }
+        },
+        experienceReward: 50 + (enemyLevel * 25),
+        description: enemyData.description,
+        loot: [] // REMOVED: AI-generated loot to prevent invalid items
+      };
+    } catch (error) {
+      console.error('Error generating random combat enemy:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate enemy using AI based on context
+   * Now supports quest-specific enemy generation
+   */
+  private async generateEnemyWithAI(
+    location: string, 
+    isNight: boolean, 
+    worldData: any, 
+    characterData: any,
+    questEnemyName?: string,
+    questEnemyType?: string
+  ): Promise<any> {
+    try {
+      if (!this.isConfigured()) {
+        throw new Error('Gemini API chưa được cấu hình');
+      }
+
+      const worldGenres = worldData.genres || [];
+      const isFantasy = worldGenres.some((g: string) => g.toLowerCase().includes('fantasy') || g.toLowerCase().includes('magic'));
+      const timeOfDay = isNight ? 'đêm' : 'ngày';
+      
+      // Check if this is a quest-specific enemy
+      const isQuestEnemy = questEnemyName && questEnemyType;
+      
+      const prompt = `Bạn là AI tạo enemy cho game RPG. Hãy tạo một enemy phù hợp với context sau:
+
+THÔNG TIN THẾ GIỚI:
+- Thể loại: ${worldGenres.join(', ')}
+- Địa điểm: ${location}
+- Thời gian: ${timeOfDay}
+- Có phép thuật: ${isFantasy ? 'Có' : 'Không'}
+
+THÔNG TIN NHÂN VẬT:
+- Tên: ${characterData.name || 'Unknown'}
+- Level: ${characterData.level || 1}
+
+${isQuestEnemy ? `
+YÊU CẦU QUEST:
+- Tên enemy BẮT BUỘC: "${questEnemyName}"
+- Loại enemy BẮT BUỘC: "${questEnemyType}"
+- Tạo enemy theo đúng tên và loại đã chỉ định
+- Mô tả phù hợp với quest context
+` : `
+YÊU CẦU:
+1. Tạo enemy phù hợp với địa điểm và thời gian
+2. Tên enemy phải phù hợp với thể loại thế giới
+3. Mô tả ngắn gọn về enemy
+`}
+4. Chỉ trả về JSON, không có text khác
+
+ĐỊNH DẠNG JSON:
+{
+  "name": "Tên enemy (tiếng Việt)",
+  "type": "humanoid|beast|undead|elemental|construct",
+  "attackName": "Tên kỹ năng tấn công",
+  "damageType": "physical|fire|cold|lightning|poison|psychic",
+  "description": "Mô tả ngắn về enemy (1-2 câu)",
+  "loot": []
+}
+
+VÍ DỤ:
+- Forest + Day + Fantasy: "Goblin Scout", "Orc Warrior"
+- City + Night + Modern: "Thug", "Pickpocket"
+- Dungeon + Any + Fantasy: "Skeleton", "Zombie"
+- Mountain + Day + Any: "Bandit", "Wild Bear"
+
+Chỉ trả về JSON:`;
+
+      let response: string;
+      
+      if (this.useMultiKeyService) {
+        // Use multi-key service
+        response = await multiApiKeyService.generateContent(prompt, undefined);
+      } else {
+        // Use single key
+        const model = this.getModelForContentFlags(undefined);
+        const result = await model.generateContent(prompt);
+        response = result.response.text();
+      }
+      
+      // Parse JSON response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('No JSON found in AI response:', response);
+        return null;
+      }
+      
+      const enemyData = JSON.parse(jsonMatch[0]);
+      
+      // Validate required fields
+      if (!enemyData.name || !enemyData.type || !enemyData.attackName) {
+        console.error('Invalid enemy data from AI:', enemyData);
+        return null;
+      }
+      
+      return enemyData;
+    } catch (error) {
+      console.error('Error generating enemy with AI:', error);
+      return null;
+    }
+  }
+
+
 
   async generateWorldDetails(coreIdea: string): Promise<string> {
     if (!this.isConfigured()) {

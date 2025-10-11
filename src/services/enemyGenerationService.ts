@@ -517,7 +517,7 @@ Hãy tạo enemy dựa trên những quy tắc này!`;
   }
 
   // Get combat difficulty based on character level and enemy count
-  public calculateCombatDifficulty(characterLevel: number, enemies: Enemy[]): 'easy' | 'medium' | 'hard' | 'extreme' {
+  public calculateCombatDifficulty(characterLevel: number, enemies: Enemy[]): 'easy' | 'medium' | 'hard' {
     const totalEnemyLevel = enemies.reduce((sum, enemy) => sum + (enemy.combatLevel || enemy.level || 1), 0);
     const averageEnemyLevel = totalEnemyLevel / enemies.length;
     const levelDifference = averageEnemyLevel - characterLevel;
@@ -530,10 +530,7 @@ Hãy tạo enemy dựa trên những quy tắc này!`;
     if (levelDifference <= 1 && enemyCount <= 3) return 'medium';
     
     // Hard: enemies significantly stronger or many enemies
-    if (levelDifference <= 3 || enemyCount >= 4) return 'hard';
-    
-    // Extreme: very strong enemies or many strong enemies
-    return 'extreme';
+    return 'hard';
   }
 
   // Validate combat initiation

@@ -224,41 +224,51 @@ Chỉ trả về JSON, không có text khác.`;
     
     // Determine attack type based on NPC name/description
     if (nameLower.includes('warrior') || nameLower.includes('knight') || nameLower.includes('guard')) {
+      const strengthMod = stats.modifiers.strength;
+      const damageMod = strengthMod >= 0 ? `+${strengthMod}` : `${strengthMod}`;
       attacks.push({
         name: "Kiếm",
-        attackBonus: 2 + stats.modifiers.strength + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d6+${stats.modifiers.strength}`,
+        attackBonus: 2 + strengthMod + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d6${damageMod}`,
         damageType: "physical" as const
       });
     } else if (nameLower.includes('archer') || nameLower.includes('ranger') || nameLower.includes('hunter')) {
+      const agilityMod = stats.modifiers.agility;
+      const damageMod = agilityMod >= 0 ? `+${agilityMod}` : `${agilityMod}`;
       attacks.push({
         name: "Cung tên",
-        attackBonus: 2 + stats.modifiers.agility + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d6+${stats.modifiers.agility}`,
+        attackBonus: 2 + agilityMod + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d6${damageMod}`,
         damageType: "physical" as const,
         range: 60
       });
     } else if (nameLower.includes('mage') || nameLower.includes('wizard') || nameLower.includes('sorcerer')) {
+      const intMod = stats.modifiers.intelligence;
+      const damageMod = intMod >= 0 ? `+${intMod}` : `${intMod}`;
       attacks.push({
         name: "Bola lửa",
-        attackBonus: 2 + stats.modifiers.intelligence + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d6+${stats.modifiers.intelligence}`,
+        attackBonus: 2 + intMod + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d6${damageMod}`,
         damageType: "fire" as const,
         range: 30
       });
     } else if (nameLower.includes('rogue') || nameLower.includes('thief') || nameLower.includes('assassin')) {
+      const agilityMod = stats.modifiers.agility;
+      const damageMod = agilityMod >= 0 ? `+${agilityMod}` : `${agilityMod}`;
       attacks.push({
         name: "Dao găm",
-        attackBonus: 2 + stats.modifiers.agility + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d4+${stats.modifiers.agility}`,
+        attackBonus: 2 + agilityMod + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d4${damageMod}`,
         damageType: "physical" as const
       });
     } else {
       // Default attack for unknown NPCs
+      const maxMod = Math.max(stats.modifiers.strength, stats.modifiers.agility);
+      const damageMod = maxMod >= 0 ? `+${maxMod}` : `${maxMod}`;
       attacks.push({
         name: "Tấn công cơ bản",
-        attackBonus: 2 + Math.max(stats.modifiers.strength, stats.modifiers.agility) + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d4+${Math.max(stats.modifiers.strength, stats.modifiers.agility)}`,
+        attackBonus: 2 + maxMod + Math.floor(level / 2),
+        damage: `${Math.floor(level / 2) + 1}d4${damageMod}`,
         damageType: "physical" as const
       });
     }
@@ -545,13 +555,22 @@ Chỉ trả về JSON, không có text khác.`;
         this.isNPCMentionedInContext(npc.name, narrative, additionalContext)
       );
 
+      console.log('🔍 NPC Detection Debug:', {
+        totalNPCs: allRelationships.length,
+        mentionedNPCs: mentionedNPCs.length,
+        playerAction: additionalContext?.playerAction || 'No player action',
+        mentionedNPCNames: mentionedNPCs.map(npc => npc.name)
+      });
+
       if (mentionedNPCs.length === 0) {
+        console.log('❌ No NPCs mentioned in narrative');
         return;
       }
 
       // AUTO-SELECTOR: Nếu chỉ có 1 NPC được nhắc đến, tự động chọn làm selectedNPC
       if (mentionedNPCs.length === 1) {
         const autoSelectedNPC = mentionedNPCs[0];
+        console.log('🎯 Auto-selecting NPC:', autoSelectedNPC.name, 'ID:', autoSelectedNPC.id);
         
         // Trigger auto-selection event để UI cập nhật
         if (typeof window !== 'undefined') {
@@ -561,7 +580,10 @@ Chỉ trả về JSON, không có text khác.`;
               npcName: autoSelectedNPC.name
             }
           }));
+          console.log('📡 Dispatched npcAutoSelected event');
         }
+      } else {
+        console.log('⚠️ Multiple NPCs mentioned, no auto-selection');
       }
 
       // Analyze each mentioned NPC individually
@@ -1060,49 +1082,98 @@ OUTPUT JSON:
     }
   }
 
-  // Check if NPC is mentioned in any context - CHỈ KIỂM TRA NARRATIVE VÀ PLAYER ACTION
-  private isNPCMentionedInContext(npcName: string, narrative: string, additionalContext?: {
+  // Check if NPC is mentioned in player action only - NHANH VÀ CHÍNH XÁC
+  public isNPCMentionedInContext(npcName: string, _narrative: string, additionalContext?: {
     chatHistory?: Array<{ role: string; content: string }>;
     sceneState?: any;
     sccSummary?: any;
     playerAction?: string;
   }): boolean {
     const lowerName = npcName.toLowerCase();
+    const playerAction = additionalContext?.playerAction?.toLowerCase() || '';
     
-    // CHỈ kiểm tra narrative và player action - không kiểm tra scene state
-    // Check in narrative với word boundary để tránh false positive
-    const narrativeWords = narrative.toLowerCase().split(/\s+/);
-    const nameWords = lowerName.split(/\s+/);
-    
-    // Kiểm tra exact match hoặc partial match với word boundary
-    const hasExactMatch = narrative.toLowerCase().includes(lowerName);
-    const hasWordMatch = nameWords.every(word => 
-      word.length > 2 && narrativeWords.some(nWord => 
-        nWord.includes(word) || word.includes(nWord)
-      )
-    );
-    
-    if (hasExactMatch || hasWordMatch) {
+    // CHỈ CHECK PLAYER ACTION - nhanh và chính xác nhất
+    // Check exact match first
+    if (playerAction.includes(lowerName)) {
+      console.log(`✅ NPC "${npcName}" found in player action (exact): "${additionalContext?.playerAction}"`);
       return true;
     }
     
-    // Check in player action
-    if (additionalContext?.playerAction?.toLowerCase().includes(lowerName)) {
+    // Check partial match - split name into words and check if all words are present
+    const nameWords = lowerName.split(/\s+/).filter(word => word.length > 2);
+    const hasAllWords = nameWords.every(word => playerAction.includes(word));
+    
+    if (hasAllWords) {
+      console.log(`✅ NPC "${npcName}" found in player action (partial): "${additionalContext?.playerAction}"`);
       return true;
     }
     
-    // Check in recent chat history (last 2 messages only)
-    if (additionalContext?.chatHistory) {
-      const recentMessages = additionalContext.chatHistory.slice(-2);
-      for (const message of recentMessages) {
-        if (message.content.toLowerCase().includes(lowerName)) {
+    // Fuzzy match - check if any significant part of the name appears in player action
+    const fuzzyMatch = this.fuzzyMatchNPC(npcName, playerAction);
+    if (fuzzyMatch) {
+      console.log(`✅ NPC "${npcName}" found in player action (fuzzy): "${additionalContext?.playerAction}"`);
+      return true;
+    }
+    
+    console.log(`❌ NPC "${npcName}" not found in player action: "${additionalContext?.playerAction}"`);
+    return false;
+  }
+
+  // Fuzzy matching for NPC names
+  private fuzzyMatchNPC(npcName: string, playerAction: string): boolean {
+    const lowerName = npcName.toLowerCase();
+    const nameWords = lowerName.split(/\s+/).filter(word => word.length > 2);
+    
+    // Check if at least 2 significant words from NPC name appear in player action
+    const matchingWords = nameWords.filter(word => playerAction.includes(word));
+    
+    if (matchingWords.length >= 2) {
+      console.log(`🔍 Fuzzy match: Found ${matchingWords.length} words: [${matchingWords.join(', ')}]`);
+      return true;
+    }
+    
+    // Check for similar words using Levenshtein distance
+    for (const nameWord of nameWords) {
+      const playerWords = playerAction.split(/\s+/);
+      for (const playerWord of playerWords) {
+        if (playerWord.length > 2 && this.calculateSimilarity(nameWord, playerWord) > 0.8) {
+          console.log(`🔍 Fuzzy match: Similar words "${nameWord}" ~ "${playerWord}"`);
           return true;
         }
       }
     }
     
-    // BỎ KIỂM TRA SCENE STATE - chỉ phân tích NPC được nhắc đến thực sự
     return false;
+  }
+
+  // Calculate similarity between two strings using Levenshtein distance
+  private calculateSimilarity(str1: string, str2: string): number {
+    const maxLength = Math.max(str1.length, str2.length);
+    if (maxLength === 0) return 1;
+    
+    const distance = this.levenshteinDistance(str1, str2);
+    return 1 - (distance / maxLength);
+  }
+
+  // Calculate Levenshtein distance between two strings
+  private levenshteinDistance(str1: string, str2: string): number {
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+    
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+    
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,     // deletion
+          matrix[j - 1][i] + 1,     // insertion
+          matrix[j - 1][i - 1] + indicator // substitution
+        );
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
   }
 
   // Enhanced sentiment analysis with comprehensive context
@@ -2608,6 +2679,8 @@ OUTPUT JSON:
     localStorage.removeItem('action_suggestions');
     localStorage.removeItem('action_log');
     localStorage.removeItem('selectedNPCForDialogue');
+    localStorage.removeItem('combat_history');
+    localStorage.removeItem('combat_result');
   }
 
   // Get faction reputation (from stored value + NPC contributions)

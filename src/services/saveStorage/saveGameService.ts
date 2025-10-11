@@ -45,7 +45,8 @@ export class SaveGameService {
     questSystemData?: any,
     uiState?: any,
     contentFlags?: any,
-    playerLocation?: any
+    playerLocation?: any,
+    combatHistory?: any
   ): Promise<SaveResult> {
     try {
       if (!this.isInitialized) {
@@ -66,7 +67,8 @@ export class SaveGameService {
         questSystemData,
         uiState,
         contentFlags,
-        playerLocation
+        playerLocation,
+        combatHistory
       );
 
       // Lưu vào storage

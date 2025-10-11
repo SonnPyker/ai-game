@@ -50,6 +50,10 @@ export function HomePage() {
     // Clear selected NPC for dialogue
     localStorage.removeItem('selectedNPCForDialogue');
     
+    // Clear combat history
+    localStorage.removeItem('combat_history');
+    localStorage.removeItem('combat_result');
+    
     
     // Bắt đầu flow game: Init Page → World Builder → Character Creation → Game
     navigate('/init');

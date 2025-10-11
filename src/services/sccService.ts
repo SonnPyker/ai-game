@@ -201,6 +201,8 @@ class SCCService {
     localStorage.removeItem('action_suggestions');
     localStorage.removeItem('action_log');
     localStorage.removeItem('selectedNPCForDialogue');
+    localStorage.removeItem('combat_history');
+    localStorage.removeItem('combat_result');
   }
 
   // Private helper methods for localStorage

@@ -69,7 +69,7 @@ export function WorldBuilder() {
   ];
 
   const difficulties = [
-    'Dễ', 'Trung bình', 'Khó', 'Cực khó'
+    'Dễ', 'Trung bình', 'Khó'
   ];
 
   // Helper functions for dynamic fields

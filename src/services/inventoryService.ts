@@ -55,7 +55,36 @@ class InventoryService {
     if (character.equipment) {
       this.equipment = character.equipment;
     }
+    
+    // Migrate old saves: add armorClass to coreStats if missing
+    this.migrateOldSave(character);
+    
     this.updateCharacterStats();
+  }
+
+  // Migrate old saves to include armorClass in coreStats
+  private migrateOldSave(character: Character): void {
+    if (character.coreStats && character.coreStats.armorClass === undefined) {
+      // Calculate AC for old saves using the same logic as calculateArmorClass
+      let ac = 10; // Base AC
+      
+      // Add agility modifier
+      const agilityModifier = character.coreStats.modifiers?.agility ?? 
+        Math.floor((character.coreStats.agility - 10) / 2);
+      ac += agilityModifier;
+      
+      // Check for chest armor equipment
+      if (character.equipment?.chest && character.equipment.chest.armorClass) {
+        // Use armor's AC + agility modifier
+        ac = character.equipment.chest.armorClass + agilityModifier;
+      }
+      
+      character.coreStats.armorClass = ac;
+      
+      // Save updated character to localStorage
+      localStorage.setItem('currentCharacter', JSON.stringify(character));
+      console.log('Migrated old save: Added armorClass to coreStats');
+    }
   }
 
   // Parse items from AI response and return them for popup selection
@@ -159,15 +188,16 @@ class InventoryService {
       rarity: this.determineItemRarity(itemData),
       quantity: itemData.quantity || 1,
       icon: itemData.icon || this.getDefaultIcon(itemData.type),
-      stats: itemData.stats || {},
+      stats: {}, // Equipment không cung cấp stat bonuses
       slot: itemData.slot,
       isEquipped: false,
       tags: itemData.tags || [], // Hỗ trợ tags array
       
       // NEW: Combat stats
       damage: itemData.damage || this.autoDetectDamage(itemData),
-      attackBonus: itemData.attackBonus,
+      attackBonus: itemData.attackBonus || this.autoDetectAttackBonus(itemData),
       damageType: itemData.damageType || this.autoDetectDamageType(itemData),
+      armorClass: itemData.armorClass || this.autoDetectArmorClass(itemData),
       weaponProperties: itemData.weaponProperties
     };
 
@@ -260,6 +290,12 @@ class InventoryService {
 
   // Add item to inventory
   public addItem(item: InventoryItem): void {
+    // Validate item is an object
+    if (!item || typeof item !== 'object') {
+      console.error('Invalid item provided to addItem:', item);
+      return;
+    }
+
     // Check if item already exists (by name and type)
     const existingItem = this.inventory.find(i => i.name === item.name && i.type === item.type);
     
@@ -438,9 +474,10 @@ class InventoryService {
     return null; // Cannot be equipped
   }
 
-  // Calculate equipped stats bonuses
+  // Calculate equipped stats bonuses (DISABLED - equipment no longer provides stat bonuses)
   public calculateEquippedStats(): { strength: number; agility: number; intelligence: number; constitution: number; wisdom: number; charisma: number } {
-    const bonuses = {
+    // Equipment no longer provides stat bonuses in this simplified system
+    return {
       strength: 0,
       agility: 0,
       intelligence: 0,
@@ -448,38 +485,46 @@ class InventoryService {
       wisdom: 0,
       charisma: 0
     };
-
-    Object.values(this.equipment).forEach(item => {
-      if (item && item.stats) {
-        bonuses.strength += item.stats.strength || 0;
-        bonuses.agility += item.stats.agility || 0;
-        bonuses.intelligence += item.stats.intelligence || 0;
-        bonuses.constitution += item.stats.constitution || 0;
-        bonuses.wisdom += item.stats.wisdom || 0;
-        bonuses.charisma += item.stats.charisma || 0;
-      }
-    });
-
-    return bonuses;
   }
 
-  // Update character stats with equipment bonuses
+  // Update character stats (equipment no longer provides stat bonuses)
   private updateCharacterStats(): void {
     if (!this.character || !this.character.coreStats) return;
 
-    const bonuses = this.calculateEquippedStats();
-    this.character.equipped_stats_bonuses = bonuses;
-
-    // Update modifiers based on new total stats
+    // Modifiers are calculated ONLY from base core stats (D&D rules)
+    // Equipment no longer provides stat bonuses
     const baseStats = this.character.coreStats;
     this.character.coreStats.modifiers = {
-      strength: Math.floor((baseStats.strength + bonuses.strength - 10) / 2),
-      agility: Math.floor((baseStats.agility + bonuses.agility - 10) / 2),
-      intelligence: Math.floor((baseStats.intelligence + bonuses.intelligence - 10) / 2),
-      constitution: Math.floor((baseStats.constitution + bonuses.constitution - 10) / 2),
-      wisdom: Math.floor((baseStats.wisdom + bonuses.wisdom - 10) / 2),
-      charisma: Math.floor((baseStats.charisma + bonuses.charisma - 10) / 2)
+      strength: Math.floor((baseStats.strength - 10) / 2),
+      agility: Math.floor((baseStats.agility - 10) / 2),
+      intelligence: Math.floor((baseStats.intelligence - 10) / 2),
+      constitution: Math.floor((baseStats.constitution - 10) / 2),
+      wisdom: Math.floor((baseStats.wisdom - 10) / 2),
+      charisma: Math.floor((baseStats.charisma - 10) / 2)
     };
+
+    // Calculate and update Armor Class (AC)
+    this.character.coreStats.armorClass = this.calculateArmorClass();
+  }
+
+  // Calculate Armor Class (AC) based on agility modifier and armor
+  private calculateArmorClass(): number {
+    if (!this.character || !this.character.coreStats) return 10;
+
+    let ac = 10; // Base AC
+    
+    // Add agility modifier (from base core stats only)
+    const agilityModifier = this.character.coreStats.modifiers?.agility || 0;
+    ac += agilityModifier;
+    
+    // Check for chest armor equipment
+    const chestArmor = this.equipment.chest;
+    if (chestArmor && chestArmor.armorClass) {
+      // Use armor's AC + agility modifier
+      ac = chestArmor.armorClass + agilityModifier;
+    }
+    
+    return ac;
   }
 
   // Update character inventory reference
@@ -564,6 +609,11 @@ class InventoryService {
       }
       
       if (['head', 'chest', 'hands', 'legs', 'feet', 'accessory1', 'accessory2', 'accessory3'].includes(slot)) {
+        // Check if item has a specific slot property that matches the requested slot
+        if (item.slot) {
+          return item.slot === slot;
+        }
+        // Fallback to type check for items without slot property
         return item.type === 'armor';
       }
       
@@ -629,11 +679,11 @@ class InventoryService {
       if (name.includes('bow') || name.includes('cung') || name.includes('arrow')) {
         return '1d6';
       }
+      if (name.includes('wand') || name.includes('đũa') || name.includes('staff') || name.includes('gậy phép')) {
+        return '1d4+1';
+      }
       if (name.includes('crossbow') || name.includes('nỏ')) {
         return '1d8';
-      }
-      if (name.includes('staff') || name.includes('gậy phép') || name.includes('wand')) {
-        return '1d4';
       }
       if (name.includes('great') || name.includes('two-handed') || name.includes('hai tay')) {
         return '2d6';
@@ -659,6 +709,61 @@ class InventoryService {
     return undefined;
   }
 
+  // NEW: Auto-detect attack bonus for weapons
+  private autoDetectAttackBonus(itemData: any): number | undefined {
+    if (itemData.attackBonus) return itemData.attackBonus;
+    
+    const type = this.determineItemType(itemData);
+    if (type !== 'weapon') return undefined;
+    
+    // Base attack bonus based on rarity
+    const rarity = itemData.rarity || 'common';
+    switch (rarity) {
+      case 'common': return 1;
+      case 'uncommon': return 2;
+      case 'rare': return 3;
+      case 'epic': return 4;
+      case 'legendary': return 5;
+      case 'unique': return 3;
+      default: return 1;
+    }
+  }
+
+  // NEW: Auto-detect armor class for armor items
+  private autoDetectArmorClass(itemData: any): number | undefined {
+    if (itemData.armorClass) return itemData.armorClass;
+    
+    const type = this.determineItemType(itemData);
+    if (type !== 'armor') return undefined;
+    
+    const name = itemData.name.toLowerCase();
+    const rarity = itemData.rarity || 'common';
+    
+    // Base AC based on rarity
+    let baseAC = 10;
+    switch (rarity) {
+      case 'common': baseAC = 11; break;
+      case 'uncommon': baseAC = 12; break;
+      case 'rare': baseAC = 13; break;
+      case 'epic': baseAC = 14; break;
+      case 'legendary': baseAC = 15; break;
+      case 'unique': baseAC = 13; break;
+    }
+    
+    // Adjust based on armor type keywords
+    if (name.includes('leather') || name.includes('da')) {
+      baseAC = Math.max(10, baseAC - 1); // Leather armor
+    } else if (name.includes('chain') || name.includes('mail') || name.includes('xích')) {
+      baseAC = Math.max(11, baseAC); // Chain mail
+    } else if (name.includes('plate') || name.includes('tấm') || name.includes('giáp')) {
+      baseAC = Math.max(12, baseAC + 1); // Plate armor
+    } else if (name.includes('cloak') || name.includes('choàng') || name.includes('robe')) {
+      baseAC = Math.max(10, baseAC - 2); // Cloaks/robes are lighter
+    }
+    
+    return baseAC;
+  }
+
   // NEW: Auto-detect damage type
   private autoDetectDamageType(itemData: any): 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic' {
     if (itemData.damageType) return itemData.damageType;
@@ -672,7 +777,7 @@ class InventoryService {
       if (name.includes('ice') || name.includes('băng') || name.includes('cold')) return 'cold';
       if (name.includes('lightning') || name.includes('sét') || name.includes('electric')) return 'lightning';
       if (name.includes('poison') || name.includes('độc') || name.includes('venom')) return 'poison';
-      if (name.includes('magic') || name.includes('phép') || name.includes('spell')) return 'magical';
+      if (name.includes('magic') || name.includes('phép') || name.includes('spell') || name.includes('wand') || name.includes('đũa') || name.includes('staff')) return 'magical';
       if (name.includes('mind') || name.includes('tâm') || name.includes('psychic')) return 'psychic';
       return 'physical';
     }

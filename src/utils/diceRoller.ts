@@ -39,6 +39,15 @@ export class DiceRoller {
     // Match patterns like "2d6+3", "d20", "1d100-2", etc.
     const match = cleanNotation.match(/^(\d*)d(\d+)([+-]\d+)?$/);
     
+    // Handle special case of +- (which should be -)
+    if (!match && cleanNotation.includes('+-')) {
+      const fixedNotation = cleanNotation.replace('+-', '-');
+      const fixedMatch = fixedNotation.match(/^(\d*)d(\d+)([+-]\d+)?$/);
+      if (fixedMatch) {
+        return this.parseDiceNotation(fixedNotation);
+      }
+    }
+    
     if (!match) {
       throw new Error(`Invalid dice notation: ${notation}`);
     }

@@ -17,12 +17,20 @@ import { inventoryService } from '../services/inventoryService';
 import { ItemSelectionModal } from '../components/ItemSelectionModal/ItemSelectionModal';
 import { MotionWrapper } from '../components/MotionWrapper';
 import { questCompletionService } from '../services/questCompletionService';
+import { combatDataService } from '../services/combatDataService';
+import { questCombatService } from '../services/questCombatService';
+// REMOVED: combatLevelService and levelSystemService imports
+// Experience is now handled in CombatPage.tsx only
+import { npcHealthUpdateService } from '../services/npcHealthUpdateService';
+import { RandomCombatModal } from '../components/CombatPage/RandomCombatModal';
+import { QuestCombatDebug } from '../components/Debug/QuestCombatDebug';
 
 // Lazy load các services lớn để giảm kích thước bundle chính
 let geminiService: any;
 let localSaveService: any;
 let cloudSyncService: any;
 let npcRelationshipService: any;
+let npcChallengeService: any;
 
 // Dynamic imports cho services
 const loadServices = async () => {
@@ -42,12 +50,17 @@ const loadServices = async () => {
     const npcModule = await import('../services/npcRelationshipService');
     npcRelationshipService = npcModule.npcRelationshipService;
   }
+  if (!npcChallengeService) {
+    const challengeModule = await import('../services/npcChallengeService');
+    npcChallengeService = challengeModule.npcChallengeService;
+  }
 };
 
 // Lazy load các components lớn để giảm kích thước bundle chính
 const InfoMenu = lazy(() => import('../components/InfoMenu/InfoMenu').then(module => ({ default: module.InfoMenu })));
 const SaveManager = lazy(() => import('../components/SaveManager/SaveManager').then(module => ({ default: module.SaveManager })));
 const SavePopup = lazy(() => import('../components/SaveManager/SavePopup').then(module => ({ default: module.SavePopup })));
+const NPCChallengeModal = lazy(() => import('../components/CombatPage/NPCChallengeModal').then(module => ({ default: module.NPCChallengeModal })));
 const QuestOfferModal = lazy(() => import('../components/QuestOfferModal/QuestOfferModal').then(module => ({ default: module.QuestOfferModal })));
 const ActionSuggestions = lazy(() => import('../components/ActionSuggestions/ActionSuggestions').then(module => ({ default: module.ActionSuggestions })));
 const ActionLog = lazy(() => import('../components/ActionSuggestions/ActionLog').then(module => ({ default: module.ActionLog })));
@@ -124,6 +137,15 @@ export function GamePage() {
   const [showItemSelectionModal, setShowItemSelectionModal] = useState(false);
   const [availableItems, setAvailableItems] = useState<InventoryItem[]>([]);
   
+  // Random combat modal state
+  const [showRandomCombatModal, setShowRandomCombatModal] = useState(false);
+  const [randomCombatData, setRandomCombatData] = useState<{
+    enemy: any;
+    location: string;
+    reason: string;
+  } | null>(null);
+  const [showQuestCombatDebug, setShowQuestCombatDebug] = useState(false);
+  
   // NPC Dialogue Selector state - with persistence
   const [selectedNPCForDialogue, setSelectedNPCForDialogue] = useState<string | null>(() => {
     // Load from localStorage on initialization
@@ -136,6 +158,10 @@ export function GamePage() {
   // Travel action state
   const [isTravelActionSelected, setIsTravelActionSelected] = useState(false);
   const [selectedTravelLocationId, setSelectedTravelLocationId] = useState<string | null>(null);
+  
+  // NPC Challenge state
+  const [showNPCChallengeModal, setShowNPCChallengeModal] = useState(false);
+  const [npcChallengeData, setNpcChallengeData] = useState<any>(null);
   
   // Helper function to generate random duration for suggestions (10-120 minutes)
   const generateSuggestionDuration = (): number => {
@@ -201,12 +227,11 @@ export function GamePage() {
           selectedNPCForDialogue
         );
         
-        // Check if any NPCs were mentioned in the narrative
+        // Check if any NPCs were mentioned in the narrative using service method
         // If no NPCs were mentioned, clear any existing selection
         const allRelationships = npcRelationshipService.getAllRelationships();
         const mentionedNPCs = allRelationships.filter((npc: any) => 
-          narrative.toLowerCase().includes(npc.name.toLowerCase()) ||
-          enhancedContext?.playerAction?.toLowerCase().includes(npc.name.toLowerCase())
+          npcRelationshipService.isNPCMentionedInContext(npc.name, narrative, enhancedContext)
         );
         
         // If no NPCs were mentioned, clear any existing selection
@@ -214,6 +239,9 @@ export function GamePage() {
           setSelectedNPCForDialogue(null);
           localStorage.removeItem('selectedNPCForDialogue');
         }
+        
+        // Check for NPC challenges after successful analysis
+        await checkForNPCChallenges(narrative, enhancedContext);
         
         // Success - force UI refresh
         setNpcRelationshipsUpdated(prev => prev + 1);
@@ -235,6 +263,38 @@ export function GamePage() {
       } finally {
         setIsNPCAnalysisProcessing(false);
       }
+    }
+  };
+
+  // Check for NPC challenges
+  const checkForNPCChallenges = async (narrative: string, enhancedContext: any) => {
+    try {
+      await loadServices();
+      
+      // Get all NPCs mentioned in the narrative
+      const allRelationships = npcRelationshipService.getAllRelationships();
+      const mentionedNPCs = allRelationships.filter((npc: any) => 
+        narrative.toLowerCase().includes(npc.name.toLowerCase()) ||
+        enhancedContext?.playerAction?.toLowerCase().includes(npc.name.toLowerCase())
+      );
+      
+      // Check each mentioned NPC for challenge
+      for (const npc of mentionedNPCs) {
+        const isInDialogue = selectedNPCForDialogue === npc.id;
+        const challengeData = npcChallengeService.shouldChallengePlayer(
+          npc.name,
+          gameState.sceneState,
+          isInDialogue
+        );
+        
+        if (challengeData) {
+          setNpcChallengeData(challengeData);
+          setShowNPCChallengeModal(true);
+          break; // Only show one challenge at a time
+        }
+      }
+    } catch (error) {
+      console.error('Error checking NPC challenges:', error);
     }
   };
 
@@ -314,6 +374,15 @@ export function GamePage() {
     loadAvailableNPCs();
   }, []); // Empty dependency array - only run once on mount
 
+  // Initialize combat_history if not exists
+  useEffect(() => {
+    const combatHistory = localStorage.getItem('combat_history');
+    if (!combatHistory) {
+      localStorage.setItem('combat_history', JSON.stringify({ defeatedEnemies: [] }));
+      console.log('🎯 Initialized combat_history in localStorage');
+    }
+  }, []); // Empty dependency array - only run once on mount
+
   // Close NPC dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -372,10 +441,12 @@ export function GamePage() {
   // Listen for NPC auto-selection events
   useEffect(() => {
     const handleNPCAutoSelected = (event: CustomEvent) => {
-      const { npcId } = event.detail;
+      const { npcId, npcName } = event.detail;
+      console.log('🎯 Received npcAutoSelected event:', { npcId, npcName });
       
       // Update selected NPC for dialogue
       setSelectedNPCForDialogue(npcId);
+      console.log('✅ Updated selectedNPCForDialogue to:', npcId);
       
       // Show notification
     };
@@ -564,6 +635,123 @@ export function GamePage() {
   useEffect(() => {
     loadActionLog();
   }, []);
+
+  // Watch for combat initiation in sceneState
+  useEffect(() => {
+    if (gameState.sceneState?.combatInitiation) {
+      console.log('🎯 Combat initiation detected:', gameState.sceneState.combatInitiation);
+      
+      const combatInitiation = gameState.sceneState.combatInitiation;
+      
+      // Check if it's a random encounter
+      if (combatInitiation.type === 'random_encounter' && combatInitiation.enemies && combatInitiation.enemies.length > 0) {
+        console.log('🎯 Showing random combat modal for:', combatInitiation.enemies[0]);
+        // Show random combat modal
+        setRandomCombatData({
+          enemy: combatInitiation.enemies[0],
+          location: combatInitiation.location || 'Unknown',
+          reason: combatInitiation.reason || 'Cuộc đối đầu bất ngờ'
+        });
+        setShowRandomCombatModal(true);
+        console.log('🎯 Modal state set to true');
+      } else {
+        // For other types (like NPC challenge), navigate directly
+        const combatData = {
+          type: combatInitiation.type,
+          enemies: combatInitiation.enemies,
+          location: combatInitiation.location,
+          reason: combatInitiation.reason,
+          turn: combatInitiation.turn
+        };
+        
+        // Store combat data in localStorage for CombatPage to read
+        localStorage.setItem('pending_combat', JSON.stringify(combatData));
+        
+        // Navigate to combat page
+        navigate('/combat');
+      }
+      
+      // Clear combatInitiation from sceneState to prevent re-triggering
+      // Only clear after modal is shown or combat is started
+      if (combatInitiation.type !== 'random_encounter') {
+        setGameState(prev => ({
+          ...prev,
+          sceneState: {
+            ...prev.sceneState,
+            combatInitiation: undefined
+          }
+        }));
+      }
+    }
+  }, [gameState.sceneState?.combatInitiation, navigate]);
+
+  // Apply combat results on mount
+  useEffect(() => {
+    const applyCombatResults = () => {
+      const combatResult = combatDataService.getPendingCombatResult();
+      
+      if (combatResult) {
+        try {
+          const characterData = localStorage.getItem('currentCharacter');
+          if (characterData) {
+            const character = JSON.parse(characterData);
+            
+            // Update health
+            if (character.health) {
+              character.health.current = combatResult.characterUpdates.healthAfter;
+            }
+            
+            // REMOVED: Double experience application
+            // Experience is already applied in CombatPage.tsx
+            // Just update the combat result data with current values
+            combatResult.characterUpdates.combatLevelAfter = character.combatLevel;
+            combatResult.characterUpdates.leveledUp = false; // Will be updated by CombatPage
+            
+            // Update inventory (items already added by CombatPage)
+            character.inventory = inventoryService.getInventory();
+            character.equipment = inventoryService.getEquipment();
+            
+            // Save updated character
+            localStorage.setItem('currentCharacter', JSON.stringify(character));
+            
+            // Update quest combat objectives if player won
+            if (combatResult.victory && combatResult.enemiesDefeated.length > 0) {
+              combatResult.enemiesDefeated.forEach(enemy => {
+                const questUpdated = questCombatService.updateCombatObjectiveProgress(enemy.name);
+                if (questUpdated) {
+                  console.log(`🎯 Quest progress updated for defeating: ${enemy.name}`);
+                }
+              });
+            }
+            
+            // Update NPC health after combat
+            npcHealthUpdateService.updateNPCHealthAfterCombat(combatResult);
+            
+            // Add to combat history
+            combatDataService.addToCombatHistory(combatResult);
+            
+            // Clear pending result
+            combatDataService.clearPendingCombatResult();
+            
+            // REMOVED: Level up notifications
+            // Level up notifications are now handled in CombatPage.tsx
+            
+            // Reload character in game state
+            setGameState(prev => ({
+              ...prev,
+              character: character
+            }));
+          }
+        } catch (error) {
+          console.error('Error applying combat results:', error);
+          combatDataService.clearPendingCombatResult();
+        }
+      }
+    };
+    
+    applyCombatResults();
+  }, []);
+
 
   // Add migration and test functions to window for development
 
@@ -1086,6 +1274,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     }
   };
 
+
   const sendMessage = async () => {
     if (!currentMessage.trim() || isLoading || isAIProcessing || isNPCAnalysisProcessing) return;
 
@@ -1239,10 +1428,25 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             ...questSystem.factionQuests.filter(q => q.status === 'active')
           ];
 
+          // Parse combat history with validation
+          let combatHistory;
+          try {
+            const combatHistoryData = localStorage.getItem('combat_history');
+            combatHistory = combatHistoryData ? JSON.parse(combatHistoryData) : { defeatedEnemies: [] };
+            
+            // Ensure defeatedEnemies is an array
+            if (!Array.isArray(combatHistory.defeatedEnemies)) {
+              combatHistory.defeatedEnemies = [];
+            }
+          } catch (error) {
+            console.error('Error parsing combat history:', error);
+            combatHistory = { defeatedEnemies: [] };
+          }
+
           const questCompletionContext = {
             inventory: inventoryService.getInventory(),
             npcRelationships: npcRelationshipService.getAllRelationships(),
-            combatHistory: JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}'),
+            combatHistory: combatHistory,
             playerLocation: response.sceneState?.locationId,
             playerPosition: response.sceneState?.gridPosition
           };
@@ -1690,6 +1894,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     }
   };
 
+
+
   const handleSummarization = async (
     sccContext: SCCContext, 
     worldData: string, 
@@ -1842,12 +2048,15 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Get current NPC relationship data
       const npcRelationshipData = npcRelationshipService.exportForSaveGame();
 
+      // Get combat history from localStorage
+      const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
+
       const saveGame: SaveGame = {
-        version: '2.6.0',
+        version: '2.6.1',
         meta: {
           slotId,
           updatedAt: Date.now(),
-          source: 'local',
+          source: 'local' as const,
           pendingSync: true
         },
         world: worldParsed,
@@ -1864,7 +2073,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         contentFlags: gameState.contentFlags || { adult_enabled: false, adult_intensity: 'fade', first_time_setup: true },
         actionSuggestions: actionSuggestions,
         actionLog: actionLog,
-        playerLocation: playerLocationData ? JSON.parse(playerLocationData) : undefined
+        playerLocation: playerLocationData ? JSON.parse(playerLocationData) : undefined,
+        combatHistory: combatHistory
       };
 
       // Determine if it's a local or cloud slot
@@ -1901,7 +2111,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           updatedSaveGame.contentFlags,
           actionSuggestions,
           actionLog,
-          updatedSaveGame.playerLocation
+          updatedSaveGame.playerLocation,
+          updatedSaveGame.combatHistory
         );
       } else {
         // Save to cloud
@@ -1988,6 +2199,48 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     // Add hours to current time
     const newTime = worldTimeService.advanceTime(gameState.worldTime, skipHours);
     
+    // Calculate health recovery based on rest duration
+    let healthRecoveryPercent = 0;
+    if (skipHours >= 2 && skipHours < 4) {
+      healthRecoveryPercent = 0.25; // 25% for 2-4 hours
+    } else if (skipHours >= 4 && skipHours < 6) {
+      healthRecoveryPercent = 0.50; // 50% for 4-6 hours
+    } else if (skipHours >= 6) {
+      healthRecoveryPercent = 0.75; // 75% for 6+ hours
+    }
+    
+    // Apply health recovery to character
+    if (healthRecoveryPercent > 0) {
+      try {
+        const characterData = localStorage.getItem('currentCharacter');
+        if (characterData) {
+          const character = JSON.parse(characterData);
+          
+          if (character.health && character.health.max) {
+            const maxHealth = character.health.max;
+            const currentHealth = character.health.current;
+            const healthToRecover = Math.floor(maxHealth * healthRecoveryPercent);
+            const newHealth = Math.min(maxHealth, currentHealth + healthToRecover);
+            
+            character.health.current = newHealth;
+            
+            // Save updated character
+            localStorage.setItem('currentCharacter', JSON.stringify(character));
+            
+            // Update character in game state
+            setGameState(prev => ({
+              ...prev,
+              character: character
+            }));
+            
+            console.log(`💚 Health recovery: +${newHealth - currentHealth} HP (${Math.round(healthRecoveryPercent * 100)}% of max health)`);
+          }
+        }
+      } catch (error) {
+        console.error('Error applying health recovery:', error);
+      }
+    }
+    
     // Update game state
     setGameState(prev => ({
       ...prev,
@@ -1998,9 +2251,56 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     setShowSkipTimeModal(false);
     setSkipHours(2);
     
-    // Show success message
-    setSaveMessage(`Đã nghỉ ngơi ${skipHours} giờ. Thời gian hiện tại: ${newTime.hour}:${newTime.minute.toString().padStart(2, '0')}`);
+    // Show success message with health recovery info
+    let message = `Đã nghỉ ngơi ${skipHours} giờ. Thời gian hiện tại: ${newTime.hour}:${newTime.minute.toString().padStart(2, '0')}`;
+    if (healthRecoveryPercent > 0) {
+      message += ` (+${Math.round(healthRecoveryPercent * 100)}% máu)`;
+    }
+    
+    setSaveMessage(message);
     setTimeout(() => setSaveMessage(null), 3000);
+  };
+
+  // NPC Challenge handlers
+  const handleAcceptChallenge = async () => {
+    if (!npcChallengeData) return;
+    
+    try {
+      // Navigate to combat with NPC challenge data
+      const combatData = {
+        type: 'npc_challenge',
+        enemies: [npcChallengeData.combatStats],
+        worldDifficulty: 'medium'
+      };
+      
+      // Store combat data for CombatPage
+      localStorage.setItem('pending_combat', JSON.stringify(combatData));
+      
+      // Close modal and navigate
+      setShowNPCChallengeModal(false);
+      setNpcChallengeData(null);
+      
+      // Navigate to combat
+      window.location.href = '/combat';
+    } catch (error) {
+      console.error('Error starting NPC challenge combat:', error);
+    }
+  };
+
+  const handleDeclineChallenge = () => {
+    // Close modal
+    setShowNPCChallengeModal(false);
+    setNpcChallengeData(null);
+    
+    // Add message to chat about declining
+    const declineMessage: ChatMessage = {
+      role: 'player',
+      content: `Tôi từ chối thách đấu từ ${npcChallengeData?.npcName || 'NPC'}.`,
+      timestamp: new Date(),
+      turn: turnCounter + 1
+    };
+    
+    setChatHistory(prev => [...prev, declineMessage]);
   };
 
   // Xử lý load game từ SaveManager
@@ -2072,6 +2372,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         locationService.savePlayerLocation(saveGame.playerLocation);
       }
       
+      // Khôi phục combat history nếu có
+      if (saveGame.combatHistory) {
+        localStorage.setItem('combat_history', JSON.stringify(saveGame.combatHistory));
+      }
+      
       // KHÔNG lưu contentFlags vào localStorage riêng biệt
       // ContentFlags chỉ được lưu trong SaveGame JSON
 
@@ -2088,7 +2393,9 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
   // Lấy dữ liệu game hiện tại cho SaveManager
   const getCurrentGameData = () => {
-    return {
+    const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
+    
+    const gameData = {
       worldData: gameState.worldTime ? JSON.parse(localStorage.getItem('world_gen_result') || '{}') : null,
       characterData: JSON.parse(localStorage.getItem('currentCharacter') || '{}'),
       scenarioData: gameState.scenarioSkeleton,
@@ -2110,8 +2417,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         lastSummaryTurn: gameState.lastSummaryTurn
       },
       contentFlags: gameState.contentFlags,
-      playerLocation: gameState.playerLocation
+      playerLocation: gameState.playerLocation,
+      combatHistory: combatHistory
     };
+    
+    return gameData;
   };
 
   // Handle content flags change
@@ -2388,6 +2698,60 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     // TODO: Implement item details modal
   };
 
+  // Random combat modal handlers
+  const handleFightRandomCombat = () => {
+    if (!randomCombatData) return;
+    
+    // Store combat data in localStorage for CombatPage to read
+    const combatData = {
+      type: 'random_encounter',
+      enemies: [randomCombatData.enemy],
+      location: randomCombatData.location,
+      reason: randomCombatData.reason,
+      turn: turnCounter || 0
+    };
+    
+    localStorage.setItem('pending_combat', JSON.stringify(combatData));
+    
+    // Close modal and navigate to combat
+    setShowRandomCombatModal(false);
+    setRandomCombatData(null);
+    navigate('/combat');
+  };
+
+  const handleFleeRandomCombat = () => {
+    // Close modal without starting combat
+    setShowRandomCombatModal(false);
+    setRandomCombatData(null);
+    
+    // Clear combatInitiation from sceneState
+    setGameState(prev => ({
+      ...prev,
+      sceneState: {
+        ...prev.sceneState,
+        combatInitiation: undefined
+      }
+    }));
+    
+    // Could add flee success/failure logic here
+    console.log('Player chose to flee from random combat');
+  };
+
+  const handleCloseRandomCombatModal = () => {
+    // Close modal without starting combat
+    setShowRandomCombatModal(false);
+    setRandomCombatData(null);
+    
+    // Clear combatInitiation from sceneState
+    setGameState(prev => ({
+      ...prev,
+      sceneState: {
+        ...prev.sceneState,
+        combatInitiation: undefined
+      }
+    }));
+  };
+
   // Memoize InfoMenu data để tránh re-parse mỗi lần render
   const infoMenuData = useMemo(() => {
     let worldData = null;
@@ -2596,6 +2960,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 title="Lịch sử hành động"
               >
                 <History className="w-4 h-4" />
+              </button>
+              {/* Quest Combat Debug Button */}
+              <button
+                onClick={() => setShowQuestCombatDebug(true)}
+                className="p-2 bg-orange-800 border border-orange-700 text-white rounded-lg hover:bg-orange-900 transition-colors duration-200 mobile-button touch-feedback"
+                title="Quest Combat Debug"
+              >
+                <Sword className="w-4 h-4" />
               </button>
               {/* Skip Time Button */}
               <button
@@ -3022,6 +3394,20 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         />
       </Suspense>
 
+      {/* NPC Challenge Modal */}
+      <Suspense fallback={null}>
+        <NPCChallengeModal
+          isOpen={showNPCChallengeModal}
+          onClose={() => {
+            setShowNPCChallengeModal(false);
+            setNpcChallengeData(null);
+          }}
+          onAcceptChallenge={handleAcceptChallenge}
+          onDeclineChallenge={handleDeclineChallenge}
+          challengeData={npcChallengeData}
+        />
+      </Suspense>
+
       {/* Action Log Modal */}
       <Suspense fallback={null}>
         <ActionLog
@@ -3041,6 +3427,26 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         items={availableItems}
         onSelectItems={handleSelectItems}
       />
+
+      {/* Random Combat Modal */}
+      {showRandomCombatModal && randomCombatData && (
+        <RandomCombatModal
+          isOpen={showRandomCombatModal}
+          onClose={handleCloseRandomCombatModal}
+          onFight={handleFightRandomCombat}
+          onFlee={handleFleeRandomCombat}
+          enemy={randomCombatData.enemy}
+          location={randomCombatData.location}
+          reason={randomCombatData.reason}
+        />
+      )}
+
+      {/* Quest Combat Debug Modal */}
+      {showQuestCombatDebug && (
+        <QuestCombatDebug
+          onClose={() => setShowQuestCombatDebug(false)}
+        />
+      )}
 
       {/* Skip Time Modal */}
       {showSkipTimeModal && (
@@ -3070,6 +3476,40 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 <div className="flex items-center justify-between text-sm text-gray-300">
                   <span>Thời gian nghỉ:</span>
                   <span className="font-semibold text-white">{skipHours} giờ</span>
+                </div>
+                
+                {/* Health Recovery Info */}
+                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-green-400">Hồi máu khi nghỉ ngơi</span>
+                  </div>
+                  <div className="text-xs text-gray-300 space-y-1">
+                    <div className="flex justify-between">
+                      <span>2-4 giờ:</span>
+                      <span className="text-green-400">+25% máu</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>4-6 giờ:</span>
+                      <span className="text-green-400">+50% máu</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>6+ giờ:</span>
+                      <span className="text-green-400">+75% máu</span>
+                    </div>
+                  </div>
+                  
+                  {/* Current selection preview */}
+                  <div className="mt-2 pt-2 border-t border-gray-700">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Hồi máu dự kiến:</span>
+                      <span className="text-green-400 font-medium">
+                        {skipHours >= 2 && skipHours < 4 ? '+25%' : 
+                         skipHours >= 4 && skipHours < 6 ? '+50%' : 
+                         skipHours >= 6 ? '+75%' : 'Không hồi máu'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 
                 <input

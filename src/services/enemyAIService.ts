@@ -1,0 +1,393 @@
+import { Combatant } from './combatService';
+import { CombatAction, AIBehavior } from '../types/combat';
+
+export class EnemyAIService {
+  private static instance: EnemyAIService;
+
+  public static getInstance(): EnemyAIService {
+    if (!EnemyAIService.instance) {
+      EnemyAIService.instance = new EnemyAIService();
+    }
+    return EnemyAIService.instance;
+  }
+
+  /**
+   * Quyết định hành động cho enemy dựa trên difficulty
+   */
+  public decideAction(
+    enemy: Combatant,
+    allCombatants: Combatant[],
+    difficulty: 'easy' | 'medium' | 'hard',
+    worldDifficulty?: string
+  ): CombatAction {
+    // Map world difficulty to AI difficulty if not specified
+    const aiDifficulty = this.mapWorldDifficultyToAI(difficulty, worldDifficulty);
+    
+    switch (aiDifficulty) {
+      case 'easy':
+        return this.easyAI(enemy, allCombatants);
+      case 'medium':
+        return this.mediumAI(enemy, allCombatants);
+      case 'hard':
+        return this.hardAI(enemy, allCombatants);
+      default:
+        return this.easyAI(enemy, allCombatants);
+    }
+  }
+
+  /**
+   * Map world difficulty to AI difficulty
+   */
+  private mapWorldDifficultyToAI(
+    combatDifficulty: 'easy' | 'medium' | 'hard',
+    worldDifficulty?: string
+  ): 'easy' | 'medium' | 'hard' {
+    if (!worldDifficulty) return combatDifficulty;
+    
+    const worldDiff = worldDifficulty.toLowerCase();
+    
+    // Override based on world difficulty
+    if (worldDiff.includes('dễ') || worldDiff.includes('easy')) {
+      return 'easy';
+    } else if (worldDiff.includes('khó') || worldDiff.includes('hard')) {
+      return 'hard';
+    }
+    
+    return combatDifficulty;
+  }
+
+  /**
+   * Easy AI - Random và đơn giản
+   */
+  private easyAI(enemy: Combatant, allCombatants: Combatant[]): CombatAction {
+    const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
+    
+    if (alivePlayers.length === 0) {
+      return this.createDefendAction();
+    }
+
+    // 80% chance to attack, 20% to defend
+    if (Math.random() < 0.8) {
+      const target = this.selectRandomTarget(alivePlayers);
+      const attackIndex = this.selectRandomAttack(enemy);
+      
+      return {
+        type: 'attack',
+        targetId: target.id,
+        attackIndex,
+        description: `${enemy.name} tấn công ${target.name} một cách đơn giản`,
+        priority: 1
+      };
+    } else {
+      return this.createDefendAction();
+    }
+  }
+
+  /**
+   * Medium AI - Có tính toán cơ bản
+   */
+  private mediumAI(enemy: Combatant, allCombatants: Combatant[]): CombatAction {
+    const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
+    
+    if (alivePlayers.length === 0) {
+      return this.createDefendAction();
+    }
+
+    // Check if should use healing item
+    if (enemy.health.current / enemy.health.max < 0.3 && this.hasHealingItem(enemy)) {
+      return this.createHealAction(enemy);
+    }
+
+    // 90% chance to attack, 10% to defend
+    if (Math.random() < 0.9) {
+      const target = this.selectOptimalTarget(enemy, alivePlayers);
+      const attackIndex = this.selectBestAttack(enemy, target);
+      
+      return {
+        type: 'attack',
+        targetId: target.id,
+        attackIndex,
+        description: `${enemy.name} tấn công ${target.name} một cách thông minh`,
+        priority: 2
+      };
+    } else {
+      return this.createDefendAction();
+    }
+  }
+
+  /**
+   * Hard AI - Tính toán tối ưu và tactics
+   */
+  private hardAI(enemy: Combatant, allCombatants: Combatant[]): CombatAction {
+    const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
+    // const aliveEnemies = allCombatants.filter(c => c.type === 'enemy' && c.isAlive);
+    
+    if (alivePlayers.length === 0) {
+      return this.createDefendAction();
+    }
+
+    // Check if should use healing item (more aggressive healing)
+    if (enemy.health.current / enemy.health.max < 0.5 && this.hasHealingItem(enemy)) {
+      return this.createHealAction(enemy);
+    }
+
+    // Check if should use special ability
+    if (enemy.abilities && enemy.abilities.length > 0 && Math.random() < 0.3) {
+      const ability = this.selectBestAbility(enemy, alivePlayers);
+      if (ability) {
+        return {
+          type: 'ability',
+          abilityId: ability.id,
+          targetId: ability.targetId,
+          description: `${enemy.name} sử dụng ${ability.name} một cách chiến thuật`,
+          priority: 4
+        };
+      }
+    }
+
+    // Focus fire on weakest target
+    const target = this.selectWeakestTarget(enemy, alivePlayers);
+    const attackIndex = this.selectBestAttack(enemy, target);
+    
+    return {
+      type: 'attack',
+      targetId: target.id,
+      attackIndex,
+      description: `${enemy.name} tập trung tấn công ${target.name} với chiến thuật`,
+      priority: 3
+    };
+  }
+
+  /**
+   * Select random target
+   */
+  private selectRandomTarget(targets: Combatant[]): Combatant {
+    return targets[Math.floor(Math.random() * targets.length)];
+  }
+
+  /**
+   * Select optimal target based on HP and AC
+   */
+  private selectOptimalTarget(enemy: Combatant, targets: Combatant[]): Combatant {
+    // Prioritize targets with lower HP and lower AC
+    return targets.reduce((best, current) => {
+      const bestScore = this.calculateTargetScore(enemy, best);
+      const currentScore = this.calculateTargetScore(enemy, current);
+      return currentScore > bestScore ? current : best;
+    });
+  }
+
+  /**
+   * Select weakest target (lowest HP percentage)
+   */
+  private selectWeakestTarget(_enemy: Combatant, targets: Combatant[]): Combatant {
+    return targets.reduce((weakest, current) => {
+      const weakestHpPercent = weakest.health.current / weakest.health.max;
+      const currentHpPercent = current.health.current / current.health.max;
+      return currentHpPercent < weakestHpPercent ? current : weakest;
+    });
+  }
+
+  /**
+   * Calculate target score for AI decision
+   */
+  private calculateTargetScore(_enemy: Combatant, target: Combatant): number {
+    const hpPercent = target.health.current / target.health.max;
+    const acScore = 20 - target.armorClass; // Lower AC = higher score
+    const hpScore = (1 - hpPercent) * 10; // Lower HP = higher score
+    
+    return acScore + hpScore;
+  }
+
+  /**
+   * Select random attack
+   */
+  private selectRandomAttack(enemy: Combatant): number {
+    if (enemy.attacks.length === 0) return 0;
+    return Math.floor(Math.random() * enemy.attacks.length);
+  }
+
+  /**
+   * Select best attack based on target
+   */
+  private selectBestAttack(enemy: Combatant, _target: Combatant): number {
+    if (enemy.attacks.length === 0) return 0;
+    
+    // For now, just return the first attack
+    // In the future, could calculate based on damage vs AC
+    return 0;
+  }
+
+  /**
+   * Select best ability to use
+   */
+  private selectBestAbility(enemy: Combatant, targets: Combatant[]): any {
+    if (!enemy.abilities || enemy.abilities.length === 0) return null;
+    
+    // For now, return first ability
+    // In the future, could calculate based on situation
+    return {
+      id: enemy.abilities[0].id || 'ability_1',
+      name: enemy.abilities[0].name || 'Special Ability',
+      targetId: targets[0].id
+    };
+  }
+
+  /**
+   * Check if enemy has healing item
+   */
+  private hasHealingItem(_enemy: Combatant): boolean {
+    // This would need to be implemented based on how items are stored
+    // For now, return false
+    return false;
+  }
+
+  /**
+   * Create defend action
+   */
+  private createDefendAction(): CombatAction {
+    return {
+      type: 'defend',
+      description: 'Phòng thủ',
+      priority: 1
+    };
+  }
+
+  /**
+   * Create heal action
+   */
+  private createHealAction(enemy: Combatant): CombatAction {
+    return {
+      type: 'use_item',
+      itemId: 'healing_potion',
+      description: `${enemy.name} sử dụng thuốc hồi máu`,
+      priority: 3
+    };
+  }
+
+  /**
+   * Get AI behavior configuration
+   */
+  public getAIBehavior(difficulty: 'easy' | 'medium' | 'hard'): AIBehavior {
+    const behaviors: { [key: string]: AIBehavior } = {
+      easy: {
+        difficulty: 'easy',
+        aggression: 0.8,
+        intelligence: 0.2,
+        tactics: 0.1,
+        itemUsage: 0.1
+      },
+      medium: {
+        difficulty: 'medium',
+        aggression: 0.7,
+        intelligence: 0.5,
+        tactics: 0.3,
+        itemUsage: 0.4
+      },
+      hard: {
+        difficulty: 'hard',
+        aggression: 0.6,
+        intelligence: 0.8,
+        tactics: 0.7,
+        itemUsage: 0.6
+      }
+    };
+
+    return behaviors[difficulty];
+  }
+
+  /**
+   * Check if enemy should use AI service for complex decisions
+   */
+  public shouldUseAIService(enemy: Combatant, difficulty: 'easy' | 'medium' | 'hard'): boolean {
+    // Use AI service for hard difficulty and high-level enemies
+    return difficulty === 'hard' && (enemy.combatLevel || 1) >= 5;
+  }
+
+  /**
+   * Generate AI decision using Gemini API (for complex enemies)
+   */
+  public async generateAICombatDecision(
+    enemy: Combatant,
+    allCombatants: Combatant[],
+    combatContext: any
+  ): Promise<CombatAction> {
+    try {
+      const { geminiService } = await import('./geminiService');
+      
+      const prompt = this.buildAIPrompt(enemy, allCombatants, combatContext);
+      const response = await geminiService.generateContent(prompt);
+      
+      if (response) {
+        return this.parseAIResponse(response, enemy);
+      }
+    } catch (error) {
+      console.error('Error generating AI combat decision:', error);
+    }
+    
+    // Fallback to hard AI
+    return this.hardAI(enemy, allCombatants);
+  }
+
+  /**
+   * Build AI prompt for combat decision
+   */
+  private buildAIPrompt(enemy: Combatant, allCombatants: Combatant[], context: any): string {
+    const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
+    const aliveEnemies = allCombatants.filter(c => c.type === 'enemy' && c.isAlive);
+    
+    return `Bạn là AI điều khiển ${enemy.name} trong combat turn-based.
+
+THÔNG TIN ENEMY:
+- Tên: ${enemy.name}
+- HP: ${enemy.health.current}/${enemy.health.max}
+- AC: ${enemy.armorClass}
+- Attacks: ${enemy.attacks.map(a => `${a.name} (+${a.attackBonus}, ${a.damage})`).join(', ')}
+- Abilities: ${enemy.abilities?.map(a => a.name).join(', ') || 'Không có'}
+
+MỤC TIÊU CÓ THỂ TẤN CÔNG:
+${alivePlayers.map(p => `- ${p.name}: HP ${p.health.current}/${p.health.max}, AC ${p.armorClass}`).join('\n')}
+
+ĐỒNG MINH:
+${aliveEnemies.map(e => `- ${e.name}: HP ${e.health.current}/${e.health.max}`).join('\n')}
+
+CONTEXT: ${JSON.stringify(context)}
+
+Hãy quyết định hành động tối ưu cho ${enemy.name}. Trả về JSON:
+{
+  "action": "attack|defend|use_item|ability",
+  "targetId": "id_of_target",
+  "attackIndex": 0,
+  "itemId": "item_id",
+  "abilityId": "ability_id",
+  "reasoning": "Lý do chọn hành động này"
+}`;
+  }
+
+  /**
+   * Parse AI response
+   */
+  private parseAIResponse(response: string, enemy: Combatant): CombatAction {
+    try {
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found');
+      
+      const data = JSON.parse(jsonMatch[0]);
+      
+      return {
+        type: data.action || 'attack',
+        targetId: data.targetId,
+        attackIndex: data.attackIndex || 0,
+        itemId: data.itemId,
+        abilityId: data.abilityId,
+        description: `${enemy.name} ${data.reasoning || 'thực hiện hành động thông minh'}`,
+        priority: 5
+      };
+    } catch (error) {
+      console.error('Error parsing AI response:', error);
+      return this.createDefendAction();
+    }
+  }
+}
+
+export const enemyAIService = EnemyAIService.getInstance();

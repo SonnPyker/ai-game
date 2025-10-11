@@ -567,9 +567,36 @@ export function InfoMenu({
                   })()}
                 </span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 flex items-center">
+                  <Shield className="w-4 h-4 mr-1" />
+                  Lớp Giáp
+                </span>
+                <span className="text-white font-medium">
+                  {(() => {
+                    // Use AC from coreStats if available (new saves)
+                    if (characterData.coreStats.armorClass !== undefined) {
+                      return characterData.coreStats.armorClass;
+                    }
+                    // Calculate AC for old saves: check for chest armor first
+                    const agilityModifier = characterData.coreStats.modifiers?.agility ?? 
+                      Math.floor((characterData.coreStats.agility - 10) / 2);
+                    
+                    // Check for chest armor equipment
+                    if (characterData.equipment?.chest && characterData.equipment.chest.armorClass) {
+                      // Use armor's AC + agility modifier
+                      return characterData.equipment.chest.armorClass + agilityModifier;
+                    }
+                    
+                    // Default: 10 + agility modifier
+                    return 10 + agilityModifier;
+                  })()}
+                </span>
+              </div>
             </div>
           </div>
         )}
+
 
         {/* Máu */}
         {characterData.health && (

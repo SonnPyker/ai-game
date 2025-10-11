@@ -34,7 +34,19 @@ class QuestAutoCompletionService {
     const questCompletionContext = {
       inventory: inventoryService.getInventory(),
       npcRelationships: npcRelationshipService.getAllRelationships(),
-      combatHistory: JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}'),
+      combatHistory: (() => {
+        try {
+          const combatHistoryData = localStorage.getItem('combat_history');
+          const parsed = combatHistoryData ? JSON.parse(combatHistoryData) : { defeatedEnemies: [] };
+          if (!Array.isArray(parsed.defeatedEnemies)) {
+            parsed.defeatedEnemies = [];
+          }
+          return parsed;
+        } catch (error) {
+          console.error('Error parsing combat history:', error);
+          return { defeatedEnemies: [] };
+        }
+      })(),
       playerLocation: JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId,
       playerPosition: JSON.parse(localStorage.getItem('player_location') || '{}').gridPosition
     };
@@ -52,7 +64,19 @@ class QuestAutoCompletionService {
     const questCompletionContext = {
       inventory: inventoryService.getInventory(),
       npcRelationships: npcRelationshipService.getAllRelationships(),
-      combatHistory: JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}'),
+      combatHistory: (() => {
+        try {
+          const combatHistoryData = localStorage.getItem('combat_history');
+          const parsed = combatHistoryData ? JSON.parse(combatHistoryData) : { defeatedEnemies: [] };
+          if (!Array.isArray(parsed.defeatedEnemies)) {
+            parsed.defeatedEnemies = [];
+          }
+          return parsed;
+        } catch (error) {
+          console.error('Error parsing combat history:', error);
+          return { defeatedEnemies: [] };
+        }
+      })(),
       playerLocation: JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId,
       playerPosition: JSON.parse(localStorage.getItem('player_location') || '{}').gridPosition
     };
@@ -70,7 +94,19 @@ class QuestAutoCompletionService {
     const questCompletionContext = {
       inventory: inventoryService.getInventory(),
       npcRelationships: npcRelationshipService.getAllRelationships(),
-      combatHistory: JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}'),
+      combatHistory: (() => {
+        try {
+          const combatHistoryData = localStorage.getItem('combat_history');
+          const parsed = combatHistoryData ? JSON.parse(combatHistoryData) : { defeatedEnemies: [] };
+          if (!Array.isArray(parsed.defeatedEnemies)) {
+            parsed.defeatedEnemies = [];
+          }
+          return parsed;
+        } catch (error) {
+          console.error('Error parsing combat history:', error);
+          return { defeatedEnemies: [] };
+        }
+      })(),
       playerLocation: JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId,
       playerPosition: JSON.parse(localStorage.getItem('player_location') || '{}').gridPosition
     };

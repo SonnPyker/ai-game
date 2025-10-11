@@ -20,6 +20,7 @@ export interface Character {
     constitution: number;
     wisdom: number;
     charisma: number;
+    armorClass: number; // AC (Armor Class) - được tính từ agility modifier + equipment
     // Modifiers được tính toán tự động từ base stats theo cơ chế DnD
     modifiers: {
       strength: number;
@@ -42,14 +43,6 @@ export interface Character {
   // Inventory and Equipment system
   inventory?: InventoryItem[];
   equipment?: Equipment;
-  equipped_stats_bonuses?: {
-    strength: number;
-    agility: number;
-    intelligence: number;
-    constitution: number;
-    wisdom: number;
-    charisma: number;
-  };
   // Currency and Experience system
   currency?: number; // Số tiền chính hiện tại
   secondaryCurrency?: number; // Số tiền phụ hiện tại
@@ -120,16 +113,23 @@ export interface InventoryItem {
     constitution?: number;
     wisdom?: number;
     charisma?: number;
+    // Combat stats
+    attackBonus?: number;
+    armorClass?: number;
+    // Consumable stats
+    effect?: string;
+    healing?: number;
+    damage?: number;
   };
   slot?: 'weapon_main' | 'weapon_off' | 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'accessory1' | 'accessory2' | 'accessory3';
   equipped_at?: Date;
   // Tags system for quest rewards
   tags?: string[]; // Tags để phân loại items (type tags + 'reward' tag)
-  
-  // NEW: Combat stats for weapons and damaging items
-  damage?: string; // dice notation (e.g., "1d8+2", "2d6")
-  attackBonus?: number; // modifier for attack rolls
-  damageType?: 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic';
+  // Equipment specific properties
+  damage?: string; // For weapons: "1d6+1"
+  damageType?: string; // For weapons: "slashing", "piercing", etc.
+  attackBonus?: number; // For weapons: +1, +2, etc.
+  armorClass?: number; // For armor: 12, 14, etc.
   weaponProperties?: WeaponProperties;
   
   // NEW: Delivery quest fields

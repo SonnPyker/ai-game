@@ -25,6 +25,7 @@ export interface SaveGame {
   actionSuggestions?: any[]; // Gợi ý hành động hiện tại
   actionLog?: any[]; // Lịch sử hành động đã thực hiện
   playerLocation?: PlayerLocation; // Vị trí hiện tại của người chơi
+  combatHistory?: any; // Lịch sử combat và enemies đã đánh bại
 }
 
 // Metadata của save game

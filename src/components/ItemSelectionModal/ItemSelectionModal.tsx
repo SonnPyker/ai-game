@@ -204,7 +204,7 @@ export function ItemSelectionModal({
                                       : 'bg-red-900/50 text-red-400'
                                   }`}
                                 >
-                                  {stat}: {value > 0 ? '+' : ''}{value}
+                                  {stat}: {typeof value === 'number' && value > 0 ? '+' : ''}{value}
                                 </span>
                               ))}
                             </div>

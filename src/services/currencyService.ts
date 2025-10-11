@@ -86,10 +86,6 @@ class CurrencyService {
         minAmount = 10;
         maxAmount = 50;
         break;
-      case 'cực khó':
-        minAmount = 5;
-        maxAmount = 30;
-        break;
       default:
         // Fallback cho các giá trị khác
         minAmount = 50;

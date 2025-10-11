@@ -242,24 +242,68 @@ class QuestCompletionService {
     let currentKills = 0;
     const matchedEnemies: string[] = [];
 
-    // Count defeated enemies matching criteria with improved matching
-    for (const defeatedEnemy of context.combatHistory.defeatedEnemies) {
-      const enemyName = defeatedEnemy.name.toLowerCase().trim();
+    try {
+      // Lấy dữ liệu trực tiếp từ localStorage combat_history
+      const combatHistoryData = localStorage.getItem('combat_history');
+      let defeatedEnemies: any[] = [];
       
-      // Check if enemy name matches with improved algorithm
-      const nameMatches = this.fuzzyMatch(enemyName, targetName);
+      if (combatHistoryData) {
+        const combatHistory = JSON.parse(combatHistoryData);
+        if (combatHistory && Array.isArray(combatHistory.defeatedEnemies)) {
+          defeatedEnemies = combatHistory.defeatedEnemies;
+        }
+      }
       
-      // Check if enemy type matches (if specified)
-      const typeMatches = !objective.targetEnemyType || 
-        defeatedEnemy.type.toLowerCase().trim() === objective.targetEnemyType.toLowerCase().trim();
+      // Fallback: sử dụng context.combatHistory nếu localStorage không có dữ liệu
+      if (defeatedEnemies.length === 0 && context.combatHistory && Array.isArray(context.combatHistory.defeatedEnemies)) {
+        defeatedEnemies = context.combatHistory.defeatedEnemies;
+      }
       
-      // Check if specific enemy ID matches (for NPC enemies)
-      const idMatches = !objective.targetEnemyId || 
-        defeatedEnemy.enemyId === objective.targetEnemyId;
+      console.log(`🔍 checkCombatObjective - Objective: ${objective.targetEnemyName}, Required: ${requiredKills}`);
+      console.log(`🔍 checkCombatObjective - Defeated enemies from localStorage:`, defeatedEnemies.length);
+      
+      for (const defeatedEnemy of defeatedEnemies) {
+        const enemyName = defeatedEnemy.name?.toLowerCase().trim() || '';
+        
+        // Check if enemy name matches with improved algorithm
+        const nameMatches = this.fuzzyMatch(enemyName, targetName);
+        
+        // Check if enemy type matches (if specified)
+        const typeMatches = !objective.targetEnemyType || 
+          (defeatedEnemy.type?.toLowerCase().trim() === objective.targetEnemyType.toLowerCase().trim());
+        
+        // Check if specific enemy ID matches (for NPC enemies)
+        const idMatches = !objective.targetEnemyId || 
+          defeatedEnemy.enemyId === objective.targetEnemyId;
 
-      if (nameMatches && typeMatches && idMatches) {
-        currentKills++;
-        matchedEnemies.push(defeatedEnemy.name);
+        if (nameMatches && typeMatches && idMatches) {
+          currentKills++;
+          matchedEnemies.push(defeatedEnemy.name);
+          console.log(`✅ Combat objective match found: ${defeatedEnemy.name} (${defeatedEnemy.type})`);
+        }
+      }
+      
+      console.log(`🎯 checkCombatObjective - Current kills: ${currentKills}/${requiredKills}`);
+      
+    } catch (error) {
+      console.error('Error reading combat history from localStorage in checkCombatObjective:', error);
+      // Fallback về context nếu có lỗi
+      if (context.combatHistory && Array.isArray(context.combatHistory.defeatedEnemies)) {
+        const defeatedEnemies = context.combatHistory.defeatedEnemies;
+        for (const defeatedEnemy of defeatedEnemies) {
+          const enemyName = defeatedEnemy.name.toLowerCase().trim();
+          
+          const nameMatches = this.fuzzyMatch(enemyName, targetName);
+          const typeMatches = !objective.targetEnemyType || 
+            defeatedEnemy.type.toLowerCase().trim() === objective.targetEnemyType.toLowerCase().trim();
+          const idMatches = !objective.targetEnemyId || 
+            defeatedEnemy.enemyId === objective.targetEnemyId;
+
+          if (nameMatches && typeMatches && idMatches) {
+            currentKills++;
+            matchedEnemies.push(defeatedEnemy.name);
+          }
+        }
       }
     }
 
@@ -377,6 +421,7 @@ class QuestCompletionService {
 
   /**
    * Helper method để lấy progress của combat objective
+   * Lấy dữ liệu trực tiếp từ localStorage combat_history
    */
   getCombatProgress(objective: QuestObjectiveProgress, context: QuestCompletionContext): {
     current: number;
@@ -390,15 +435,65 @@ class QuestCompletionService {
     const requiredKills = objective.requiredKills;
     let currentKills = 0;
 
-    for (const defeatedEnemy of context.combatHistory.defeatedEnemies) {
-      const nameMatches = defeatedEnemy.name.toLowerCase().includes(objective.targetEnemyName!.toLowerCase());
-      const typeMatches = !objective.targetEnemyType || 
-        defeatedEnemy.type.toLowerCase() === objective.targetEnemyType.toLowerCase();
-      const idMatches = !objective.targetEnemyId || 
-        defeatedEnemy.enemyId === objective.targetEnemyId;
+    try {
+      // Lấy dữ liệu trực tiếp từ localStorage combat_history
+      const combatHistoryData = localStorage.getItem('combat_history');
+      let defeatedEnemies: any[] = [];
+      
+      if (combatHistoryData) {
+        const combatHistory = JSON.parse(combatHistoryData);
+        if (combatHistory && Array.isArray(combatHistory.defeatedEnemies)) {
+          defeatedEnemies = combatHistory.defeatedEnemies;
+        }
+      }
+      
+      // Fallback: sử dụng context.combatHistory nếu localStorage không có dữ liệu
+      if (defeatedEnemies.length === 0 && context.combatHistory && Array.isArray(context.combatHistory.defeatedEnemies)) {
+        defeatedEnemies = context.combatHistory.defeatedEnemies;
+      }
+      
+      console.log(`🔍 getCombatProgress - Objective: ${objective.targetEnemyName}, Required: ${requiredKills}`);
+      console.log(`🔍 getCombatProgress - Defeated enemies from localStorage:`, defeatedEnemies.length);
+      
+      for (const defeatedEnemy of defeatedEnemies) {
+        const enemyName = defeatedEnemy.name?.toLowerCase().trim() || '';
+        const targetName = objective.targetEnemyName?.toLowerCase().trim() || '';
+        
+        // Sử dụng fuzzy matching để so sánh tên enemy
+        const nameMatches = this.fuzzyMatch(enemyName, targetName);
+        
+        // Kiểm tra type match (nếu có)
+        const typeMatches = !objective.targetEnemyType || 
+          (defeatedEnemy.type?.toLowerCase().trim() === objective.targetEnemyType.toLowerCase().trim());
+        
+        // Kiểm tra ID match (nếu có)
+        const idMatches = !objective.targetEnemyId || 
+          defeatedEnemy.enemyId === objective.targetEnemyId;
 
-      if (nameMatches && typeMatches && idMatches) {
-        currentKills++;
+        if (nameMatches && typeMatches && idMatches) {
+          currentKills++;
+          console.log(`✅ Match found: ${defeatedEnemy.name} (${defeatedEnemy.type})`);
+        }
+      }
+      
+      console.log(`🎯 getCombatProgress - Current kills: ${currentKills}/${requiredKills}`);
+      
+    } catch (error) {
+      console.error('Error reading combat history from localStorage:', error);
+      // Fallback về context nếu có lỗi
+      if (context.combatHistory && Array.isArray(context.combatHistory.defeatedEnemies)) {
+        const defeatedEnemies = context.combatHistory.defeatedEnemies;
+        for (const defeatedEnemy of defeatedEnemies) {
+          const nameMatches = defeatedEnemy.name.toLowerCase().includes(objective.targetEnemyName!.toLowerCase());
+          const typeMatches = !objective.targetEnemyType || 
+            defeatedEnemy.type.toLowerCase() === objective.targetEnemyType.toLowerCase();
+          const idMatches = !objective.targetEnemyId || 
+            defeatedEnemy.enemyId === objective.targetEnemyId;
+
+          if (nameMatches && typeMatches && idMatches) {
+            currentKills++;
+          }
+        }
       }
     }
 

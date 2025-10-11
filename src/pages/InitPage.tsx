@@ -127,6 +127,8 @@ export function InitPage() {
       localStorage.removeItem('action_suggestions'); // Xóa action suggestions khi reset world
       localStorage.removeItem('action_log'); // Xóa action log khi reset world
       localStorage.removeItem('selectedNPCForDialogue'); // Xóa selected NPC khi reset world
+      localStorage.removeItem('combat_history'); // Xóa combat history khi reset world
+      localStorage.removeItem('combat_result'); // Xóa combat result khi reset world
       // Clear NPC relationship data when starting new world
       npcRelationshipService.clearAllData();
     } else if (step.id === 'character') {
@@ -139,6 +141,8 @@ export function InitPage() {
       localStorage.removeItem('action_suggestions'); // Xóa action suggestions khi reset character
       localStorage.removeItem('action_log'); // Xóa action log khi reset character
       localStorage.removeItem('selectedNPCForDialogue'); // Xóa selected NPC khi reset character
+      localStorage.removeItem('combat_history'); // Xóa combat history khi reset character
+      localStorage.removeItem('combat_result'); // Xóa combat result khi reset character
       // Clear NPC relationship data when creating new character
       npcRelationshipService.clearAllData();
     }

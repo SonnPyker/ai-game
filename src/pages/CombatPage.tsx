@@ -2,19 +2,22 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { 
-  Shield, 
   Zap, 
   ArrowLeft, 
+  ArrowRight,
   Play,
   Pause,
   MessageSquare,
   Pin,
   PinOff
 } from 'lucide-react';
-import { Character, Enemy } from '../types';
+import { Character, Enemy, InventoryItem } from '../types';
 import { combatService, CombatState } from '../services/combatService';
 import { inventoryService } from '../services/inventoryService';
 import { combatLevelService } from '../services/combatLevelService';
+import { levelSystemService } from '../services/levelSystemService';
+import { questCombatService } from '../services/questCombatService';
+// import { combatDialogueService } from '../services/combatDialogueService';
 import { MotionWrapper } from '../components/MotionWrapper';
 
 // Combat Components
@@ -24,6 +27,7 @@ import { ActionMenu } from '../components/CombatPage/ActionMenu';
 import { CombatInventory } from '../components/CombatPage/CombatInventory';
 import { CombatResults } from '../components/CombatPage/CombatResults';
 import { CombatConfirmationModal } from '../components/CombatPage/CombatConfirmationModal';
+import { CombatDialogueSequence } from '../components/CombatPage/CombatDialogueBubble';
 
 interface CombatPageProps {}
 
@@ -37,6 +41,9 @@ export function CombatPage({}: CombatPageProps) {
   const [showResults, setShowResults] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const processingRef = useRef(false);
+  const lastActionTimeRef = useRef(0);
+  const currentActionIdRef = useRef<string | null>(null);
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [isCombatLogPinned, setIsCombatLogPinned] = useState(false);
   
@@ -46,6 +53,23 @@ export function CombatPage({}: CombatPageProps) {
   const [combatPreparationStatus, setCombatPreparationStatus] = useState<any>(null);
   const [isPreparingCombat, setIsPreparingCombat] = useState(false);
   const isInitializedRef = useRef(false);
+  
+  // Combat dialogue bubble states
+  const [currentDialogueSequence, setCurrentDialogueSequence] = useState<any>(null);
+  const [showDialogueBubble, setShowDialogueBubble] = useState(false);
+
+  // Show dialogue bubble for combat action (currently unused)
+  // const showCombatDialogue = (combatantName: string, combatantType: 'player' | 'enemy' | 'npc', message: string, messageType: 'description' | 'attack_roll' | 'damage_roll' | 'status' | 'death' = 'description') => {
+  //   const dialogue = combatDialogueService.createQuickDialogue(combatantName, combatantType, message, messageType);
+  //   setCurrentDialogueSequence(dialogue);
+  //   setShowDialogueBubble(true);
+  // };
+
+  // Handle dialogue sequence completion
+  const handleDialogueComplete = () => {
+    setShowDialogueBubble(false);
+    setCurrentDialogueSequence(null);
+  };
 
   // Initialize combat from location state or create test combat
   useEffect(() => {
@@ -65,6 +89,44 @@ export function CombatPage({}: CombatPageProps) {
           return;
         }
 
+        // Check for pending combat from localStorage (NPC challenge)
+        const pendingCombatData = localStorage.getItem('pending_combat');
+        if (pendingCombatData) {
+          try {
+            const combatData = JSON.parse(pendingCombatData);
+            localStorage.removeItem('pending_combat'); // Clear after reading
+            
+            if ((combatData.type === 'npc_challenge' || combatData.type === 'random_encounter') && combatData.enemies) {
+              // Load character data
+              const characterData = localStorage.getItem('currentCharacter');
+              if (!characterData) {
+                throw new Error('No character data found');
+              }
+              
+              const player = JSON.parse(characterData) as Character;
+              
+              // Get world difficulty for combat
+              const worldData = localStorage.getItem('world_gen_result');
+              const worldDifficulty = worldData ? JSON.parse(worldData).difficulty || 'medium' : 'medium';
+              
+              // Start combat (NPC challenge or random encounter)
+              const newCombatState = combatService.initiateCombat(player, combatData.enemies, worldDifficulty);
+              setCombatState(newCombatState);
+              
+              // Check if enemy goes first and process their turn
+              if (!newCombatState.isPlayerTurn) {
+                await combatService.processEnemyTurn();
+                setCombatState({ ...combatService.getCurrentCombat()! });
+              }
+              
+              return;
+            }
+          } catch (error) {
+            console.error('Error loading pending combat:', error);
+            localStorage.removeItem('pending_combat'); // Clear invalid data
+          }
+        }
+
         // Get combat data from navigation state
         const combatData = location.state as { 
           player: Character; 
@@ -73,9 +135,19 @@ export function CombatPage({}: CombatPageProps) {
         };
 
         if (combatData?.player && combatData?.enemies) {
+          // Get world difficulty from localStorage
+          const worldData = localStorage.getItem('world_gen_result');
+          const worldDifficulty = worldData ? JSON.parse(worldData).difficulty : undefined;
+          
           // Start combat with provided data
-          const newCombatState = combatService.initiateCombat(combatData.player, combatData.enemies);
+          const newCombatState = combatService.initiateCombat(combatData.player, combatData.enemies, worldDifficulty);
           setCombatState(newCombatState);
+          
+          // Check if enemy goes first and process their turn
+          if (!newCombatState.isPlayerTurn) {
+            await combatService.processEnemyTurn();
+            setCombatState({ ...combatService.getCurrentCombat()! });
+          }
         } else {
           // Create test combat for development
           await createTestCombat();
@@ -90,6 +162,28 @@ export function CombatPage({}: CombatPageProps) {
     // Only run once on mount
     initializeCombat();
   }, []); // Empty dependency array - only run once
+
+  // Handle enemy turns when it's not player's turn
+  useEffect(() => {
+    const processEnemyTurn = async () => {
+      if (combatState && !combatState.isPlayerTurn && combatState.isActive) {
+        // Add a small delay for better UX
+        setTimeout(async () => {
+          await combatService.processEnemyTurn();
+          setCombatState({ ...combatService.getCurrentCombat()! });
+        }, 1000);
+      }
+    };
+
+    processEnemyTurn();
+  }, [combatState?.isPlayerTurn, combatState?.isActive]);
+
+  // Check for combat end and show results
+  useEffect(() => {
+    if (combatState && !combatState.isActive) {
+      setShowResults(true);
+    }
+  }, [combatState?.isActive]);
 
   // createNPCCombat function removed - replaced with loadNPCAndShowConfirmation
 
@@ -190,8 +284,18 @@ export function CombatPage({}: CombatPageProps) {
       };
 
       // Start combat
-      const newCombatState = combatService.initiateCombat(characterData, [enemy]);
+      // Get world difficulty for test combat too
+      const worldData = localStorage.getItem('world_gen_result');
+      const worldDifficulty = worldData ? JSON.parse(worldData).difficulty : undefined;
+      
+      const newCombatState = combatService.initiateCombat(characterData, [enemy], worldDifficulty);
       setCombatState(newCombatState);
+      
+      // Check if enemy goes first and process their turn
+      if (!newCombatState.isPlayerTurn) {
+        await combatService.processEnemyTurn();
+        setCombatState({ ...combatService.getCurrentCombat()! });
+      }
       
       // Close modal
       setShowCombatConfirmation(false);
@@ -266,8 +370,18 @@ export function CombatPage({}: CombatPageProps) {
         }
       ];
 
-      const newCombatState = combatService.initiateCombat(player, testEnemies);
+      // Get world difficulty for test combat
+      const worldData = localStorage.getItem('world_gen_result');
+      const worldDifficulty = worldData ? JSON.parse(worldData).difficulty : undefined;
+      
+      const newCombatState = combatService.initiateCombat(player, testEnemies, worldDifficulty);
       setCombatState(newCombatState);
+      
+      // Check if enemy goes first and process their turn
+      if (!newCombatState.isPlayerTurn) {
+        await combatService.processEnemyTurn();
+        setCombatState({ ...combatService.getCurrentCombat()! });
+      }
     } catch (error) {
       console.error('Error creating test combat:', error);
     }
@@ -275,42 +389,72 @@ export function CombatPage({}: CombatPageProps) {
 
   // Handle attack action
   const handleAttack = useCallback(async (attackIndex: number, targetId?: string) => {
-    if (!combatState || !combatState.isPlayerTurn || isProcessing) return;
+    // Early return checks
+    if (!combatState || !combatState.isPlayerTurn || isProcessing || processingRef.current) return;
 
+    // Debounce: prevent multiple clicks within 1000ms using ref
+    const now = Date.now();
+    if (now - lastActionTimeRef.current < 1000) return;
+    
+    // Generate unique action ID to prevent duplicate processing
+    const actionId = `${attackIndex}-${targetId || 'default'}-${now}`;
+    if (currentActionIdRef.current === actionId) return;
+    
+    // Set processing state immediately to prevent race conditions
+    processingRef.current = true;
     setIsProcessing(true);
+    lastActionTimeRef.current = now;
+    currentActionIdRef.current = actionId;
     
     try {
       const currentCombatant = combatService.getCurrentCombatant();
-      if (!currentCombatant) return;
+      if (!currentCombatant) {
+        processingRef.current = false;
+        setIsProcessing(false);
+        return;
+      }
 
       // If no target specified, use first alive enemy
       const target = targetId ? 
         combatService.getCombatant(targetId) : 
         combatService.getAliveEnemies()[0];
 
-      if (!target) return;
+      if (!target) {
+        processingRef.current = false;
+        setIsProcessing(false);
+        return;
+      }
 
       // Perform attack
-      const success = combatService.performAttack(currentCombatant.id, target.id, attackIndex);
+      combatService.performAttack(currentCombatant.id, target.id, attackIndex);
       
-      if (success) {
-        // Update combat state
-        setCombatState({ ...combatService.getCurrentCombat()! });
-        
-        // Check if combat ended
-        if (!combatService.getCurrentCombat()?.isActive) {
-          setShowResults(true);
-          return;
-        }
-        
-        // End turn
-        combatService.endTurn();
+      // Update combat state regardless of success (for miss logs)
+      setCombatState({ ...combatService.getCurrentCombat()! });
+      
+      // Check if combat ended
+      if (!combatService.getCurrentCombat()?.isActive) {
+        setShowResults(true);
+        return;
+      }
+      
+      // End turn regardless of success (hit or miss)
+      combatService.endTurn();
+      setCombatState({ ...combatService.getCurrentCombat()! });
+      
+      // Process enemy turn if it's not player's turn
+      if (!combatService.getCurrentCombat()?.isPlayerTurn) {
+        await combatService.processEnemyTurn();
         setCombatState({ ...combatService.getCurrentCombat()! });
       }
     } catch (error) {
       console.error('Error performing attack:', error);
     } finally {
-      setIsProcessing(false);
+      // Add a small delay to ensure state is properly reset
+      setTimeout(() => {
+        processingRef.current = false;
+        setIsProcessing(false);
+        currentActionIdRef.current = null;
+      }, 100);
     }
   }, [combatState, isProcessing]);
 
@@ -355,9 +499,26 @@ export function CombatPage({}: CombatPageProps) {
     
     try {
       // Defend action (reduce incoming damage by half for this turn)
-      // This would require implementing status effects
+      combatService.defend('player');
+      
+      // Update combat state
+      setCombatState({ ...combatService.getCurrentCombat()! });
+      
+      // Check if combat ended
+      if (!combatService.getCurrentCombat()?.isActive) {
+        setShowResults(true);
+        return;
+      }
+      
+      // End turn
       combatService.endTurn();
       setCombatState({ ...combatService.getCurrentCombat()! });
+      
+      // Process enemy turn if it's not player's turn
+      if (!combatService.getCurrentCombat()?.isPlayerTurn) {
+        await combatService.processEnemyTurn();
+        setCombatState({ ...combatService.getCurrentCombat()! });
+      }
     } catch (error) {
       console.error('Error defending:', error);
     } finally {
@@ -382,30 +543,99 @@ export function CombatPage({}: CombatPageProps) {
     }
   }, [combatState, isProcessing, navigate]);
 
-  // Handle combat end
-  const handleCombatEnd = useCallback(() => {
+
+  // Handle combat end with selected items
+  const handleCombatEndWithItems = useCallback((selectedItems: InventoryItem[]) => {
     if (combatState?.rewards) {
-      // Award experience and items
-      console.log('Combat rewards:', combatState.rewards);
+      // Generate combat result data
+      const combatResultData = combatService.generateCombatResultData();
+      
+      if (combatResultData) {
+        // Update rewards with selected items
+        combatResultData.rewards.items = selectedItems;
+        
+        // Update quest combat objectives if player won
+        if (combatResultData.victory && combatResultData.enemiesDefeated.length > 0) {
+          combatResultData.enemiesDefeated.forEach(enemy => {
+            const questUpdated = questCombatService.updateCombatObjectiveProgress(enemy.name);
+            if (questUpdated) {
+              console.log(`🎯 Quest progress updated for defeating: ${enemy.name}`);
+            }
+          });
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('combat_result', JSON.stringify(combatResultData));
+      }
       
       // Add combat experience to character
       try {
         const characterData = localStorage.getItem('currentCharacter');
         if (characterData) {
           const character = JSON.parse(characterData) as Character;
-          const combatLevelResult = combatLevelService.addCombatExperience(character, 1);
           
-          // Save updated character
-          localStorage.setItem('currentCharacter', JSON.stringify(character));
+          // Get actual experience from combat rewards
+          const experienceGained = combatState?.rewards?.experience || 0;
           
-          if (combatLevelResult.leveledUp) {
-            console.log(`Combat Level Up! Level ${combatLevelResult.previousCombatLevel} → ${combatLevelResult.newCombatLevel}`);
+          if (experienceGained > 0) {
+            // Add 1 XP to combat level (for participating in combat)
+            const combatLevelResult = combatLevelService.addCombatExperience(character, 1);
+            
+            // Add full experience to regular character level
+            const regularLevelResult = levelSystemService.addExperience(character, experienceGained);
+            
+            // Save updated character
+            localStorage.setItem('currentCharacter', JSON.stringify(character));
+            
+            console.log(`💚 Experience gained: ${experienceGained} XP`);
+            console.log(`⚔️ Combat Level: ${combatLevelResult.previousCombatLevel} → ${combatLevelResult.newCombatLevel}`);
+            console.log(`⭐ Character Level: ${regularLevelResult.previousLevel} → ${regularLevelResult.newLevel}`);
+            
+            if (combatLevelResult.leveledUp) {
+              console.log(`🎉 Combat Level Up! ${combatLevelResult.previousCombatLevel} → ${combatLevelResult.newCombatLevel}`);
+            }
+            
+            if (regularLevelResult.leveledUp) {
+              console.log(`🎉 Character Level Up! ${regularLevelResult.previousLevel} → ${regularLevelResult.newLevel}`);
+            }
           }
         }
       } catch (error) {
         console.error('Error updating combat experience:', error);
       }
+
+      // Add selected items to inventory
+      try {
+        // First, load current character data into inventoryService to avoid reset
+        const characterData = localStorage.getItem('currentCharacter');
+        if (characterData) {
+          const character = JSON.parse(characterData);
+          
+          // Set character in inventoryService to load existing inventory
+          inventoryService.setCharacter(character);
+        }
+        
+        // Then add new items
+        selectedItems.forEach(item => {
+          inventoryService.addItem(item);
+        });
+        
+        // Update character data with new inventory
+        if (characterData) {
+          const character = JSON.parse(characterData);
+          character.inventory = inventoryService.getInventory();
+          character.equipment = inventoryService.getEquipment();
+          character.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
+          localStorage.setItem('currentCharacter', JSON.stringify(character));
+          console.log('✅ Updated character inventory after combat rewards');
+        }
+      } catch (error) {
+        console.error('Error adding items to inventory:', error);
+      }
     }
+    
+    // Clear pending combat data
+    localStorage.removeItem('pending_combat');
     
     combatService.endCombat();
     navigate('/game');
@@ -431,8 +661,7 @@ export function CombatPage({}: CombatPageProps) {
     return (
       <CombatResults
         combatState={combatState}
-        onContinue={handleCombatEnd}
-        onViewLoot={() => setShowInventory(true)}
+        onContinue={handleCombatEndWithItems}
       />
     );
   }
@@ -486,11 +715,11 @@ export function CombatPage({}: CombatPageProps) {
       </div>
 
       <div className={`flex flex-col h-[calc(100vh-80px)] transition-all duration-300 ${
-        isCombatLogPinned ? 'mr-96' : ''
+        isCombatLogPinned ? 'lg:mr-96' : ''
       }`}>
         {/* Enemy Cards */}
-        <div className="flex-1 p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex-1 p-2 sm:p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
             {aliveEnemies.map((enemy) => (
               <CombatantCard
                 key={enemy.id}
@@ -505,8 +734,8 @@ export function CombatPage({}: CombatPageProps) {
         </div>
 
         {/* Player Card and Actions */}
-        <div className="bg-gray-900/50 border-t border-gray-700 p-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-gray-900/50 border-t border-gray-700 p-2 sm:p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4">
             {/* Player Card */}
             <div className="lg:col-span-1">
               {playerCombatant && (
@@ -528,6 +757,16 @@ export function CombatPage({}: CombatPageProps) {
                     onAttack={handleAttack}
                     onDefend={handleDefend}
                     onUseItem={handleUseItem}
+                    onInventory={() => setShowInventory(!showInventory)}
+                    onEndTurn={() => {
+                      combatService.endTurn();
+                      setCombatState({ ...combatService.getCurrentCombat()! });
+                      
+                      if (!combatService.getCurrentCombat()?.isPlayerTurn) {
+                        combatService.processEnemyTurn();
+                        setCombatState({ ...combatService.getCurrentCombat()! });
+                      }
+                    }}
                     onRun={handleRun}
                     isProcessing={isProcessing}
                     selectedTarget={selectedTarget}
@@ -535,11 +774,21 @@ export function CombatPage({}: CombatPageProps) {
                   />
                   
                   <button
-                    onClick={() => setShowInventory(!showInventory)}
-                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                    onClick={() => {
+                      // End turn manually
+                      combatService.endTurn();
+                      setCombatState({ ...combatService.getCurrentCombat()! });
+                      
+                      // Process enemy turn if it's not player's turn
+                      if (!combatService.getCurrentCombat()?.isPlayerTurn) {
+                        combatService.processEnemyTurn();
+                        setCombatState({ ...combatService.getCurrentCombat()! });
+                      }
+                    }}
+                    className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center justify-center space-x-2"
                   >
-                    <Shield className="w-4 h-4" />
-                    <span>Túi Đồ ({inventoryService.getInventory().length})</span>
+                    <ArrowRight className="w-4 h-4" />
+                    <span>Kết Thúc Lượt</span>
                   </button>
                 </div>
               ) : (
@@ -591,12 +840,12 @@ export function CombatPage({}: CombatPageProps) {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className={`fixed top-20 right-4 w-96 h-[calc(100vh-120px)] bg-gray-800 border border-gray-600 rounded-lg shadow-2xl z-40 ${
+            className={`fixed top-20 right-4 w-96 h-[calc(100vh-120px)] bg-gray-800 border border-gray-600 rounded-lg shadow-2xl z-40 flex flex-col ${
               isCombatLogPinned ? 'fixed' : 'absolute'
             }`}
           >
             {/* Combat Log Header */}
-            <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700 rounded-t-lg">
+            <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700 rounded-t-lg flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <MessageSquare className="w-5 h-5 text-blue-400" />
@@ -626,9 +875,10 @@ export function CombatPage({}: CombatPageProps) {
             </div>
 
             {/* Combat Log Content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-hidden min-h-0">
               <CombatLog
                 log={combatService.getCombatLog()}
+                turnLogs={combatService.getTurnLogs()}
                 isPlayerTurn={combatState?.isPlayerTurn || false}
                 isInMenu={true}
               />
@@ -652,6 +902,16 @@ export function CombatPage({}: CombatPageProps) {
             isGenerating: false,
             errors: []
           }}
+        />
+      )}
+
+      {/* Combat Dialogue Bubbles */}
+      {showDialogueBubble && currentDialogueSequence && (
+        <CombatDialogueSequence
+          combatantName={currentDialogueSequence.combatantName}
+          combatantType={currentDialogueSequence.combatantType}
+          sequence={currentDialogueSequence.sequence}
+          onComplete={handleDialogueComplete}
         />
       )}
     </div>

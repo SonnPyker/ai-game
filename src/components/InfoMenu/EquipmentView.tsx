@@ -65,16 +65,7 @@ export function EquipmentView({
       charisma: 0
     };
 
-    Object.values(equipment).forEach(item => {
-      if (item && item.stats) {
-        bonuses.strength += item.stats.strength || 0;
-        bonuses.agility += item.stats.agility || 0;
-        bonuses.intelligence += item.stats.intelligence || 0;
-        bonuses.constitution += item.stats.constitution || 0;
-        bonuses.wisdom += item.stats.wisdom || 0;
-        bonuses.charisma += item.stats.charisma || 0;
-      }
-    });
+    // Equipment không cung cấp stat bonuses trong hệ thống mới
 
     return bonuses;
   }, [equipment]);
@@ -89,6 +80,11 @@ export function EquipmentView({
       }
       
       if (['head', 'chest', 'hands', 'legs', 'feet', 'accessory1', 'accessory2', 'accessory3'].includes(slot)) {
+        // Check if item has a specific slot property that matches the requested slot
+        if (item.slot) {
+          return item.slot === slot;
+        }
+        // Fallback to type check for items without slot property
         return item.type === 'armor';
       }
       

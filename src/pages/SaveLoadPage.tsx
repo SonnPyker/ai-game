@@ -119,6 +119,8 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         localStorage.removeItem('player_location'); // Clear player location when loading different game
         localStorage.removeItem('game_inventory'); // Clear inventory when loading different game
         localStorage.removeItem('game_equipment'); // Clear equipment when loading different game
+        localStorage.removeItem('combat_history'); // Clear combat history when loading different game
+        localStorage.removeItem('combat_result'); // Clear combat result when loading different game
         
         // Cập nhật localStorage với dữ liệu từ SaveGame
         const saveGame = result.saveGame;

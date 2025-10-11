@@ -52,7 +52,8 @@ export class LocalSaveService {
     contentFlags?: any,
     actionSuggestions?: any,
     actionLog?: any,
-    playerLocation?: any
+    playerLocation?: any,
+    combatHistory?: any
   ): Promise<SaveResult> {
     try {
       // Cập nhật sceneState vào summary
@@ -66,11 +67,11 @@ export class LocalSaveService {
 
       // Create SaveGame object
       const saveGame: SaveGame = {
-        version: '2.6.0',
+        version: '4.1.0-beta',
         meta: {
           slotId,
           updatedAt: Date.now(),
-          source: 'local',
+          source: 'local' as const,
           pendingSync: true
         },
         world: worldData,
@@ -87,7 +88,8 @@ export class LocalSaveService {
         contentFlags: contentFlags,
         actionSuggestions: actionSuggestions,
         actionLog: actionLog,
-        playerLocation: playerLocation
+        playerLocation: playerLocation,
+        combatHistory: combatHistory
       };
 
       await this.localStorageStore.save(slotId, saveGame);

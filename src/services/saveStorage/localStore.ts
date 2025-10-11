@@ -28,7 +28,7 @@ export class LocalStore implements SaveStorageAdapter {
           ...saveGame.meta,
           slotId,
           updatedAt: Date.now(),
-          source: 'local',
+          source: 'local' as const,
           pendingSync: true // Đánh dấu cần sync
         }
       };

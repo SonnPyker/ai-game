@@ -5,6 +5,54 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0-beta] - 2025-01-05
+
+### 🚀 Major Combat System Upgrades
+- **Enhanced Combat Detection**: Cải thiện hệ thống phát hiện combat từ AI response, context, sceneState và quests
+- **Improved Combat Log**: Nhóm combat logs của một lượt thành một log duy nhất với mô tả chi tiết
+- **Standard DnD Turn-based Combat**: Cơ chế combat theo lượt chuẩn DnD với initiative rolls
+- **Combat Turn Descriptions**: Thêm mô tả 1-2 câu cho mỗi lượt combat (VD: "[player name] swings sword at the goblin...")
+- **Enemy AI System**: AI cho kẻ thù với 3 mức độ thông minh dựa trên world builder difficulty
+- **Mobile Combat Optimization**: Tối ưu hóa giao diện combat cho mobile với responsive layout và touch gestures
+
+### 🎯 Quest System Enhancements
+- **Quest-based Combat Encounters**: Tự động tạo kẻ thù phù hợp với quest objectives đang active
+- **Combat Objective Tracking**: Theo dõi tiến độ combat objectives trong quest system
+- **Fuzzy Matching**: Cải thiện thuật toán so khớp tên enemy, item và NPC cho quest completion
+- **Quest Combat Integration**: Tích hợp combat system với quest system để tạo trải nghiệm liền mạch
+
+### 🛡️ Combat Features
+- **NPC Challenge System**: NPC có thể thách đấu người chơi khi relationship đạt 'rival' hoặc cao hơn
+- **Enhanced Loot System**: Kẻ thù luôn rơi item 'misc' hoặc 'consumable', có cơ hội nhỏ rơi weapon/armor
+- **Combat Dialogue Bubbles**: Hiển thị mô tả combat dưới dạng dialogue bubbles thay vì combat log
+- **Action Menu Redesign**: Thay đổi nút "Sử Dụng Đồ" thành "Túi Đồ" và "Kết Thúc Lượt"
+- **Combat Results Panel**: Hiển thị kết quả combat với rewards và item selection
+- **Item Selection Feature**: Cho phép người chơi chọn item muốn nhận từ combat rewards
+
+### 🔧 System Improvements
+- **Combat Data JSON Storage**: Lưu trữ kết quả combat dưới dạng JSON để GamePage có thể đọc và cập nhật character stats
+- **Health Recovery System**: Cơ chế hồi máu khi time skip (25% cho 2-4h, 50% cho 4-6h, 75% cho 6+h)
+- **Dual Level Progression**: Experience từ combat được áp dụng cho cả combatLevel và characterLevel
+- **NPC Health Updates**: Cập nhật HP của NPC sau khi bị đánh bại trong combat
+- **Random Combat Encounters**: Cơ chế gặp kẻ thù ngẫu nhiên mỗi 3-4 lượt với tỷ lệ dựa trên difficulty
+- **AI-Generated Enemy Names**: Sử dụng AI để tạo tên và mô tả kẻ thù thay vì template
+
+### 🐛 Fixed
+- **Inventory Reset Bug**: Sửa lỗi inventory bị reset khi nhận item từ combat rewards
+- **Combat Log Scrolling**: Sửa lỗi combat log không scroll và overflow container
+- **Attack Button Issues**: Sửa lỗi nút attack không register click và duplicate attack prevention
+- **Turn Progression**: Sửa lỗi turn không tiến triển sau action của người chơi
+- **Defend Mechanism**: Sửa cơ chế defend không giảm damage
+- **Combat Log Display**: Sửa lỗi combat log không hiển thị turn cuối khi người chơi bị đánh bại
+- **Dice Notation Parsing**: Sửa lỗi parse dice notation với negative modifiers (1d4+-1)
+- **Quest Completion**: Sửa lỗi quest completion không nhận diện đúng combat objectives
+- **Save/Load System**: Tích hợp combat_history vào save/load system
+
+### 🗑️ Removed
+- **Auto-action System**: Loại bỏ hoàn toàn cơ chế auto-chat sau combat để người dùng tự code
+- **Extreme Difficulty**: Loại bỏ chế độ "extreme" khỏi world builder, chỉ giữ "easy", "medium", "hard"
+- **Debug Logs**: Loại bỏ các console logs không cần thiết để clean up output
+
 ## [4.0.0] - 2025-01-05
 
 ### 🚀 Performance Optimization
@@ -13,6 +61,11 @@ và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.
   - **Streamlined quest context**: Chỉ hiển thị main quest đầu tiên và side quest đầu tiên
   - **Simplified location context**: Giảm mô tả địa điểm để tiết kiệm token
   - **Optimized adult content detection**: Loại bỏ logic phức tạp không cần thiết
+- **Complete Quest System Overhaul**: Đại tu toàn bộ hệ thống quest
+  - **New quest chain mechanism**: Hệ thống quest chain với chain_delivery objectives
+  - **Enhanced quest UI**: Cải thiện giao diện quest tracker với nút kiểm tra riêng lẻ
+  - **Improved quest completion**: Cơ chế hoàn thành quest thông minh hơn
+  - **Better quest management**: Quản lý quest hiệu quả hơn với manual completion buttons
 - **Enhanced Prompt Efficiency**: Tối ưu hóa prompt để giảm thời gian xử lý
   - **Shorter action descriptions**: Giảm từ 10-15 từ xuống 8-12 từ
   - **Cleaner JSON output**: Yêu cầu AI chỉ trả về JSON thuần túy, không có markdown

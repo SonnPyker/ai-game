@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { MotionWrapper, MotionButton } from '../MotionWrapper';
 import { 
   Sword, 
@@ -19,6 +19,8 @@ interface ActionMenuProps {
   onAttack: (attackIndex: number, targetId?: string) => void;
   onDefend: () => void;
   onUseItem?: (itemId: string, targetId?: string) => void;
+  onInventory?: () => void;
+  onEndTurn?: () => void;
   onRun: () => void;
   isProcessing: boolean;
   selectedTarget?: string | null;
@@ -30,18 +32,35 @@ export function ActionMenu({
   enemies,
   onAttack,
   onDefend,
-  onUseItem,
+  onUseItem: _onUseItem,
+  onInventory,
+  onEndTurn: _onEndTurn,
   onRun,
   isProcessing,
   selectedTarget,
   onSelectTarget
 }: ActionMenuProps) {
+  // All hooks must be called at the top level
   const [showTargetSelection, setShowTargetSelection] = useState(false);
   const [pendingAction, setPendingAction] = useState<{
     type: 'attack';
     attackIndex: number;
   } | null>(null);
+  
+  // Touch gesture refs
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const longPressRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressRef.current) {
+        clearTimeout(longPressRef.current);
+      }
+    };
+  }, []);
+
+  // Early return after all hooks
   if (!combatant) {
     return (
       <div className="text-center py-8">
@@ -52,7 +71,28 @@ export function ActionMenu({
   }
 
   const handleAttack = (attackIndex: number) => {
-    if (enemies.length === 0) return;
+    if (enemies.length === 0 || isProcessing) return;
+    
+    // Add immediate visual feedback
+    const button = document.querySelector(`[data-attack-index="${attackIndex}"]`) as HTMLElement;
+    if (button) {
+      // Check if button is already disabled
+      if (button.style.pointerEvents === 'none') return;
+      
+      button.style.transform = 'scale(0.95)';
+      button.style.opacity = '0.7';
+      button.style.pointerEvents = 'none';
+      
+      setTimeout(() => {
+        button.style.transform = '';
+        button.style.opacity = '';
+      }, 150);
+      
+      // Keep disabled for longer to prevent rapid clicks
+      setTimeout(() => {
+        button.style.pointerEvents = '';
+      }, 2000);
+    }
     
     if (enemies.length === 1) {
       // Only one enemy, attack directly
@@ -79,8 +119,68 @@ export function ActionMenu({
     onSelectTarget(null);
   };
 
+  // Touch gesture handlers
+  const handleTouchStart = (e: React.TouchEvent, attackIndex: number) => {
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now()
+    };
+
+    // Long press detection
+    longPressRef.current = setTimeout(() => {
+      // Show attack details on long press
+      const attack = combatant.attacks[attackIndex];
+      if (attack) {
+        alert(`${attack.name}\nAttack Bonus: +${attack.attackBonus}\nDamage: ${attack.damage}`);
+      }
+    }, 500);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent, attackIndex: number) => {
+    if (longPressRef.current) {
+      clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+
+    if (!touchStartRef.current) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const deltaTime = Date.now() - touchStartRef.current.time;
+
+    // Check for swipe gestures
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaY) < 50 && deltaTime < 300) {
+      // Swipe left/right to cycle through attacks
+      if (deltaX > 0) {
+        // Swipe right - next attack
+        const nextIndex = (attackIndex + 1) % combatant.attacks.length;
+        handleAttack(nextIndex);
+      } else {
+        // Swipe left - previous attack
+        const prevIndex = attackIndex === 0 ? combatant.attacks.length - 1 : attackIndex - 1;
+        handleAttack(prevIndex);
+      }
+    } else if (Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30 && deltaTime < 200) {
+      // Tap - normal attack
+      handleAttack(attackIndex);
+    }
+
+    touchStartRef.current = null;
+  };
+
+  const handleTouchCancel = () => {
+    if (longPressRef.current) {
+      clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+    touchStartRef.current = null;
+  };
+
   const getActionButtonClass = (isDisabled: boolean = false) => {
-    const baseClass = "flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium";
+    const baseClass = "flex items-center justify-center space-x-2 p-3 sm:p-4 rounded-lg transition-all duration-200 font-medium text-sm sm:text-base";
     
     if (isDisabled) {
       return `${baseClass} bg-gray-700 text-gray-500 cursor-not-allowed`;
@@ -143,12 +243,16 @@ export function ActionMenu({
       )}
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
         {/* Attack Actions */}
         {combatant.attacks.map((attack, index) => (
           <MotionButton
             key={index}
+            data-attack-index={index}
             onClick={() => handleAttack(index)}
+            onTouchStart={(e: React.TouchEvent) => handleTouchStart(e, index)}
+            onTouchEnd={(e: React.TouchEvent) => handleTouchEnd(e, index)}
+            onTouchCancel={handleTouchCancel}
             disabled={isProcessing || enemies.length === 0}
             className={getActionButtonClass(isProcessing || enemies.length === 0)}
             whileHover={{ scale: 1.02 }}
@@ -181,18 +285,22 @@ export function ActionMenu({
           </div>
         </MotionButton>
 
-        {/* Use Item Action */}
+        {/* Inventory Action - Changed from Use Item to Inventory */}
         <MotionButton
-          onClick={() => onUseItem?.('', '')}
+          onClick={onInventory}
           disabled={isProcessing}
-          className={getActionButtonClass(isProcessing)}
+          className={`
+            flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium
+            bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg transform hover:scale-105
+            ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+          `}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
           <Package className="w-5 h-5" />
           <div className="text-left">
-            <div className="font-medium">Sử Dụng Đồ</div>
-            <div className="text-xs text-gray-400">
+            <div className="font-medium">Túi Đồ</div>
+            <div className="text-xs text-blue-200">
               Mở túi đồ
             </div>
           </div>
