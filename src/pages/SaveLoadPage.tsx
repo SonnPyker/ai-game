@@ -110,6 +110,9 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         
         // Clear faction data when loading different game
         localStorage.removeItem('faction_quests');
+        
+        // Clear selected NPC for dialogue
+        localStorage.removeItem('selectedNPCForDialogue');
         localStorage.removeItem('faction_reputations');
         localStorage.removeItem('action_suggestions');
         localStorage.removeItem('action_log');

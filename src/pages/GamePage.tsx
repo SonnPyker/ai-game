@@ -7,6 +7,7 @@ import { WorldTime, SCCContext, ChatMessage, ContentFlags, PlayerLocation, Inven
 import { buildContextForAI } from '../lib/context';
 import { SaveGame } from '../types/saveGame';
 import { useQuestSystem } from '../hooks/useQuestSystem';
+import { QuestSystem } from '../types';
 import { DialogueRenderer } from '../components/DialogueRenderer';
 import { detectPlayerDialogue, enhanceDialogueForAI } from '../utils/dialogueProcessor';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
@@ -15,6 +16,7 @@ import { locationService } from '../services/locationService';
 import { inventoryService } from '../services/inventoryService';
 import { ItemSelectionModal } from '../components/ItemSelectionModal/ItemSelectionModal';
 import { MotionWrapper } from '../components/MotionWrapper';
+import { questCompletionService } from '../services/questCompletionService';
 
 // Lazy load các services lớn để giảm kích thước bundle chính
 let geminiService: any;
@@ -94,6 +96,10 @@ export function GamePage() {
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [isNPCAnalysisProcessing, setIsNPCAnalysisProcessing] = useState(false);
   
+  // Streaming narrative state
+  const [streamingNarrative, setStreamingNarrative] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  
   // Action suggestions state
   const [actionSuggestions, setActionSuggestions] = useState<SuggestedAction[]>([]);
   const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
@@ -118,6 +124,19 @@ export function GamePage() {
   const [showItemSelectionModal, setShowItemSelectionModal] = useState(false);
   const [availableItems, setAvailableItems] = useState<InventoryItem[]>([]);
   
+  // NPC Dialogue Selector state - with persistence
+  const [selectedNPCForDialogue, setSelectedNPCForDialogue] = useState<string | null>(() => {
+    // Load from localStorage on initialization
+    const saved = localStorage.getItem('selectedNPCForDialogue');
+    return saved || null;
+  });
+  const [availableNPCs, setAvailableNPCs] = useState<Array<{id: string, name: string}>>([]);
+  const [showNPCDropdown, setShowNPCDropdown] = useState(false);
+  
+  // Travel action state
+  const [isTravelActionSelected, setIsTravelActionSelected] = useState(false);
+  const [selectedTravelLocationId, setSelectedTravelLocationId] = useState<string | null>(null);
+  
   // Helper function to generate random duration for suggestions (10-120 minutes)
   const generateSuggestionDuration = (): number => {
     return Math.floor(Math.random() * 111) + 10; // 10-120 phút
@@ -141,19 +160,26 @@ export function GamePage() {
   // Quest system hook
   const {
     questSystem,
+    saveQuestSystem,
     acceptQuest,
     declineQuest,
     declineActiveQuest,
     removeDeclinedQuests,
     completeObjective,
     claimReward,
-    analyzeChatInput,
     generateSideQuestFromAI,
     createFactionQuestFromAI
   } = useQuestSystem();
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [chatHistory]);
 
   // Retry mechanism for NPC relationship analysis
   const retryNPCAnalysis = async (
@@ -171,8 +197,23 @@ export function GamePage() {
         await npcRelationshipService.updateRelationshipsFromNarrative(
           narrative, 
           location, 
-          enhancedContext
+          enhancedContext,
+          selectedNPCForDialogue
         );
+        
+        // Check if any NPCs were mentioned in the narrative
+        // If no NPCs were mentioned, clear any existing selection
+        const allRelationships = npcRelationshipService.getAllRelationships();
+        const mentionedNPCs = allRelationships.filter((npc: any) => 
+          narrative.toLowerCase().includes(npc.name.toLowerCase()) ||
+          enhancedContext?.playerAction?.toLowerCase().includes(npc.name.toLowerCase())
+        );
+        
+        // If no NPCs were mentioned, clear any existing selection
+        if (mentionedNPCs.length === 0 && selectedNPCForDialogue) {
+          setSelectedNPCForDialogue(null);
+          localStorage.removeItem('selectedNPCForDialogue');
+        }
         
         // Success - force UI refresh
         setNpcRelationshipsUpdated(prev => prev + 1);
@@ -197,10 +238,98 @@ export function GamePage() {
     }
   };
 
-  // Auto scroll to bottom
+  // Load available NPCs from scene state and npcRelationshipService
+  const loadAvailableNPCs = async () => {
+    try {
+      await loadServices();
+      
+      const npcs: Array<{id: string, name: string}> = [];
+      
+      // Source 1: Get NPCs from scene state (gameState.sceneState.npcs)
+      if (gameState.sceneState?.npcs) {
+        gameState.sceneState.npcs.forEach((npc: any) => {
+          if (npc.name) {
+            // Use name as id if id is not available
+            const npcId = npc.id || npc.name.toLowerCase().replace(/\s+/g, '_');
+            npcs.push({ id: npcId, name: npc.name });
+          }
+        });
+      }
+      
+      // Source 2: Get NPCs from npcRelationshipService (ALL NPCs, not just current location)
+      const allRelationships = npcRelationshipService.getAllRelationships();
+      
+      allRelationships.forEach((npc: any) => {
+        // Avoid duplicates by checking both id and name
+        const existingById = npcs.find(existing => existing.id === npc.id);
+        const existingByName = npcs.find(existing => existing.name === npc.name);
+        
+        if (!existingById && !existingByName && npc.name) {
+          npcs.push({ id: npc.id, name: npc.name });
+        }
+      });
+      
+      // Source 3: Get NPCs from localStorage npc_relationships directly
+      try {
+        const storedRelationships = localStorage.getItem('npc_relationships');
+        if (storedRelationships) {
+          const parsedRelationships = JSON.parse(storedRelationships);
+          
+          parsedRelationships.forEach((npc: any) => {
+            const existingById = npcs.find(existing => existing.id === npc.id);
+            const existingByName = npcs.find(existing => existing.name === npc.name);
+            
+            if (!existingById && !existingByName && npc.name) {
+              npcs.push({ id: npc.id, name: npc.name });
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('Error parsing npc_relationships from localStorage:', error);
+      }
+      
+      setAvailableNPCs(npcs);
+      
+      // Validate selectedNPCForDialogue - reset if NPC no longer exists
+      if (selectedNPCForDialogue) {
+        const selectedNPCExists = npcs.some(npc => npc.id === selectedNPCForDialogue);
+        if (!selectedNPCExists) {
+          setSelectedNPCForDialogue(null);
+          localStorage.removeItem('selectedNPCForDialogue');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading available NPCs:', error);
+      setAvailableNPCs([]);
+    }
+  };
+
+  // Load NPCs when scene state changes
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory]);
+    loadAvailableNPCs();
+  }, [gameState.sceneState?.location, gameState.sceneState?.npcs, selectedNPCForDialogue]);
+
+  // Load NPCs on component mount
+  useEffect(() => {
+    loadAvailableNPCs();
+  }, []); // Empty dependency array - only run once on mount
+
+  // Close NPC dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showNPCDropdown) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.npc-dropdown-container')) {
+          setShowNPCDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNPCDropdown]);
 
   // Load chat history from localStorage
   useEffect(() => {
@@ -231,6 +360,32 @@ export function GamePage() {
     };
   }, []);
 
+  // Persist selectedNPCForDialogue to localStorage
+  useEffect(() => {
+    if (selectedNPCForDialogue) {
+      localStorage.setItem('selectedNPCForDialogue', selectedNPCForDialogue);
+    } else {
+      localStorage.removeItem('selectedNPCForDialogue');
+    }
+  }, [selectedNPCForDialogue]);
+
+  // Listen for NPC auto-selection events
+  useEffect(() => {
+    const handleNPCAutoSelected = (event: CustomEvent) => {
+      const { npcId } = event.detail;
+      
+      // Update selected NPC for dialogue
+      setSelectedNPCForDialogue(npcId);
+      
+      // Show notification
+    };
+
+    window.addEventListener('npcAutoSelected', handleNPCAutoSelected as EventListener);
+    return () => {
+      window.removeEventListener('npcAutoSelected', handleNPCAutoSelected as EventListener);
+    };
+  }, []);
+
   // Check for loaded save game data
   useEffect(() => {
     const checkForLoadedSave = () => {
@@ -240,13 +395,17 @@ export function GamePage() {
       const scenarioData = localStorage.getItem('rp_scenario');
       
       if (worldData && characterData && scenarioData) {
-        // We have complete game data, initialize the game state
-        try {
-          const world = JSON.parse(worldData);
-          const scenario = JSON.parse(scenarioData);
-          
-          // Load content flags - ưu tiên world_gen_result để đảm bảo consistency
-          let contentFlags: ContentFlags | null = null;
+          // We have complete game data, initialize the game state
+          try {
+            const world = JSON.parse(worldData);
+            const scenario = JSON.parse(scenarioData);
+            
+            // Clear selected NPC when loading game to avoid conflicts
+            setSelectedNPCForDialogue(null);
+            localStorage.removeItem('selectedNPCForDialogue');
+            
+            // Load content flags - ưu tiên world_gen_result để đảm bảo consistency
+            let contentFlags: ContentFlags | null = null;
           
           // Ưu tiên load từ world_gen_result (dữ liệu chính thức)
           if (worldData) {
@@ -254,7 +413,6 @@ export function GamePage() {
               const worldDataParsed = JSON.parse(worldData);
               if (worldDataParsed.contentFlags) {
                 contentFlags = worldDataParsed.contentFlags;
-                console.log('✅ Loaded contentFlags from world_gen_result in load game:', contentFlags);
               }
             } catch (error) {
               console.error('Lỗi parse world_gen_result trong load game:', error);
@@ -271,7 +429,6 @@ export function GamePage() {
               try {
                 const saveData = JSON.parse(existingSave);
                 contentFlags = saveData.contentFlags || null;
-                console.log('✅ Loaded contentFlags from save game fallback:', contentFlags);
               } catch (error) {
                 console.error('Lỗi load content flags từ save:', error);
               }
@@ -408,6 +565,8 @@ export function GamePage() {
     loadActionLog();
   }, []);
 
+  // Add migration and test functions to window for development
+
   // Load action suggestions
   const loadActionSuggestions = async (isRetry = false) => {
     try {
@@ -434,7 +593,6 @@ export function GamePage() {
       setLastRetryError(null);
       
       if (isRetry) {
-        console.log('✅ Retry thành công - Đã sinh lại action suggestions');
       }
     } catch (error) {
       console.error('Error loading action suggestions:', error);
@@ -470,7 +628,6 @@ export function GamePage() {
 
   // Retry thủ công
   const handleRetrySuggestions = async () => {
-    console.log('🔄 Người dùng yêu cầu retry action suggestions');
     await loadActionSuggestions(true);
   };
 
@@ -482,6 +639,23 @@ export function GamePage() {
     } catch (error) {
       console.error('Error loading action log:', error);
       setActionLog([]);
+    }
+  };
+
+  // Handle NPC selection for dialogue
+  const handleNPCSelection = (npcId: string | null) => {
+    setSelectedNPCForDialogue(npcId);
+    
+    // Clear selected suggestion when switching NPC mode
+    if (selectedSuggestionId) {
+      setSelectedSuggestionId(null);
+    }
+    
+    // Clear travel selection when switching to NPC dialogue
+    if (isTravelActionSelected) {
+      setIsTravelActionSelected(false);
+      setSelectedTravelLocationId(null);
+      setCurrentMessage('');
     }
   };
 
@@ -497,6 +671,12 @@ export function GamePage() {
       // Chọn suggestion mới
       setCurrentMessage(suggestion.text);
       setSelectedSuggestionId(suggestion.id);
+      
+      // Clear travel selection khi chọn suggestion
+      if (isTravelActionSelected) {
+        setIsTravelActionSelected(false);
+        setSelectedTravelLocationId(null);
+      }
     }
   };
 
@@ -699,7 +879,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           const worldDataParsed = JSON.parse(worldData);
           if (worldDataParsed.contentFlags) {
             contentFlags = worldDataParsed.contentFlags;
-            console.log('✅ Loaded contentFlags from world_gen_result:', contentFlags);
           }
         } catch (error) {
           console.error('Lỗi parse world_gen_result:', error);
@@ -714,7 +893,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             const currentWorldParsed = JSON.parse(currentWorldData);
             if (currentWorldParsed.contentFlags) {
               contentFlags = currentWorldParsed.contentFlags;
-              console.log('✅ Loaded contentFlags from currentWorldData fallback:', contentFlags);
             }
           } catch (error) {
             console.error('Lỗi parse currentWorldData:', error);
@@ -729,9 +907,35 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Generate scenario skeleton
       const scenarioSkeleton = await geminiService.generateScenarioSkeleton(worldData, characterData);
       
+      // Tạo quest system hoàn toàn mới từ scenario skeleton
+      if (scenarioSkeleton.questSystem) {
+        const newQuestSystem: QuestSystem = {
+          starterQuest: scenarioSkeleton.questSystem.starterQuest,
+          mainQuests: scenarioSkeleton.questSystem.mainQuests || [],
+          sideQuests: [], // Bắt đầu với side quests rỗng
+          factionQuests: [], // Bắt đầu với faction quests rỗng
+          currentAct: 1, // Bắt đầu từ act 1
+          totalActs: 5,
+          unlockedActs: [1], // Unlock act 1
+          questHistory: [],
+          factionReputations: []
+        };
+        
+        // Lưu quest system mới
+        saveQuestSystem(newQuestSystem);
+      }
+      
       // Lấy thông tin quest để nhắc đến trong opening message
       let questInfo = null;
-      if (questSystem.mainQuests.length > 0) {
+      
+      // Ưu tiên starterQuest trước mainQuests
+      if (questSystem.starterQuest && questSystem.starterQuest.objectives.length > 0) {
+        questInfo = {
+          title: questSystem.starterQuest.title,
+          description: questSystem.starterQuest.description,
+          firstObjective: questSystem.starterQuest.objectives[0].description
+        };
+      } else if (questSystem.mainQuests.length > 0) {
         const firstMainQuest = questSystem.mainQuests[0];
         if (firstMainQuest.objectives.length > 0) {
           questInfo = {
@@ -921,6 +1125,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     setIsLoading(true);
     setIsAIProcessing(true);
     setError(null);
+    
+    // Clear selection states
+    setIsTravelActionSelected(false);
+    setSelectedTravelLocationId(null);
+    setSelectedSuggestionId(null);
 
     // Backup current suggestions trước khi gửi tin nhắn
     setBackupSuggestions([...actionSuggestions]);
@@ -961,15 +1170,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       const deltaContext = buildContextForAI(turnCounter + 1); // +1 because we're about to add the current turn
       
       
-      // Generate AI response using delta context
-      console.log('🤖 Gọi AI API với context:', {
-        turnCounter: turnCounter,
-        enhancedMessage: enhancedMessage,
-        contentFlags: gameState.contentFlags,
-        worldTime: gameState.worldTime
-      });
+      // Generate AI response using delta context with streaming
+      setIsStreaming(true);
+      setStreamingNarrative('');
       
-      const response = await geminiService.generateTurnResponseWithDelta(
+      const response = await geminiService.generateTurnResponseWithDeltaStreaming(
         worldData,
         characterData,
         scenarioData,
@@ -980,17 +1185,16 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         gameState.contentFlags || undefined,
         questSystem,
         turnCounter,
-        gameState.worldTime // Pass world time to AI
+        gameState.worldTime, // Pass world time to AI
+        (chunk: string) => {
+          // Handle streaming chunks
+          setStreamingNarrative(prev => prev + chunk);
+        }
       );
       
-      console.log('🤖 AI response nhận được:', {
-        hasResponse: !!response,
-        hasNarrative: !!response?.narrative,
-        narrativeLength: response?.narrative?.length,
-        narrativePreview: response?.narrative?.substring(0, 100) + '...',
-        hasSceneState: !!response?.sceneState,
-        hasStoryProgress: !!response?.storyProgress
-      });
+      setIsStreaming(false);
+      setStreamingNarrative('');
+      
 
       // Validate AI response using comprehensive validation function
       const validation = validateAIResponse(response);
@@ -1027,18 +1231,23 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         setChatHistory(finalChatHistory);
         // Quest detection và generation
         try {
-          // Chuẩn bị context đầy đủ cho quest detection
-          const questContext = {
-            sccContext: updatedSccContext,
-            storyProgress: response.storyProgress,
-            chatHistory: finalChatHistory.slice(-10), // 10 tin nhắn gần nhất
-            worldTime: gameState.worldTime, // Sử dụng world time hiện tại
-            turnCounter: turnCounter, // Sử dụng turn counter hiện tại
-            npcRelationships: npcRelationshipService.getRelationshipContext(response.sceneState?.location)
+
+          // Kiểm tra quest completion với questCompletionService
+          const activeQuests = [
+            ...questSystem.mainQuests.filter(q => q.status === 'active'),
+            ...questSystem.sideQuests.filter(q => q.status === 'active'),
+            ...questSystem.factionQuests.filter(q => q.status === 'active')
+          ];
+
+          const questCompletionContext = {
+            inventory: inventoryService.getInventory(),
+            npcRelationships: npcRelationshipService.getAllRelationships(),
+            combatHistory: JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}'),
+            playerLocation: response.sceneState?.locationId,
+            playerPosition: response.sceneState?.gridPosition
           };
 
-          // Phân tích chat input để detect quest completion với context đầy đủ
-          const questAnalysis = await analyzeChatInput(currentMessage.trim(), response.sceneState, questContext);
+          const questAnalysis = await questCompletionService.checkAllActiveQuests(questCompletionContext, activeQuests);
           
           // Xử lý side quest offer từ AI response
           if (response.sideQuestOffer && response.sideQuestOffer.title) {
@@ -1054,7 +1263,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 );
                 
                 if (existingSignatureQuest) {
-                  console.log(`🏛️ Signature quest đã tồn tại cho location ${response.sideQuestOffer.signatureLocationId}, bỏ qua`);
                   // Đánh dấu quest này đã được xử lý để tránh tạo lại
                   processedQuests.add(questId);
                   shouldCreateQuest = false;
@@ -1070,7 +1278,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                   );
                   
                   if (recentSideQuests.length > 0) {
-                    console.log(`🎯 Đã có ${recentSideQuests.length} side quest trong 5 turn gần đây, bỏ qua quest mới`);
                     // Đánh dấu quest này đã được xử lý để tránh tạo lại
                     processedQuests.add(questId);
                     shouldCreateQuest = false;
@@ -1098,8 +1305,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             }
           }
           
+          // Xử lý completed objectives
           if (questAnalysis.completedObjectives.length > 0) {
-            // Quest objectives completed
+            for (const { questId, objectiveId } of questAnalysis.completedObjectives) {
+              completeObjective(questId, objectiveId, true);
+            }
           }
         } catch (questError) {
           console.error('Lỗi quest system:', questError);
@@ -1110,7 +1320,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           // CHỈ parse items từ AI response hiện tại, không từ sceneState cũ
           const foundItems = inventoryService.parseItemsFromAIResponse(response);
           if (foundItems && foundItems.length > 0) {
-            console.log('🎒 Phát hiện items từ AI response:', foundItems);
             
             // Lọc bỏ items đã có trong character inventory
             const character = characterData ? JSON.parse(characterData) : null;
@@ -1311,6 +1520,10 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 turnCounter + 1
               );
               
+              // Clear selected NPC when traveling to new location
+              setSelectedNPCForDialogue(null);
+              localStorage.removeItem('selectedNPCForDialogue');
+              
               // Update game state with new location and time
               setGameState(prev => ({
                 ...prev,
@@ -1338,7 +1551,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             if (currentLocation && currentLocation.type === 'secondary') {
               // Check if this location already has a signature NPC
               if (!npcRelationshipService.hasSignatureNPCForLocation(currentLocation.id)) {
-                console.log(`🏛️ Player entered secondary location "${currentLocation.name}" without signature NPC - AI should create one`);
               } else {
                 // Update location with signature NPC and quest info
                 const signatureNPC = npcRelationshipService.getSignatureNPCForLocation(currentLocation.id);
@@ -1366,9 +1578,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           // Parse character status from AI response
           npcRelationshipService.parseCharacterStatusFromAIResponse(response, newSceneState.location);
           
-          // Update relationships based on AI narrative with enhanced context
+          // Process NPC relationships and generate action suggestions in parallel
+          const parallelTasks = [];
+          
+          // NPC Analysis task
           if (response.narrative) {
-            // Prepare comprehensive context for analysis
             const enhancedContext = {
               chatHistory: finalChatHistory.slice(-10), // Last 10 messages for context
               sceneState: newSceneState,
@@ -1377,13 +1591,27 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               contentFlags: gameState.contentFlags
             };
             
-            // Use retry mechanism for NPC analysis
-            await retryNPCAnalysis(
-              response.narrative, 
-              newSceneState.location, 
-              enhancedContext
+            parallelTasks.push(
+              retryNPCAnalysis(
+                response.narrative, 
+                newSceneState.location, 
+                enhancedContext
+              ).catch(error => {
+                console.error('Error processing NPC relationships:', error);
+              })
             );
           }
+
+          // Action Suggestions task
+          parallelTasks.push(
+            loadActionSuggestions().catch(error => {
+              console.error('Error loading action suggestions:', error);
+            })
+          );
+
+          // Run both tasks in parallel
+          await Promise.all(parallelTasks);
+
         } catch (error) {
           console.error('Error processing NPC relationships:', error);
         }
@@ -1399,9 +1627,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         if (shouldSummarize && updatedSccContext) {
           await handleSummarization(updatedSccContext, worldData, characterData, scenarioData);
         }
-
-        // Generate new action suggestions after AI response
-        await loadActionSuggestions();
         
         // Clear backup suggestions sau khi AI response thành công
         setBackupSuggestions([]);
@@ -1790,6 +2015,10 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Clear existing player location before loading save
       localStorage.removeItem('player_location');
       
+      // Clear selected NPC for dialogue
+      setSelectedNPCForDialogue(null);
+      localStorage.removeItem('selectedNPCForDialogue');
+      
       // Cập nhật game state từ SaveGame
       setGameState({
         scenarioSkeleton: saveGame.scenario,
@@ -1899,7 +2128,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         const worldData = JSON.parse(worldGenResult);
         worldData.contentFlags = newFlags;
         localStorage.setItem('world_gen_result', JSON.stringify(worldData));
-        console.log('✅ Updated contentFlags in world_gen_result:', newFlags);
       } catch (error) {
         console.error('❌ Error updating contentFlags in world_gen_result:', error);
       }
@@ -1912,7 +2140,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         const worldData = JSON.parse(currentWorldData);
         worldData.contentFlags = newFlags;
         localStorage.setItem('currentWorldData', JSON.stringify(worldData));
-        console.log('✅ Updated contentFlags in currentWorldData:', newFlags);
       } catch (error) {
         console.error('❌ Error updating contentFlags in currentWorldData:', error);
       }
@@ -1936,7 +2163,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
   const handleSelectItems = (selectedItems: InventoryItem[]) => {
     try {
       inventoryService.addSelectedItems(selectedItems);
-      console.log(`🎒 Đã thêm ${selectedItems.length} vật phẩm vào túi đồ`);
       
       // Update character in localStorage
       const characterData = localStorage.getItem('currentCharacter');
@@ -1979,6 +2205,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
   // Handle location travel
   const handleLocationTravel = (locationId: string) => {
+    // Nếu đã chọn location này rồi thì hủy chọn
+    if (selectedTravelLocationId === locationId && isTravelActionSelected) {
+      setIsTravelActionSelected(false);
+      setSelectedTravelLocationId(null);
+      setCurrentMessage('');
+      return;
+    }
+    
     // Sử dụng locationService.getCurrentLocation() thay vì gameState.playerLocation
     const currentPlayerLocation = locationService.getCurrentLocation();
     
@@ -1996,6 +2230,13 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     
     if (travelMessage) {
       setCurrentMessage(travelMessage);
+      setIsTravelActionSelected(true);
+      setSelectedTravelLocationId(locationId);
+      
+      // Clear suggestion selection nếu có
+      if (selectedSuggestionId) {
+        setSelectedSuggestionId(null);
+      }
       
       // Focus vào input box
       setTimeout(() => {
@@ -2134,9 +2375,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           
           // Show success message
           if (item.isEquipped) {
-            console.log(`🗑️ Đã gỡ trang bị và vứt bỏ "${item.name}"`);
           } else {
-            console.log(`🗑️ Đã vứt bỏ "${item.name}"`);
           }
         } catch (error) {
           console.error('Failed to update character data:', error);
@@ -2145,9 +2384,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     }
   };
 
-  const handleViewItemDetails = (item: InventoryItem) => {
+  const handleViewItemDetails = (_item: InventoryItem) => {
     // TODO: Implement item details modal
-    console.log('View item details:', item);
   };
 
   // Memoize InfoMenu data để tránh re-parse mỗi lần render
@@ -2480,7 +2718,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             </MotionWrapper>
           ))}
           
-          {isLoading && (
+          {isLoading && !isStreaming && (
             <MotionWrapper
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2490,6 +2728,29 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 <div className="flex items-center space-x-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>AI đang suy nghĩ...</span>
+                </div>
+              </div>
+            </MotionWrapper>
+          )}
+
+          {/* Streaming narrative display */}
+          {isStreaming && streamingNarrative && (
+            <MotionWrapper
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="bg-gray-900 border border-gray-800 text-gray-100 px-4 py-3 rounded-lg max-w-3xl">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm text-gray-400">AI đang viết...</span>
+                </div>
+                <div className="leading-relaxed">
+                  <DialogueRenderer 
+                    content={streamingNarrative} 
+                    isPlayer={false} 
+                  />
+                  <span className="animate-pulse">|</span>
                 </div>
               </div>
             </MotionWrapper>
@@ -2571,6 +2832,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             </div>
           )}
           
+          {/* Travel action indicator */}
+          {isTravelActionSelected && (
+            <div className="mb-1.5 text-xs text-green-400 flex items-center space-x-1">
+              <Send className="w-3 h-3" />
+              <span>Đã chọn địa điểm di chuyển - nhấn gửi để thực hiện hành động</span>
+            </div>
+          )}
+          
           <div className={`${shouldUseMobileLayout() ? 'flex space-x-2' : 'flex space-x-2 sm:space-x-3'} transition-all duration-300`}>
             <textarea
               ref={textareaRef}
@@ -2580,24 +2849,85 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               placeholder={
                 selectedSuggestionId 
                   ? "Đã chọn hành động gợi ý - nhấn gửi để thực hiện" 
-                  : isAIProcessing || isNPCAnalysisProcessing 
-                    ? "AI đang xử lý - bạn có thể gõ sẵn hành động..." 
-                    : "Mô tả hành động của bạn..."
+                  : isTravelActionSelected
+                    ? "Đã chọn địa điểm di chuyển - nhấn gửi để thực hiện"
+                    : isAIProcessing || isNPCAnalysisProcessing 
+                      ? "AI đang xử lý - bạn có thể gõ sẵn hành động..." 
+                      : "Mô tả hành động của bạn..."
               }
               className={`flex-1 px-3 sm:px-4 py-2.5 bg-gray-900 border rounded-lg text-white placeholder-gray-400 focus:outline-none resize-none transition-colors ${
                 shouldUseMobileLayout() ? 'text-sm' : 'text-base'
               } ${
                 selectedSuggestionId
                   ? 'border-blue-700 focus:border-blue-700 opacity-75'
-                  : resendingMessageIndex !== null 
-                    ? 'border-green-700 focus:border-green-700' 
-                    : (isAIProcessing || isNPCAnalysisProcessing)
-                      ? 'border-yellow-700 focus:border-yellow-700'
-                      : 'border-gray-800 focus:border-blue-700'
+                  : isTravelActionSelected
+                    ? 'border-green-600 focus:border-green-600 opacity-75'
+                    : resendingMessageIndex !== null 
+                      ? 'border-green-700 focus:border-green-700' 
+                      : (isAIProcessing || isNPCAnalysisProcessing)
+                        ? 'border-yellow-700 focus:border-yellow-700'
+                        : 'border-gray-800 focus:border-blue-700'
               }`}
               rows={2}
-              disabled={!!selectedSuggestionId}
+              disabled={!!selectedSuggestionId || isTravelActionSelected}
             />
+            
+            {/* NPC Dialogue Selector Button */}
+            {availableNPCs.length > 0 && (
+              <div className="relative npc-dropdown-container">
+                <button
+                  onClick={() => setShowNPCDropdown(!showNPCDropdown)}
+                  className={`px-3 sm:px-4 py-3 border rounded-lg transition-colors duration-200 flex items-center justify-center ${
+                    shouldUseMobileLayout() ? 'min-h-[48px] min-w-[48px]' : 'mobile-button'
+                  } touch-feedback ${
+                    selectedNPCForDialogue
+                      ? 'bg-purple-800 border-purple-700 text-purple-100 hover:bg-purple-900'
+                      : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                  }`}
+                  title={
+                    selectedNPCForDialogue
+                      ? `Đang đối thoại với ${availableNPCs.find(npc => npc.id === selectedNPCForDialogue)?.name || 'NPC'} - Click để chọn`
+                      : 'Tất cả NPCs - Click để chọn NPC cụ thể'
+                  }
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+                
+                {/* Dropdown Menu - Hiển thị phía trên, căn phải */}
+                {showNPCDropdown && (
+                  <div className="absolute bottom-full right-0 mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[200px]">
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          handleNPCSelection(null);
+                          setShowNPCDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors ${
+                          !selectedNPCForDialogue ? 'text-purple-300 bg-purple-900/30' : 'text-gray-300'
+                        }`}
+                      >
+                        Tất cả NPCs
+                      </button>
+                      {availableNPCs.map((npc) => (
+                        <button
+                          key={npc.id}
+                          onClick={() => {
+                            handleNPCSelection(npc.id);
+                            setShowNPCDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors ${
+                            selectedNPCForDialogue === npc.id ? 'text-purple-300 bg-purple-900/30' : 'text-gray-300'
+                          }`}
+                        >
+                          {npc.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <button
               onClick={sendMessage}
               disabled={!currentMessage.trim() || isLoading || isAIProcessing || isNPCAnalysisProcessing}
@@ -2609,9 +2939,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             >
               <Send className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-          </div>
-          <div className="text-xs text-gray-400 mt-2">
-            Nhấn Enter để gửi, Shift+Enter để xuống dòng
           </div>
         </div>
       </div>
@@ -2671,10 +2998,12 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             onToggleAdultContent={toggleAdultContent}
             onToggleAdultIntensity={toggleAdultIntensity}
             onLocationTravel={handleLocationTravel}
+            selectedTravelLocationId={selectedTravelLocationId}
             onEquipItem={handleEquipItem}
             onUnequipItem={handleUnequipItem}
             onDropItem={handleDropItem}
             onViewItemDetails={handleViewItemDetails}
+            selectedNPCForDialogue={selectedNPCForDialogue}
           />
         </Suspense>
       )}

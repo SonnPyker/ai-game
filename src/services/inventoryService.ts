@@ -282,6 +282,44 @@ class InventoryService {
     return item.type === 'consumable' || item.type === 'misc';
   }
 
+  // Get delivery items for a specific NPC
+  public getDeliveryItems(npcId: string): InventoryItem[] {
+    return this.inventory.filter(item => 
+      item.tags?.includes('delivery') && 
+      item.deliveryNPCId === npcId
+    );
+  }
+
+  // Deliver item to NPC (remove from inventory and mark as delivered)
+  public deliverItem(itemId: string, npcId: string, questId: string): boolean {
+    const item = this.inventory.find(i => i.id === itemId);
+    if (!item) return false;
+
+    // Check if item is for this NPC and quest
+    if (item.deliveryNPCId !== npcId || item.deliveryQuestId !== questId) {
+      return false;
+    }
+
+    // Remove item from inventory
+    return this.removeItem(itemId, 1);
+  }
+
+  // Mark item as delivery item
+  public markItemAsDelivery(itemId: string, questId: string, npcId: string): boolean {
+    const item = this.inventory.find(i => i.id === itemId);
+    if (!item) return false;
+
+    item.tags = item.tags || [];
+    if (!item.tags.includes('delivery')) {
+      item.tags.push('delivery');
+    }
+    item.deliveryQuestId = questId;
+    item.deliveryNPCId = npcId;
+
+    this.saveToStorage();
+    return true;
+  }
+
   // Remove item from inventory
   public removeItem(itemId: string, quantity: number = 1): boolean {
     const itemIndex = this.inventory.findIndex(i => i.id === itemId);

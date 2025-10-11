@@ -13,6 +13,7 @@ interface ResponsiveContextType {
   shouldUseMobileLayout: () => boolean;
   shouldUseDesktopLayout: () => boolean;
   shouldUseAnimations: () => boolean;
+  shouldUseLoadingAnimations: () => boolean;
   getMotionProps: (defaultProps?: any) => any;
   getTransitionClass: (baseClass?: string) => string;
   getAnimationClass: () => string;

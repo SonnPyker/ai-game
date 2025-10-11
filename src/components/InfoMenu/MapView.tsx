@@ -7,6 +7,7 @@ interface MapViewProps {
   worldData: WorldData;
   currentLocationId: string;
   onLocationClick: (locationId: string) => void;
+  selectedLocationId?: string | null;
   worldTime: WorldTime;
 }
 
@@ -18,7 +19,7 @@ interface GridCell {
   isNearby: boolean;
 }
 
-export function MapView({ worldData, currentLocationId, onLocationClick }: MapViewProps) {
+export function MapView({ worldData, currentLocationId, onLocationClick, selectedLocationId }: MapViewProps) {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [travelPath, setTravelPath] = useState<{ x: number; y: number }[]>([]);
 
@@ -335,9 +336,17 @@ export function MapView({ worldData, currentLocationId, onLocationClick }: MapVi
                   {!isCurrentLocation && travelInfo && (
                     <button
                       onClick={() => handleTravelToLocation(location)}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition-colors"
+                      className={`flex-1 text-white py-2 px-4 rounded transition-colors ${
+                        selectedLocationId === location.id
+                          ? 'bg-green-600 hover:bg-green-700 ring-2 ring-green-400'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                      title={selectedLocationId === location.id ? 'Click để hủy chọn' : ''}
                     >
-                      Di chuyển đến {location.name}
+                      {selectedLocationId === location.id 
+                        ? '✓ Đã chọn - click để hủy' 
+                        : `Di chuyển đến ${location.name}`
+                      }
                     </button>
                   )}
                   <button

@@ -264,6 +264,13 @@
     transform: none !important;
   }
 
+  /* Always allow loading animations even when animations are disabled */
+  .animations-disabled .animate-spin,
+  .animations-disabled .animate-pulse,
+  .animations-disabled [class*="animate-"] {
+    animation: inherit !important;
+  }
+
   .animations-disabled .mobile-no-transition,
   .animations-disabled .mobile-no-animation {
     /* These classes are redundant when animations are globally disabled */

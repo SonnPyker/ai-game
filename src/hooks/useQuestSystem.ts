@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { QuestSystem, QuestProgress } from '../types';
+import { QuestSystem, QuestProgress, QuestObjectiveProgress } from '../types';
 import { questDetectionService } from '../services/questDetectionService';
 import { factionQuestService } from '../services/factionQuestService';
 import { levelSystemService } from '../services/levelSystemService';
@@ -312,9 +312,6 @@ const loadQuestsFromWorldData = (): { mainQuests: QuestProgress[], sideQuests: Q
 };
 
 // Helper function để load faction quests
-const loadFactionQuests = (): QuestProgress[] => {
-  return factionQuestService.getFactionQuests();
-};
 
 export function useQuestSystem() {
   const [questSystem, setQuestSystem] = useState<QuestSystem>({
@@ -418,30 +415,8 @@ export function useQuestSystem() {
       } catch (error) {
         console.error('Lỗi load quest system:', error);
       }
-    } else {
-      // Nếu chưa có quest system, load từ world data
-      const worldQuests = loadQuestsFromWorldData();
-      if (worldQuests.mainQuests.length > 0) {
-        const newQuestSystem: QuestSystem = {
-          mainQuests: worldQuests.mainQuests,
-          sideQuests: [], // Không load sidequest từ world data
-          factionQuests: loadFactionQuests(), // Load faction quests
-          currentAct: 0, // Bắt đầu từ 0 (quest mở đầu)
-          totalActs: 5,
-          unlockedActs: [], // Chưa unlock act nào
-          questHistory: [],
-          factionReputations: []
-        };
-        
-        // Starter quest (quest đầu tiên) luôn active
-        if (worldQuests.mainQuests.length > 0) {
-          newQuestSystem.mainQuests[0].status = 'active';
-        }
-        
-        setQuestSystem(newQuestSystem);
-        localStorage.setItem(QUEST_SYSTEM_KEY, JSON.stringify(newQuestSystem));
-      }
     }
+    // Không load từ world data nữa - quest system sẽ được tạo từ scenarioSkeleton
   }, []);
 
   // Save quest system vào localStorage
@@ -529,18 +504,30 @@ export function useQuestSystem() {
     setQuestSystem(prev => {
       const newSystem = { ...prev };
       
-      // Tìm quest trong main hoặc side quests
-      let quest = newSystem.mainQuests.find(q => q.id === questId);
-      let questList = 'mainQuests';
-      let questIndex = newSystem.mainQuests.findIndex(q => q.id === questId);
+      // Tìm quest trong starterQuest, main hoặc side quests
+      let quest: QuestProgress | null = newSystem.starterQuest?.id === questId ? newSystem.starterQuest : null;
+      let questList = 'starterQuest';
+      let questIndex = -1;
       
       if (!quest) {
-        quest = newSystem.sideQuests.find(q => q.id === questId);
+        quest = newSystem.mainQuests.find(q => q.id === questId) || null;
+        questList = 'mainQuests';
+        questIndex = newSystem.mainQuests.findIndex(q => q.id === questId);
+      }
+      
+      if (!quest) {
+        quest = newSystem.sideQuests.find(q => q.id === questId) || null;
         questList = 'sideQuests';
         questIndex = newSystem.sideQuests.findIndex(q => q.id === questId);
       }
       
-      if (quest && questIndex !== -1) {
+      if (!quest) {
+        quest = newSystem.factionQuests.find(q => q.id === questId) || null;
+        questList = 'factionQuests';
+        questIndex = newSystem.factionQuests.findIndex(q => q.id === questId);
+      }
+      
+      if (quest && (questList === 'starterQuest' || questIndex !== -1)) {
         const updatedQuest = { ...quest };
         const objectiveIndex = updatedQuest.objectives.findIndex(obj => obj.id === objectiveId);
         
@@ -558,7 +545,11 @@ export function useQuestSystem() {
               ...updatedQuest.objectives[nextObjectiveIndex],
               unlocked: true
             };
-            console.log(`🔓 Unlocked objective: ${updatedQuest.objectives[nextObjectiveIndex].description}`);
+          }
+
+          // Xử lý quest chain objectives
+          if (completed && updatedQuest.objectives[objectiveIndex].isChainObjective) {
+            handleChainObjectiveCompletion(updatedQuest.objectives[objectiveIndex], newSystem);
           }
           
           // Kiểm tra xem quest có hoàn thành không
@@ -570,18 +561,41 @@ export function useQuestSystem() {
             // Thêm vào quest history
             newSystem.questHistory.push(updatedQuest);
             
-            // Unlock quest mới nếu cần
-            unlockNewQuests(newSystem, updatedQuest);
+            // Không tự động claim rewards - để người chơi tự claim
+            
+            // Nếu là starterQuest, unlock Act 1 quest
+            if (questList === 'starterQuest') {
+              newSystem.currentAct = 1;
+              if (!newSystem.unlockedActs.includes(1)) {
+                newSystem.unlockedActs.push(1);
+              }
+              
+              // Unlock quest Act 1 đầu tiên
+              const act1QuestIndex = newSystem.mainQuests.findIndex(
+                quest => quest.act === 1 && quest.status === 'locked'
+              );
+              if (act1QuestIndex !== -1) {
+                newSystem.mainQuests[act1QuestIndex].status = 'active';
+              }
+            } else {
+              // Unlock quest mới nếu cần
+              unlockNewQuests(newSystem, updatedQuest);
+            }
           }
           
           // Cập nhật quest trong system
-          if (questList === 'mainQuests') {
+          if (questList === 'starterQuest') {
+            newSystem.starterQuest = updatedQuest;
+          } else if (questList === 'mainQuests') {
             newSystem.mainQuests[questIndex] = updatedQuest;
-          } else {
+          } else if (questList === 'sideQuests') {
             newSystem.sideQuests[questIndex] = updatedQuest;
-            
-            // Nếu là side quest, kiểm tra xem có cần tạo objective tiếp theo không
-            if (updatedQuest.type === 'side' && updatedQuest._allObjectives) {
+          } else if (questList === 'factionQuests') {
+            newSystem.factionQuests[questIndex] = updatedQuest;
+          }
+          
+          // Nếu là side quest, kiểm tra xem có cần tạo objective tiếp theo không
+          if (questList === 'sideQuests' && updatedQuest.type === 'side' && updatedQuest._allObjectives) {
               const currentObjectiveCount = updatedQuest.objectives.length;
               const totalObjectives = updatedQuest._allObjectives.length;
               
@@ -596,12 +610,60 @@ export function useQuestSystem() {
             }
           }
         }
-      }
       
       saveQuestSystem(newSystem);
       return newSystem;
     });
   }, [saveQuestSystem]);
+
+  // Xử lý quest chain objective completion
+  const handleChainObjectiveCompletion = async (objective: QuestObjectiveProgress, questSystem: QuestSystem) => {
+    // Nếu objective có itemToReceive, thêm item vào inventory
+    if (objective.itemToReceive) {
+      const { inventoryService } = await import('../services/inventoryService');
+      
+      const newItem = {
+        id: objective.itemToReceive.id,
+        name: objective.itemToReceive.name,
+        quantity: objective.itemToReceive.quantity,
+        type: objective.itemToReceive.type,
+        description: objective.itemToReceive.description || '',
+        value: objective.itemToReceive.value || 0,
+        rarity: objective.itemToReceive.rarity || 'common',
+        tags: objective.itemToReceive.tags || [],
+        icon: '📦', // Default icon for quest chain items
+        isEquipped: false,
+        stats: {
+          strength: 0,
+          agility: 0,
+          intelligence: 0,
+          constitution: 0,
+          wisdom: 0,
+          charisma: 0
+        },
+        slot: 'accessory1' as const,
+        createdAt: new Date()
+      };
+      
+      inventoryService.addItem(newItem);
+    }
+
+    // Unlock objectives có prerequisiteObjectiveId trùng với objective hiện tại
+    const allQuests = [
+      ...(questSystem.starterQuest ? [questSystem.starterQuest] : []),
+      ...questSystem.mainQuests,
+      ...questSystem.sideQuests,
+      ...questSystem.factionQuests
+    ];
+
+    for (const quest of allQuests) {
+      for (const obj of quest.objectives) {
+        if (obj.prerequisiteObjectiveId === objective.id && !obj.unlocked) {
+          obj.unlocked = true;
+        }
+      }
+    }
+  };
 
   // Claim reward
   const claimReward = useCallback((questId: string, rewardType: string) => {
@@ -609,24 +671,30 @@ export function useQuestSystem() {
       if (!prev) return prev;
       const newSystem = { ...prev };
       
-      // Tìm quest trong main, side hoặc faction quests
-      let quest = newSystem.mainQuests.find(q => q.id === questId);
-      let questList = 'mainQuests';
-      let questIndex = newSystem.mainQuests.findIndex(q => q.id === questId);
+      // Tìm quest trong starterQuest, main, side hoặc faction quests
+      let quest = newSystem.starterQuest?.id === questId ? newSystem.starterQuest : null;
+      let questList = 'starterQuest';
+      let questIndex = -1;
       
       if (!quest) {
-        quest = newSystem.sideQuests.find(q => q.id === questId);
+        quest = newSystem.mainQuests.find(q => q.id === questId) || null;
+        questList = 'mainQuests';
+        questIndex = newSystem.mainQuests.findIndex(q => q.id === questId);
+      }
+      
+      if (!quest) {
+        quest = newSystem.sideQuests.find(q => q.id === questId) || null;
         questList = 'sideQuests';
         questIndex = newSystem.sideQuests.findIndex(q => q.id === questId);
       }
       
       if (!quest) {
-        quest = newSystem.factionQuests.find(q => q.id === questId);
+        quest = newSystem.factionQuests.find(q => q.id === questId) || null;
         questList = 'factionQuests';
         questIndex = newSystem.factionQuests.findIndex(q => q.id === questId);
       }
       
-      if (quest && questIndex !== -1) {
+      if (quest && (questList === 'starterQuest' || questIndex !== -1)) {
         const updatedQuest = { ...quest };
         const rewardIndex = updatedQuest.rewards.findIndex(reward => reward.type === rewardType);
         
@@ -650,7 +718,9 @@ export function useQuestSystem() {
           };
           
           // Cập nhật quest trong system
-          if (questList === 'mainQuests') {
+          if (questList === 'starterQuest') {
+            newSystem.starterQuest = updatedQuest;
+          } else if (questList === 'mainQuests') {
             newSystem.mainQuests[questIndex] = updatedQuest;
           } else if (questList === 'sideQuests') {
             newSystem.sideQuests[questIndex] = updatedQuest;
@@ -725,8 +795,9 @@ export function useQuestSystem() {
                   id: `obj_1`,
                   description: `Hoàn thành mục tiêu Act ${nextAct}`,
                   completed: false,
-                  aiKeywords: ['hoàn thành', 'xong', 'làm xong'],
-                  unlocked: true
+                  unlocked: true,
+                  type: 'find_item' as const,
+                  aiKeywords: ['hoàn thành', 'xong', 'làm xong']
                 }
               ],
               rewards: [
@@ -773,29 +844,6 @@ export function useQuestSystem() {
     });
   }, [saveQuestSystem]);
 
-  // Analyze chat input for quest completion với context đầy đủ
-  const analyzeChatInput = useCallback(async (chatInput: string, sceneState?: any, additionalContext?: {
-    sccContext?: any;
-    storyProgress?: any;
-    chatHistory?: Array<{ role: string; content: string; turn?: number }>;
-    worldTime?: any;
-    turnCounter?: number;
-    npcRelationships?: any;
-  }) => {
-    const activeQuests = [
-      ...questSystem.mainQuests.filter(q => q.status === 'active'),
-      ...questSystem.sideQuests.filter(q => q.status === 'active')
-    ];
-    
-    const result = await questDetectionService.analyzeQuestCompletion(chatInput, activeQuests, sceneState, additionalContext);
-    
-    // Auto-complete objectives
-    for (const { questId, objectiveId } of result.completedObjectives) {
-      completeObjective(questId, objectiveId, true);
-    }
-    
-    return result;
-  }, [questSystem, completeObjective]);
 
   // Generate side quest from AI response
   const generateSideQuestFromAI = useCallback(async (aiResponse: string, storyContext: any, turnCounter?: number) => {
@@ -918,6 +966,7 @@ export function useQuestSystem() {
 
   return {
     questSystem,
+    saveQuestSystem,
     acceptQuest,
     declineQuest,
     declineActiveQuest,
@@ -925,7 +974,6 @@ export function useQuestSystem() {
     completeObjective,
     claimReward,
     addSideQuest,
-    analyzeChatInput,
     generateSideQuestFromAI,
     addNextObjectiveToSideQuest,
     unlockNewQuests,

@@ -5,6 +5,37 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2025-01-05
+
+### 🚀 Performance Optimization
+- **Optimized Action Suggestion Service**: Cải thiện hiệu suất xử lý prompt AI
+  - **Reduced context size**: Giảm chat history từ 20 xuống 15 tin nhắn gần nhất
+  - **Streamlined quest context**: Chỉ hiển thị main quest đầu tiên và side quest đầu tiên
+  - **Simplified location context**: Giảm mô tả địa điểm để tiết kiệm token
+  - **Optimized adult content detection**: Loại bỏ logic phức tạp không cần thiết
+- **Enhanced Prompt Efficiency**: Tối ưu hóa prompt để giảm thời gian xử lý
+  - **Shorter action descriptions**: Giảm từ 10-15 từ xuống 8-12 từ
+  - **Cleaner JSON output**: Yêu cầu AI chỉ trả về JSON thuần túy, không có markdown
+  - **Focused content guidance**: Tập trung vào cốt truyện và nhiệm vụ hơn nội dung 18+
+- **Improved Content Balance**: Cân bằng nội dung tình dục và cốt truyện
+  - **Priority system**: Cốt truyện > Quest > Hành động thường > 18+
+  - **Context-specific 18+ content**: Chỉ tạo gợi ý 18+ khi có context cụ thể
+  - **Reduced sexual suggestions**: Giảm đáng kể gợi ý tình dục không liên quan
+
+### 🔧 Changed
+- **Action Suggestion Logic**: Cải thiện logic tạo gợi ý hành động
+  - **Better content filtering**: Lọc nội dung 18+ hiệu quả hơn
+  - **Smarter context analysis**: Phân tích context thông minh hơn
+  - **Optimized token usage**: Sử dụng token AI hiệu quả hơn
+- **Quest System Integration**: Tích hợp tốt hơn với quest system
+  - **Focused quest display**: Chỉ hiển thị quest quan trọng nhất
+  - **Reduced quest context**: Giảm thông tin quest không cần thiết
+
+### 🐛 Fixed
+- **Performance Issues**: Sửa các vấn đề hiệu suất trong xử lý prompt
+- **Content Balance**: Cân bằng nội dung tình dục và cốt truyện
+- **Token Usage**: Tối ưu hóa việc sử dụng token AI
+
 ## [3.2.0] - 2025-01-05
 
 ### 🎯 Added

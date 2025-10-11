@@ -126,6 +126,7 @@ export function InitPage() {
       localStorage.removeItem('faction_reputations'); // Xóa faction reputations khi reset world
       localStorage.removeItem('action_suggestions'); // Xóa action suggestions khi reset world
       localStorage.removeItem('action_log'); // Xóa action log khi reset world
+      localStorage.removeItem('selectedNPCForDialogue'); // Xóa selected NPC khi reset world
       // Clear NPC relationship data when starting new world
       npcRelationshipService.clearAllData();
     } else if (step.id === 'character') {
@@ -137,6 +138,7 @@ export function InitPage() {
       localStorage.removeItem('faction_reputations'); // Xóa faction reputations khi reset character
       localStorage.removeItem('action_suggestions'); // Xóa action suggestions khi reset character
       localStorage.removeItem('action_log'); // Xóa action log khi reset character
+      localStorage.removeItem('selectedNPCForDialogue'); // Xóa selected NPC khi reset character
       // Clear NPC relationship data when creating new character
       npcRelationshipService.clearAllData();
     }

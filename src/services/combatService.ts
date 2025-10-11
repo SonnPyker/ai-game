@@ -427,6 +427,20 @@ class CombatService {
     let totalExperience = 0;
     const items: InventoryItem[] = [];
     
+    // Track defeated enemies for quest system
+    const defeatedEnemiesInfo = defeatedEnemies.map(enemy => ({
+      name: enemy.name,
+      type: enemy.enemyData?.type || 'other',
+      enemyId: enemy.enemyData?.npcId, // if enemy is NPC
+      defeatedAt: new Date(),
+      turn: this.currentCombat!.currentTurn
+    }));
+
+    // Save to combat history
+    const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
+    combatHistory.defeatedEnemies.push(...defeatedEnemiesInfo);
+    localStorage.setItem('combat_history', JSON.stringify(combatHistory));
+    
     defeatedEnemies.forEach(enemy => {
       if (enemy.enemyData) {
         totalExperience += enemy.enemyData.experienceReward;

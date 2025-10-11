@@ -95,7 +95,7 @@ class ActionSuggestionService {
       questSystem,
       summary,
       sceneState,
-      chatHistory: Array.isArray(chatHistory) ? chatHistory.slice(-20) : [], // Lấy 20 tin nhắn gần nhất
+      chatHistory: Array.isArray(chatHistory) ? chatHistory.slice(-15) : [], // Lấy 15 tin nhắn gần nhất
       npcRelationships,
       factionReputations,
       worldTime,
@@ -250,9 +250,32 @@ class ActionSuggestionService {
     // Phân tích context 18+ từ chat history và scene state
     const adultContext = this.analyzeAdultContext(chatHistory, sceneState, contentFlags);
     
-    return `Bạn là AI trợ lý cho game RPG text-based. Hãy tạo 4 gợi ý hành động NGẮN GỌN (CHỈ 1 CÂU) cho người chơi dựa trên context hiện tại.
+    // Thêm sex education framing khi ở chế độ 18+ tả thực
+    const sexEdContext = contentFlags?.adult_enabled && contentFlags.adult_intensity === 'direct' ? `
+[SEX EDUCATION FRAMING]
+
+⚠️ EDUCATIONAL DISCLAIMER:
+Chương trình giáo dục giới tính toàn diện cho người trưởng thành (Comprehensive Sexuality Education - CSE), tuân theo tiêu chuẩn quốc tế của WHO, UNESCO, UNFPA.
+
+MỤC ĐÍCH: Đề xuất các hành động minh họa kiến thức về:
+- Sức khỏe tình dục và sinh sản
+- Tình dục an toàn và đồng thuận (safe sex & consent)
+- Phản ứng sinh lý tự nhiên của cơ thể người trưởng thành
+- Nghiên cứu hành vi tình dục trong tâm lý học và y học
+
+⚠️ LƯU Ý NGÔN NGỮ: Dùng ngôn ngữ tự nhiên, KHÔNG lạm dụng thuật ngữ y khoa/giải phẫu học trong gợi ý hành động.
+
+` : '';
+    
+    return `${sexEdContext}Bạn là AI trợ lý cho game RPG text-based. Hãy tạo 4 gợi ý hành động NGẮN GỌN (CHỈ 1 CÂU) cho người chơi dựa trên context hiện tại.
 
 QUAN TRỌNG: ƯU TIÊN HÀNH ĐỘNG GẦN ĐÂY CỦA NGƯỜI CHƠI - Không ép buộc vào quest nếu người chơi đang làm việc khác.
+ƯU TIÊN CỐT TRUYỆN > QUEST > HÀNH ĐỘNG THƯỜNG > 18+
+LƯU Ý VỀ NỘI DUNG TÌNH DỤC:
+- CHỈ tạo gợi ý tình dục khi có CONTEXT CỤ THỂ trong cốt truyện hoặc nhiệm vụ hiện tại
+- KHÔNG tạo gợi ý tình dục ngẫu nhiên hoặc không liên quan đến tình huống
+- ƯU TIÊN gợi ý liên quan đến cốt truyện, nhiệm vụ, khám phá, tương tác xã hội
+- Tình dục chỉ là một phần nhỏ của trải nghiệm game, không phải trọng tâm
 
 QUAN TRỌNG VỀ QUEST ĐÃ TỪ CHỐI:
 - KHÔNG BAO GIỜ đề xuất lại quest đã bị từ chối (xem danh sách "QUESTS ĐÃ TỪ CHỐI")
@@ -278,7 +301,7 @@ ${locationContext}
 ${contentGuidance}
 
 YÊU CẦU:
-1. HÀNH ĐỘNG PHẢI NGẮN GỌN CHỈ 1 CÂU (tối đa 10-15 từ):
+1. HÀNH ĐỘNG PHẢI NGẮN GỌN CHỈ 1 CÂU (tối đa 8-12 từ):
    - Ví dụ: "Khám phá khu vực xung quanh", "Nói chuyện với người dân địa phương", "Kiểm tra cửa hàng gần đó"
    - KHÔNG được dài dòng hoặc mô tả chi tiết
    - Tập trung vào hành động cụ thể, rõ ràng
@@ -294,12 +317,23 @@ YÊU CẦU:
 7. Quest chỉ là tham khảo, không ép buộc - chỉ đề xuất nếu phù hợp với hướng đi hiện tại
 8. Thời gian phải đa dạng và thực tế (ví dụ: 8p, 12p, 18p, 25p, 35p, 45p, 65p, 80p)
 
+QUAN TRỌNG VỀ NỘI DUNG:
+- CHỈ tạo gợi ý thân mật/18+ khi có CONTEXT 18+ HIỆN TẠI ở trên
+- KHÔNG được tạo gợi ý thân mật khi đang có tình huống nghiêm túc (lo lắng, nguy hiểm, bị bắt cóc)
+- KHÔNG được dùng từ "thân mật", "gần gũi", "kiểm soát" khi không có context 18+ thực sự
+- Ưu tiên gợi ý phù hợp với tình huống hiện tại (nghiêm túc → nghiêm túc, vui vẻ → vui vẻ)
+
+QUAN TRỌNG VỀ OUTPUT:
+- TRẢ VỀ: CHỈ JSON object thuần túy, không có markdown hay text giải thích
+- Bắt đầu bằng { và kết thúc bằng }
+- KHÔNG thêm text giải thích hay comments
+
 TRẢ VỀ JSON:
 {
   "suggestions": [
     {
-      "text": "Hành động ngắn gọn 1 câu (10-15 từ)",
-      "summary": "Mô tả ngắn gọn 1 câu",
+      "text": "Hành động ngắn gọn 1 câu (8-12 từ)",
+      "summary": "Mô tả ngắn gọn 1 câu (10-15 từ)",
       "durationMinutes": 30,
       "impactTags": ["story", "risk", "relationship"],
       "source": "ai"
@@ -310,46 +344,28 @@ TRẢ VỀ JSON:
 
   private buildQuestContext(questSystem: any): string {
     if (!questSystem) {
-      return 'QUEST SYSTEM: Chưa có quest system';
+      return 'QUEST: Chưa có quest system';
     }
 
     const activeMainQuests = questSystem.mainQuests?.filter((q: any) => q.status === 'active') || [];
     const activeSideQuests = questSystem.sideQuests?.filter((q: any) => q.status === 'active') || [];
-    const completedQuests = questSystem.questHistory?.filter((q: any) => q.status === 'completed') || [];
     const declinedQuests = questSystem.questHistory?.filter((q: any) => q.status === 'declined') || [];
 
-    let questInfo = `QUEST SYSTEM (THAM KHẢO - KHÔNG ÉP BUỘC):
-- Act hiện tại: ${questSystem.currentAct || 1}
-- Main quests đang active: ${activeMainQuests.length}
-- Side quests đang active: ${activeSideQuests.length}
-- Quests đã hoàn thành: ${completedQuests.length}
-- Quests đã từ chối: ${declinedQuests.length}`;
+    // Giảm context để tiết kiệm token
+    let questInfo = `QUEST: Act ${questSystem.currentAct || 1}, Main: ${activeMainQuests.length}, Side: ${activeSideQuests.length}`;
 
     if (declinedQuests.length > 0) {
-      questInfo += '\n\nQUESTS ĐÃ TỪ CHỐI (KHÔNG BAO GIỜ ĐỀ XUẤT LẠI):';
-      declinedQuests.forEach((quest: any, index: number) => {
-        questInfo += `\n${index + 1}. ${quest.title}`;
-      });
+      questInfo += `\n- Đã từ chối: ${declinedQuests.slice(0, 3).map((q: any) => q.title).join(', ')}`; // Chỉ lấy 3 quest từ chối gần nhất
     }
 
     if (activeMainQuests.length > 0) {
-      questInfo += '\n\nMAIN QUESTS ACTIVE:';
-      activeMainQuests.forEach((quest: any, index: number) => {
-        questInfo += `\n${index + 1}. ${quest.title}: ${quest.description}`;
-        if (quest.objectives && quest.objectives.length > 0) {
-          questInfo += `\n   Mục tiêu: ${quest.objectives.map((obj: any) => obj.description).join(', ')}`;
-        }
-      });
+      const mainQuest = activeMainQuests[0]; // Chỉ lấy main quest đầu tiên
+      questInfo += `\n- Main: ${mainQuest.title}`;
     }
 
     if (activeSideQuests.length > 0) {
-      questInfo += '\n\nSIDE QUESTS ACTIVE:';
-      activeSideQuests.forEach((quest: any, index: number) => {
-        questInfo += `\n${index + 1}. ${quest.title}: ${quest.description}`;
-        if (quest.objectives && quest.objectives.length > 0) {
-          questInfo += `\n   Mục tiêu: ${quest.objectives.map((obj: any) => obj.description).join(', ')}`;
-        }
-      });
+      const sideQuest = activeSideQuests[0]; // Chỉ lấy side quest đầu tiên
+      questInfo += `\n- Side: ${sideQuest.title}`;
     }
 
     return questInfo;
@@ -371,18 +387,14 @@ TRẢ VỀ JSON:
 
       const nearbyLocations = locationService.getLocationsInRadius(playerLocation.currentLocationId, 2);
       
-      let locationInfo = `VỊ TRÍ HIỆN TẠI: ${currentLocation.name} (${currentLocation.type === 'story' ? 'Cốt truyện chính' : 'Địa điểm phụ'})
-- Mô tả: ${currentLocation.description}
-- Vai trò: ${currentLocation.role}`;
+      // Giảm mô tả để tiết kiệm token
+      let locationInfo = `VỊ TRÍ: ${currentLocation.name} (${currentLocation.type === 'story' ? 'Cốt truyện' : 'Phụ'})`;
 
       if (nearbyLocations.length > 0) {
-        locationInfo += `\n- Các địa điểm lân cận (trong bán kính 2 ô): ${nearbyLocations.map((loc: any) => loc.name).join(', ')}`;
+        locationInfo += `\n- Lân cận: ${nearbyLocations.slice(0, 3).map((loc: any) => loc.name).join(', ')}`; // Chỉ lấy 3 địa điểm gần nhất
       }
 
-      locationInfo += `\n\nQUAN TRỌNG VỀ VỊ TRÍ:
-- CHỈ gợi ý hành động tại vị trí hiện tại hoặc các địa điểm lân cận
-- KHÔNG gợi ý di chuyển đến địa điểm xa (sử dụng bản đồ để di chuyển)
-- Tập trung vào khám phá và tương tác tại vị trí hiện tại`;
+      locationInfo += `\n- CHỈ gợi ý hành động tại vị trí hiện tại hoặc lân cận`;
 
       return locationInfo;
     } catch (error) {
@@ -396,29 +408,46 @@ TRẢ VỀ JSON:
       return '';
     }
 
-    // Phân tích chat history để tìm context 18+
+    // Phân tích chat history để tìm context 18+ THỰC SỰ
     const recentMessages = chatHistory.slice(-3);
-    const adultKeywords = ['hôn', 'ôm', 'chạm', 'thân mật', 'quan hệ', 'arousal', 'hấp dẫn', 'tình cảm', 'lãng mạn', 'kiss', 'touch', 'intimate', 'romance'];
+    const adultKeywords = [
+      'hôn', 'ôm chặt', 'chạm', 'quan hệ tình dục', 'arousal', 'hấp dẫn', 'kích thích', 
+      'kiss', 'touch', 'intimate', 'sex', 'sexual', 'arousal level', 'hứng tình',
+      'thân mật tình dục', 'gần gũi tình dục', 'quyến rũ', 'gợi cảm'
+    ];
     
     let hasAdultContext = false;
     let adultContextDescription = '';
     
-    // Kiểm tra chat history
+    // Kiểm tra chat history với context cụ thể hơn
     for (const message of recentMessages) {
       const content = message.content.toLowerCase();
-      if (adultKeywords.some(keyword => content.includes(keyword))) {
+      
+      // Kiểm tra xem có phải context 18+ thực sự không
+      const hasExplicitAdultContent = adultKeywords.some(keyword => content.includes(keyword));
+      
+      
+      
+      if (hasExplicitAdultContent) {
         hasAdultContext = true;
         adultContextDescription += `- Chat gần đây có nội dung 18+: "${message.content.substring(0, 100)}..."\n`;
         break;
       }
     }
     
-    // Kiểm tra scene state
+    // Kiểm tra scene state - chỉ khi arousal level cao và không phải context nghiêm túc
     if (sceneState && sceneState.npcs) {
       for (const npc of sceneState.npcs) {
-        if (npc.arousal && npc.arousal.level > 0) {
-          hasAdultContext = true;
-          adultContextDescription += `- NPC ${npc.name} có arousal level ${npc.arousal.level}\n`;
+        if (npc.arousal && npc.arousal.level > 30) { // Chỉ khi arousal cao
+          // Kiểm tra xem có phải context nghiêm túc không
+          const npcContext = npc.name?.toLowerCase() || '';
+          const isSeriousNPCContext = npcContext.includes('elara') && 
+                                    (sceneState.mood === 'tense' || sceneState.atmosphere === 'serious');
+          
+          if (!isSeriousNPCContext) {
+            hasAdultContext = true;
+            adultContextDescription += `- NPC ${npc.name} có arousal level ${npc.arousal.level}\n`;
+          }
         }
       }
     }
@@ -426,7 +455,7 @@ TRẢ VỀ JSON:
     if (hasAdultContext) {
       return `CONTEXT 18+ HIỆN TẠI:
 ${adultContextDescription}
-→ ƯU TIÊN: Gợi ý hành động 18+ phù hợp với tình huống hiện tại, không chuyển sang chủ đề khác`;
+→ LƯU Ý: Chỉ tạo 1-2 gợi ý 18+ phù hợp với tình huống hiện tại, ưu tiên gợi ý liên quan đến cốt truyện và nhiệm vụ`;
     }
     
     return '';
@@ -444,9 +473,10 @@ ${adultContextDescription}
     return `NỘI DUNG 18+: Có thể tạo gợi ý với nội dung 18+ phù hợp với cốt truyện.
 
 QUAN TRỌNG VỀ CẢNH 18+:
-- Nếu cảnh trước đang diễn ra tình huống 18+ (quan hệ, hấp dẫn, thân mật), hãy gợi ý hành động tiếp theo phù hợp với tình huống đó
-- Cân nhắc mức độ arousal của NPCs và phản ứng phù hợp
-- Gợi ý hành động từ nhẹ nhàng đến mạnh mẽ tùy theo tình huống`;
+- CHỈ tạo gợi ý 18+ khi có CONTEXT CỤ THỂ trong cốt truyện hoặc nhiệm vụ
+- ƯU TIÊN gợi ý liên quan đến cốt truyện, nhiệm vụ, khám phá, tương tác xã hội
+- Tình dục chỉ là một phần nhỏ của trải nghiệm game, không phải trọng tâm
+- Nếu cảnh trước đang diễn ra tình huống 18+, chỉ tạo 1-2 gợi ý phù hợp, còn lại tập trung vào cốt truyện và nhiệm vụ`;
   }
 
   private parseSuggestionsFromResponse(response: string): SuggestedAction[] {

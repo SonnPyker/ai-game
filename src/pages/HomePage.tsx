@@ -47,6 +47,9 @@ export function HomePage() {
     // Clear NPC relationship data
     npcRelationshipService.clearAllData();
     
+    // Clear selected NPC for dialogue
+    localStorage.removeItem('selectedNPCForDialogue');
+    
     
     // Bắt đầu flow game: Init Page → World Builder → Character Creation → Game
     navigate('/init');

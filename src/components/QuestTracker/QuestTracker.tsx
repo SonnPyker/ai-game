@@ -24,6 +24,7 @@ import {
 import { QuestProgress, QuestSystem } from '../../types';
 import { MotionWrapper } from '../MotionWrapper';
 import { npcRelationshipService } from '../../services/npcRelationshipService';
+import { QuestCompletionButton } from './QuestCompletionButton';
 
 interface QuestTrackerProps {
   questSystem: QuestSystem;
@@ -62,6 +63,49 @@ export function QuestTracker({
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   };
+
+  // Hàm xử lý claim itemToReceive từ objective
+  const handleClaimItemToReceive = async (objective: any, questId: string) => {
+    if (!objective.itemToReceive) return;
+
+    try {
+      const { inventoryService } = await import('../../services/inventoryService');
+      
+      const newItem = {
+        id: objective.itemToReceive.id,
+        name: objective.itemToReceive.name,
+        quantity: objective.itemToReceive.quantity,
+        type: objective.itemToReceive.type,
+        description: objective.itemToReceive.description || '',
+        value: objective.itemToReceive.value || 0,
+        rarity: objective.itemToReceive.rarity || 'common',
+        tags: objective.itemToReceive.tags || [],
+        icon: '📦', // Default icon for quest chain items
+        isEquipped: false,
+        stats: {
+          strength: 0,
+          agility: 0,
+          intelligence: 0,
+          constitution: 0,
+          wisdom: 0,
+          charisma: 0
+        },
+        slot: 'accessory1' as const,
+        createdAt: new Date()
+      };
+      
+      inventoryService.addItem(newItem);
+      
+      // Mark objective as completed
+      onQuestUpdate(questId, objective.id, true);
+      
+      // Show success message (optional)
+      console.log(`✅ Đã nhận item: ${newItem.name}`);
+    } catch (error) {
+      console.error('❌ Lỗi khi nhận item:', error);
+    }
+  };
+
   // Suppress unused parameter warnings for future use
   void onQuestAccept;
   void onQuestDecline;
@@ -184,6 +228,27 @@ export function QuestTracker({
     }
   };
 
+
+  // Lấy progress cho combat objective
+  const getCombatProgress = (objective: any) => {
+    if (objective.type !== 'combat' || !objective.requiredKills) return null;
+    
+    const current = objective.currentKills || 0;
+    const required = objective.requiredKills;
+    const percentage = Math.min(100, (current / required) * 100);
+    
+    return { current, required, percentage };
+  };
+
+  // Lấy progress cho find_item objective (chỉ cần 1 item)
+  const getFindItemProgress = (objective: any) => {
+    if (objective.type !== 'find_item') return null;
+    
+    const hasItem = objective.currentQuantity > 0;
+    
+    return { hasItem };
+  };
+
   // Render quest card
   const renderQuestCard = (quest: QuestProgress) => {
     const progress = getQuestProgress(quest);
@@ -295,41 +360,94 @@ export function QuestTracker({
             <h4 className="text-sm font-medium text-gray-400">Mục tiêu:</h4>
             {quest.objectives
               .filter(objective => objective.unlocked) // Chỉ hiển thị objectives đã unlock
-              .map((objective) => (
-                <div key={objective.id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={objective.completed}
-                    onChange={(e) => onQuestUpdate(quest.id, objective.id, e.target.checked)}
-                    disabled={isLocked}
-                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                  />
-                  <span className={`text-sm ${
-                    objective.completed ? 'text-green-400 line-through' : 'text-white'
-                  }`}>
-                    {(() => {
-                      const highlightedParts = highlightNames(objective.description);
-                      return highlightedParts.map((part, partIndex) => {
-                        if (part.type === 'highlight') {
-                          return (
-                            <span 
-                              key={partIndex}
-                              className="text-yellow-300 font-semibold"
-                            >
-                              {part.content}
+              .map((objective) => {
+                const combatProgress = getCombatProgress(objective);
+                const findItemProgress = getFindItemProgress(objective);
+                return (
+                  <div key={objective.id} className="space-y-2">
+                    <div 
+                      className={`flex items-center space-x-2 ${
+                        objective.itemToReceive && !objective.completed 
+                          ? 'cursor-pointer hover:bg-gray-700 p-2 rounded transition-colors' 
+                          : ''
+                      }`}
+                      onClick={objective.itemToReceive && !objective.completed ? () => handleClaimItemToReceive(objective, quest.id) : undefined}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={objective.completed}
+                        onChange={(e) => onQuestUpdate(quest.id, objective.id, e.target.checked)}
+                        disabled={isLocked}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                      />
+                      <span className={`text-sm ${
+                        objective.completed ? 'text-green-400 line-through' : 'text-white'
+                      }`}>
+                        {(() => {
+                          const highlightedParts = highlightNames(objective.description);
+                          return highlightedParts.map((part, partIndex) => {
+                            if (part.type === 'highlight') {
+                              return (
+                                <span 
+                                  key={partIndex}
+                                  className="text-yellow-300 font-semibold"
+                                >
+                                  {part.content}
+                                </span>
+                              );
+                            } else {
+                              return part.content;
+                            }
+                          });
+                        })()}
+                      </span>
+                      {objective.completed && (
+                        <CheckCircle className="w-3 h-3 text-green-400" />
+                      )}
+                    </div>
+                    
+                    {/* Combat progress bar */}
+                    {combatProgress && (
+                      <div className="ml-6 space-y-1">
+                        <div className="flex items-center justify-between text-xs text-gray-400">
+                          <span>{combatProgress.current}/{combatProgress.required} defeated</span>
+                          <span>{Math.round(combatProgress.percentage)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                          <div 
+                            className="bg-red-400 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${combatProgress.percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Find item status (chỉ cần 1 item) */}
+                    {findItemProgress && (
+                      <div className="ml-6">
+                        <div className="flex items-center space-x-2 text-xs">
+                          {findItemProgress.hasItem ? (
+                            <span className="text-green-400 flex items-center space-x-1">
+                              <CheckCircle className="w-3 h-3" />
+                              <span>Đã tìm thấy</span>
                             </span>
-                          );
-                        } else {
-                          return part.content;
-                        }
-                      });
-                    })()}
-                  </span>
-                  {objective.completed && (
-                    <CheckCircle className="w-3 h-3 text-green-400" />
-                  )}
-                </div>
-              ))}
+                          ) : objective.itemToReceive ? (
+                            <span className="text-yellow-400 flex items-center space-x-1">
+                              <CheckCircle className="w-3 h-3" />
+                              <span>Nhận {objective.itemToReceive.name}</span>
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 flex items-center space-x-1">
+                              <AlertCircle className="w-3 h-3" />
+                              <span>Chưa tìm thấy</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             {/* Hiển thị số objectives chưa unlock */}
             {quest.objectives.filter(obj => !obj.unlocked).length > 0 && (
               <div className="text-xs text-gray-500 italic">
@@ -447,15 +565,27 @@ export function QuestTracker({
           </div>
         )}
 
-        {/* Quest Actions - Cho side quest available và active */}
-        {quest.type === 'side' && !isLocked && !isDeclined && (quest.status === 'active' || quest.status === 'available') && (
-          <div className="flex justify-end space-x-2 mt-3 pt-3 border-t border-gray-700/50">
-            <button
-              onClick={() => onQuestDeclineActive(quest.id)}
-              className="px-3 py-1 bg-red-600/20 border border-red-500/50 text-red-300 rounded text-sm hover:bg-red-600/30 transition-colors"
-            >
-              Từ chối Quest
-            </button>
+        {/* Quest Actions - Cho tất cả quest types */}
+        {!isLocked && !isDeclined && quest.status === 'active' && (
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-700/50">
+            {/* Quest Completion Check Button - Cho tất cả quest active */}
+            <QuestCompletionButton 
+              activeQuests={[quest]}
+              onQuestUpdate={onQuestUpdate}
+              questId={quest.id}
+              questTitle={quest.title}
+              size="small"
+            />
+            
+            {/* Side quest specific actions */}
+            {quest.type === 'side' && (
+              <button
+                onClick={() => onQuestDeclineActive(quest.id)}
+                className="px-3 py-1 bg-red-600/20 border border-red-500/50 text-red-300 rounded text-sm hover:bg-red-600/30 transition-colors"
+              >
+                Từ chối Quest
+              </button>
+            )}
           </div>
         )}
 
@@ -478,8 +608,16 @@ export function QuestTracker({
   // Render main quests
   const renderMainQuests = () => {
     const mainQuests = questSystem.mainQuests;
+    const starterQuest = questSystem.starterQuest;
     
-    if (mainQuests.length === 0) {
+    // Combine starterQuest and mainQuests
+    const allMainQuests = [];
+    if (starterQuest) {
+      allMainQuests.push(starterQuest);
+    }
+    allMainQuests.push(...mainQuests);
+    
+    if (allMainQuests.length === 0) {
       return (
         <div className="text-center py-8">
           <Target className="w-12 h-12 text-gray-400 mx-auto mb-3" />
@@ -514,8 +652,10 @@ export function QuestTracker({
           </div>
         </div>
 
+        {/* Quest Completion Check */}
+
         {/* Main Quests */}
-        {mainQuests.map(renderQuestCard)}
+        {allMainQuests.map(renderQuestCard)}
       </div>
     );
   };
@@ -748,7 +888,7 @@ export function QuestTracker({
           }`}
         >
           <Star className="w-4 h-4" />
-          <span>Quest Chính ({questSystem.mainQuests.length})</span>
+          <span>Quest Chính ({(questSystem.starterQuest ? 1 : 0) + questSystem.mainQuests.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('side')}

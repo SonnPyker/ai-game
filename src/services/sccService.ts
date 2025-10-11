@@ -200,6 +200,7 @@ class SCCService {
     localStorage.removeItem('rp_summary_backup');
     localStorage.removeItem('action_suggestions');
     localStorage.removeItem('action_log');
+    localStorage.removeItem('selectedNPCForDialogue');
   }
 
   // Private helper methods for localStorage

@@ -109,6 +109,9 @@ export function enhanceDialogueForAI(
     enhanced = `[Speaking to: ${context.npcName}] ${enhanced}`;
   }
 
+  // Add paraphrase instruction for AI
+  enhanced = `[DIALOGUE TO PARAPHRASE: "${dialogueContent}"] ${enhanced}`;
+
   return enhanced;
 }
 

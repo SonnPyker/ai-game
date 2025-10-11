@@ -66,20 +66,30 @@ export function NPCArousalBar({ npc, contentFlags, className = '' }: NPCArousalB
             Thay đổi gần đây:
           </div>
           <div className="space-y-1 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-700">
-            {arousal.arousalHistory.slice(-3).reverse().map((event) => (
-              <div key={event.id} className="text-xs text-gray-300">
-                <div className="flex items-start space-x-2">
-                  <span className={`px-1 py-0.5 rounded text-xs flex-shrink-0 ${
-                    event.change > 0 ? 'bg-green-900 text-green-300' : 
-                    event.change < 0 ? 'bg-red-900 text-red-300' : 
-                    'bg-gray-700 text-gray-300'
-                  }`}>
-                    {event.change > 0 ? '+' : ''}{event.change}
-                  </span>
-                  <span className="text-xs text-gray-300 break-words">{event.reason}</span>
+            {arousal.arousalHistory.slice(-3).reverse().map((event) => {
+              // Rút ngắn reason thành 1-2 câu ngắn gọn
+              const sentences = event.reason.split(/[.!?]+/).filter(s => s.trim().length > 0);
+              const shortReason = sentences.length > 1 
+                ? sentences.slice(0, 2).join('. ').trim() + '.'
+                : sentences[0] || event.reason.substring(0, 60) + '...';
+              
+              return (
+                <div key={event.id} className="text-xs text-gray-300">
+                  <div className="flex items-start space-x-2">
+                    <span className={`px-1 py-0.5 rounded text-xs flex-shrink-0 ${
+                      event.change > 0 ? 'bg-green-900 text-green-300' : 
+                      event.change < 0 ? 'bg-red-900 text-red-300' : 
+                      'bg-gray-700 text-gray-300'
+                    }`}>
+                      {event.change > 0 ? '+' : ''}{event.change}
+                    </span>
+                    <span className="text-xs text-gray-300 break-words">
+                      {shortReason}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

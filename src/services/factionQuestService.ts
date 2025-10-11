@@ -58,8 +58,9 @@ class FactionQuestService {
         id: `obj_${index + 1}`,
         description: obj,
         completed: false,
-        aiKeywords: [],
-        unlocked: index === 0
+        unlocked: index === 0,
+        type: 'find_item' as const,
+        aiKeywords: []
       })),
       rewards: [
         {
@@ -260,6 +261,66 @@ Yêu cầu:
 3. Phần thưởng là danh tiếng phe phái (30-50 điểm)
 4. CHỈ trả về JSON thuần túy, KHÔNG có markdown code blocks, KHÔNG có text thêm
 
+QUAN TRỌNG VỀ QUEST OBJECTIVES - 5 LOẠI CHÍNH:
+
+1. FIND_ITEM (Tìm đồ):
+   - Phải có targetItemName cụ thể
+   - CHỈ tìm 1 vật phẩm (không có số lượng)
+   - Description PHẢI chứa tên vật phẩm cụ thể, không được mơ hồ
+   - Ví dụ: "Thu thập Ngọc lục bảo" (có tên cụ thể)
+   - KHÔNG được: "Tìm kiếm một vật phẩm quý giá" (mơ hồ)
+
+2. FIND_NPC (Tìm người):
+   - Phải có targetNPCName cụ thể
+   - Description PHẢI chứa tên NPC cụ thể, không được mơ hồ
+   - Ví dụ: "Gặp gỡ thương nhân Aldric" (có tên cụ thể)
+   - KHÔNG được: "Tìm kiếm một người liên lạc đáng tin cậy" (mơ hồ)
+
+3. COMBAT (Chiến đấu):
+   - Với enemy thường: cần targetEnemyName + targetEnemyType + requiredKills
+   - Với NPC enemy: cần targetNPCName (sẽ match với NPC cụ thể)
+   - Ví dụ: "Đánh bại 5 Goblin" hoặc "Hạ gục tên cướp Marcus"
+
+4. TRAVEL (Di chuyển):
+   - Phải có targetLocationName cụ thể
+   - Description PHẢI chứa tên địa điểm cụ thể, không được mơ hồ
+   - Ví dụ: "Đến Rừng Đen" (có tên cụ thể)
+   - KHÔNG được: "Tìm kiếm một nơi an toàn" (mơ hồ)
+
+5. DELIVERY (Giao đồ):
+   - Phải có deliveryItemName + deliveryNPCName
+   - Item sẽ được tag 'delivery' và gắn với quest
+   - Ví dụ: "Mang Thư mật đến cho Nữ hoàng"
+
+QUY TẮC:
+- Mỗi objective CHỈ thuộc 1 type
+- Tên item/NPC/enemy/location phải CỤ THỂ, KHÔNG dùng "một vật phẩm nào đó"
+- Với combat: phân biệt enemy thường (cần type+name+quantity) vs NPC enemy (cần NPC name)
+- Quest có thể kết hợp nhiều objective khác nhau (vd: find_item → delivery)
+
+QUAN TRỌNG VỀ TÊN CỤ THỂ - TẠO TÊN RÕ RÀNG CHO TẤT CẢ OBJECTIVES:
+
+FIND_NPC (Tìm người):
+- KHÔNG BAO GIỜ sử dụng "một người liên lạc", "người đáng tin cậy", "thương nhân bí ẩn"
+- TẠO TÊN CỤ THỂ cho từng NPC dựa trên context của quest và thế giới
+- TÊN NPC PHẢI XUẤT HIỆN TRONG CẢ DESCRIPTION VÀ targetNPCName
+- VÍ DỤ TỐT: "Gặp gỡ thương nhân Aldric" + targetNPCName: "Aldric"
+- VÍ DỤ SAI: "Tìm kiếm một người liên lạc đáng tin cậy" (không có tên)
+
+FIND_ITEM (Tìm đồ):
+- KHÔNG BAO GIỜ sử dụng "một vật phẩm quý giá", "đồ vật bí ẩn", "vật phẩm cần thiết"
+- TẠO TÊN CỤ THỂ cho từng vật phẩm dựa trên context của quest và thế giới
+- TÊN VẬT PHẨM PHẢI XUẤT HIỆN TRONG CẢ DESCRIPTION VÀ targetItemName
+- VÍ DỤ TỐT: "Thu thập Ngọc lục bảo" + targetItemName: "Ngọc lục bảo"
+- VÍ DỤ SAI: "Tìm kiếm một vật phẩm quý giá" (không có tên)
+
+TRAVEL (Di chuyển):
+- KHÔNG BAO GIỜ sử dụng "một nơi an toàn", "địa điểm bí ẩn", "vị trí quan trọng"
+- TẠO TÊN CỤ THỂ cho từng địa điểm dựa trên context của quest và thế giới
+- TÊN ĐỊA ĐIỂM PHẢI XUẤT HIỆN TRONG CẢ DESCRIPTION VÀ targetLocationName
+- VÍ DỤ TỐT: "Đến Rừng Đen" + targetLocationName: "Rừng Đen"
+- VÍ DỤ SAI: "Tìm kiếm một nơi an toàn" (không có tên)
+
 Trả về JSON theo format này:
 {
   "id": "faction_quest_${factionName.toLowerCase()}_${Date.now()}",
@@ -268,13 +329,14 @@ Trả về JSON theo format này:
   "objectives": [
     {
       "id": "obj_1",
-      "description": "Mục tiêu 1",
-      "aiKeywords": []
-    },
-    {
-      "id": "obj_2", 
-      "description": "Mục tiêu 2",
-      "aiKeywords": []
+      "description": "Mô tả nhiệm vụ",
+      "type": "find_item|find_npc|combat|travel|delivery",
+      "targetItemName": "Tên vật phẩm cụ thể (nếu type là find_item/delivery)",
+      "targetNPCName": "Tên NPC cụ thể (nếu type là find_npc/delivery)",
+      "targetEnemyName": "Tên enemy (nếu type là combat)",
+      "targetEnemyType": "beast|humanoid|... (nếu type là combat)",
+      "requiredKills": 5,
+      "targetLocationName": "Tên địa điểm (nếu type là travel)"
     }
   ],
   "rewards": [

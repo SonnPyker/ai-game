@@ -66,11 +66,14 @@ interface InfoMenuProps {
   onToggleAdultIntensity?: () => void;
   // Map props
   onLocationTravel?: (locationId: string) => void;
+  selectedTravelLocationId?: string | null;
   // Inventory props
   onEquipItem?: (itemId: string, slot?: string) => void;
   onUnequipItem?: (itemId: string) => void;
   onDropItem?: (itemId: string) => void;
   onViewItemDetails?: (item: InventoryItem) => void;
+  // NPC dialogue props
+  selectedNPCForDialogue?: string | null;
 }
 
 interface MenuSection {
@@ -103,10 +106,12 @@ export function InfoMenu({
   onToggleAdultContent,
   onToggleAdultIntensity,
   onLocationTravel,
+  selectedTravelLocationId,
   onEquipItem,
   onUnequipItem,
   onDropItem,
-  onViewItemDetails
+  onViewItemDetails,
+  selectedNPCForDialogue
 }: InfoMenuProps) {
   // Responsive design context
   const { shouldUseMobileLayout, getTransitionClass } = useResponsiveContext();
@@ -1183,14 +1188,19 @@ export function InfoMenu({
                 
                 const isExpanded = expandedNPCs.has(relationship.id);
                 
+                const isSelectedNPC = selectedNPCForDialogue === relationship.id;
+                
                 return (
-                <div key={relationship.id} className="bg-gray-700/50 rounded-lg p-3">
+                <div key={relationship.id} className={`bg-gray-700/50 rounded-lg p-3 ${isSelectedNPC ? 'ring-2 ring-blue-400 bg-blue-900/20' : ''}`}>
                   <div 
-                    className={getTransitionClass("flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-600/30 rounded p-1 -m-1 transition-colors")}
+                    className={getTransitionClass(`flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-600/30 rounded p-1 -m-1 transition-colors ${isSelectedNPC ? 'bg-blue-600/20' : ''}`)}
                     onClick={() => toggleNPC(relationship.id)}
                   >
                     <div className="flex items-center space-x-2">
-                      <h4 className="text-white font-medium">{relationship.name}</h4>
+                      <h4 className={`font-medium ${isSelectedNPC ? 'text-blue-300' : 'text-white'}`}>
+                        {relationship.name}
+                        {isSelectedNPC && <span className="ml-2 text-xs text-blue-400">(Đang nói chuyện)</span>}
+                      </h4>
                         <span className={`px-2 py-1 rounded text-xs ${
                           relationship.status === 'admiring' ? 'bg-pink-500' :
                           relationship.status === 'ally' ? 'bg-green-700' :
@@ -1471,6 +1481,7 @@ export function InfoMenu({
         worldData={worldData}
         currentLocationId={currentLocationId}
         onLocationClick={onLocationTravel || (() => {})}
+        selectedLocationId={selectedTravelLocationId}
         worldTime={worldTime}
       />
     );

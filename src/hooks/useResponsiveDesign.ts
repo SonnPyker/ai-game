@@ -75,9 +75,15 @@ export function useResponsiveDesign() {
 
   // Check if animations should be enabled
   const shouldUseAnimations = useCallback(() => {
-    const effectiveMode = getEffectiveUIMode();
-    return effectiveMode === 'desktop';
-  }, [getEffectiveUIMode]);
+    // Always enable animations for loading spinners and essential UI animations
+    // Only disable complex animations on mobile for performance
+    return true;
+  }, []);
+
+  // Check if loading animations should be enabled (always true)
+  const shouldUseLoadingAnimations = useCallback(() => {
+    return true;
+  }, []);
 
   // Get motion props for framer-motion components
   const getMotionProps = useCallback((defaultProps: any = {}) => {
@@ -117,6 +123,7 @@ export function useResponsiveDesign() {
     shouldUseMobileLayout,
     shouldUseDesktopLayout,
     shouldUseAnimations,
+    shouldUseLoadingAnimations,
     getMotionProps,
     getTransitionClass,
     getAnimationClass,

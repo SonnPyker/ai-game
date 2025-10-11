@@ -131,6 +131,10 @@ export interface InventoryItem {
   attackBonus?: number; // modifier for attack rolls
   damageType?: 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic';
   weaponProperties?: WeaponProperties;
+  
+  // NEW: Delivery quest fields
+  deliveryQuestId?: string; // Quest ID nếu item này dùng để giao
+  deliveryNPCId?: string; // NPC cần giao cho
 }
 
 export interface WeaponProperties {
@@ -214,13 +218,64 @@ export interface QuestProgress {
   }>;
 }
 
+// Quest Objective Types
+export type QuestObjectiveType = 'find_item' | 'find_npc' | 'combat' | 'travel' | 'chain_delivery';
+
 export interface QuestObjectiveProgress {
   id: string;
   description: string;
   completed: boolean;
   completedAt?: Date;
-  aiKeywords?: string[]; // Từ khóa AI cần nhận diện
   unlocked: boolean; // Objectives chỉ hiển thị khi đã unlock
+  
+  // NEW: Objective type và tracking data
+  type: QuestObjectiveType;
+  
+  // For find_item objectives
+  targetItemId?: string;
+  targetItemName?: string;
+  requiredQuantity?: number;
+  currentQuantity?: number;
+  
+  // For find_npc objectives  
+  targetNPCId?: string;
+  targetNPCName?: string;
+  
+  // For combat objectives
+  targetEnemyName?: string;
+  targetEnemyType?: string; // 'beast', 'humanoid', etc.
+  targetEnemyId?: string; // for specific NPC enemies
+  requiredKills?: number;
+  currentKills?: number;
+  
+  // For travel objectives
+  targetLocationId?: string;
+  targetLocationName?: string;
+  targetPosition?: { x: number; y: number };
+  
+  // For delivery objectives
+  deliveryItemId?: string;
+  deliveryItemName?: string;
+  deliveryNPCId?: string;
+  deliveryNPCName?: string;
+  
+  // For quest chain objectives
+  isChainObjective?: boolean; // true if this is part of a quest chain
+  chainId?: string; // ID to group related objectives
+  prerequisiteObjectiveId?: string; // ID of the objective that must be completed first
+  itemToReceive?: { // Item that will be given to player when this objective is completed
+    id: string;
+    name: string;
+    quantity: number;
+    type: 'weapon' | 'armor' | 'consumable' | 'misc';
+    description?: string;
+    value?: number;
+    rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+    tags?: string[];
+  };
+  
+  // DEPRECATED: Old AI-based fields (keep for migration)
+  aiKeywords?: string[]; // Từ khóa AI cần nhận diện
 }
 
 export interface QuestRewardProgress {
@@ -234,6 +289,7 @@ export interface QuestRewardProgress {
 }
 
 export interface QuestSystem {
+  starterQuest?: QuestProgress;
   mainQuests: QuestProgress[];
   sideQuests: QuestProgress[];
   factionQuests: QuestProgress[];
@@ -244,6 +300,17 @@ export interface QuestSystem {
   factionReputations: Array<{
     factionName: string;
     reputation: number;
+  }>;
+}
+
+// Combat History for Quest Tracking
+export interface CombatHistory {
+  defeatedEnemies: Array<{
+    name: string;
+    type: string;
+    enemyId?: string; // for NPC enemies
+    defeatedAt: Date;
+    turn: number;
   }>;
 }
 
