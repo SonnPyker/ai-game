@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Sword, Shield, X, AlertTriangle, Backpack, User } from 'lucide-react';
+import React from 'react';
+import { Sword, Shield, AlertTriangle } from 'lucide-react';
 import { MotionWrapper } from '../MotionWrapper';
-import { InfoMenu } from '../InfoMenu/InfoMenu';
 import { ModalHeader } from '../ModalHeader';
 import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
@@ -25,7 +24,6 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
   location,
   reason
 }) => {
-  const [showInventory, setShowInventory] = useState(false);
   const { isMinimized, minimize, restore } = useModalMinimize('random-combat-modal');
   
   if (!isOpen) return null;
@@ -100,85 +98,32 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
             </div>
           </div>
 
-          {/* Preparation Buttons */}
-          <div className="space-y-3">
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowInventory(true)}
-                className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
-              >
-                <Backpack className="w-5 h-5" />
-                <span>Túi Đồ</span>
-              </button>
-              
-              <button
-                onClick={() => setShowInventory(true)}
-                className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium"
-              >
-                <User className="w-5 h-5" />
-                <span>Trang Bị</span>
-              </button>
-            </div>
-
-            {/* Combat Action Buttons */}
-            <div className="flex space-x-3">
-              <button
-                onClick={onFight}
-                className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
-              >
-                <Sword className="w-5 h-5" />
-                <span>Chiến Đấu</span>
-              </button>
-              
-              <button
-                onClick={onFlee}
-                className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors font-medium"
-              >
-                <Shield className="w-5 h-5" />
-                <span>Tránh Né</span>
-              </button>
-            </div>
+          {/* Combat Action Buttons */}
+          <div className="flex space-x-3">
+            <button
+              onClick={onFight}
+              className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+            >
+              <Sword className="w-5 h-5" />
+              <span>Chiến Đấu</span>
+            </button>
+            
+            <button
+              onClick={onFlee}
+              className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors font-medium"
+            >
+              <Shield className="w-5 h-5" />
+              <span>Tránh Né</span>
+            </button>
           </div>
 
           {/* Help Text */}
           <div className="text-xs text-gray-400 text-center">
-            <p>• <strong>Túi Đồ/Trang Bị:</strong> Chuẩn bị trước khi chiến đấu</p>
             <p>• <strong>Chiến Đấu:</strong> Bắt đầu combat với kẻ thù</p>
             <p>• <strong>Tránh Né:</strong> Cố gắng trốn thoát (có thể thất bại)</p>
           </div>
         </div>
       </MotionWrapper>
-
-      {/* Inventory/Equipment Modal */}
-      {showInventory && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[10000] p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <h3 className="text-xl font-bold text-white">Chuẩn Bị Trước Khi Chiến Đấu</h3>
-              <button
-                onClick={() => setShowInventory(false)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4 max-h-[calc(90vh-80px)] overflow-y-auto">
-              <InfoMenu 
-                isOpen={true}
-                onClose={() => setShowInventory(false)}
-                worldData={null}
-                characterData={null}
-                worldTime={null}
-                isPinned={false}
-                onTogglePin={() => {}}
-                questSystem={null}
-                onQuestUpdate={() => {}}
-                onQuestAccept={() => {}}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

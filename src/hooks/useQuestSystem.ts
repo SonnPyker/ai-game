@@ -51,11 +51,16 @@ const processRewardClaim = (reward: any) => {
           console.log('🎁 Đang thêm items vào character inventory:', reward.items);
           console.log('🎁 Reward type:', reward.type, 'Reward description:', reward.description);
           reward.items.forEach((item: any) => {
-            // Đảm bảo item có tags phù hợp
+            // Đảm bảo item có tags phù hợp để phân biệt với scene items
             if (!item.tags) {
-              item.tags = ['reward'];
-            } else if (!item.tags.includes('reward')) {
-              item.tags.push('reward');
+              item.tags = ['reward', 'quest'];
+            } else {
+              if (!item.tags.includes('reward')) {
+                item.tags.push('reward');
+              }
+              if (!item.tags.includes('quest')) {
+                item.tags.push('quest');
+              }
             }
             
             // Đối với faction quest, đảm bảo rarity unique
@@ -161,7 +166,6 @@ const generateRandomRewardItem = (factionName?: string) => {
     rarity: factionName ? 'unique' as const : 'common' as const,
     quantity: 1,
     icon: randomType === 'weapon' ? '⚔️' : randomType === 'armor' ? '🛡️' : randomType === 'consumable' ? '🧪' : '📦',
-    stats: {},
     isEquipped: false,
     tags: ['reward', randomType]
   };

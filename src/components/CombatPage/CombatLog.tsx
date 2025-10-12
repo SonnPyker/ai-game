@@ -29,23 +29,40 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
   const logEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  // Auto-scroll to bottom when new entries are added
+  // Auto-scroll to bottom when new entries are added, but only if user is near bottom
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [log, turnLogs]);
+    if (shouldAutoScroll && !isUserScrolling) {
+      logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [log, turnLogs, shouldAutoScroll, isUserScrolling]);
 
-  // Handle scroll to show/hide scroll button
+  // Handle scroll to show/hide scroll button and manage auto-scroll behavior
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      
       setShowScrollButton(!isNearBottom);
+      
+      // If user scrolls away from bottom, disable auto-scroll
+      if (!isNearBottom) {
+        setShouldAutoScroll(false);
+        setIsUserScrolling(true);
+      } else {
+        // If user scrolls back to bottom, re-enable auto-scroll
+        setShouldAutoScroll(true);
+        setIsUserScrolling(false);
+      }
     }
   };
 
   // Scroll to bottom function
   const scrollToBottom = () => {
+    setShouldAutoScroll(true);
+    setIsUserScrolling(false);
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 

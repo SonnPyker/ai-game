@@ -139,8 +139,21 @@ export function CombatPage({}: CombatPageProps) {
           const worldData = localStorage.getItem('world_gen_result');
           const worldDifficulty = worldData ? JSON.parse(worldData).difficulty : undefined;
           
-          // Start combat with provided data
-          const newCombatState = combatService.initiateCombat(combatData.player, combatData.enemies, worldDifficulty);
+          // Ensure player data is up-to-date with latest AC calculation
+          let player = combatData.player;
+          const inventoryService = (await import('../services/inventoryService')).inventoryService;
+          inventoryService.setCharacter(player);
+          
+          // Get the updated character with recalculated AC
+          const updatedCharacter = inventoryService.getCharacter();
+          if (updatedCharacter) {
+            player = updatedCharacter;
+            // Save updated character data back to localStorage
+            localStorage.setItem('currentCharacter', JSON.stringify(player));
+          }
+          
+          // Start combat with updated player data
+          const newCombatState = combatService.initiateCombat(player, combatData.enemies, worldDifficulty);
           setCombatState(newCombatState);
           
           // Check if enemy goes first and process their turn
@@ -239,9 +252,22 @@ export function CombatPage({}: CombatPageProps) {
 
     try {
       // Load character data
-      const characterData = JSON.parse(localStorage.getItem('currentCharacter') || 'null');
+      let characterData = JSON.parse(localStorage.getItem('currentCharacter') || 'null');
       if (!characterData) {
         throw new Error('Không tìm thấy dữ liệu nhân vật');
+      }
+
+      // Ensure character data is up-to-date with latest AC calculation
+      // This is important because AC might have changed due to equipment changes
+      const inventoryService = (await import('../services/inventoryService')).inventoryService;
+      inventoryService.setCharacter(characterData);
+      
+      // Get the updated character with recalculated AC
+      const updatedCharacter = inventoryService.getCharacter();
+      if (updatedCharacter) {
+        characterData = updatedCharacter;
+        // Save updated character data back to localStorage
+        localStorage.setItem('currentCharacter', JSON.stringify(characterData));
       }
 
       // Generate enemy from prepared NPC
@@ -326,7 +352,19 @@ export function CombatPage({}: CombatPageProps) {
         return;
       }
 
-      const player: Character = JSON.parse(characterData);
+      let player: Character = JSON.parse(characterData);
+      
+      // Ensure character data is up-to-date with latest AC calculation
+      const inventoryService = (await import('../services/inventoryService')).inventoryService;
+      inventoryService.setCharacter(player);
+      
+      // Get the updated character with recalculated AC
+      const updatedCharacter = inventoryService.getCharacter();
+      if (updatedCharacter) {
+        player = updatedCharacter;
+        // Save updated character data back to localStorage
+        localStorage.setItem('currentCharacter', JSON.stringify(player));
+      }
       
       // Create test enemies
       const testEnemies: Enemy[] = [
@@ -628,8 +666,39 @@ export function CombatPage({}: CombatPageProps) {
           });
         }
         
+        // Add turn number to metadata for encounter chance reset
+        if (!combatResultData.metadata) {
+          combatResultData.metadata = {};
+        }
+        const currentTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
+        combatResultData.metadata.gameTurn = currentTurn;
+        
         // Save to localStorage
         localStorage.setItem('combat_result', JSON.stringify(combatResultData));
+        
+        // Also save to combat_history for encounter chance reset
+        try {
+          const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
+          if (!Array.isArray(combatHistory.defeatedEnemies)) {
+            combatHistory.defeatedEnemies = [];
+          }
+          
+          // Add defeated enemies with gameTurn
+          combatResultData.enemiesDefeated.forEach(enemy => {
+            combatHistory.defeatedEnemies.push({
+              name: enemy.name,
+              type: enemy.type,
+              enemyId: enemy.npcId,
+              defeatedAt: new Date(),
+              turn: currentTurn // Use current game turn
+            });
+          });
+          
+          localStorage.setItem('combat_history', JSON.stringify(combatHistory));
+          console.log('📝 Updated combat_history with gameTurn:', currentTurn);
+        } catch (error) {
+          console.error('Error updating combat_history:', error);
+        }
       }
       
       // Add combat experience to character

@@ -228,7 +228,14 @@ class SCCService {
 
   private loadSceneState(): SCCState {
     const saved = localStorage.getItem('rp_scene_state');
-    return saved ? JSON.parse(saved) : {};
+    if (!saved) return {};
+    
+    const sceneState = JSON.parse(saved);
+    // Loại bỏ mainQuests khỏi sceneState nếu có
+    if (sceneState.mainQuests) {
+      delete sceneState.mainQuests;
+    }
+    return sceneState;
   }
 
   private saveSceneState(sceneState: SCCState): void {

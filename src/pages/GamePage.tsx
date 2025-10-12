@@ -452,8 +452,8 @@ export function GamePage() {
         setHasCombatResult(true);
         setCurrentMessage(message);
         
-        // KHÔNG xóa combat_result ở đây - để applyCombatResults xóa
-        // combatDataService.clearPendingCombatResult(); // ❌ Xóa dòng này
+        // Clear combat result after processing to prevent continuous reset
+        combatDataService.clearPendingCombatResult();
         
         console.log('✅ Combat result auto-pasted:', message);
       } catch (error) {
@@ -810,6 +810,9 @@ export function GamePage() {
             
             // Add to combat history
             combatDataService.addToCombatHistory(combatResult);
+            
+            // Clear flee data when combat ends (victory or defeat)
+            localStorage.removeItem('player_fled_random_combat');
             
             // Clear pending result
             combatDataService.clearPendingCombatResult();
@@ -1699,10 +1702,21 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
         // Filter available items trước khi merge
         const currentCharacterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
-        const filteredAvailableItems = filterPlayerInventory(
+        let filteredAvailableItems = filterPlayerInventory(
           aiSceneState.availableItems || [], 
           currentCharacterData.inventory || []
         );
+        
+        // Lọc bỏ quest reward items khỏi sceneState.availableItems
+        // Quest reward items có tags chứa 'reward' hoặc 'quest'
+        filteredAvailableItems = filteredAvailableItems.filter(item => {
+          const tags = item.tags || [];
+          const isQuestReward = tags.some(tag => 
+            tag.toLowerCase().includes('reward') || 
+            tag.toLowerCase().includes('quest')
+          );
+          return !isQuestReward;
+        });
         
         // Update game state - đảm bảo availableItems chỉ chứa items có thể lấy được
         const newSceneState = { 
@@ -1712,6 +1726,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           // CHỈ sử dụng filtered availableItems từ AI response hiện tại, không merge với cũ
           availableItems: filteredAvailableItems
         };
+        
+        // Loại bỏ mainQuests khỏi sceneState nếu có
+        if (newSceneState.mainQuests) {
+          delete newSceneState.mainQuests;
+        }
         
         
         setGameState(prev => ({
@@ -2213,7 +2232,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         character: characterParsed,
         scenario: JSON.parse(scenarioData),
         summary: sccData ? JSON.parse(sccData) : { content: '', sceneState: {} },
-        sceneState: sceneState ? JSON.parse(sceneState) : {},
+        sceneState: sceneState ? (() => {
+          const parsedSceneState = JSON.parse(sceneState);
+          // Loại bỏ mainQuests khỏi sceneState nếu có
+          if (parsedSceneState.mainQuests) {
+            delete parsedSceneState.mainQuests;
+          }
+          return parsedSceneState;
+        })() : {},
         chat: chatHistory,
         turnCounter: savedTurnCounter,
         worldTime: gameState.worldTime || { day: 1, hour: 12, minute: 0, month: 1, year: 1, dayOfWeek: 1 },
@@ -2762,6 +2788,17 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         characterData.inventory = updatedInventory;
         characterData.equipment = updatedEquipment;
         characterData.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
+        
+        // Update coreStats with recalculated values from inventoryService
+        if (characterData.coreStats) {
+          // Get the updated character from inventoryService to sync coreStats
+          const updatedCharacter = inventoryService.getCharacter();
+          if (updatedCharacter && updatedCharacter.coreStats) {
+            characterData.coreStats.armorClass = updatedCharacter.coreStats.armorClass;
+            characterData.coreStats.modifiers = updatedCharacter.coreStats.modifiers;
+          }
+        }
+        
         localStorage.setItem('currentCharacter', JSON.stringify(characterData));
         
         // Reload character data from localStorage to update UI
@@ -2788,6 +2825,17 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         characterData.inventory = updatedInventory;
         characterData.equipment = updatedEquipment;
         characterData.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
+        
+        // Update coreStats with recalculated values from inventoryService
+        if (characterData.coreStats) {
+          // Get the updated character from inventoryService to sync coreStats
+          const updatedCharacter = inventoryService.getCharacter();
+          if (updatedCharacter && updatedCharacter.coreStats) {
+            characterData.coreStats.armorClass = updatedCharacter.coreStats.armorClass;
+            characterData.coreStats.modifiers = updatedCharacter.coreStats.modifiers;
+          }
+        }
+        
         localStorage.setItem('currentCharacter', JSON.stringify(characterData));
         
         // Reload character data from localStorage to update UI
@@ -2852,6 +2900,9 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
   const handleFightRandomCombat = () => {
     if (!randomCombatData) return;
     
+    // Clear flee data when starting combat (player chose to fight)
+    localStorage.removeItem('player_fled_random_combat');
+    
     // Store combat data in localStorage for CombatPage to read
     const combatData = {
       type: 'random_encounter',
@@ -2870,8 +2921,30 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
   };
 
   const handleFleeRandomCombat = () => {
+    if (!randomCombatData) return;
+    
     // Close modal without starting combat
     setShowRandomCombatModal(false);
+    
+    // Get enemy name for the flee message
+    const enemyName = randomCombatData.enemy?.name || 'kẻ thù';
+    
+    // Create flee message that cannot be edited
+    const fleeMessage = `Bạn tránh né cuộc tấn công của ${enemyName}`;
+    
+    // Set the flee message as combat result text (non-editable)
+    setCombatResultText(fleeMessage);
+    setHasCombatResult(true);
+    setCurrentMessage(fleeMessage);
+    
+    // Mark that player fled from random combat to reset encounter chance
+    localStorage.setItem('player_fled_random_combat', JSON.stringify({
+      timestamp: Date.now(),
+      turn: turnCounter || 0,
+      enemyName: enemyName
+    }));
+    
+    // Clear random combat data
     setRandomCombatData(null);
     
     // Clear combatInitiation from sceneState
@@ -2883,8 +2956,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       }
     }));
     
-    // Could add flee success/failure logic here
-    console.log('Player chose to flee from random combat');
+    console.log('Player chose to flee from random combat:', fleeMessage);
   };
 
   const handleCloseRandomCombatModal = () => {
@@ -3724,3 +3796,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     </div>
   );
 }
+
+
+
+

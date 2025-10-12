@@ -5,8 +5,10 @@ import { VersionInfo } from '../components/Settings/VersionInfo';
 import { geminiService } from '../services/geminiService';
 import { Key, Info } from 'lucide-react';
 import { MotionWrapper } from '../components/MotionWrapper';
+import { useResponsiveContext } from '../contexts/ResponsiveContext';
 
 export function SettingsPage() {
+  const { shouldUseMobileLayout } = useResponsiveContext();
   const [isApiConfigured, setIsApiConfigured] = useState(false);
   const [showMultiKeyManager, setShowMultiKeyManager] = useState(true); // Default to multi-key mode
   const [useMultiKeyMode, setUseMultiKeyMode] = useState(true);
@@ -132,7 +134,7 @@ export function SettingsPage() {
             >
               <h3 className="text-xl font-semibold text-white mb-4">Trạng Thái API</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`grid gap-6 ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${isApiConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -183,7 +185,7 @@ export function SettingsPage() {
             >
               <h3 className="text-xl font-semibold text-white mb-4">Thông Tin Sử Dụng</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`grid gap-6 ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
                 <div>
                   <h4 className="font-semibold text-white mb-3">Cách Lấy API Key:</h4>
                   <ol className="text-sm text-gray-300 space-y-2 list-decimal list-inside">
@@ -236,14 +238,16 @@ export function SettingsPage() {
         transition={{ duration: 0.5, delay: 0.1 }}
       >
         <div className="glass-effect p-2 rounded-xl">
-          <div className="flex space-x-2">
+          <div className={`flex ${shouldUseMobileLayout() ? 'flex-col space-y-2' : 'flex-row space-x-2'}`}>
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-6 py-3 rounded-lg transition-all duration-200 flex items-center space-x-2 ${
+                  className={`px-6 py-3 rounded-lg transition-all duration-200 flex items-center ${
+                    shouldUseMobileLayout() ? 'justify-start space-x-2 w-full' : 'space-x-2'
+                  } ${
                     activeTab === tab.id
                       ? 'bg-primary-500/20 border-2 border-primary-500/50 text-primary-300'
                       : 'bg-white/5 border-2 border-white/10 text-gray-300 hover:border-white/20 hover:bg-white/10'
@@ -252,7 +256,7 @@ export function SettingsPage() {
                   <Icon className="w-5 h-5" />
                   <div className="text-left">
                     <div className="font-medium">{tab.label}</div>
-                    <div className="text-xs opacity-75">{tab.description}</div>
+                    <div className={`text-xs opacity-75 ${shouldUseMobileLayout() ? 'hidden' : 'block'}`}>{tab.description}</div>
                   </div>
                 </button>
               );

@@ -26,7 +26,7 @@ class CombatLevelService {
     
     let level = 1;
     
-    // Level 1-2: 1 battle
+    // Level 1-2: 1 battle (total 1)
     if (combatExperience >= 1) {
       level = 2;
     }
@@ -195,9 +195,7 @@ class CombatLevelService {
   public getTotalBattlesForLevel(targetLevel: number): number {
     if (targetLevel <= 1) return 0;
     if (targetLevel === 2) return 1;
-    
-    // Level 2-3: 3 battles
-    if (targetLevel === 3) return 3;
+    if (targetLevel === 3) return 4; // 1 + 3 = 4
     
     let totalBattles = 4; // Level 1-3 cần 4 lần (1+3)
     for (let level = 4; level <= targetLevel; level++) {
@@ -216,7 +214,7 @@ class CombatLevelService {
   public getBattlesNeededForLevel(targetLevel: number): number {
     if (targetLevel <= 1) return 0;
     if (targetLevel === 2) return 1;
-    if (targetLevel === 3) return 3;
+    if (targetLevel === 3) return 3; // Cần 3 battles để lên từ level 2 lên 3
     
     // Level 4+: 5, 7, 9, 11, ...
     return 2 * targetLevel - 1;

@@ -232,6 +232,7 @@ export interface CombatResultData {
     questRelated?: boolean;
     questId?: string;
     npcChallengeId?: string;
+    gameTurn?: number; // Game turn when combat occurred
     [key: string]: any; // Allow future extensions
   };
 }

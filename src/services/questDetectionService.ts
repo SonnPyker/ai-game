@@ -523,7 +523,6 @@ export class QuestDetectionService {
       rarity: rarity,
       quantity: 1,
       icon: randomType === 'weapon' ? '⚔️' : randomType === 'armor' ? '🛡️' : randomType === 'consumable' ? '🧪' : '📦',
-      stats: {},
       isEquipped: false,
       tags: ['reward', randomType]
     };

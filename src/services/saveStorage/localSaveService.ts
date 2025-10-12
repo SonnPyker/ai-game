@@ -78,7 +78,15 @@ export class LocalSaveService {
         character: characterData,
         scenario: scenarioData,
         summary: updatedSummary,
-        sceneState: sceneStateData,
+        sceneState: (() => {
+          // Loại bỏ mainQuests khỏi sceneState nếu có
+          if (sceneStateData && typeof sceneStateData === 'object' && sceneStateData.mainQuests) {
+            const cleanedSceneState = { ...sceneStateData };
+            delete cleanedSceneState.mainQuests;
+            return cleanedSceneState;
+          }
+          return sceneStateData;
+        })(),
         chat: chatData,
         turnCounter,
         worldTime,

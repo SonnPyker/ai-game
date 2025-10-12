@@ -75,10 +75,10 @@ export function useResponsiveDesign() {
 
   // Check if animations should be enabled
   const shouldUseAnimations = useCallback(() => {
-    // Always enable animations for loading spinners and essential UI animations
-    // Only disable complex animations on mobile for performance
-    return true;
-  }, []);
+    const effectiveMode = getEffectiveUIMode();
+    // Tắt animation trên mobile để tăng performance
+    return effectiveMode !== 'mobile';
+  }, [getEffectiveUIMode]);
 
   // Check if loading animations should be enabled (always true)
   const shouldUseLoadingAnimations = useCallback(() => {

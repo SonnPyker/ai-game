@@ -9,6 +9,7 @@ import { combatLevelService } from '../services/combatLevelService';
 import { currencyService } from '../services/currencyService';
 import { Sparkles, Download, RotateCcw, Check, Globe, Upload, Shuffle, Star } from 'lucide-react';
 import { HelpTooltip } from '../components/HelpTooltip';
+import { useResponsiveContext } from '../contexts/ResponsiveContext';
 
 interface CharacterData {
   name: string;
@@ -44,6 +45,7 @@ interface CharacterData {
 
 export function CharacterCreationPage() {
   const navigate = useNavigate();
+  const { shouldUseMobileLayout } = useResponsiveContext();
   const [currentStep, setCurrentStep] = useState<'description' | 'customize'>('description');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRerolling, setIsRerolling] = useState(false);
@@ -536,7 +538,7 @@ export function CharacterCreationPage() {
               value={characterDescription}
               onChange={(e) => setCharacterDescription(e.target.value)}
               placeholder="Ví dụ: Tôi muốn tạo một nhân vật tên là Aria, một nữ pháp sư trẻ tuổi với mái tóc bạc dài và đôi mắt tím. Cô ấy thông minh nhưng hơi kiêu ngạo, có khả năng điều khiển phép thuật băng. Cô sinh ra trong một gia đình quý tộc nhưng đã bỏ nhà ra đi để tìm kiếm tri thức cổ xưa..."
-              className="w-full h-64 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
+              className="w-full h-64 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
             />
           </div>
 
@@ -628,7 +630,7 @@ export function CharacterCreationPage() {
           <div className="glass-effect p-6 rounded-2xl">
             <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">THÔNG TIN CƠ BẢN</h3>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+            <div className={`grid gap-3 lg:gap-4 ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Tên</label>
                 <div className="flex gap-2">
@@ -636,7 +638,7 @@ export function CharacterCreationPage() {
                     type="text"
                     value={characterData.name}
                     onChange={(e) => setCharacterData(prev => ({ ...prev, name: e.target.value }))}
-                    className="flex-1 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
+                    className="flex-1 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none break-words overflow-wrap-anywhere"
                     placeholder="Nhập tên nhân vật..."
                   />
                   <button
@@ -663,7 +665,7 @@ export function CharacterCreationPage() {
                 <select
                   value={characterData.gender}
                   onChange={(e) => setCharacterData(prev => ({ ...prev, gender: e.target.value as any }))}
-                  className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none"
+                  className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none break-words overflow-wrap-anywhere"
                 >
                   <option value="male">Nam</option>
                   <option value="female">Nữ</option>
@@ -688,7 +690,7 @@ export function CharacterCreationPage() {
               </div>
 
               {/* Name Generation Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className={`grid gap-4 mb-6 ${shouldUseMobileLayout() ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Văn hóa</label>
                   <select
@@ -777,7 +779,7 @@ export function CharacterCreationPage() {
               {generatedNames.length > 0 && (
                 <div>
                   <h4 className="text-lg font-medium text-white mb-3">Tên đã tạo:</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className={`grid gap-3 ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
                     {generatedNames.map((nameData, index) => (
                       <div
                         key={index}
@@ -809,7 +811,7 @@ export function CharacterCreationPage() {
               value={characterData.appearance}
               onChange={(e) => setCharacterData(prev => ({ ...prev, appearance: e.target.value }))}
               placeholder="Mô tả ngoại hình của nhân vật..."
-              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
+              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
             />
           </div>
 
@@ -820,7 +822,7 @@ export function CharacterCreationPage() {
               value={characterData.personality}
               onChange={(e) => setCharacterData(prev => ({ ...prev, personality: e.target.value }))}
               placeholder="Mô tả tính cách tổng quan của nhân vật..."
-              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
+              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
             />
           </div>
 
@@ -831,7 +833,7 @@ export function CharacterCreationPage() {
               value={characterData.backstory}
               onChange={(e) => setCharacterData(prev => ({ ...prev, backstory: e.target.value }))}
               placeholder="Viết tiểu sử chi tiết của nhân vật..."
-              className="w-full h-48 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none"
+              className="w-full h-48 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
             />
           </div>
 
@@ -881,7 +883,7 @@ export function CharacterCreationPage() {
               </button>
             </div>
             
-             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 lg:gap-4 mb-4">
+             <div className={`grid grid-cols-2 gap-3 lg:gap-4 mb-4 ${shouldUseMobileLayout() ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
                {Object.entries(characterData.coreStats).map(([stat, value]) => {
                    if (stat === 'modifiers') return null; // Skip modifiers object
                  
@@ -1051,7 +1053,7 @@ export function CharacterCreationPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.6 }}
-        className="mt-8 flex flex-col sm:flex-row justify-center gap-3 sm:space-x-4"
+        className={`mt-8 flex ${shouldUseMobileLayout() ? 'flex-col gap-3' : 'flex-row justify-center gap-3 sm:space-x-4'}`}
       >
         <button
           onClick={handleResetForm}

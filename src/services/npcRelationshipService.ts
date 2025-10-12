@@ -77,14 +77,22 @@ class NPCRelationshipService {
     
     // Generate stats based on combat level (for combat mechanics)
     const baseStats = 8 + Math.floor(combatLevel * 2);
-    const statVariation = Math.floor(random * 6) - 3; // -3 to +3 variation
     
-    const strength = Math.max(8, Math.min(20, baseStats + statVariation));
-    const agility = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
-    const constitution = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
-    const intelligence = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
-    const wisdom = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
-    const charisma = Math.max(8, Math.min(20, baseStats + Math.floor(random * 6) - 3));
+    // Create different random seeds for each stat to ensure variation
+    const strengthSeed = (seed * 1237 + 4567) % 233280 / 233280;
+    const agilitySeed = (seed * 2341 + 5678) % 233280 / 233280;
+    const constitutionSeed = (seed * 3457 + 6789) % 233280 / 233280;
+    const intelligenceSeed = (seed * 4561 + 7890) % 233280 / 233280;
+    const wisdomSeed = (seed * 5673 + 8901) % 233280 / 233280;
+    const charismaSeed = (seed * 6785 + 9012) % 233280 / 233280;
+    
+    // Each stat gets different random variation (-3 to +3)
+    const strength = Math.max(8, Math.min(20, baseStats + Math.floor(strengthSeed * 7) - 3));
+    const agility = Math.max(8, Math.min(20, baseStats + Math.floor(agilitySeed * 7) - 3));
+    const constitution = Math.max(8, Math.min(20, baseStats + Math.floor(constitutionSeed * 7) - 3));
+    const intelligence = Math.max(8, Math.min(20, baseStats + Math.floor(intelligenceSeed * 7) - 3));
+    const wisdom = Math.max(8, Math.min(20, baseStats + Math.floor(wisdomSeed * 7) - 3));
+    const charisma = Math.max(8, Math.min(20, baseStats + Math.floor(charismaSeed * 7) - 3));
     
     const stats = {
       strength,
@@ -150,11 +158,20 @@ class NPCRelationshipService {
       const prompt = this.buildWeaponGenerationPrompt(npcName, level, stats, npcData);
       const response = await geminiService.generateContent(prompt, additionalContext?.contentFlags);
       
-      if (!response) return null;
+      if (!response || response.trim() === '') {
+        console.warn('Empty response from AI for weapon generation');
+        return null;
+      }
       
       // Parse AI response to extract weapon data
       const weaponData = this.parseWeaponResponse(response);
-      return weaponData;
+      
+      if (weaponData) {
+        return weaponData;
+      } else {
+        console.warn('Failed to parse weapon response, falling back to basic generation');
+        return null;
+      }
     } catch (error) {
       console.error('Error generating weapon with AI:', error);
       return null;
@@ -218,39 +235,66 @@ QUY TẮC TẠO VŨ KHÍ PHÙ HỢP:
 Hãy tạo 1 vũ khí phù hợp nhất theo format JSON:
 {
   "name": "Tên vũ khí (tiếng Việt)",
-  "attackBonus": ${2 + Math.max(stats.modifiers.strength, stats.modifiers.agility) + Math.floor(level / 2)},
-  "damage": "${Math.floor(level / 2) + 1}d6+${Math.max(stats.modifiers.strength, stats.modifiers.agility)}",
-  "damageType": "physical|magical|fire|cold|lightning|poison|psychic",
-  "range": ${stats.modifiers.agility > stats.modifiers.strength ? 60 : undefined},
+  "attackBonus": [số từ 1-5 dựa trên level và stats],
+  "damage": "1d4+[modifier] hoặc 1d6+[modifier] hoặc 1d8+[modifier]",
+  "damageType": "physical",
+  "range": null,
   "description": "Mô tả ngắn về vũ khí"
 }
 
-Chỉ trả về JSON, không có text khác.`;
+QUAN TRỌNG:
+- attackBonus: 1-2 cho level 1-2, 3-4 cho level 3-4, 5+ cho level 5+
+- damage: 1d4 cho vũ khí nhẹ, 1d6 cho vũ khí trung bình, 1d8 cho vũ khí nặng
+- modifier trong damage = attackBonus - 2
+- Chỉ trả về JSON hợp lệ, không có text khác
+- Không sử dụng undefined, sử dụng null thay thế`;
   }
 
   // Parse AI response to extract weapon data
   private parseWeaponResponse(response: string): any | null {
     try {
-      // Try to extract JSON from response
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) return null;
+      // Clean the response first
+      let cleanResponse = response.trim();
       
-      const weaponData = JSON.parse(jsonMatch[0]);
+      // Check if response is empty or contains undefined
+      if (!cleanResponse || cleanResponse === 'undefined' || cleanResponse.includes('undefined')) {
+        console.warn('Received undefined or empty weapon response');
+        return null;
+      }
+      
+      // Try to extract JSON from response
+      const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.warn('No JSON found in weapon response:', cleanResponse.substring(0, 100));
+        return null;
+      }
+      
+      let jsonString = jsonMatch[0];
+      
+      // Clean up common JSON issues
+      jsonString = jsonString
+        .replace(/undefined/g, 'null')  // Replace undefined with null
+        .replace(/,(\s*[}\]])/g, '$1')  // Remove trailing commas
+        .replace(/([{,]\s*)(\w+):/g, '$1"$2":'); // Add quotes around unquoted keys
+      
+      const weaponData = JSON.parse(jsonString);
       
       // Validate required fields
-      if (!weaponData.name || !weaponData.attackBonus || !weaponData.damage || !weaponData.damageType) {
+      if (!weaponData.name || weaponData.attackBonus === undefined || !weaponData.damage || !weaponData.damageType) {
+        console.warn('Invalid weapon data structure:', weaponData);
         return null;
       }
       
       return weaponData;
     } catch (error) {
       console.error('Error parsing weapon response:', error);
+      console.error('Response was:', response.substring(0, 200));
       return null;
     }
   }
 
   // Fallback basic attack generation
-  private generateBasicAttacksForNPC(npcName: string, level: number, stats: any): any[] {
+  private generateBasicAttacksForNPC(npcName: string, _level: number, stats: any): any[] {
     const attacks = [];
     const nameLower = npcName.toLowerCase();
     
@@ -260,8 +304,8 @@ Chỉ trả về JSON, không có text khác.`;
       const damageMod = strengthMod >= 0 ? `+${strengthMod}` : `${strengthMod}`;
       attacks.push({
         name: "Kiếm",
-        attackBonus: 2 + strengthMod + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d6${damageMod}`,
+        attackBonus: 2 + strengthMod, // Base proficiency + stat modifier
+        damage: `1d8${damageMod}`, // Fixed weapon damage + stat modifier
         damageType: "physical" as const
       });
     } else if (nameLower.includes('archer') || nameLower.includes('ranger') || nameLower.includes('hunter')) {
@@ -269,8 +313,8 @@ Chỉ trả về JSON, không có text khác.`;
       const damageMod = agilityMod >= 0 ? `+${agilityMod}` : `${agilityMod}`;
       attacks.push({
         name: "Cung tên",
-        attackBonus: 2 + agilityMod + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d6${damageMod}`,
+        attackBonus: 2 + agilityMod, // Base proficiency + stat modifier
+        damage: `1d6${damageMod}`, // Fixed weapon damage + stat modifier
         damageType: "physical" as const,
         range: 60
       });
@@ -279,8 +323,8 @@ Chỉ trả về JSON, không có text khác.`;
       const damageMod = intMod >= 0 ? `+${intMod}` : `${intMod}`;
       attacks.push({
         name: "Bola lửa",
-        attackBonus: 2 + intMod + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d6${damageMod}`,
+        attackBonus: 2 + intMod, // Base proficiency + stat modifier
+        damage: `1d6${damageMod}`, // Fixed spell damage + stat modifier
         damageType: "fire" as const,
         range: 30
       });
@@ -289,8 +333,8 @@ Chỉ trả về JSON, không có text khác.`;
       const damageMod = agilityMod >= 0 ? `+${agilityMod}` : `${agilityMod}`;
       attacks.push({
         name: "Dao găm",
-        attackBonus: 2 + agilityMod + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d4${damageMod}`,
+        attackBonus: 2 + agilityMod, // Base proficiency + stat modifier
+        damage: `1d4${damageMod}`, // Fixed weapon damage + stat modifier
         damageType: "physical" as const
       });
     } else {
@@ -299,8 +343,8 @@ Chỉ trả về JSON, không có text khác.`;
       const damageMod = maxMod >= 0 ? `+${maxMod}` : `${maxMod}`;
       attacks.push({
         name: "Tấn công cơ bản",
-        attackBonus: 2 + maxMod + Math.floor(level / 2),
-        damage: `${Math.floor(level / 2) + 1}d4${damageMod}`,
+        attackBonus: 2 + maxMod, // Base proficiency + stat modifier
+        damage: `1d4${damageMod}`, // Fixed weapon damage + stat modifier
         damageType: "physical" as const
       });
     }
@@ -648,10 +692,8 @@ Chỉ trả về JSON, không có text khác.`;
       
       this.applyNPCAnalysisResult(npc, sentiment, narrative, additionalContext);
       
-      // Process arousal if available and adult content is enabled
-      if (sentiment.arousalChange !== undefined && additionalContext?.contentFlags?.adult_enabled && 
-          (additionalContext.contentFlags.adult_intensity === 'direct' || 
-           additionalContext.contentFlags.adult_intensity === 'direct_safe')) {
+      // Process arousal if available (removed adult content requirement)
+      if (sentiment.arousalChange !== undefined) {
         
         // Initialize arousal if not exists
         if (!npc.arousal) {
@@ -880,10 +922,8 @@ Chỉ trả về JSON, không có text khác.`;
     // Generate NPC personality traits for more realistic analysis
     const npcPersonality = this.generateNPCPersonality(npcName);
 
-    // Check if arousal analysis should be included
-    const shouldIncludeArousal = additionalContext?.contentFlags?.adult_enabled && 
-      (additionalContext.contentFlags.adult_intensity === 'direct' || 
-       additionalContext.contentFlags.adult_intensity === 'direct_safe');
+    // Check if arousal analysis should be included (always include now)
+    const shouldIncludeArousal = true;
 
 
     // Get NPC data for arousal analysis - use the npc object passed to this method

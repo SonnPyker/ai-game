@@ -5,6 +5,40 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0-beta] - 2025-01-12
+
+### 🚀 Hệ thống Parallel API Processing
+- **Multi-API Key Management**: Quản lý nhiều API keys từ các account khác nhau
+- **Round-Robin Distribution**: Phân phối requests đều giữa các API keys theo thuật toán round-robin
+- **Parallel Processing**: Xử lý song song tối đa 5 requests cùng lúc để tăng throughput
+- **Queue System**: Hệ thống queue thông minh với concurrency control
+- **Account Tracking**: Theo dõi và hiển thị account name cho mỗi API key
+- **Performance Monitoring**: Thống kê chi tiết về queue length, active requests, response time
+
+### 🎯 UI Enhancements
+- **Multi-API Key Manager**: Giao diện quản lý API keys với account names
+- **Parallel API Tester**: Tool test hiệu suất parallel processing
+- **Real-time Stats**: Hiển thị thống kê real-time về API usage
+- **Debug Console**: Console logs tối ưu để track request assignment
+
+### 🔧 Technical Improvements
+- **Request ID Uniqueness**: Đảm bảo mỗi request có ID unique 100%
+- **Error Handling**: Xử lý lỗi thông minh với auto-failover
+- **Memory Management**: Cleanup request tracking sau khi hoàn thành
+- **TypeScript Optimization**: Cải thiện type safety và build performance
+
+### 🐛 Fixed
+- **Request ID Collision**: Sửa lỗi request ID bị trùng lặp
+- **Round-Robin Logic**: Cải thiện thuật toán phân phối requests
+- **Console Log Spam**: Giảm thiểu logs không cần thiết
+- **TypeScript Errors**: Sửa các lỗi TypeScript trong SaveLoadPage
+
+### 🚀 Performance
+- **2-5x Throughput**: Tăng throughput đáng kể với multiple API keys
+- **Load Balancing**: Cân bằng tải giữa các API keys
+- **Concurrent Processing**: Xử lý song song thay vì tuần tự
+- **Resource Optimization**: Tối ưu hóa sử dụng tài nguyên
+
 ## [4.2.0-beta] - 2025-01-05
 
 ### 🎮 Combat Visual Feedback System

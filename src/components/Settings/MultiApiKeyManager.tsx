@@ -16,17 +16,21 @@ import {
 import { geminiService } from '../../services/geminiService';
 import { MotionWrapper } from '../MotionWrapper';
 import { ApiKeyInfo, ApiKeyStats } from '../../services/multiApiKeyService';
+import { useResponsiveContext } from '../../contexts/ResponsiveContext';
+import { ParallelApiTester } from './ParallelApiTester';
 
 interface MultiApiKeyManagerProps {
   onApiKeySet: (hasKeys: boolean) => void;
 }
 
 export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
+  const { shouldUseMobileLayout } = useResponsiveContext();
   const [apiKeys, setApiKeys] = useState<ApiKeyInfo[]>([]);
   const [stats, setStats] = useState<ApiKeyStats | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
   const [newApiKeyName, setNewApiKeyName] = useState('');
+  const [newAccountName, setNewAccountName] = useState('');
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -62,7 +66,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
     setErrorMessage('');
 
     try {
-      const keyId = geminiService.addApiKey(newApiKey.trim(), newApiKeyName.trim());
+      const keyId = geminiService.addApiKey(newApiKey.trim(), newApiKeyName.trim(), newAccountName.trim());
       
       // Test key ngay sau khi thêm
       const isValid = await geminiService.testApiKey(keyId);
@@ -75,6 +79,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
       setSuccessMessage('API key đã được thêm và test thành công!');
       setNewApiKey('');
       setNewApiKeyName('');
+      setNewAccountName('');
       setShowAddForm(false);
       
       loadApiKeys();
@@ -286,7 +291,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div className="glass-effect p-4 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
               <Key className="w-5 h-5 text-primary-400" />
@@ -317,6 +322,23 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
               <span className="text-sm text-gray-400">Tổng Lỗi</span>
             </div>
             <div className="text-2xl font-bold text-white">{stats.totalErrors}</div>
+          </div>
+
+          <div className="glass-effect p-4 rounded-lg">
+            <div className="flex items-center space-x-2 mb-2">
+              <Activity className="w-5 h-5 text-purple-400" />
+              <span className="text-sm text-gray-400">Queue</span>
+            </div>
+            <div className="text-2xl font-bold text-white">{stats.queueLength}</div>
+            <div className="text-xs text-gray-400">Active: {stats.activeRequests}</div>
+          </div>
+
+          <div className="glass-effect p-4 rounded-lg">
+            <div className="flex items-center space-x-2 mb-2">
+              <RefreshCw className="w-5 h-5 text-yellow-400" />
+              <span className="text-sm text-gray-400">Avg Time</span>
+            </div>
+            <div className="text-2xl font-bold text-white">{stats.averageResponseTime}ms</div>
           </div>
         </div>
       )}
@@ -382,6 +404,16 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
           >
             <h3 className="text-lg font-semibold text-white mb-4">Thêm API Key Mới</h3>
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Tên Account</label>
+                <input
+                  type="text"
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
+                  placeholder="Ví dụ: Account 1, Account 2..."
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
+                />
+              </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Tên API Key (tùy chọn)</label>
                 <input
@@ -449,8 +481,8 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
+              <div className={`flex ${shouldUseMobileLayout() ? 'flex-col' : 'items-center justify-between'}`}>
+                <div className={`${shouldUseMobileLayout() ? 'w-full' : 'flex-1'}`}>
                   <div className="flex items-center space-x-3 mb-2">
                     {editingKey === key.id ? (
                       <input
@@ -461,7 +493,10 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                         autoFocus
                       />
                     ) : (
-                      <h4 className="text-lg font-semibold text-white">{key.name}</h4>
+                      <div className="flex flex-col">
+                        <h4 className="text-lg font-semibold text-white">{key.name}</h4>
+                        <span className="text-sm text-blue-300 font-medium">{key.accountName}</span>
+                      </div>
                     )}
                     <span className={`text-sm ${getKeyStatusColor(key)}`}>
                       {getKeyStatusText(key)}
@@ -473,7 +508,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-400">
+                  <div className={`grid gap-4 text-sm text-gray-400 ${shouldUseMobileLayout() ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
                     <div>
                       <span className="block">Usage:</span>
                       <span className="text-white font-medium">{key.usageCount}</span>
@@ -494,12 +529,12 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                   
                   {key.lastError && (
                     <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-300 text-sm">
-                      <strong>Lỗi cuối:</strong> {key.lastError}
+                      <strong>Lỗi cuối:</strong> {key.lastError.length > 100 ? key.lastError.substring(0, 100) + '...' : key.lastError}
                     </div>
                   )}
                 </div>
                 
-                <div className="flex items-center space-x-2 ml-4">
+                <div className={`flex items-center ${shouldUseMobileLayout() ? 'flex-col space-y-2 mt-2' : 'space-x-2 ml-4'}`}>
                   {editingKey === key.id ? (
                     <>
                       <button
@@ -575,7 +610,10 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                   )}
                   {testResults[key.id].error && (
                     <div className="mt-1 text-xs opacity-75">
-                      🔍 Chi tiết lỗi: {testResults[key.id].error}
+                      🔍 Chi tiết lỗi: {(() => {
+                        const error = testResults[key.id].error;
+                        return error && error.length > 80 ? error.substring(0, 80) + '...' : error;
+                      })()}
                     </div>
                   )}
                 </div>
@@ -602,9 +640,12 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
           animate={{ opacity: 1, y: 0 }}
           className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300"
         >
-          {errorMessage}
+          {errorMessage.length > 150 ? errorMessage.substring(0, 150) + '...' : errorMessage}
         </MotionWrapper>
       )}
+
+      {/* Parallel API Tester */}
+      <ParallelApiTester />
     </div>
   );
 }

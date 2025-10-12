@@ -131,7 +131,12 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         localStorage.setItem('rp_scenario', JSON.stringify(saveGame.scenario));
         localStorage.setItem('rp_chat', JSON.stringify(saveGame.chat));
         localStorage.setItem('game_turn_counter', saveGame.turnCounter.toString());
-        localStorage.setItem('rp_scene_state', JSON.stringify(saveGame.sceneState));
+        // Lọc bỏ mainQuests khỏi sceneState trước khi lưu vào localStorage
+        const cleanedSceneState = { ...saveGame.sceneState } as any;
+        if (cleanedSceneState.mainQuests) {
+          delete cleanedSceneState.mainQuests;
+        }
+        localStorage.setItem('rp_scene_state', JSON.stringify(cleanedSceneState));
         
         if (saveGame.summary) {
           localStorage.setItem('rp_summary_indexed', JSON.stringify(saveGame.summary));

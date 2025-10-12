@@ -489,6 +489,26 @@
   .animations-disabled [class*="animate-"] {
     animation: inherit !important;
   }
+  
+  /* Force loading animations to always work */
+  .animate-spin {
+    animation: spin 1s linear infinite !important;
+  }
+  
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+  }
+  
+  /* Keyframes for loading animations */
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
 
   .animations-disabled .mobile-no-transition,
   .animations-disabled .mobile-no-animation {

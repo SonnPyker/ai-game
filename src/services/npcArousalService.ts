@@ -178,17 +178,7 @@ class NPCArousalService {
     context: string;
     intensity: 'low' | 'medium' | 'high';
   }> {
-    // Only process if adult content is enabled and direct mode
-    if (!additionalContext?.contentFlags?.adult_enabled || 
-        additionalContext.contentFlags.adult_intensity === 'fade' || 
-        additionalContext.contentFlags.adult_intensity === 'light') {
-      return {
-        arousalChange: 0,
-        reason: 'Adult content disabled or not in direct mode',
-        context: 'System restriction',
-        intensity: 'low'
-      };
-    }
+    // Process arousal analysis (removed adult content requirement)
 
     // Initialize arousal if not exists
     if (!npc.arousal) {
@@ -220,11 +210,11 @@ class NPCArousalService {
         
         // Adjust based on inhibition (higher inhibition = less extreme changes)
         const inhibitionFactor = (100 - arousal.personality.inhibition) / 100;
-        arousalChange = Math.floor(arousalChange * Math.max(0.7, inhibitionFactor)); // Tối thiểu giữ 70%
+        arousalChange = Math.floor(arousalChange * Math.max(0.9, inhibitionFactor)); // Tăng từ 0.7 lên 0.9
         
         // Adjust based on experience (more experience = more controlled response)
         const experienceFactor = (100 - arousal.personality.experience) / 100;
-        arousalChange = Math.floor(arousalChange * Math.max(0.8, 0.7 + experienceFactor * 0.3)); // Tăng từ 0.5-1.0 lên 0.7-1.0
+        arousalChange = Math.floor(arousalChange * Math.max(0.9, 0.8 + experienceFactor * 0.2)); // Tăng từ 0.7-1.0 lên 0.8-1.0
         
         // Adjust based on current arousal level (diminishing returns)
         const currentLevel = arousal.level;
@@ -786,42 +776,42 @@ OUTPUT JSON:
       if (lowerNarrative.includes(keyword)) physiologicalCount++;
     }
 
-    // Calculate base arousal change with more realistic scoring
-    const totalPositive = highPositiveCount * 3 + mediumPositiveCount * 2 + lowPositiveCount * 1;
+    // Calculate base arousal change with more generous scoring
+    const totalPositive = highPositiveCount * 5 + mediumPositiveCount * 3 + lowPositiveCount * 2; // Tăng điểm
     const totalNegative = highNegativeCount * 3 + mediumNegativeCount * 2;
     
     // Physiological responses always count as arousal (even if unconscious) but lighter
-    const physiologicalBonus = physiologicalCount * 2; // Lighter bonus for physiological responses
+    const physiologicalBonus = physiologicalCount * 3; // Tăng từ 2 lên 3
     
     if (totalPositive > totalNegative || physiologicalCount > 0) {
-      // More realistic positive scoring
-      arousalChange = Math.floor(totalPositive * 2 * (arousal.personality.responsiveness / 100));
+      // More generous positive scoring
+      arousalChange = Math.floor(totalPositive * 3 * (arousal.personality.responsiveness / 100)); // Tăng từ 2 lên 3
       
       // Add physiological bonus (always counts regardless of consciousness)
       arousalChange += physiologicalBonus;
       
       // Adjust based on inhibition (higher inhibition = less arousal change)
       const inhibitionFactor = (100 - arousal.personality.inhibition) / 100;
-      arousalChange = Math.floor(arousalChange * Math.max(0.7, inhibitionFactor)); // Tối thiểu 70%
+      arousalChange = Math.floor(arousalChange * Math.max(0.9, inhibitionFactor)); // Tăng từ 0.7 lên 0.9
       
       // Adjust based on experience (more experience = more controlled response)
       const experienceFactor = (100 - arousal.personality.experience) / 100;
-      arousalChange = Math.floor(arousalChange * Math.max(0.8, 0.7 + experienceFactor * 0.3)); // Tăng lên 0.7-1.0
+      arousalChange = Math.floor(arousalChange * Math.max(0.9, 0.8 + experienceFactor * 0.2)); // Tăng từ 0.7-1.0 lên 0.8-1.0
       
-      // PATTERN-AWARE ADJUSTMENTS - GIẢM PENALTY
+      // PATTERN-AWARE ADJUSTMENTS - GIẢM PENALTY NHẸ HỚN
       // Diminishing returns adjustment
       if (arousalPattern.diminishingReturns) {
-        arousalChange = Math.floor(arousalChange * 0.85); // Giảm từ 0.6 lên 0.85
+        arousalChange = Math.floor(arousalChange * 0.95); // Tăng từ 0.85 lên 0.95
       }
       
       // Stability score adjustment
       if (arousalPattern.stabilityScore < 30) {
-        arousalChange = Math.floor(arousalChange * 0.95); // Giảm từ 0.8 lên 0.95
+        arousalChange = Math.floor(arousalChange * 0.98); // Tăng từ 0.95 lên 0.98
       }
       
       // Context repeat adjustment
       if (arousalPattern.contextRepeats.length > 0) {
-        arousalChange = Math.floor(arousalChange * 0.9); // Giảm từ 0.75 lên 0.9
+        arousalChange = Math.floor(arousalChange * 0.95); // Tăng từ 0.9 lên 0.95
       }
       
       // Relationship-based adjustments

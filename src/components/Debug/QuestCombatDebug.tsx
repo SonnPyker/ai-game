@@ -84,9 +84,21 @@ export const QuestCombatDebug: React.FC<QuestCombatDebugProps> = ({ onClose }) =
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Random Encounter Rate:</span>
+                    <span className="text-gray-400">Base Encounter Rate:</span>
                     <span className="ml-2 text-green-400">
                       {questInfo.randomEncounterRate}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Current Encounter Rate:</span>
+                    <span className={`ml-2 ${questInfo.currentEncounterRate === 0 ? 'text-red-400' : 'text-green-400'}`}>
+                      {questInfo.currentEncounterRate}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Flee Status:</span>
+                    <span className={`ml-2 ${questInfo.fleeStatus.includes('Fled') ? 'text-yellow-400' : 'text-green-400'}`}>
+                      {questInfo.fleeStatus}
                     </span>
                   </div>
                   <div>

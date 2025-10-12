@@ -101,7 +101,16 @@ class InventoryService {
         if (this.isValidItemData(itemData)) {
           const item = this.createItemFromData(itemData);
           if (item) {
-            foundItems.push(item);
+            // Lọc bỏ quest reward items khỏi scene items
+            const tags = item.tags || [];
+            const isQuestReward = tags.some(tag => 
+              tag.toLowerCase().includes('reward') || 
+              tag.toLowerCase().includes('quest')
+            );
+            
+            if (!isQuestReward) {
+              foundItems.push(item);
+            }
           }
         }
       });
@@ -526,6 +535,11 @@ class InventoryService {
     }
     
     return ac;
+  }
+
+  // Get current character reference
+  public getCharacter(): Character | null {
+    return this.character;
   }
 
   // Update character inventory reference

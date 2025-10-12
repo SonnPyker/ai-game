@@ -4,6 +4,7 @@ export interface ApiKeyInfo {
   id: string;
   key: string;
   name: string;
+  accountName: string;
   isActive: boolean;
   lastUsed: string;
   usageCount: number;
@@ -18,6 +19,18 @@ export interface ApiKeyStats {
   totalUsage: number;
   totalErrors: number;
   currentKeyIndex: number;
+  queueLength: number;
+  activeRequests: number;
+  averageResponseTime: number;
+}
+
+interface QueueItem {
+  id: string;
+  prompt: string;
+  contentFlags?: any;
+  resolve: (value: string) => void;
+  reject: (error: Error) => void;
+  timestamp: number;
 }
 
 class MultiApiKeyService {
@@ -31,6 +44,14 @@ class MultiApiKeyService {
   private genAI: GoogleGenerativeAI | null = null;
   private model: any = null;
   private isInitialized: boolean = false;
+  
+  // Queue System
+  private requestQueue: QueueItem[] = [];
+  private activeRequests: Map<string, QueueItem> = new Map();
+  private requestToKeyMap: Map<string, string> = new Map(); // Track which key is used for each request
+  private maxConcurrentRequests: number = 5; // Tăng lên để test parallel processing
+  private responseTimes: number[] = [];
+  private requestCounter: number = 0; // Counter để tạo unique request ID
 
   constructor() {
     this.loadApiKeys();
@@ -38,12 +59,13 @@ class MultiApiKeyService {
   }
 
   // API Key Management
-  addApiKey(key: string, name: string = ''): string {
+  addApiKey(key: string, name: string = '', accountName: string = ''): string {
     const id = Date.now().toString();
     const apiKeyInfo: ApiKeyInfo = {
       id,
       key: key.trim(),
       name: name.trim() || `API Key ${this.apiKeys.length + 1}`,
+      accountName: accountName.trim() || `Account ${this.apiKeys.length + 1}`,
       isActive: true,
       lastUsed: new Date().toISOString(),
       usageCount: 0,
@@ -100,13 +122,19 @@ class MultiApiKeyService {
     const activeKeys = this.apiKeys.filter(key => key.isActive);
     const totalUsage = this.apiKeys.reduce((sum, key) => sum + key.usageCount, 0);
     const totalErrors = this.apiKeys.reduce((sum, key) => sum + key.errorCount, 0);
+    const averageResponseTime = this.responseTimes.length > 0 
+      ? this.responseTimes.reduce((sum, time) => sum + time, 0) / this.responseTimes.length 
+      : 0;
 
     return {
       totalKeys: this.apiKeys.length,
       activeKeys: activeKeys.length,
       totalUsage,
       totalErrors,
-      currentKeyIndex: this.currentKeyIndex
+      currentKeyIndex: this.currentKeyIndex,
+      queueLength: this.requestQueue.length,
+      activeRequests: this.activeRequests.size,
+      averageResponseTime: Math.round(averageResponseTime)
     };
   }
 
@@ -153,59 +181,7 @@ class MultiApiKeyService {
     this.rotateToNextKey();
   }
 
-  private markKeySuccess(): void {
-    if (this.apiKeys.length === 0) return;
-    
-    const currentKey = this.apiKeys[this.currentKeyIndex];
-    currentKey.usageCount++;
-    currentKey.lastUsed = new Date().toISOString();
-    currentKey.errorCount = Math.max(0, currentKey.errorCount - 1); // Giảm error count
-    
-    this.saveApiKeys();
-    
-    // Rotate nếu đã dùng quá nhiều
-    if (currentKey.usageCount % this.ROTATION_THRESHOLD === 0) {
-      this.rotateToNextKey();
-    }
-  }
 
-  // Tạo model động dựa trên contentFlags
-  private getModelForContentFlags(contentFlags?: any): any {
-    if (!this.genAI) {
-      throw new Error('Gemini API chưa được cấu hình');
-    }
-
-    // Nếu chế độ 18+ được bật, tắt hoàn toàn safety settings
-    if (contentFlags?.adult_enabled) {
-      return this.genAI.getGenerativeModel({ 
-        model: 'gemini-2.5-flash',
-        safetySettings: [] // Tắt hoàn toàn safety settings
-      });
-    }
-
-    // Mặc định: sử dụng safety settings với BLOCK_NONE
-    return this.genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
-      safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: HarmBlockThreshold.BLOCK_NONE
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-          threshold: HarmBlockThreshold.BLOCK_NONE
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE
-        }
-      ]
-    });
-  }
 
   // Gemini Service Integration
   private async initializeGemini() {
@@ -379,6 +355,157 @@ class MultiApiKeyService {
     return results;
   }
 
+  // Queue Management Methods
+
+  private getAvailableKey(): ApiKeyInfo | null {
+    const availableKeys = this.apiKeys.filter(key => key.isActive && !this.activeRequests.has(key.id));
+    if (availableKeys.length === 0) return null;
+    
+    console.log(`🔍 [Round-Robin] Available keys: ${availableKeys.map(k => `${k.accountName}(${k.name})`).join(', ')}`);
+    console.log(`🔍 [Round-Robin] Current index: ${this.currentKeyIndex}, Total keys: ${this.apiKeys.length}`);
+    
+    // Round-robin: chọn key theo thứ tự, bắt đầu từ currentKeyIndex
+    let startIndex = this.currentKeyIndex;
+    for (let i = 0; i < this.apiKeys.length; i++) {
+      const keyIndex = (startIndex + i) % this.apiKeys.length;
+      const key = this.apiKeys[keyIndex];
+      
+      console.log(`🔍 [Round-Robin] Checking key ${keyIndex}: ${key.accountName}(${key.name}) - Active: ${key.isActive}, HasRequest: ${this.activeRequests.has(key.id)}`);
+      
+      if (key.isActive && !this.activeRequests.has(key.id)) {
+        this.currentKeyIndex = (keyIndex + 1) % this.apiKeys.length; // Update for next round
+        console.log(`✅ [Round-Robin] Selected: ${key.accountName}(${key.name}) at index ${keyIndex}`);
+        return key;
+      }
+    }
+    
+    // Fallback: nếu không tìm được key theo round-robin, lấy key đầu tiên available
+    console.log(`⚠️ [Round-Robin] Fallback to: ${availableKeys[0].accountName}(${availableKeys[0].name})`);
+    return availableKeys[0];
+  }
+
+  private async queueRequest(prompt: string, contentFlags?: any): Promise<string> {
+    return new Promise((resolve, reject) => {
+      // Fix: Tạo unique request ID với timestamp + random + counter + microtime
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substr(2, 9);
+      const counter = (++this.requestCounter).toString().padStart(4, '0');
+      const microtime = performance.now().toString().replace('.', '');
+      const uniqueId = Math.random().toString(36).substr(2, 6);
+      const requestId = `${timestamp}-${random}-${counter}-${microtime}-${uniqueId}`;
+      
+      const queueItem: QueueItem = {
+        id: requestId,
+        prompt,
+        contentFlags,
+        resolve,
+        reject,
+        timestamp
+      };
+
+      console.log(`📝 [Request] Created ${requestId.substring(0, 12)} for: ${prompt.substring(0, 50)}...`);
+      
+      this.requestQueue.push(queueItem);
+      this.processQueue();
+    });
+  }
+
+  private async processQueue(): Promise<void> {
+    while (this.requestQueue.length > 0 && this.activeRequests.size < this.maxConcurrentRequests) {
+      const queueItem = this.requestQueue.shift();
+      if (!queueItem) break;
+
+      const availableKey = this.getAvailableKey();
+      if (!availableKey) {
+        // No available keys, put back in queue
+        this.requestQueue.unshift(queueItem);
+        break;
+      }
+
+      await this.assignRequestToKey(queueItem, availableKey);
+    }
+  }
+
+  private async assignRequestToKey(queueItem: QueueItem, key: ApiKeyInfo): Promise<void> {
+    this.activeRequests.set(key.id, queueItem);
+    this.requestToKeyMap.set(queueItem.id, key.id); // Track which key is used
+    
+    console.log(`🔄 [Assign] ${queueItem.id.substring(0, 12)} → ${key.accountName} (${key.name})`);
+
+    try {
+      const startTime = Date.now();
+      const result = await this.executeRequestWithKey(queueItem.prompt, queueItem.contentFlags, key);
+      const duration = Date.now() - startTime;
+      
+      this.responseTimes.push(duration);
+      if (this.responseTimes.length > 100) {
+        this.responseTimes.shift(); // Keep only last 100 response times
+      }
+      
+      console.log(`✅ [Complete] ${queueItem.id.substring(0, 12)} by ${key.accountName} (${key.name}) in ${duration}ms`);
+      queueItem.resolve(result);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.log(`❌ [Error] ${queueItem.id.substring(0, 12)} by ${key.accountName} (${key.name}): ${errorMessage}`);
+      queueItem.reject(error instanceof Error ? error : new Error(errorMessage));
+    } finally {
+      this.activeRequests.delete(key.id);
+      this.requestToKeyMap.delete(queueItem.id); // Clean up tracking
+      // Process next item in queue
+      this.processQueue();
+    }
+  }
+
+  private async executeRequestWithKey(prompt: string, contentFlags: any, key: ApiKeyInfo): Promise<string> {
+    const genAI = new GoogleGenerativeAI(key.key);
+    const model = this.getModelForContentFlags(contentFlags, genAI);
+    
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = await response.text();
+    
+    // Update key stats
+    key.usageCount++;
+    key.lastUsed = new Date().toISOString();
+    key.errorCount = Math.max(0, key.errorCount - 1);
+    this.saveApiKeys();
+    
+    return text;
+  }
+
+  private getModelForContentFlags(contentFlags: any, genAI: GoogleGenerativeAI): any {
+    // Nếu chế độ 18+ được bật, tắt hoàn toàn safety settings
+    if (contentFlags?.adult_enabled) {
+      return genAI.getGenerativeModel({ 
+        model: 'gemini-2.5-flash',
+        safetySettings: [] // Tắt hoàn toàn safety settings
+      });
+    }
+
+    // Mặc định: sử dụng safety settings với BLOCK_NONE
+    return genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash',
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE
+        }
+      ]
+    });
+  }
+
   // Main API Methods
   isConfigured(): boolean {
     return this.isInitialized && this.genAI !== null && this.model !== null;
@@ -389,90 +516,19 @@ class MultiApiKeyService {
   }
 
   async generateContent(prompt: string, contentFlags?: any): Promise<string> {
-    if (!this.isConfigured()) {
-      throw new Error('Không có API key nào được cấu hình hoặc tất cả đều bị lỗi');
+    if (!this.hasApiKeys()) {
+      throw new Error('Không có API key nào được cấu hình');
     }
 
-    let lastError: string = '';
-    let attempts = 0;
-    const maxAttempts = this.apiKeys.filter(k => k.isActive).length;
-    const startTime = Date.now();
-
-    while (attempts < maxAttempts) {
-      const currentKey = this.getCurrentApiKey();
-      if (!currentKey) {
-        console.error('❌ No current API key available');
-        break;
-      }
-
-      try {
-        // Tạo model động dựa trên contentFlags
-        const model = this.getModelForContentFlags(contentFlags);
-        const result = await model.generateContent(prompt);
-        const response = result.response;
-        const text = await response.text();
-        
-        // const duration = Date.now() - startTime;
-        
-        this.markKeySuccess();
-        return text;
-      } catch (error) {
-        lastError = error instanceof Error ? error.message : 'Unknown error';
-        const duration = Date.now() - startTime;
-        
-        console.error(`❌ API call failed with key ${currentKey.name} (${duration}ms):`, error);
-        
-        // Phân tích lỗi để quyết định có nên chuyển key ngay không
-        const shouldSwitchImmediately = this.shouldSwitchKeyImmediately(error);
-        
-        if (shouldSwitchImmediately) {
-          this.markKeyError(lastError);
-          
-          // Chuyển sang key tiếp theo ngay lập tức
-          if (!this.rotateToNextKey()) {
-            console.error('❌ No more keys available to switch to');
-            break;
-          }
-        } else {
-          // Lỗi nhẹ, vẫn đánh dấu lỗi nhưng có thể thử lại
-          this.markKeyError(lastError);
-          
-          // Thử lại với key tiếp theo
-          if (!this.rotateToNextKey()) {
-            console.error('❌ No more keys available to switch to');
-            break;
-          }
-        }
-        
-        attempts++;
-      }
+    const activeKeys = this.apiKeys.filter(k => k.isActive);
+    if (activeKeys.length === 0) {
+      throw new Error('Tất cả API keys đều bị vô hiệu hóa');
     }
 
-    const totalDuration = Date.now() - startTime;
-    console.error(`💥 All API keys failed after ${totalDuration}ms. Last error: ${lastError}`);
-    throw new Error(`Tất cả API keys đều bị lỗi sau ${attempts} lần thử. Lỗi cuối cùng: ${lastError}`);
+    // Use queue system for parallel processing
+    return this.queueRequest(prompt, contentFlags);
   }
 
-  private shouldSwitchKeyImmediately(error: any): boolean {
-    const errorMessage = error?.message?.toLowerCase() || '';
-    
-    // Các lỗi cần chuyển key ngay lập tức
-    const criticalErrors = [
-      'api_key_invalid',
-      'invalid',
-      'permission_denied',
-      'permission',
-      'quota_exceeded',
-      'quota',
-      'billing',
-      'unauthorized',
-      'forbidden',
-      'authentication',
-      'credential'
-    ];
-    
-    return criticalErrors.some(criticalError => errorMessage.includes(criticalError));
-  }
 
   // Tự động kiểm tra và chuyển key khi phát hiện vấn đề
   async autoSwitchOnError(): Promise<boolean> {
@@ -583,6 +639,35 @@ class MultiApiKeyService {
     const currentKey = this.getCurrentApiKey();
     if (!currentKey) return 0;
     return this.ROTATION_THRESHOLD - (currentKey.usageCount % this.ROTATION_THRESHOLD);
+  }
+
+  // Get key info for a specific request (for testing/debugging)
+  getKeyForRequest(requestId: string): ApiKeyInfo | null {
+    const keyId = this.requestToKeyMap.get(requestId);
+    if (!keyId) {
+      return null;
+    }
+    const key = this.apiKeys.find(key => key.id === keyId);
+    return key || null;
+  }
+
+  // Debug method to check all keys status
+  debugKeysStatus(): void {
+    console.log('🔍 [Debug] All API Keys Status:');
+    this.apiKeys.forEach((key, index) => {
+      const isActive = this.activeRequests.has(key.id);
+      console.log(`  ${index}: ${key.accountName}(${key.name}) - Active: ${key.isActive}, HasRequest: ${isActive}, Usage: ${key.usageCount}, Errors: ${key.errorCount}`);
+    });
+    console.log(`Current key index: ${this.currentKeyIndex}`);
+    console.log(`Queue length: ${this.requestQueue.length}`);
+    console.log(`Active requests: ${this.activeRequests.size}`);
+    
+    // Check if only one account is active
+    const accounts = [...new Set(this.apiKeys.filter(k => k.isActive).map(k => k.accountName))];
+    console.log(`📊 [Debug] Active accounts: ${accounts.join(', ')}`);
+    if (accounts.length === 1) {
+      console.warn(`⚠️ [Debug] Only one account active: ${accounts[0]}. Check if other accounts are disabled.`);
+    }
   }
 }
 

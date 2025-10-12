@@ -193,12 +193,14 @@ class QuestCombatService {
     objectives: QuestCombatObjective[];
     randomEncounterRate: number;
     worldDifficulty: string;
+    currentEncounterRate: number;
+    fleeStatus: string;
   } {
     const activeObjectives = this.getActiveCombatObjectives();
     const completedCount = activeObjectives.filter(obj => obj.completed).length;
     
-    // Get world difficulty and calculate encounter rate
-    let encounterRate = 50; // Default 50% (trung bình)
+    // Get world difficulty and calculate base encounter rate
+    let baseEncounterRate = 50; // Default 50% (trung bình)
     let worldDifficulty = 'Trung bình';
     
     try {
@@ -208,13 +210,13 @@ class QuestCombatService {
         const difficulty = world.difficulty?.toLowerCase() || 'trung bình';
         
         if (difficulty.includes('dễ') || difficulty.includes('easy')) {
-          encounterRate = 25; // 25% chance
+          baseEncounterRate = 25; // 25% chance
           worldDifficulty = 'Dễ';
         } else if (difficulty.includes('khó') || difficulty.includes('hard')) {
-          encounterRate = 70; // 70% chance
+          baseEncounterRate = 70; // 70% chance
           worldDifficulty = 'Khó';
         } else {
-          encounterRate = 50; // 50% chance
+          baseEncounterRate = 50; // 50% chance
           worldDifficulty = 'Trung bình';
         }
       }
@@ -222,12 +224,73 @@ class QuestCombatService {
       console.error('Error parsing world data for encounter rate:', error);
     }
     
+    // Check if player fled recently (within last 2 turns) or just finished combat (within last 1 turn)
+    let currentEncounterRate = baseEncounterRate;
+    let fleeStatus = 'Normal';
+    
+    try {
+      const fledData = localStorage.getItem('player_fled_random_combat');
+      if (fledData) {
+        const fleeInfo = JSON.parse(fledData);
+        const currentTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
+        const turnsSinceFlee = currentTurn - (fleeInfo.turn || 0);
+        
+        console.log('🔍 Flee Debug:', {
+          currentTurn,
+          fleeTurn: fleeInfo.turn,
+          turnsSinceFlee,
+          fledData
+        });
+        
+        if (turnsSinceFlee <= 2) {
+          currentEncounterRate = 0; // Reset to 0% for 2 turns after fleeing
+          fleeStatus = `Fled ${turnsSinceFlee} turn(s) ago (${2 - turnsSinceFlee} turn(s) remaining)`;
+        } else {
+          currentEncounterRate = baseEncounterRate; // Restore to base rate
+          fleeStatus = 'Normal (flee cooldown expired)';
+        }
+      }
+      
+      // Check if player just finished combat (victory/defeat) - reset encounter chance for 1 turn
+      const combatHistoryData = localStorage.getItem('combat_history');
+      if (combatHistoryData) {
+        const combatHistory = JSON.parse(combatHistoryData);
+        if (combatHistory.defeatedEnemies && Array.isArray(combatHistory.defeatedEnemies)) {
+          const currentTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
+          
+          // Check if any enemy was defeated in the last 1 turn
+          const recentDefeats = combatHistory.defeatedEnemies.filter((enemy: any) => {
+            const turnsSinceDefeat = currentTurn - (enemy.turn || 0);
+            return turnsSinceDefeat <= 1;
+          });
+          
+          console.log('🔍 Combat Debug:', {
+            currentTurn,
+            recentDefeats: recentDefeats.length,
+            lastDefeatTurn: recentDefeats[recentDefeats.length - 1]?.turn,
+            allDefeats: combatHistory.defeatedEnemies.map((e: any) => ({ name: e.name, turn: e.turn }))
+          });
+          
+          if (recentDefeats.length > 0) {
+            const lastDefeatTurn = recentDefeats[recentDefeats.length - 1]?.turn || 0;
+            const turnsSinceCombat = currentTurn - lastDefeatTurn;
+            currentEncounterRate = 0; // Reset to 0% for 1 turn after combat
+            fleeStatus = `Combat finished ${turnsSinceCombat} turn(s) ago (${1 - turnsSinceCombat} turn(s) remaining)`;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking flee/combat data:', error);
+    }
+    
     return {
       totalActive: activeObjectives.length,
       totalCompleted: completedCount,
       objectives: activeObjectives,
-      randomEncounterRate: encounterRate,
-      worldDifficulty: worldDifficulty
+      randomEncounterRate: baseEncounterRate, // Base rate from world difficulty
+      worldDifficulty: worldDifficulty,
+      currentEncounterRate: currentEncounterRate, // Current actual rate (may be 0% if fled recently)
+      fleeStatus: fleeStatus
     };
   }
 }

@@ -380,15 +380,30 @@ class EnemyDatabaseService {
     return false;
   }
 
-  // Generate random enemy stats based on level
+  // Generate random enemy stats based on combat level
   public generateRandomEnemyStats(level: number): CombatStats {
+    // Use level as seed for consistent stats
+    const seed = level * 9301 + 49297;
+    
+    // Create different random seeds for each stat to ensure variation
+    const strengthSeed = (seed * 1237 + 4567) % 233280 / 233280;
+    const agilitySeed = (seed * 2341 + 5678) % 233280 / 233280;
+    const constitutionSeed = (seed * 3457 + 6789) % 233280 / 233280;
+    const intelligenceSeed = (seed * 4561 + 7890) % 233280 / 233280;
+    const wisdomSeed = (seed * 5673 + 8901) % 233280 / 233280;
+    const charismaSeed = (seed * 6785 + 9012) % 233280 / 233280;
+    
+    // Base stats scale with combat level
+    const basePhysicalStats = 10 + Math.floor(level * 1.5); // Physical stats scale better
+    const baseMentalStats = 8 + Math.floor(level * 0.8); // Mental stats scale slower
+    
     const baseStats = {
-      strength: 10 + Math.floor(Math.random() * 6) + (level - 1) * 2,
-      agility: 10 + Math.floor(Math.random() * 6) + (level - 1) * 2,
-      constitution: 10 + Math.floor(Math.random() * 6) + (level - 1) * 2,
-      intelligence: 8 + Math.floor(Math.random() * 4) + (level - 1),
-      wisdom: 8 + Math.floor(Math.random() * 4) + (level - 1),
-      charisma: 8 + Math.floor(Math.random() * 4) + (level - 1)
+      strength: Math.max(8, Math.min(20, basePhysicalStats + Math.floor(strengthSeed * 7) - 3)),
+      agility: Math.max(8, Math.min(20, basePhysicalStats + Math.floor(agilitySeed * 7) - 3)),
+      constitution: Math.max(8, Math.min(20, basePhysicalStats + Math.floor(constitutionSeed * 7) - 3)),
+      intelligence: Math.max(8, Math.min(20, baseMentalStats + Math.floor(intelligenceSeed * 5) - 2)),
+      wisdom: Math.max(8, Math.min(20, baseMentalStats + Math.floor(wisdomSeed * 5) - 2)),
+      charisma: Math.max(8, Math.min(20, baseMentalStats + Math.floor(charismaSeed * 5) - 2))
     };
 
     // Calculate modifiers
@@ -408,15 +423,15 @@ class EnemyDatabaseService {
       max: baseHP
     };
 
-    // Calculate AC (10 + agility modifier + level)
-    const armorClass = 10 + modifiers.agility + level;
+    // Calculate AC (10 + agility modifier + equipment bonus)
+    const armorClass = 10 + modifiers.agility;
 
     // Generate basic attack
     const attacks: Attack[] = [
       {
         name: 'Basic Attack',
-        attackBonus: modifiers.strength + level,
-        damage: `${Math.ceil(level / 2)}d6+${modifiers.strength}`,
+        attackBonus: 2 + modifiers.strength, // Base proficiency + stat modifier
+        damage: `1d6+${modifiers.strength}`, // Fixed weapon damage + stat modifier
         damageType: 'physical'
       }
     ];

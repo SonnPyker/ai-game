@@ -88,7 +88,7 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="Nhập API key của bạn..."
-              className="w-full px-4 py-3 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-3 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent break-words"
             />
             <button
               type="button"

@@ -13,8 +13,10 @@ import { worldTimeService } from '../../services/worldTimeService';
 import { WorldData, ContentFlags } from '../../types';
 import { AdultContentSettings } from './AdultContentSettings';
 import { HelpTooltip } from '../HelpTooltip';
+import { useResponsiveContext } from '../../contexts/ResponsiveContext';
 
 export function WorldBuilder() {
+  const { shouldUseMobileLayout } = useResponsiveContext();
   const [worldData, setWorldData] = useState<WorldData>({
     id: '',
     name: '',
@@ -714,7 +716,7 @@ export function WorldBuilder() {
                 value={worldData.coreIdea}
                 onChange={(e) => setWorldData(prev => ({ ...prev, coreIdea: e.target.value }))}
                 placeholder="Mô tả ý tưởng cốt lõi của thế giới..."
-                className="w-full h-32 px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none resize-none"
+                className="w-full h-32 px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none resize-none break-words"
               />
             </MotionWrapper>
 
@@ -726,7 +728,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">THỂ LOẠI & BỐI CẢNH</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+              <div className={`grid gap-3 lg:gap-4 ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Thể loại</label>
                   <input
@@ -758,7 +760,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">TÔNG TRUYỆN & NGÔI KỂ</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+              <div className={`grid gap-3 lg:gap-4 ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Tông truyện</label>
                   <select
@@ -824,7 +826,7 @@ export function WorldBuilder() {
                         value={principle.name}
                         onChange={(e) => updateCorePrinciple(index, 'name', e.target.value)}
                         placeholder="Tên nguyên tắc thế giới"
-                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
+                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm break-words overflow-wrap-anywhere"
                       />
                       <button
                         onClick={() => removeCorePrinciple(index)}
@@ -838,7 +840,7 @@ export function WorldBuilder() {
                       onChange={(e) => updateCorePrinciple(index, 'description', e.target.value)}
                       placeholder="Mô tả chi tiết nguyên tắc thế giới"
                       rows={2}
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none"
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none break-words overflow-wrap-anywhere"
                     />
                   </div>
                 ))}
@@ -892,7 +894,7 @@ export function WorldBuilder() {
                         value={entity.name}
                         onChange={(e) => updateFoundationEntity(index, 'name', e.target.value)}
                         placeholder="Tên thực thể"
-                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
+                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm break-words overflow-wrap-anywhere"
                       />
                       <button
                         onClick={() => removeFoundationEntity(index)}
@@ -906,7 +908,7 @@ export function WorldBuilder() {
                       onChange={(e) => updateFoundationEntity(index, 'description', e.target.value)}
                       placeholder="Mô tả chi tiết"
                       rows={2}
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none"
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none break-words overflow-wrap-anywhere"
                     />
                   </div>
                 ))}
@@ -962,7 +964,7 @@ export function WorldBuilder() {
                       onChange={(e) => updateCurrency(index, 'description', e.target.value)}
                       placeholder="Mô tả tiền tệ"
                       rows={2}
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none"
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none break-words overflow-wrap-anywhere"
                     />
                   </div>
                 ))}
@@ -977,7 +979,7 @@ export function WorldBuilder() {
               transition={{ duration: 0.5, delay: 0.6 }}
             >
               <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">THỜI GIAN & ĐỘ KHÓ</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+              <div className={`grid gap-3 lg:gap-4 ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Năm bắt đầu</label>
                   <input
@@ -1074,7 +1076,9 @@ export function WorldBuilder() {
           <MotionWrapper
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
+            className={`bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto ${
+              shouldUseMobileLayout() ? 'max-w-full' : 'max-w-2xl'
+            }`}
           >
             <h3 className="text-xl font-bold-vietnamese text-white mb-2 uppercase">GỢI Ý NGUYÊN THẾ GIỚI</h3>
             <p className="text-sm text-gray-400 mb-4">AI đã phân tích thế giới của bạn và đề xuất các mục sau.</p>
@@ -1127,7 +1131,7 @@ export function WorldBuilder() {
                     </h4>
                     
                     {/* Mô tả */}
-                    <p className="text-sm text-gray-300 leading-relaxed mb-0">
+                    <p className="text-sm text-gray-300 leading-relaxed mb-0 break-words overflow-wrap-anywhere">
                       {principle.description}
                     </p>
                   </div>
@@ -1158,7 +1162,9 @@ export function WorldBuilder() {
           <MotionWrapper
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
+            className={`bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto ${
+              shouldUseMobileLayout() ? 'max-w-full' : 'max-w-2xl'
+            }`}
           >
             <h3 className="text-xl font-bold-vietnamese text-white mb-2 uppercase">GỢI Ý THỰC THỂ THẾ GIỚI</h3>
             <p className="text-sm text-gray-400 mb-4">AI đã phân tích thế giới của bạn và đề xuất các mục sau.</p>
@@ -1211,7 +1217,7 @@ export function WorldBuilder() {
                     </h4>
                     
                     {/* Mô tả */}
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3 break-words overflow-wrap-anywhere">
                       {entity.description}
                     </p>
                     
@@ -1249,11 +1255,13 @@ export function WorldBuilder() {
           <MotionWrapper
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 max-w-4xl w-full mx-2 sm:mx-4 max-h-[95vh] sm:max-h-[80vh] overflow-y-auto"
+            className={`bg-gray-900 border border-gray-700/50 rounded-lg p-4 sm:p-6 w-full mx-2 sm:mx-4 max-h-[95vh] sm:max-h-[80vh] overflow-y-auto ${
+              shouldUseMobileLayout() ? 'max-w-full' : 'max-w-4xl'
+            }`}
           >
             <h3 className="text-2xl font-bold-vietnamese text-white mb-4 uppercase">MÔ TẢ THẾ GIỚI</h3>
             <div className="bg-gray-700/30 border border-gray-600/50 rounded-lg p-4 mb-6">
-              <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+              <p className="text-gray-300 leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">
                 {generatedWorldDescription}
               </p>
             </div>
