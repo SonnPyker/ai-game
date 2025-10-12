@@ -98,9 +98,6 @@ export function QuestTracker({
       
       // Mark objective as completed
       onQuestUpdate(questId, objective.id, true);
-      
-      // Show success message (optional)
-      console.log(`✅ Đã nhận item: ${newItem.name}`);
     } catch (error) {
       console.error('❌ Lỗi khi nhận item:', error);
     }
@@ -550,8 +547,14 @@ export function QuestTracker({
               })}
             </div>
             
-            {/* Claim All Button - Chỉ hiển thị khi quest completed và có rewards chưa claim */}
-            {isCompleted && quest.rewards.some(reward => !reward.claimed) && (
+            {/* Claim All Button - Hiển thị khi quest completed hoặc tất cả objectives hoàn thành */}
+            {(() => {
+              const allObjectivesCompleted = quest.objectives.every(obj => obj.completed);
+              const hasUnclaimedRewards = quest.rewards.some(reward => !reward.claimed);
+              const shouldShowButton = (isCompleted || allObjectivesCompleted) && hasUnclaimedRewards;
+              
+              return shouldShowButton;
+            })() && (
               <div className="flex justify-end mt-3 pt-3 border-t border-gray-700/50">
                 <button
                   onClick={() => handleClaimAllRewards(quest)}
@@ -565,10 +568,10 @@ export function QuestTracker({
           </div>
         )}
 
-        {/* Quest Actions - Cho tất cả quest types */}
-        {!isLocked && !isDeclined && quest.status === 'active' && (
+        {/* Quest Actions - Cho tất cả quest types (active và available) */}
+        {!isLocked && !isDeclined && (quest.status === 'active' || quest.status === 'available') && (
           <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-700/50">
-            {/* Quest Completion Check Button - Cho tất cả quest active */}
+            {/* Quest Completion Check Button - Cho tất cả quest active và available */}
             <QuestCompletionButton 
               activeQuests={[quest]}
               onQuestUpdate={onQuestUpdate}

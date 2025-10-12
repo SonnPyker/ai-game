@@ -40,10 +40,10 @@ class ActionSuggestionService {
   private static instance: ActionSuggestionService;
   private geminiService: any = null;
   private retryConfig = {
-    maxRetries: 3,
-    baseDelay: 1000, // 1 giây
-    maxDelay: 10000, // 10 giây
-    backoffMultiplier: 2
+    maxRetries: 2, // Giảm từ 3 xuống 2 để nhanh hơn
+    baseDelay: 500, // Giảm từ 1000ms xuống 500ms
+    maxDelay: 2000, // Giảm từ 10000ms xuống 2000ms
+    backoffMultiplier: 1.5 // Giảm từ 2 xuống 1.5
   };
 
   static getInstance(): ActionSuggestionService {
@@ -591,45 +591,44 @@ QUAN TRỌNG VỀ CẢNH 18+:
   }
 
   /**
-   * Ước tính thời lượng hành động từ message (hành động thủ công) với cơ chế retry
+   * Ước tính thời lượng hành động từ message (hành động thủ công) với cache và tối ưu hóa
    */
   async estimateActionDuration(message: string, context: ActionContext, _contentFlags: ContentFlags): Promise<number> {
-    // Trước tiên, thử phân loại hành động bằng từ khóa đơn giản
+    // Kiểm tra cache trước
+    const cacheKey = this.generateCacheKey(message);
+    const cachedDuration = this.getCachedDuration(cacheKey);
+    if (cachedDuration) {
+      console.log(`💾 Cache hit: ${cachedDuration} phút cho hành động "${message}"`);
+      return cachedDuration;
+    }
+
+    // Trước tiên, thử phân loại hành động bằng từ khóa đơn giản (đã được mở rộng)
     const simpleDuration = this.estimateDurationByKeywords(message);
     if (simpleDuration) {
       console.log(`🎯 Ước tính thời gian bằng từ khóa: ${simpleDuration} phút cho hành động "${message}"`);
+      this.cacheDuration(cacheKey, simpleDuration);
       return simpleDuration;
     }
 
-    // Nếu không thể phân loại bằng từ khóa, sử dụng AI với retry
+    // Thử phân tích nâng cao bằng pattern matching
+    const advancedDuration = this.estimateDurationByPatterns(message);
+    if (advancedDuration) {
+      console.log(`🔍 Ước tính thời gian bằng pattern: ${advancedDuration} phút cho hành động "${message}"`);
+      this.cacheDuration(cacheKey, advancedDuration);
+      return advancedDuration;
+    }
+
+    // Nếu không thể phân loại bằng từ khóa, sử dụng AI với prompt tối ưu
     return this.executeWithRetry(
       async () => {
         const geminiService = await this.getGeminiService();
         
-        const prompt = `Phân tích và ước tính thời gian thực hiện hành động sau (tính bằng phút):
+        // Prompt ngắn gọn và hiệu quả hơn
+        const prompt = `Ước tính thời gian (phút) cho hành động: "${message}"
 
-HÀNH ĐỘNG: "${message}"
+Context: ${context.sceneState?.location || 'Unknown'} | Level: ${context.characterData?.level || 1}
 
-CONTEXT HIỆN TẠI:
-- Thời gian: ${context.worldTime ? `${context.worldTime.hour}:${context.worldTime.minute.toString().padStart(2, '0')}` : 'Unknown'}
-- Vị trí: ${context.sceneState?.location || 'Unknown'}
-- NPCs: ${context.sceneState?.npcs?.map((npc: any) => npc.name).join(', ') || 'Không có'}
-- Level nhân vật: ${context.characterData?.level || 1}
-
-PHÂN TÍCH CHI TIẾT:
-1. Độ phức tạp của hành động (đơn giản/phức tạp/rất phức tạp)
-2. Môi trường thực hiện (an toàn/nguy hiểm/không xác định)
-3. Số lượng NPC liên quan (0/1-2/nhiều)
-4. Mức độ rủi ro (thấp/trung bình/cao)
-5. Kỹ năng cần thiết (cơ bản/trung bình/cao)
-
-YÊU CẦU:
-- Thời gian tối thiểu: 5 phút
-- Thời gian tối đa: 60 phút
-- Trả về số phút chính xác (không cần bội số của 5)
-- Ví dụ: 7, 13, 23, 37, 45, 58
-
-Chỉ trả về số phút, không giải thích.`;
+Trả về số từ 5-60. Chỉ số, không giải thích.`;
 
         const response = await geminiService.generateContent(prompt, _contentFlags);
         const minutes = parseInt(response.trim());
@@ -637,6 +636,7 @@ Chỉ trả về số phút, không giải thích.`;
         // Nếu AI trả về số hợp lệ, sử dụng nó
         if (!isNaN(minutes) && minutes >= 5 && minutes <= 60) {
           console.log(`🤖 AI ước tính thời gian: ${minutes} phút cho hành động "${message}"`);
+          this.cacheDuration(cacheKey, minutes);
           return minutes;
         }
         
@@ -644,39 +644,90 @@ Chỉ trả về số phút, không giải thích.`;
       },
       'estimateActionDuration',
       () => {
-        // Fallback: random trong range 5-60 phút
-        const fallbackDuration = Math.floor(Math.random() * 56) + 5;
+        // Fallback thông minh hơn dựa trên độ dài message
+        const messageLength = message.length;
+        let fallbackDuration: number;
+        
+        if (messageLength <= 20) {
+          fallbackDuration = Math.floor(Math.random() * 11) + 5; // 5-15 phút
+        } else if (messageLength <= 50) {
+          fallbackDuration = Math.floor(Math.random() * 16) + 15; // 15-30 phút
+        } else {
+          fallbackDuration = Math.floor(Math.random() * 31) + 30; // 30-60 phút
+        }
+        
         console.log(`🎲 Fallback thời gian: ${fallbackDuration} phút cho hành động "${message}"`);
+        this.cacheDuration(cacheKey, fallbackDuration);
         return fallbackDuration;
       }
     );
   }
 
   /**
-   * Ước tính thời gian bằng từ khóa đơn giản
+   * Cache cho duration estimation
+   */
+  private durationCache: Map<string, number> = new Map();
+  private readonly CACHE_SIZE_LIMIT = 100;
+
+  /**
+   * Tạo cache key từ message
+   */
+  private generateCacheKey(message: string): string {
+    return message.toLowerCase().trim().replace(/\s+/g, ' ');
+  }
+
+  /**
+   * Lấy duration từ cache
+   */
+  private getCachedDuration(cacheKey: string): number | null {
+    return this.durationCache.get(cacheKey) || null;
+  }
+
+  /**
+   * Lưu duration vào cache
+   */
+  private cacheDuration(cacheKey: string, duration: number): void {
+    // Giới hạn kích thước cache
+    if (this.durationCache.size >= this.CACHE_SIZE_LIMIT) {
+      const firstKey = this.durationCache.keys().next().value;
+      if (firstKey) {
+        this.durationCache.delete(firstKey);
+      }
+    }
+    this.durationCache.set(cacheKey, duration);
+  }
+
+  /**
+   * Ước tính thời gian bằng từ khóa đơn giản (đã được mở rộng)
    */
   private estimateDurationByKeywords(message: string): number | null {
     const lowerMessage = message.toLowerCase();
     
-    // Hành động đơn giản (5-15 phút)
+    // Hành động đơn giản (5-15 phút) - mở rộng danh sách
     const simpleActions = [
       'gọi', 'mua', 'uống', 'ăn', 'ngồi', 'đứng', 'nhìn', 'quan sát',
       'chào', 'hỏi', 'trả lời', 'nói', 'thì thầm', 'cười', 'gật đầu',
-      'mở', 'đóng', 'cầm', 'đặt', 'lấy', 'cho', 'nhận'
+      'mở', 'đóng', 'cầm', 'đặt', 'lấy', 'cho', 'nhận', 'bước', 'đi',
+      'chạm', 'sờ', 'ngửi', 'nghe', 'đọc', 'viết', 'vẽ', 'hát',
+      'nhảy', 'chạy', 'đi bộ', 'leo', 'xuống', 'lên', 'vào', 'ra'
     ];
     
-    // Hành động trung bình (15-30 phút)
+    // Hành động trung bình (15-30 phút) - mở rộng danh sách
     const mediumActions = [
       'trò chuyện', 'nói chuyện', 'bắt chuyện', 'làm quen', 'giới thiệu',
       'khám phá', 'tìm kiếm', 'kiểm tra', 'xem xét', 'phân tích',
-      'thương lượng', 'đàm phán', 'thỏa thuận', 'giao dịch'
+      'thương lượng', 'đàm phán', 'thỏa thuận', 'giao dịch', 'mua bán',
+      'học', 'học hỏi', 'tập luyện', 'rèn luyện', 'cải thiện',
+      'sửa chữa', 'làm', 'tạo', 'chế tạo', 'nấu', 'nướng'
     ];
     
-    // Hành động phức tạp (30-60 phút)
+    // Hành động phức tạp (30-60 phút) - mở rộng danh sách
     const complexActions = [
       'điều tra', 'truy tìm', 'theo dõi', 'giám sát', 'bảo vệ',
       'chiến đấu', 'đánh nhau', 'tấn công', 'phòng thủ', 'trốn chạy',
-      'lập kế hoạch', 'chuẩn bị', 'tổ chức', 'sắp xếp'
+      'lập kế hoạch', 'chuẩn bị', 'tổ chức', 'sắp xếp', 'quản lý',
+      'xây dựng', 'thiết kế', 'phát triển', 'nghiên cứu', 'thí nghiệm',
+      'chữa trị', 'cứu chữa', 'giải cứu', 'giúp đỡ', 'hỗ trợ'
     ];
     
     // Kiểm tra hành động đơn giản
@@ -692,6 +743,59 @@ Chỉ trả về số phút, không giải thích.`;
     // Kiểm tra hành động phức tạp
     if (complexActions.some(action => lowerMessage.includes(action))) {
       return Math.floor(Math.random() * 31) + 30; // 30-60 phút
+    }
+    
+    return null; // Không thể phân loại, sử dụng pattern matching
+  }
+
+  /**
+   * Ước tính thời gian bằng pattern matching nâng cao
+   */
+  private estimateDurationByPatterns(message: string): number | null {
+    const lowerMessage = message.toLowerCase();
+    
+    // Pattern cho hành động ngắn (có từ chỉ thời gian ngắn)
+    const shortTimePatterns = [
+      /\b(nhanh|mau|lẹ|tức thì|ngay|liền)\b/,
+      /\b(chỉ|vài|một chút|ít)\b.*\b(phút|giây|giờ)\b/,
+      /\b(đơn giản|dễ|nhanh gọn)\b/
+    ];
+    
+    // Pattern cho hành động dài (có từ chỉ thời gian dài)
+    const longTimePatterns = [
+      /\b(lâu|dài|nhiều|kỹ lưỡng|chi tiết|cẩn thận)\b/,
+      /\b(nhiều|vài|một số)\b.*\b(giờ|ngày|tuần)\b/,
+      /\b(phức tạp|khó|phức tạp|tinh vi)\b/
+    ];
+    
+    // Pattern cho hành động có nhiều bước
+    const multiStepPatterns = [
+      /\b(từng|từng bước|tuần tự|lần lượt)\b/,
+      /\b(đầu tiên|sau đó|cuối cùng|tiếp theo)\b/,
+      /\b(và|rồi|sau|trước)\b.*\b(và|rồi|sau|trước)\b/
+    ];
+    
+    // Kiểm tra pattern ngắn
+    if (shortTimePatterns.some(pattern => pattern.test(lowerMessage))) {
+      return Math.floor(Math.random() * 8) + 5; // 5-12 phút
+    }
+    
+    // Kiểm tra pattern dài
+    if (longTimePatterns.some(pattern => pattern.test(lowerMessage))) {
+      return Math.floor(Math.random() * 25) + 35; // 35-60 phút
+    }
+    
+    // Kiểm tra pattern nhiều bước
+    if (multiStepPatterns.some(pattern => pattern.test(lowerMessage))) {
+      return Math.floor(Math.random() * 20) + 20; // 20-40 phút
+    }
+    
+    // Pattern dựa trên độ dài câu và số từ
+    const wordCount = message.split(/\s+/).length;
+    if (wordCount <= 3) {
+      return Math.floor(Math.random() * 8) + 5; // 5-12 phút
+    } else if (wordCount >= 15) {
+      return Math.floor(Math.random() * 25) + 35; // 35-60 phút
     }
     
     return null; // Không thể phân loại, sử dụng AI

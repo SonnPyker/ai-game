@@ -2,6 +2,8 @@
 import { Heart, Shield, Sword, Target } from 'lucide-react';
 import { Combatant } from '../../services/combatService';
 import { MotionWrapper } from '../MotionWrapper';
+import { useCombatVisualEffects } from '../../hooks/useCombatVisualEffects';
+import { FloatingDamageContainer } from './FloatingDamageText';
 
 interface CombatantCardProps {
   combatant: Combatant;
@@ -21,6 +23,9 @@ export function CombatantCard({
   const hpPercentage = (combatant.health.current / combatant.health.max) * 100;
   const isAlive = combatant.isAlive;
   const isCurrentTurn = isPlayerTurn && !isEnemy;
+
+  // Use visual effects hook
+  const { animationState, floatingTexts, elementRef, handleTextComplete } = useCombatVisualEffects(combatant.id);
 
   // Get HP bar color based on percentage
   const getHPBarColor = (percentage: number) => {
@@ -46,20 +51,24 @@ export function CombatantCard({
   };
 
   return (
-    <MotionWrapper
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`
-        relative bg-gray-800/50 rounded-lg border-2 p-4 transition-all duration-200
-        ${isSelected ? 'border-yellow-400 shadow-lg shadow-yellow-400/20' : 'border-gray-600'}
-        ${!isAlive ? 'opacity-50' : ''}
-        ${isCurrentTurn ? 'ring-2 ring-blue-400' : ''}
-        ${onSelect ? 'cursor-pointer hover:border-gray-500' : ''}
-      `}
-      onClick={onSelect}
-      whileHover={onSelect ? { scale: 1.02 } : {}}
-      whileTap={onSelect ? { scale: 0.98 } : {}}
-    >
+    <>
+      <MotionWrapper
+        ref={elementRef as any}
+        data-combatant-id={combatant.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`
+          relative bg-gray-800/50 rounded-lg border-2 p-4 transition-all duration-200
+          ${isSelected ? 'border-yellow-400 shadow-lg shadow-yellow-400/20' : 'border-gray-600'}
+          ${!isAlive ? 'opacity-50' : ''}
+          ${isCurrentTurn ? 'ring-2 ring-blue-400' : ''}
+          ${onSelect ? 'cursor-pointer hover:border-gray-500' : ''}
+          ${animationState.className}
+        `}
+        onClick={onSelect}
+        whileHover={onSelect ? { scale: 1.02 } : {}}
+        whileTap={onSelect ? { scale: 0.98 } : {}}
+      >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
@@ -96,14 +105,10 @@ export function CombatantCard({
         </div>
         
         <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-          <MotionWrapper
-            className={`h-full ${getHPBarColor(hpPercentage)}`}
-            initial={{ width: '100%' }}
-            animate={{ width: `${hpPercentage}%` }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          >
-            <div className={`h-full ${getHPBarColor(hpPercentage)}`} />
-          </MotionWrapper>
+          <div 
+            className={`h-full ${getHPBarColor(hpPercentage)} transition-all duration-500 ease-out`}
+            style={{ width: `${hpPercentage}%` }}
+          />
         </div>
       </div>
 
@@ -184,6 +189,13 @@ export function CombatantCard({
           </div>
         </MotionWrapper>
       )}
-    </MotionWrapper>
+      </MotionWrapper>
+
+      {/* Floating Damage Texts */}
+      <FloatingDamageContainer
+        texts={floatingTexts}
+        onTextComplete={handleTextComplete}
+      />
+    </>
   );
 }

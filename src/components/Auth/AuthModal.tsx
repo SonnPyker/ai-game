@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
-  X, 
   Mail, 
   Lock, 
   User, 
@@ -14,6 +13,9 @@ import {
 } from 'lucide-react';
 import { authService, AuthState } from '../../services/saveStorage/authService';
 import { MotionWrapper } from '../MotionWrapper';
+import { ModalHeader } from '../ModalHeader';
+import { MinimizedModal } from '../MinimizedModal';
+import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -32,6 +34,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const { isMinimized, minimize, restore } = useModalMinimize('auth-modal');
 
   useEffect(() => {
     const unsubscribe = authService.subscribe(setAuthState);
@@ -116,6 +119,31 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
   if (!isOpen) return null;
 
+  const getModalTitle = () => {
+    if (mode === 'signin') return 'Đăng Nhập';
+    if (mode === 'signup') return 'Đăng Ký';
+    if (mode === 'reset') return 'Reset Mật Khẩu';
+    return 'Xác thực';
+  };
+
+  const getModalIcon = () => {
+    if (authState.isAuthenticated) {
+      return <User className="w-5 h-5 text-green-400" />;
+    }
+    return <Lock className="w-5 h-5 text-blue-400" />;
+  };
+
+  // Show minimized modal if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedModal
+        title={getModalTitle()}
+        icon={getModalIcon()}
+        onRestore={restore}
+      />
+    );
+  }
+
   return (
     <AnimatePresence>
       <MotionWrapper
@@ -133,19 +161,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold-vietnamese text-white uppercase">
-              {mode === 'signin' && 'Đăng Nhập'}
-              {mode === 'signup' && 'Đăng Ký'}
-              {mode === 'reset' && 'Reset Mật Khẩu'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 bg-gray-600/20 border border-gray-500/30 text-gray-300 rounded-lg hover:bg-gray-600/30 transition-colors duration-200"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <ModalHeader
+            title={getModalTitle()}
+            icon={getModalIcon()}
+            onClose={onClose}
+            onMinimize={minimize}
+            className="mb-6"
+          />
 
           {/* Status Messages */}
           {message && (

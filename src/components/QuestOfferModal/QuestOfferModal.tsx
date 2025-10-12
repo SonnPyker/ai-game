@@ -1,5 +1,8 @@
 import { MotionWrapper } from '../MotionWrapper';
-import { X, CheckCircle, Target, Gift } from 'lucide-react';
+import { CheckCircle, Target, Gift } from 'lucide-react';
+import { ModalHeader } from '../ModalHeader';
+import { MinimizedModal } from '../MinimizedModal';
+import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface QuestOfferModalProps {
   isOpen: boolean;
@@ -29,7 +32,20 @@ export function QuestOfferModal({
   onDecline, 
   questOffer 
 }: QuestOfferModalProps) {
+  const { isMinimized, minimize, restore } = useModalMinimize('quest-offer-modal');
+
   if (!isOpen || !questOffer) return null;
+
+  // Show minimized modal if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedModal
+        title="Quest Mới"
+        icon={<Target className="w-5 h-5 text-yellow-400" />}
+        onRestore={restore}
+      />
+    );
+  }
 
   return (
     <MotionWrapper
@@ -47,18 +63,12 @@ export function QuestOfferModal({
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white flex items-center">
-            <Target className="w-5 h-5 mr-2 text-yellow-400" />
-            Quest Mới
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        <ModalHeader
+          title="Quest Mới"
+          icon={<Target className="w-5 h-5 text-yellow-400" />}
+          onClose={onClose}
+          onMinimize={minimize}
+        />
 
         {/* Content */}
         <div className="p-4 space-y-4">

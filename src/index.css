@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700;900&display=swap');
+/* Optimized font loading with display: swap for better performance */
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 
 @tailwind base;
@@ -16,17 +15,51 @@
 @layer base {
   * {
     @apply border-gray-200;
+    /* Global scrollbar styling for all scrollable elements */
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 #1f2937;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+    border: 1px solid #374151;
+    transition: all 0.2s ease;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+    border-color: #4b5563;
+  }
+
+  *::-webkit-scrollbar-thumb:active {
+    background: #9ca3af;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: #1f2937;
   }
   
   body {
     @apply bg-gray-950 text-gray-100;
-    font-family: 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 18px;
     min-height: 100vh;
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-display: swap;
   }
   
   html {
@@ -35,11 +68,12 @@
   
   /* Special handling for Vietnamese characters */
   h1, h2, h3, h4, h5, h6, .font-bold-vietnamese, .font-extrabold-vietnamese {
-    font-family: 'Be Vietnam Pro', 'Noto Sans', 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-display: swap;
   }
 }
 
@@ -80,6 +114,191 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Custom Scrollbar Styling */
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 #1f2937;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 4px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+    border: 1px solid #374151;
+    transition: all 0.2s ease;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+    border-color: #4b5563;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb:active {
+    background: #9ca3af;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-corner {
+    background: #1f2937;
+  }
+
+  /* Thin scrollbar variant */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #6b7280 #1f2937;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #6b7280;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+
+  /* Purple accent scrollbar */
+  .scrollbar-purple {
+    scrollbar-width: thin;
+    scrollbar-color: #8b5cf6 #1f2937;
+  }
+
+  .scrollbar-purple::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-purple::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 4px;
+  }
+
+  .scrollbar-purple::-webkit-scrollbar-thumb {
+    background: #8b5cf6;
+    border-radius: 4px;
+    border: 1px solid #7c3aed;
+    transition: all 0.2s ease;
+  }
+
+  .scrollbar-purple::-webkit-scrollbar-thumb:hover {
+    background: #a78bfa;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+  }
+
+  .scrollbar-purple::-webkit-scrollbar-thumb:active {
+    background: #c4b5fd;
+  }
+
+  /* Blue accent scrollbar */
+  .scrollbar-blue {
+    scrollbar-width: thin;
+    scrollbar-color: #3b82f6 #1f2937;
+  }
+
+  .scrollbar-blue::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-blue::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 4px;
+  }
+
+  .scrollbar-blue::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 4px;
+    border: 1px solid #2563eb;
+    transition: all 0.2s ease;
+  }
+
+  .scrollbar-blue::-webkit-scrollbar-thumb:hover {
+    background: #60a5fa;
+    border-color: #3b82f6;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+  }
+
+  .scrollbar-blue::-webkit-scrollbar-thumb:active {
+    background: #93c5fd;
+  }
+
+  /* Mobile responsive scrollbars */
+  @media (max-width: 768px) {
+    .scrollbar-custom::-webkit-scrollbar,
+    .scrollbar-purple::-webkit-scrollbar,
+    .scrollbar-blue::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    /* Global scrollbar mobile styling */
+    *::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+  }
+
+  /* Auto scrollbar - applies custom styling by default */
+  .scrollbar-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 #1f2937;
+  }
+
+  .scrollbar-auto::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-auto::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 4px;
+  }
+
+  .scrollbar-auto::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+    border: 1px solid #374151;
+    transition: all 0.2s ease;
+  }
+
+  .scrollbar-auto::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+    border-color: #4b5563;
+  }
+
+  .scrollbar-auto::-webkit-scrollbar-thumb:active {
+    background: #9ca3af;
+  }
+
+  .scrollbar-auto::-webkit-scrollbar-corner {
+    background: #1f2937;
   }
   
   /* Sidebar Animation - now handled by inline styles */
@@ -343,4 +562,203 @@
   background: #a78bfa;
   transform: scale(1.1);
   box-shadow: 0 4px 8px rgba(139, 92, 246, 0.4);
+}
+
+/* Combat-specific animations and effects - Mobile Optimized */
+.combat-shake {
+  animation: combat-shake 0.5s ease-in-out;
+  will-change: transform;
+}
+
+.combat-flash {
+  animation: combat-flash 0.3s ease-in-out;
+  will-change: opacity;
+}
+
+.combat-pulse {
+  animation: combat-pulse 0.4s ease-in-out;
+  will-change: transform;
+}
+
+.combat-highlight {
+  animation: combat-highlight 0.3s ease-in-out;
+  will-change: box-shadow, border-color;
+}
+
+.combat-damage-text {
+  animation: combat-damage-text 1.2s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.combat-heal-text {
+  animation: combat-heal-text 1.2s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.combat-miss-text {
+  animation: combat-miss-text 1.0s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.combat-critical-text {
+  animation: combat-critical-text 1.5s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+/* Hardware-accelerated keyframes using only transform and opacity */
+@keyframes combat-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+@keyframes combat-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes combat-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes combat-highlight {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+  50% { 
+    box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.3);
+    border-color: rgba(59, 130, 246, 1);
+  }
+}
+
+@keyframes combat-damage-text {
+  0% { 
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% { 
+    transform: translateY(-10px) scale(1);
+    opacity: 1;
+  }
+  80% { 
+    transform: translateY(-60px) scale(1);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(-80px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes combat-heal-text {
+  0% { 
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% { 
+    transform: translateY(-10px) scale(1);
+    opacity: 1;
+  }
+  80% { 
+    transform: translateY(-50px) scale(1);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(-70px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes combat-miss-text {
+  0% { 
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  30% { 
+    transform: translateY(-15px) scale(1);
+    opacity: 1;
+  }
+  70% { 
+    transform: translateY(-40px) scale(1);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(-60px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes combat-critical-text {
+  0% { 
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  15% { 
+    transform: translateY(-5px) scale(1.2);
+    opacity: 1;
+  }
+  30% { 
+    transform: translateY(-10px) scale(1);
+    opacity: 1;
+  }
+  80% { 
+    transform: translateY(-70px) scale(1);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(-90px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  .combat-shake {
+    animation-duration: 0.3s;
+  }
+  
+  .combat-flash {
+    animation-duration: 0.2s;
+  }
+  
+  .combat-pulse {
+    animation-duration: 0.25s;
+  }
+  
+  .combat-damage-text {
+    animation-duration: 1.0s;
+  }
+  
+  .combat-heal-text {
+    animation-duration: 0.8s;
+  }
+  
+  .combat-miss-text {
+    animation-duration: 0.8s;
+  }
+  
+  .combat-critical-text {
+    animation-duration: 1.2s;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .combat-shake,
+  .combat-flash,
+  .combat-pulse,
+  .combat-highlight,
+  .combat-damage-text,
+  .combat-heal-text,
+  .combat-miss-text,
+  .combat-critical-text {
+    animation: none !important;
+  }
+}
+
+/* Performance optimization - remove will-change after animation */
+.combat-animation-complete {
+  will-change: auto !important;
 }

@@ -1182,8 +1182,8 @@ OUTPUT JSON:
     }
     
     // Inventory/items context
-    if (sceneState.inventory && Array.isArray(sceneState.inventory)) {
-      const items = sceneState.inventory
+    if (sceneState.availableItems && Array.isArray(sceneState.availableItems)) {
+      const items = sceneState.availableItems
         .map((item: any) => item.name || 'Unknown')
         .join(', ');
       contextParts.push(`- Vật phẩm có sẵn: ${items}`);

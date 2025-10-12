@@ -3,6 +3,9 @@ import { AnimatePresence } from 'framer-motion';
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, RotateCcw, Zap, Shield, Sword, Target, Plus, Minus } from 'lucide-react';
 import { DiceRoller, DiceRoll, DiceRollResult } from '../../utils/diceRoller';
 import { MotionWrapper } from '../MotionWrapper';
+import { ModalHeader } from '../ModalHeader';
+import { MinimizedModal } from '../MinimizedModal';
+import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface DiceRollerProps {
   isOpen: boolean;
@@ -15,6 +18,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
   const [rollHistory, setRollHistory] = useState<(DiceRoll | DiceRollResult)[]>([]);
   const [isRolling, setIsRolling] = useState(false);
   const [customNotation, setCustomNotation] = useState('');
+  const { isMinimized, minimize, restore } = useModalMinimize('dice-roller-modal');
 
   const availableDice = DiceRoller.getAvailableDice();
   const diceExamples = DiceRoller.getDiceExamples();
@@ -157,6 +161,17 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
 
   if (!isOpen) return null;
 
+  // Show minimized modal if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedModal
+        title="Dice Roller"
+        icon={<Dice1 className="w-5 h-5 text-blue-400" />}
+        onRestore={restore}
+      />
+    );
+  }
+
   return (
     <MotionWrapper
       initial={{ opacity: 0 }}
@@ -173,20 +188,13 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <Dice1 className="w-6 h-6 mr-2" />
-              Dice Roller
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              ×
-            </button>
-          </div>
-        </div>
+        <ModalHeader
+          title="Dice Roller"
+          icon={<Dice1 className="w-6 h-6 text-blue-400" />}
+          onClose={onClose}
+          onMinimize={minimize}
+          className="bg-gray-800 px-6 py-4"
+        />
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1,9 +1,10 @@
 import { Character, Enemy, CombatStats, Attack, InventoryItem } from '../types';
 import { DiceRoller } from '../utils/diceRoller';
-import { TurnLog, CombatAction, CombatResultData } from '../types/combat';
+import { TurnLog, CombatAction, CombatResultData, CombatTurnState, CombatAnimationType } from '../types/combat';
 import { enemyAIService } from './enemyAIService';
 import { combatNarrationService } from './combatNarrationService';
 import { enhancedLootService } from './enhancedLootService';
+import { combatAnimationService } from './combatAnimationService';
 
 export interface Combatant {
   id: string;
@@ -59,7 +60,7 @@ export interface CombatState {
   turnLogs: TurnLog[]; // Grouped logs by turn
   isActive: boolean;
   isPlayerTurn: boolean;
-  winner?: 'player' | 'enemies';
+  winner?: 'player' | 'enemies' | 'fled';
   rewards?: {
     experience: number;
     items: InventoryItem[];
@@ -67,6 +68,7 @@ export interface CombatState {
   };
   worldDifficulty?: string; // For AI difficulty mapping
   lastAttackKey?: string; // Prevent duplicate attacks
+  turnState?: CombatTurnState; // Current turn state for manual turn control
 }
 
 class CombatService {
@@ -170,7 +172,12 @@ class CombatService {
       isPlayerTurn: turnOrder[0] === 'player',
       winner: undefined,
       rewards: undefined,
-      worldDifficulty
+      worldDifficulty,
+      turnState: {
+        hasPerformedAction: false,
+        canEndTurn: false,
+        timestamp: Date.now()
+      }
     };
 
     // Initialize turn tracking
@@ -290,8 +297,8 @@ class CombatService {
     return bonus;
   }
 
-  // Perform attack
-  public performAttack(attackerId: string, defenderId: string, attackIndex: number = 0): boolean {
+  // Perform attack with visual feedback and delays
+  public async performAttack(attackerId: string, defenderId: string, attackIndex: number = 0): Promise<boolean> {
     if (!this.currentCombat) return false;
     
     const attacker = this.getCombatant(attackerId);
@@ -309,7 +316,6 @@ class CombatService {
     const currentTurn = this.currentCombat.currentTurn;
     const lastAttackKey = `${attackerId}-${defenderId}-${attackIndex}-${currentTurn}`;
     
-    
     // Only check for duplicates if we have a previous attack key AND it's the same turn
     if (this.currentCombat.lastAttackKey && 
         this.currentCombat.lastAttackKey === lastAttackKey &&
@@ -321,9 +327,17 @@ class CombatService {
     // Set the attack key AFTER successful validation
     this.currentCombat.lastAttackKey = lastAttackKey;
     
+    // Mark that player has performed an action
+    if (attackerId === 'player' && this.currentCombat.turnState) {
+      this.currentCombat.turnState.hasPerformedAction = true;
+      this.currentCombat.turnState.actionType = 'attack';
+      this.currentCombat.turnState.actionTarget = defenderId;
+      this.currentCombat.turnState.timestamp = Date.now();
+    }
+    
     const attack = attacker.attacks[attackIndex];
     
-    // Roll attack
+    // Step 1: Attack Roll
     const attackRoll = DiceRoller.roll('d20', `${attacker.name} attacks with ${attack.name}`);
     const totalAttack = attackRoll.total + attack.attackBonus;
     
@@ -331,11 +345,16 @@ class CombatService {
       `${attacker.name} attacks ${defender.name} with ${attack.name}: ${attackRoll.total} + ${attack.attackBonus} = ${totalAttack}`
     );
     
+    // Add delay only for player attacks (for visual feedback)
+    if (attackerId === 'player') {
+      await this.delay(300);
+    }
+    
     // Check if hit
     const hit = totalAttack >= defender.armorClass;
     
     if (hit) {
-      // Roll damage
+      // Step 2: Damage Roll with delay
       const damageRoll = DiceRoller.roll(attack.damage, `${attack.name} damage`);
       let totalDamage = damageRoll.total;
       
@@ -356,17 +375,67 @@ class CombatService {
       
       this.addCombatLog('damage', damageDescription);
       
-      // Apply damage
-      this.applyDamage(defenderId, totalDamage);
+      // Add delay only for player attacks (for visual feedback)
+      if (attackerId === 'player') {
+        await this.delay(200);
+      }
+      
+      // Step 3: Apply damage with visual effects
+      await this.applyDamageWithEffects(defenderId, totalDamage, attackerId);
       
       return true;
     } else {
+      // Miss animation
       this.addCombatLog('attack', `${attacker.name} misses ${defender.name} (AC ${defender.armorClass})`);
+      
+      // Trigger miss animation
+      this.triggerMissAnimation(defenderId, attackerId);
+      
       return false;
     }
   }
 
-  // Apply damage to combatant
+  // Apply damage to combatant with visual effects
+  public async applyDamageWithEffects(combatantId: string, damage: number, attackerId?: string): Promise<void> {
+    if (!this.currentCombat) return;
+    
+    const combatant = this.getCombatant(combatantId);
+    if (!combatant || !combatant.isAlive) return;
+    
+    // Apply defend reduction if defending
+    let finalDamage = damage;
+    if (combatant.isDefending) {
+      finalDamage = Math.floor(damage * 0.5); // 50% damage reduction
+      this.addCombatLog('status', `${combatant.name} giảm 50% sát thương nhờ phòng thủ (${damage} → ${finalDamage})`);
+    }
+    
+    // Trigger damage animation
+    this.triggerDamageAnimation(combatantId, finalDamage, attackerId);
+    
+    // Apply damage after animation delay (only for player attacks)
+    if (attackerId === 'player') {
+      await this.delay(100);
+    }
+    combatant.health.current = Math.max(0, combatant.health.current - finalDamage);
+    
+    this.addCombatLog('damage', 
+      `${combatant.name} takes ${finalDamage} damage (${combatant.health.current}/${combatant.health.max} HP)`
+    );
+    
+    // Check if combatant dies
+    if (combatant.health.current <= 0) {
+      combatant.isAlive = false;
+      this.addCombatLog('death', `${combatant.name} is defeated!`);
+      
+      // Trigger death animation
+      this.triggerDeathAnimation(combatantId);
+      
+      // Check if combat ends after death
+      this.checkCombatEnd();
+    }
+  }
+
+  // Apply damage to combatant (legacy method for compatibility)
   public applyDamage(combatantId: string, damage: number): void {
     if (!this.currentCombat) return;
     
@@ -405,6 +474,16 @@ class CombatService {
     
     combatant.isDefending = true;
     this.addCombatLog('status', `${combatant.name} phòng thủ`);
+    
+    // Mark that player has performed an action
+    if (combatantId === 'player' && this.currentCombat.turnState) {
+      this.currentCombat.turnState.hasPerformedAction = true;
+      this.currentCombat.turnState.actionType = 'defend';
+      this.currentCombat.turnState.timestamp = Date.now();
+    }
+    
+    // Trigger defend animation
+    this.triggerDefendAnimation(combatantId);
     
     return true;
   }
@@ -448,7 +527,7 @@ class CombatService {
     return false;
   }
 
-  // End current turn
+  // End current turn (now requires manual call)
   public endTurn(): void {
     if (!this.currentCombat) return;
     
@@ -468,7 +547,6 @@ class CombatService {
     const currentCombatantId = this.currentCombat.turnOrder[this.currentCombat.currentCombatantIndex];
     this.currentCombat.isPlayerTurn = currentCombatantId === 'player';
     
-    
     // Reset turn tracking for NEXT combatant
     this.currentTurnActions = [];
     this.currentTurnCombatant = currentCombatantId;
@@ -483,6 +561,13 @@ class CombatService {
     if (this.currentCombat.currentCombatantIndex === 0) {
       this.currentCombat.lastAttackKey = undefined;
     }
+    
+    // Initialize turn state for new turn
+    this.currentCombat.turnState = {
+      hasPerformedAction: false,
+      canEndTurn: false,
+      timestamp: Date.now()
+    };
     
     // Skip dead combatants
     const currentCombatant = this.getCombatant(currentCombatantId);
@@ -593,11 +678,17 @@ class CombatService {
       ? (player.characterData?.health?.max || player.health.max) - player.health.current
       : 0;
     
+    // Get all enemy names (both defeated and active enemies)
+    const allEnemies = this.currentCombat.combatants.filter(c => c.type === 'enemy');
+    const enemyNames = allEnemies.map(e => e.name);
+
     return {
       combatId: `combat_${Date.now()}`,
       timestamp: new Date(),
       duration: 0, // Will be calculated
       victory: this.currentCombat.winner === 'player',
+      playerFled: this.currentCombat.winner === 'fled', // Check if player fled
+      enemyNames: enemyNames, // Array of all enemy names for easy access
     enemiesDefeated: defeatedEnemies.map(e => ({
       name: e.name,
       type: e.enemyData?.type || 'unknown',
@@ -668,7 +759,22 @@ class CombatService {
 
   // End combat
   public endCombat(): void {
+    // Cleanup all combatant animations before ending combat
+    if (this.currentCombat) {
+      this.currentCombat.combatants.forEach(combatant => {
+        combatAnimationService.cleanupCombatantTexts(combatant.id);
+      });
+    }
+    
     this.currentCombat = null;
+  }
+
+  // Set combat winner as fled (when player runs away)
+  public setPlayerFled(): void {
+    if (this.currentCombat) {
+      this.currentCombat.winner = 'fled';
+      this.currentCombat.isActive = false;
+    }
   }
 
   // Get alive enemies
@@ -682,6 +788,12 @@ class CombatService {
     if (!this.currentCombat) return undefined;
     const player = this.getCombatant('player');
     return player && player.isAlive ? player : undefined;
+  }
+
+  // Get all alive players
+  public getAlivePlayers(): Combatant[] {
+    if (!this.currentCombat) return [];
+    return this.currentCombat.combatants.filter(c => c.type === 'player' && c.isAlive);
   }
 
   // Check if it's player's turn
@@ -800,18 +912,22 @@ class CombatService {
 
   // Execute enemy action
   private async executeEnemyAction(enemy: Combatant, action: CombatAction): Promise<void> {
+    // Add delay before enemy action for better visibility
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
     switch (action.type) {
       case 'attack':
         if (action.targetId && action.attackIndex !== undefined) {
           const target = this.getCombatant(action.targetId);
           if (target && target.isAlive) {
             this.addCombatLog('attack', action.description);
-            this.performAttack(enemy.id, target.id, action.attackIndex);
+            await this.performAttack(enemy.id, target.id, action.attackIndex);
           }
         }
         break;
         
       case 'defend':
+        this.addCombatLog('status', action.description);
         this.defend(enemy.id);
         break;
         
@@ -832,22 +948,278 @@ class CombatService {
       default:
         this.addCombatLog('status', action.description);
     }
+    
+    // Add delay after enemy action for better visibility
+    await new Promise(resolve => setTimeout(resolve, 300));
   }
 
   // Check if it's enemy turn and execute AI
   public async processEnemyTurn(): Promise<void> {
     if (!this.currentCombat || this.currentCombat.isPlayerTurn) return;
     
-    // Add a small delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Add delay for better UX - enemy turns should be visible
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     await this.executeEnemyTurn();
+    
+    // Add delay after enemy action for better visibility
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Check if combat ended after enemy action
     if (this.currentCombat) {
       this.checkCombatEnd();
     }
   }
+
+  // Animation trigger methods
+  private triggerDamageAnimation(combatantId: string, damage: number, _attackerId?: string): void {
+    const combatant = this.getCombatant(combatantId);
+    if (!combatant) return;
+
+    // Get combatant position for floating text
+    const position = this.getCombatantPosition(combatantId);
+    
+    // Trigger floating damage text (may return null if cooldown active)
+    const textId = combatAnimationService.triggerDamageText(
+      combatantId,
+      damage,
+      CombatAnimationType.DAMAGE,
+      position
+    );
+
+    // Only trigger shake effect if damage text was successfully created
+    if (textId) {
+      combatAnimationService.triggerCombatantEffect(
+        combatantId,
+        CombatAnimationType.SHAKE,
+        'medium'
+      );
+    }
+  }
+
+  private triggerMissAnimation(defenderId: string, _attackerId?: string): void {
+    const defender = this.getCombatant(defenderId);
+    if (!defender) return;
+
+    // Get combatant position for floating text
+    const position = this.getCombatantPosition(defenderId);
+    
+    // Trigger floating miss text (may return null if cooldown active)
+    const textId = combatAnimationService.triggerDamageText(
+      defenderId,
+      0,
+      CombatAnimationType.MISS,
+      position
+    );
+
+    // Only trigger flash effect if miss text was successfully created
+    if (textId) {
+      combatAnimationService.triggerCombatantEffect(
+        defenderId,
+        CombatAnimationType.FLASH,
+        'low'
+      );
+    }
+  }
+
+  private triggerDefendAnimation(combatantId: string): void {
+    combatAnimationService.triggerCombatantEffect(
+      combatantId,
+      CombatAnimationType.HIGHLIGHT,
+      'medium'
+    );
+  }
+
+  private triggerDeathAnimation(combatantId: string): void {
+    combatAnimationService.triggerCombatantEffect(
+      combatantId,
+      CombatAnimationType.PULSE,
+      'high'
+    );
+  }
+
+  // Get combatant position for floating text with multi-combatant support
+  private getCombatantPosition(combatantId: string): { x: number; y: number } {
+    // Try to find the combatant card DOM element
+    const combatantCard = document.querySelector(`[data-combatant-id="${combatantId}"]`);
+    
+    if (combatantCard) {
+      const rect = combatantCard.getBoundingClientRect();
+      const position = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+      
+      // Adjust position to avoid overlap with other floating texts
+      return this.adjustPositionForCollision(position, combatantId);
+    }
+
+    // Fallback: try to find by combatant name
+    const combatant = this.getCombatant(combatantId);
+    if (combatant) {
+      const nameElement = Array.from(document.querySelectorAll('h3')).find(
+        el => el.textContent?.includes(combatant.name)
+      );
+      
+      if (nameElement) {
+        const cardElement = nameElement.closest('[class*="bg-gray-800"]');
+        if (cardElement) {
+          const rect = cardElement.getBoundingClientRect();
+          const position = {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+          };
+          return this.adjustPositionForCollision(position, combatantId);
+        }
+      }
+    }
+
+    // Final fallback: distribute positions for multiple combatants
+    return this.getFallbackPosition(combatantId);
+  }
+
+  // Adjust position to avoid collision with other floating texts
+  private adjustPositionForCollision(position: { x: number; y: number }, combatantId: string): { x: number; y: number } {
+    const activeTexts = this.getActiveFloatingTexts();
+    const minDistance = 60; // Minimum distance between floating texts
+    
+    let adjustedPosition = { ...position };
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      let hasCollision = false;
+      
+      for (const activeText of activeTexts) {
+        if (activeText.combatantId === combatantId) continue;
+        
+        const distance = Math.sqrt(
+          Math.pow(adjustedPosition.x - activeText.position.x, 2) + 
+          Math.pow(adjustedPosition.y - activeText.position.y, 2)
+        );
+        
+        if (distance < minDistance) {
+          hasCollision = true;
+          break;
+        }
+      }
+      
+      if (!hasCollision) break;
+      
+      // Adjust position slightly
+      const angle = (attempts * 45) * (Math.PI / 180); // Rotate by 45 degrees each attempt
+      const offset = minDistance * (attempts + 1) / maxAttempts;
+      
+      adjustedPosition = {
+        x: position.x + Math.cos(angle) * offset,
+        y: position.y + Math.sin(angle) * offset
+      };
+      
+      attempts++;
+    }
+    
+    return adjustedPosition;
+  }
+
+  // Get fallback position for multiple combatants
+  private getFallbackPosition(combatantId: string): { x: number; y: number } {
+    const combatant = this.getCombatant(combatantId);
+    if (!combatant) {
+      return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    }
+
+    // Get all combatants to calculate grid positions
+    const allCombatants = this.currentCombat?.combatants || [];
+    const playerCombatants = allCombatants.filter(c => c.type === 'player');
+    const enemyCombatants = allCombatants.filter(c => c.type === 'enemy');
+    
+    let combatantIndex = -1;
+    let totalCombatants = 0;
+    
+    if (combatant.type === 'player') {
+      combatantIndex = playerCombatants.findIndex(c => c.id === combatantId);
+      totalCombatants = playerCombatants.length;
+    } else {
+      combatantIndex = enemyCombatants.findIndex(c => c.id === combatantId);
+      totalCombatants = enemyCombatants.length;
+    }
+    
+    if (combatantIndex === -1) {
+      return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    }
+    
+    // Calculate grid position
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    
+    if (combatant.type === 'player') {
+      // Player cards at bottom
+      const cardWidth = Math.min(300, screenWidth / Math.max(1, totalCombatants));
+      const startX = (screenWidth - (totalCombatants * cardWidth)) / 2;
+      return {
+        x: startX + (combatantIndex * cardWidth) + cardWidth / 2,
+        y: screenHeight - 150
+      };
+    } else {
+      // Enemy cards at top
+      const cardWidth = Math.min(300, screenWidth / Math.max(1, totalCombatants));
+      const startX = (screenWidth - (totalCombatants * cardWidth)) / 2;
+      return {
+        x: startX + (combatantIndex * cardWidth) + cardWidth / 2,
+        y: 150
+      };
+    }
+  }
+
+  // Get currently active floating texts for collision detection
+  private getActiveFloatingTexts(): Array<{ combatantId: string; position: { x: number; y: number } }> {
+    const floatingTexts: Array<{ combatantId: string; position: { x: number; y: number } }> = [];
+    
+    // Find all active floating damage texts
+    const activeTextElements = document.querySelectorAll('.combat-damage-text, .combat-heal-text, .combat-miss-text, .combat-critical-text');
+    
+    activeTextElements.forEach(element => {
+      const rect = element.getBoundingClientRect();
+      const combatantId = element.getAttribute('data-combatant-id') || 'unknown';
+      
+      floatingTexts.push({
+        combatantId,
+        position: {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2
+        }
+      });
+    });
+    
+    return floatingTexts;
+  }
+
+  // Utility delay method
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // Check if player can end turn
+  public canEndTurn(): boolean {
+    if (!this.currentCombat || !this.currentCombat.isPlayerTurn) return false;
+    
+    const turnState = this.currentCombat.turnState;
+    if (!turnState) return false;
+    
+    // Player can end turn if they've performed an action or after a timeout
+    const timeSinceTurnStart = Date.now() - turnState.timestamp;
+    const turnTimeout = 30000; // 30 seconds timeout
+    
+    return turnState.hasPerformedAction || timeSinceTurnStart > turnTimeout;
+  }
+
+  // Get current turn state
+  public getTurnState(): CombatTurnState | undefined {
+    return this.currentCombat?.turnState;
+  }
+
+
+
 }
 
 // Export singleton instance

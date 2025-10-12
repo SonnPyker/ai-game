@@ -214,9 +214,6 @@ export class DiceRoller {
   }
 }
 
-// Export convenience functions
-export const rollDice = DiceRoller.roll;
-export const rollMultiple = DiceRoller.rollMultiple;
 export const rollWithAdvantage = DiceRoller.rollWithAdvantage;
 export const rollWithDisadvantage = DiceRoller.rollWithDisadvantage;
 export const abilityCheck = DiceRoller.abilityCheck;

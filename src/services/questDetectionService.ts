@@ -91,7 +91,13 @@ export class QuestDetectionService {
           type: reward.type,
           amount: reward.amount,
           description: reward.description,
-          claimed: false
+          claimed: false,
+          // Thêm items array cho item rewards
+          ...(reward.type === 'item' && reward.items ? { items: reward.items } : {}),
+          // Thêm các fields khác nếu có
+          ...(reward.signatureLocationId ? { signatureLocationId: reward.signatureLocationId } : {}),
+          ...(reward.signatureNPCId ? { signatureNPCId: reward.signatureNPCId } : {}),
+          ...(reward.status ? { status: reward.status } : {})
         })),
         createdAt: new Date(),
         turnCreated: turnCounter || Date.now(), // Lưu turn khi quest được tạo để tính toán tần suất

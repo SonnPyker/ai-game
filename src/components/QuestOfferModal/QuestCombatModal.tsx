@@ -3,13 +3,15 @@ import { AnimatePresence } from 'framer-motion';
 import { 
   Sword, 
   AlertTriangle, 
-  X, 
   Target,
   Bot,
   Star
 } from 'lucide-react';
 import { QuestCombatData } from '../../types/combat';
 import { MotionWrapper } from '../MotionWrapper';
+import { ModalHeader } from '../ModalHeader';
+import { MinimizedModal } from '../MinimizedModal';
+import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface QuestCombatModalProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ export function QuestCombatModal({
   combatData
 }: QuestCombatModalProps) {
   const [isStarting, setIsStarting] = useState(false);
+  const { isMinimized, minimize, restore } = useModalMinimize('quest-combat-modal');
 
   useEffect(() => {
     if (isOpen) {
@@ -33,6 +36,18 @@ export function QuestCombatModal({
   }, [isOpen]);
 
   if (!isOpen || !combatData) return null;
+
+  // Show minimized modal if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedModal
+        title="Chiến Đấu Nhiệm Vụ"
+        subtitle={combatData.questTitle}
+        icon={<Sword className="w-5 h-5 text-red-400" />}
+        onRestore={restore}
+      />
+    );
+  }
 
   const handleStartCombat = async () => {
     setIsStarting(true);
@@ -82,25 +97,14 @@ export function QuestCombatModal({
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-red-900/50 to-orange-900/50 p-6 border-b border-red-500/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-red-600/20 rounded-lg">
-                    <Sword className="w-6 h-6 text-red-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">Chiến Đấu Nhiệm Vụ</h2>
-                    <p className="text-sm text-gray-300">{combatData.questTitle}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-800/50"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+            <ModalHeader
+              title="Chiến Đấu Nhiệm Vụ"
+              subtitle={combatData.questTitle}
+              icon={<Sword className="w-6 h-6 text-red-400" />}
+              onClose={onClose}
+              onMinimize={minimize}
+              className="bg-gradient-to-r from-red-900/50 to-orange-900/50 p-6 border-b border-red-500/30"
+            />
 
             {/* Content */}
             <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-200px)]">

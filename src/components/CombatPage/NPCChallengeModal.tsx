@@ -1,5 +1,8 @@
 import { MotionWrapper } from '../MotionWrapper';
-import { Sword, AlertTriangle, X, User, Zap, Shield } from 'lucide-react';
+import { Sword, AlertTriangle, User, Zap, Shield } from 'lucide-react';
+import { ModalHeader } from '../ModalHeader';
+import { MinimizedModal } from '../MinimizedModal';
+import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface NPCChallengeModalProps {
   isOpen: boolean;
@@ -31,7 +34,21 @@ export function NPCChallengeModal({
   onDeclineChallenge,
   challengeData
 }: NPCChallengeModalProps) {
+  const { isMinimized, minimize, restore } = useModalMinimize('npc-challenge-modal');
+
   if (!isOpen) return null;
+
+  // Show minimized modal if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedModal
+        title="Thách đấu từ NPC"
+        subtitle={`${challengeData.npcName} thách đấu bạn`}
+        icon={<Sword className="w-5 h-5 text-red-400" />}
+        onRestore={restore}
+      />
+    );
+  }
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -60,22 +77,14 @@ export function NPCChallengeModal({
         className="bg-gray-900 border border-gray-700 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
-        <div className="bg-red-900/50 px-6 py-4 border-b border-red-700 rounded-t-2xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Sword className="w-6 h-6 text-red-400" />
-              <h2 className="text-xl font-bold text-red-100">
-                Thách Đấu!
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        <ModalHeader
+          title="Thách Đấu!"
+          subtitle={`${challengeData.npcName} thách đấu bạn`}
+          icon={<Sword className="w-6 h-6 text-red-400" />}
+          onClose={onClose}
+          onMinimize={minimize}
+          className="bg-red-900/50 px-6 py-4 border-b border-red-700 rounded-t-2xl"
+        />
 
         {/* Content */}
         <div className="p-6 space-y-6">

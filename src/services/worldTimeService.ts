@@ -70,7 +70,7 @@ class WorldTimeService {
       newTime.hour++;
     }
 
-    // Handle hour overflow
+    // Handle hour overflow (after all minute overflows are processed)
     while (newTime.hour >= 24) {
       newTime.hour -= 24;
       newTime.day++;

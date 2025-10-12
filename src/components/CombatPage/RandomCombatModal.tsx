@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Sword, Shield, X, AlertTriangle, Backpack, User } from 'lucide-react';
 import { MotionWrapper } from '../MotionWrapper';
 import { InfoMenu } from '../InfoMenu/InfoMenu';
+import { ModalHeader } from '../ModalHeader';
+import { MinimizedModal } from '../MinimizedModal';
+import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface RandomCombatModalProps {
   isOpen: boolean;
@@ -23,6 +26,7 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
   reason
 }) => {
   const [showInventory, setShowInventory] = useState(false);
+  const { isMinimized, minimize, restore } = useModalMinimize('random-combat-modal');
   
   if (!isOpen) return null;
 
@@ -38,6 +42,18 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
   const safeReason = typeof reason === 'string' ? reason : 
     (typeof reason === 'object' && reason && 'description' in reason ? (reason as any).description : 'Cuộc đối đầu bất ngờ');
 
+  // Show minimized modal if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedModal
+        title="Chiến đấu ngẫu nhiên"
+        subtitle={`Gặp ${enemyName} tại ${safeLocation}`}
+        icon={<Sword className="w-5 h-5 text-red-400" />}
+        onRestore={restore}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4">
       <MotionWrapper
@@ -46,23 +62,14 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
         className="bg-gray-900 border border-gray-700 rounded-2xl max-w-md w-full mx-4"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-red-600 rounded-lg">
-              <Sword className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Cuộc Đối Đầu Bất Ngờ</h2>
-              <p className="text-sm text-gray-400">Bạn đã gặp phải kẻ thù!</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        <ModalHeader
+          title="Cuộc Đối Đầu Bất Ngờ"
+          subtitle="Bạn đã gặp phải kẻ thù!"
+          icon={<Sword className="w-6 h-6 text-white" />}
+          onClose={onClose}
+          onMinimize={minimize}
+          className="p-6"
+        />
 
         {/* Content */}
         <div className="p-6 space-y-6">

@@ -1,4 +1,5 @@
 import { InventoryItem, Equipment, Character } from '../types';
+import { storageCache } from './storageCache';
 
 class InventoryService {
   private static instance: InventoryService;
@@ -17,17 +18,17 @@ class InventoryService {
     return InventoryService.instance;
   }
 
-  // Load inventory and equipment from localStorage
+  // Load inventory and equipment from localStorage (with cache)
   private loadFromStorage(): void {
     try {
-      const savedInventory = localStorage.getItem('game_inventory');
+      const savedInventory = storageCache.get<InventoryItem[]>('game_inventory');
       if (savedInventory) {
-        this.inventory = JSON.parse(savedInventory);
+        this.inventory = savedInventory;
       }
 
-      const savedEquipment = localStorage.getItem('game_equipment');
+      const savedEquipment = storageCache.get<Equipment>('game_equipment');
       if (savedEquipment) {
-        this.equipment = JSON.parse(savedEquipment);
+        this.equipment = savedEquipment;
       }
     } catch (error) {
       console.warn('Failed to load inventory/equipment from storage:', error);
@@ -36,11 +37,11 @@ class InventoryService {
     }
   }
 
-  // Save inventory and equipment to localStorage
+  // Save inventory and equipment to localStorage (with cache)
   private saveToStorage(): void {
     try {
-      localStorage.setItem('game_inventory', JSON.stringify(this.inventory));
-      localStorage.setItem('game_equipment', JSON.stringify(this.equipment));
+      storageCache.set('game_inventory', this.inventory);
+      storageCache.set('game_equipment', this.equipment);
     } catch (error) {
       console.warn('Failed to save inventory/equipment to storage:', error);
     }
@@ -81,8 +82,8 @@ class InventoryService {
       
       character.coreStats.armorClass = ac;
       
-      // Save updated character to localStorage
-      localStorage.setItem('currentCharacter', JSON.stringify(character));
+      // Save updated character to localStorage (with cache)
+      storageCache.set('currentCharacter', character);
       console.log('Migrated old save: Added armorClass to coreStats');
     }
   }
@@ -94,9 +95,9 @@ class InventoryService {
     const sceneState = aiResponse.sceneState;
     const foundItems: InventoryItem[] = [];
     
-    // CHỈ parse items từ sceneState.inventory của AI response hiện tại
-    if (sceneState.inventory && Array.isArray(sceneState.inventory)) {
-      sceneState.inventory.forEach((itemData: any) => {
+    // CHỈ parse items từ sceneState.availableItems của AI response hiện tại
+    if (sceneState.availableItems && Array.isArray(sceneState.availableItems)) {
+      sceneState.availableItems.forEach((itemData: any) => {
         if (this.isValidItemData(itemData)) {
           const item = this.createItemFromData(itemData);
           if (item) {
@@ -533,8 +534,8 @@ class InventoryService {
       this.character.inventory = [...this.inventory];
       this.character.equipment = { ...this.equipment };
       
-      // Lưu character data vào localStorage để UI có thể đọc được
-      localStorage.setItem('currentCharacter', JSON.stringify(this.character));
+      // Lưu character data vào localStorage để UI có thể đọc được (with cache)
+      storageCache.set('currentCharacter', this.character);
     }
   }
 

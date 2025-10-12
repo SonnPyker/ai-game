@@ -339,11 +339,10 @@ class QuestCompletionService {
       return cached.result;
     }
 
-    // Validation: Không cho phép travel objective đến vị trí hiện tại
+    // Check if player is at target location
     if (context.playerLocation && 
         this.fuzzyMatch(context.playerLocation.toLowerCase().trim(), targetLocation)) {
-      console.warn(`⚠️ Travel objective "${objective.description}" targets current location "${context.playerLocation}". This should not happen.`);
-      return true; // Mark as completed to avoid infinite loop
+      return true;
     }
 
     let isAtLocation = false;

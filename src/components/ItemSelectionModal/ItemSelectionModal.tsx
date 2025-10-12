@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { InventoryItem } from '../../types';
 import { 
-  X, 
   Package, 
   Sword, 
   Shield, 
@@ -9,6 +8,9 @@ import {
   Check,
   XCircle
 } from 'lucide-react';
+import { ModalHeader } from '../ModalHeader';
+import { MinimizedModal } from '../MinimizedModal';
+import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface ItemSelectionModalProps {
   isOpen: boolean;
@@ -28,6 +30,7 @@ export function ItemSelectionModal({
   description = "Bạn đã tìm thấy một số vật phẩm. Hãy chọn những gì bạn muốn lấy:"
 }: ItemSelectionModalProps) {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const { isMinimized, minimize, restore } = useModalMinimize('item-selection-modal');
 
   // Initialize selected items when modal opens
   useEffect(() => {
@@ -45,6 +48,17 @@ export function ItemSelectionModal({
 
   // Early return AFTER all hooks
   if (!isOpen) return null;
+
+  // Show minimized modal if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedModal
+        title={title}
+        icon={<Package className="w-5 h-5 text-green-400" />}
+        onRestore={restore}
+      />
+    );
+  }
 
   // Select all items by default
   const handleSelectAll = () => {
@@ -103,21 +117,14 @@ export function ItemSelectionModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Package className="w-5 h-5" />
-              {title}
-            </h2>
-            <p className="text-gray-400 text-sm mt-1">{description}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+        <ModalHeader
+          title={title}
+          subtitle={description}
+          icon={<Package className="w-5 h-5 text-green-400" />}
+          onClose={onClose}
+          onMinimize={minimize}
+          className="p-6"
+        />
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[50vh]">

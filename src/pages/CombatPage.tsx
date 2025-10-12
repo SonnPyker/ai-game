@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Zap, 
-  ArrowLeft, 
   ArrowRight,
   Play,
   Pause,
@@ -12,12 +11,12 @@ import {
   PinOff
 } from 'lucide-react';
 import { Character, Enemy, InventoryItem } from '../types';
-import { combatService, CombatState } from '../services/combatService';
+import { combatService, CombatState, Combatant } from '../services/combatService';
+import { combatDataService } from '../services/combatDataService';
 import { inventoryService } from '../services/inventoryService';
 import { combatLevelService } from '../services/combatLevelService';
 import { levelSystemService } from '../services/levelSystemService';
 import { questCombatService } from '../services/questCombatService';
-// import { combatDialogueService } from '../services/combatDialogueService';
 import { MotionWrapper } from '../components/MotionWrapper';
 
 // Combat Components
@@ -26,6 +25,7 @@ import { CombatLog } from '../components/CombatPage/CombatLog';
 import { ActionMenu } from '../components/CombatPage/ActionMenu';
 import { CombatInventory } from '../components/CombatPage/CombatInventory';
 import { CombatResults } from '../components/CombatPage/CombatResults';
+import { TurnIndicator } from '../components/CombatPage/TurnIndicator';
 import { CombatConfirmationModal } from '../components/CombatPage/CombatConfirmationModal';
 import { CombatDialogueSequence } from '../components/CombatPage/CombatDialogueBubble';
 
@@ -163,20 +163,17 @@ export function CombatPage({}: CombatPageProps) {
     initializeCombat();
   }, []); // Empty dependency array - only run once
 
-  // Handle enemy turns when it's not player's turn
+  // Listen to combat state changes
   useEffect(() => {
-    const processEnemyTurn = async () => {
-      if (combatState && !combatState.isPlayerTurn && combatState.isActive) {
-        // Add a small delay for better UX
-        setTimeout(async () => {
-          await combatService.processEnemyTurn();
-          setCombatState({ ...combatService.getCurrentCombat()! });
-        }, 1000);
+    const interval = setInterval(() => {
+      const currentCombat = combatService.getCurrentCombat();
+      if (currentCombat && (!combatState || currentCombat !== combatState)) {
+        setCombatState({ ...currentCombat });
       }
-    };
+    }, 100); // Check every 100ms
 
-    processEnemyTurn();
-  }, [combatState?.isPlayerTurn, combatState?.isActive]);
+    return () => clearInterval(interval);
+  }, [combatState]);
 
   // Check for combat end and show results
   useEffect(() => {
@@ -387,10 +384,17 @@ export function CombatPage({}: CombatPageProps) {
     }
   };
 
-  // Handle attack action
+  // Handle attack action (now with manual turn control)
   const handleAttack = useCallback(async (attackIndex: number, targetId?: string) => {
     // Early return checks
     if (!combatState || !combatState.isPlayerTurn || isProcessing || processingRef.current) return;
+
+    // Check if player has already performed an action this turn
+    const turnState = combatService.getTurnState();
+    if (turnState?.hasPerformedAction) {
+      console.log('Player has already performed an action this turn');
+      return;
+    }
 
     // Debounce: prevent multiple clicks within 1000ms using ref
     const now = Date.now();
@@ -425,8 +429,8 @@ export function CombatPage({}: CombatPageProps) {
         return;
       }
 
-      // Perform attack
-      combatService.performAttack(currentCombatant.id, target.id, attackIndex);
+      // Perform attack with visual effects
+      await combatService.performAttack(currentCombatant.id, target.id, attackIndex);
       
       // Update combat state regardless of success (for miss logs)
       setCombatState({ ...combatService.getCurrentCombat()! });
@@ -437,15 +441,10 @@ export function CombatPage({}: CombatPageProps) {
         return;
       }
       
-      // End turn regardless of success (hit or miss)
-      combatService.endTurn();
+      // DO NOT auto end turn - player must manually end turn
+      // Just update the state to show that action was performed
       setCombatState({ ...combatService.getCurrentCombat()! });
       
-      // Process enemy turn if it's not player's turn
-      if (!combatService.getCurrentCombat()?.isPlayerTurn) {
-        await combatService.processEnemyTurn();
-        setCombatState({ ...combatService.getCurrentCombat()! });
-      }
     } catch (error) {
       console.error('Error performing attack:', error);
     } finally {
@@ -491,9 +490,16 @@ export function CombatPage({}: CombatPageProps) {
     }
   }, [combatState, isProcessing]);
 
-  // Handle defend action
+  // Handle defend action (now with manual turn control)
   const handleDefend = useCallback(async () => {
     if (!combatState || !combatState.isPlayerTurn || isProcessing) return;
+
+    // Check if player has already performed an action this turn
+    const turnState = combatService.getTurnState();
+    if (turnState?.hasPerformedAction) {
+      console.log('Player has already performed an action this turn');
+      return;
+    }
 
     setIsProcessing(true);
     
@@ -510,15 +516,10 @@ export function CombatPage({}: CombatPageProps) {
         return;
       }
       
-      // End turn
-      combatService.endTurn();
+      // DO NOT auto end turn - player must manually end turn
+      // Just update the state to show that action was performed
       setCombatState({ ...combatService.getCurrentCombat()! });
       
-      // Process enemy turn if it's not player's turn
-      if (!combatService.getCurrentCombat()?.isPlayerTurn) {
-        await combatService.processEnemyTurn();
-        setCombatState({ ...combatService.getCurrentCombat()! });
-      }
     } catch (error) {
       console.error('Error defending:', error);
     } finally {
@@ -533,7 +534,42 @@ export function CombatPage({}: CombatPageProps) {
     setIsProcessing(true);
     
     try {
-      // Run away (end combat with defeat)
+      // Set combat winner as fled
+      combatService.setPlayerFled();
+      
+      // Update character data with current inventory before fleeing
+      try {
+        const characterData = localStorage.getItem('currentCharacter');
+        if (characterData) {
+          const character = JSON.parse(characterData);
+          
+          // Load current inventory into inventoryService
+          inventoryService.setCharacter(character);
+          
+          // Update character data with current inventory
+          character.inventory = inventoryService.getInventory();
+          character.equipment = inventoryService.getEquipment();
+          character.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
+          localStorage.setItem('currentCharacter', JSON.stringify(character));
+          
+          console.log('✅ Updated character inventory before fleeing');
+        }
+      } catch (error) {
+        console.error('Error updating character inventory before fleeing:', error);
+      }
+      
+      // Generate combat result data for fleeing
+      const combatResultData = combatService.generateCombatResultData();
+      
+      if (combatResultData) {
+        // Save combat result data
+        combatDataService.addToCombatHistory(combatResultData);
+        localStorage.setItem('combat_result', JSON.stringify(combatResultData));
+        
+        console.log('🏃 Player fled from combat - combat history saved');
+      }
+      
+      // Run away (end combat)
       combatService.endCombat();
       navigate('/game');
     } catch (error) {
@@ -543,6 +579,34 @@ export function CombatPage({}: CombatPageProps) {
     }
   }, [combatState, isProcessing, navigate]);
 
+  // Handle manual end turn
+  const handleEndTurn = useCallback(async () => {
+    if (!combatState || !combatState.isPlayerTurn || isProcessing) return;
+
+    // Check if player can end turn
+    if (!combatService.canEndTurn()) {
+      console.log('Player cannot end turn yet');
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      // End turn manually
+      combatService.endTurn();
+      setCombatState({ ...combatService.getCurrentCombat()! });
+      
+      // Process enemy turn if it's not player's turn
+      if (!combatService.getCurrentCombat()?.isPlayerTurn) {
+        await combatService.processEnemyTurn();
+        setCombatState({ ...combatService.getCurrentCombat()! });
+      }
+    } catch (error) {
+      console.error('Error ending turn:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [combatState, isProcessing]);
 
   // Handle combat end with selected items
   const handleCombatEndWithItems = useCallback((selectedItems: InventoryItem[]) => {
@@ -641,9 +705,15 @@ export function CombatPage({}: CombatPageProps) {
     navigate('/game');
   }, [combatState, navigate]);
 
-  // Get player combatant
-  const playerCombatant = combatState ? combatService.getAlivePlayer() || null : null;
+  // Get player combatants
+  const playerCombatants = combatState ? combatService.getAlivePlayers() : [];
   const aliveEnemies = combatState ? combatService.getAliveEnemies() : [];
+  
+  // Get turn state for UI
+  const turnState = combatService.getTurnState();
+  const canEndTurn = combatService.canEndTurn();
+  const hasPerformedAction = turnState?.hasPerformedAction || false;
+
 
   // Show loading only if we're not showing confirmation modal
   if (!combatState && !showCombatConfirmation) {
@@ -668,22 +738,19 @@ export function CombatPage({}: CombatPageProps) {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
+      {/* Header with Turn Indicator */}
       <div className="bg-gray-900/50 border-b border-gray-700 p-4">
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/game')}
-            className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Thoát Combat</span>
-          </button>
+          {/* Turn Indicator */}
+          <TurnIndicator
+            turnNumber={combatState?.currentTurn || 0}
+            isPlayerTurn={combatState?.isPlayerTurn || false}
+            currentCombatantName={combatState?.isPlayerTurn ? 'Player' : aliveEnemies[0]?.name}
+            isProcessing={isProcessing}
+          />
           
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-400">
-              Turn {combatState?.currentTurn || 0}
-            </div>
-            
+          {/* Control Buttons */}
+          <div className="flex items-center space-x-2">
             {/* Combat Log Button */}
             <button
               onClick={() => {
@@ -704,9 +771,11 @@ export function CombatPage({}: CombatPageProps) {
               <MessageSquare className="w-4 h-4" />
             </button>
             
+            {/* Pause/Play Button */}
             <button
               onClick={() => setIsPaused(!isPaused)}
               className="p-2 text-gray-400 hover:text-white transition-colors"
+              title={isPaused ? "Tiếp tục" : "Tạm dừng"}
             >
               {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
             </button>
@@ -717,18 +786,19 @@ export function CombatPage({}: CombatPageProps) {
       <div className={`flex flex-col h-[calc(100vh-80px)] transition-all duration-300 ${
         isCombatLogPinned ? 'lg:mr-96' : ''
       }`}>
-        {/* Enemy Cards */}
+        {/* Enemy Cards - Compact Layout */}
         <div className="flex-1 p-2 sm:p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
             {aliveEnemies.map((enemy) => (
-              <CombatantCard
-                key={enemy.id}
-                combatant={enemy}
-                isEnemy={true}
-                isSelected={selectedTarget === enemy.id}
-                onSelect={() => setSelectedTarget(enemy.id)}
-                isPlayerTurn={combatState?.isPlayerTurn || false}
-              />
+              <div key={enemy.id} className="w-full sm:w-auto sm:min-w-[300px] sm:max-w-[400px]">
+                <CombatantCard
+                  combatant={enemy}
+                  isEnemy={true}
+                  isSelected={selectedTarget === enemy.id}
+                  onSelect={() => setSelectedTarget(enemy.id)}
+                  isPlayerTurn={combatState?.isPlayerTurn || false}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -736,15 +806,18 @@ export function CombatPage({}: CombatPageProps) {
         {/* Player Card and Actions */}
         <div className="bg-gray-900/50 border-t border-gray-700 p-2 sm:p-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4">
-            {/* Player Card */}
+            {/* Player Cards - Support Multiple Players */}
             <div className="lg:col-span-1">
-              {playerCombatant && (
-                <CombatantCard
-                  combatant={playerCombatant}
-                  isEnemy={false}
-                  isPlayerTurn={combatState?.isPlayerTurn || false}
-                />
-              )}
+              <div className="space-y-2 sm:space-y-3">
+                {playerCombatants.map((player: Combatant) => (
+                  <CombatantCard
+                    key={player.id}
+                    combatant={player}
+                    isEnemy={false}
+                    isPlayerTurn={combatState?.isPlayerTurn || false}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* Action Menu and Inventory */}
@@ -752,43 +825,39 @@ export function CombatPage({}: CombatPageProps) {
               {combatState?.isPlayerTurn ? (
                 <div className="space-y-4">
                   <ActionMenu
-                    combatant={playerCombatant}
+                    combatant={playerCombatants[0] || null}
                     enemies={aliveEnemies}
                     onAttack={handleAttack}
                     onDefend={handleDefend}
                     onUseItem={handleUseItem}
                     onInventory={() => setShowInventory(!showInventory)}
-                    onEndTurn={() => {
-                      combatService.endTurn();
-                      setCombatState({ ...combatService.getCurrentCombat()! });
-                      
-                      if (!combatService.getCurrentCombat()?.isPlayerTurn) {
-                        combatService.processEnemyTurn();
-                        setCombatState({ ...combatService.getCurrentCombat()! });
-                      }
-                    }}
+                    onEndTurn={handleEndTurn}
                     onRun={handleRun}
                     isProcessing={isProcessing}
                     selectedTarget={selectedTarget}
                     onSelectTarget={setSelectedTarget}
+                    hasPerformedAction={hasPerformedAction}
+                    canEndTurn={canEndTurn}
                   />
                   
                   <button
-                    onClick={() => {
-                      // End turn manually
-                      combatService.endTurn();
-                      setCombatState({ ...combatService.getCurrentCombat()! });
-                      
-                      // Process enemy turn if it's not player's turn
-                      if (!combatService.getCurrentCombat()?.isPlayerTurn) {
-                        combatService.processEnemyTurn();
-                        setCombatState({ ...combatService.getCurrentCombat()! });
+                    onClick={handleEndTurn}
+                    disabled={!canEndTurn || isProcessing}
+                    className={`
+                      w-full py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 font-medium text-lg
+                      ${canEndTurn && !isProcessing
+                        ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 ring-2 ring-green-400 ring-opacity-50'
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
                       }
-                    }}
-                    className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                    `}
                   >
-                    <ArrowRight className="w-4 h-4" />
-                    <span>Kết Thúc Lượt</span>
+                    <ArrowRight className="w-5 h-5" />
+                    <span>
+                      {hasPerformedAction ? 'Kết Thúc Lượt' : 'Chờ Hành Động...'}
+                    </span>
+                    {hasPerformedAction && (
+                      <div className="ml-2 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    )}
                   </button>
                 </div>
               ) : (

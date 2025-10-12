@@ -4,12 +4,24 @@ class CombatDataService {
   private static instance: CombatDataService;
   private readonly STORAGE_KEY = 'combat_result';
   private readonly HISTORY_KEY = 'combat_history';
+  private readonly MAX_HISTORY_SIZE = 50;
+  private readonly MAX_HISTORY_AGE_DAYS = 7;
 
   public static getInstance(): CombatDataService {
     if (!CombatDataService.instance) {
       CombatDataService.instance = new CombatDataService();
     }
     return CombatDataService.instance;
+  }
+
+  private constructor() {
+    // Clean up old data on initialization
+    this.cleanupOldData();
+    
+    // Set up periodic cleanup
+    setInterval(() => {
+      this.cleanupOldData();
+    }, 24 * 60 * 60 * 1000); // Every 24 hours
   }
 
   // Save combat result
@@ -34,8 +46,8 @@ class CombatDataService {
       const history = this.getCombatHistory();
       if (Array.isArray(history)) {
         history.push(data);
-        // Keep only last 50 combats
-        if (history.length > 50) {
+        // Keep only last MAX_HISTORY_SIZE combats
+        if (history.length > this.MAX_HISTORY_SIZE) {
           history.shift();
         }
         localStorage.setItem(this.HISTORY_KEY, JSON.stringify(history));
@@ -45,6 +57,36 @@ class CombatDataService {
       }
     } catch (error) {
       console.error('Error adding to combat history:', error);
+    }
+  }
+
+  // Clean up old combat history and summaries
+  private cleanupOldData(): void {
+    try {
+      const history = this.getCombatHistory();
+      if (Array.isArray(history)) {
+        const now = Date.now();
+        const maxAge = this.MAX_HISTORY_AGE_DAYS * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+        
+        // Filter out old entries
+        const filteredHistory = history.filter(entry => {
+          if (entry.timestamp) {
+            const entryTime = new Date(entry.timestamp).getTime();
+            return (now - entryTime) <= maxAge;
+          }
+          return true; // Keep entries without timestamp
+        });
+        
+        // Limit size
+        const limitedHistory = filteredHistory.slice(-this.MAX_HISTORY_SIZE);
+        
+        // Save cleaned history
+        localStorage.setItem(this.HISTORY_KEY, JSON.stringify(limitedHistory));
+        
+        console.log(`🧹 Cleaned combat history: ${history.length - limitedHistory.length} old entries removed`);
+      }
+    } catch (error) {
+      console.error('Error cleaning up combat history:', error);
     }
   }
 

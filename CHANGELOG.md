@@ -5,6 +5,28 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0-beta] - 2025-01-05
+
+### 🎮 Combat Visual Feedback System
+- **Combat Animation Service**: New centralized animation management system with event-driven architecture
+- **Floating Damage Text**: Real-time damage numbers with smooth animations appearing directly on combatant cards
+- **Visual Effects**: Shake, flash, and highlight effects for combatants during attacks and damage
+- **Manual Turn Control**: Players must manually end their turn after performing actions
+- **Combat State Synchronization**: Improved combat state management with automatic UI updates
+- **Performance Optimized**: Hardware-accelerated animations with mobile-first design
+
+### 🧹 Code Cleanup & Maintenance
+- **Removed Test Scripts**: Cleaned up all test files and multiple enemy spawning mechanisms
+- **Simplified Combat Flow**: Streamlined combat system focusing on core 1v1 combat experience
+- **TypeScript Improvements**: Fixed all TypeScript errors and improved type safety
+- **Build Optimization**: Successful production build with optimized bundle sizes
+
+### 🔧 Technical Improvements
+- **Event-Driven Architecture**: Combat animations use EventEmitter pattern for better decoupling
+- **CSS Animation System**: Hardware-accelerated keyframe animations for better performance
+- **Mobile Responsive**: Optimized animations and UI for mobile devices
+- **Memory Management**: Proper cleanup of animation listeners and DOM nodes
+
 ## [4.1.0-beta] - 2025-01-05
 
 ### 🚀 Major Combat System Upgrades

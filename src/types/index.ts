@@ -419,7 +419,7 @@ export interface SCCState {
   location?: string;
   locationId?: string; // ID của location hiện tại
   npcs?: { name: string; state?: string }[];
-  inventory?: InventoryItem[]; // Updated to use structured inventory
+  availableItems?: InventoryItem[]; // Items có thể lấy được trong scene hiện tại
   clocks?: { name: string; value: number; max: number }[];
   flags?: Record<string, boolean>;
   worldTime?: WorldTime;

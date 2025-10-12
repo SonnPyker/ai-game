@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Sword, 
-  X, 
   AlertTriangle, 
   CheckCircle, 
   Loader2,
@@ -13,6 +12,9 @@ import {
 } from 'lucide-react';
 import { NPCRelationship } from '../../types';
 import { MotionWrapper } from '../MotionWrapper';
+import { ModalHeader } from '../ModalHeader';
+import { MinimizedModal } from '../MinimizedModal';
+import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface CombatConfirmationModalProps {
   isOpen: boolean;
@@ -38,8 +40,21 @@ export function CombatConfirmationModal({
   preparationStatus
 }: CombatConfirmationModalProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const { isMinimized, minimize, restore } = useModalMinimize('combat-confirmation-modal');
 
   if (!isOpen) return null;
+
+  // Show minimized modal if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedModal
+        title="Xác nhận Chiến đấu"
+        subtitle={`Chuẩn bị đối đầu với ${npc.name}`}
+        icon={<Sword className="w-5 h-5 text-red-400" />}
+        onRestore={restore}
+      />
+    );
+  }
 
   const isReady = preparationStatus.hasCombatStats && 
                  preparationStatus.hasWeapon && 
@@ -79,25 +94,14 @@ export function CombatConfirmationModal({
           onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-red-600/20 rounded-lg">
-                  <Sword className="w-6 h-6 text-red-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Xác nhận Chiến đấu</h2>
-                  <p className="text-gray-400 text-sm">Chuẩn bị đối đầu với {npc.name}</p>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+          <ModalHeader
+            title="Xác nhận Chiến đấu"
+            subtitle={`Chuẩn bị đối đầu với ${npc.name}`}
+            icon={<Sword className="w-6 h-6 text-red-400" />}
+            onClose={onClose}
+            onMinimize={minimize}
+            className="bg-gray-800 px-6 py-4"
+          />
 
           {/* Content */}
           <div className="p-6 space-y-6">

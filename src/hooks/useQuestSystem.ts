@@ -49,6 +49,7 @@ const processRewardClaim = (reward: any) => {
         // Tạo item reward và thêm trực tiếp vào currentCharacter.inventory
         if (reward.items && reward.items.length > 0) {
           console.log('🎁 Đang thêm items vào character inventory:', reward.items);
+          console.log('🎁 Reward type:', reward.type, 'Reward description:', reward.description);
           reward.items.forEach((item: any) => {
             // Đảm bảo item có tags phù hợp
             if (!item.tags) {
@@ -79,18 +80,50 @@ const processRewardClaim = (reward: any) => {
           });
           console.log(`✅ Đã nhận ${reward.items.length} vật phẩm`);
         } else {
-          // Tạo item ngẫu nhiên nếu không có items cụ thể
-          const randomItem = generateRandomRewardItem(reward.factionName);
-          if (randomItem) {
-            console.log('🎁 Thêm random item vào character:', randomItem);
+          // Tạo item cụ thể từ description nếu không có items
+          console.log('🎁 Không có items cụ thể, tạo từ description:', reward.description);
+          
+          // Parse description để lấy tên item và số lượng
+          const match = reward.description.match(/(.+?)\s*\([+\-]?(\d+)\)/);
+          if (match) {
+            const itemName = match[1].trim();
+            const quantity = parseInt(match[2]) || 1;
+            
+            // Tạo item cụ thể
+            const specificItem = {
+              id: `quest_reward_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              name: itemName,
+              type: 'misc', // Default type
+              rarity: 'common',
+              description: `Vật phẩm nhận được từ quest: ${itemName}`,
+              quantity: quantity,
+              tags: ['reward', 'quest'],
+              icon: '🎁'
+            };
+            
+            console.log('🎁 Thêm specific item vào character:', specificItem);
             
             // Thêm trực tiếp vào character inventory
             if (!character.inventory) {
               character.inventory = [];
             }
-            character.inventory.push(randomItem);
+            character.inventory.push(specificItem);
             
-            console.log(`✅ Đã nhận vật phẩm: ${randomItem.name}`);
+            console.log(`✅ Đã nhận vật phẩm: ${specificItem.name} (x${quantity})`);
+          } else {
+            // Fallback: tạo item ngẫu nhiên nếu không parse được
+            const randomItem = generateRandomRewardItem(reward.factionName);
+            if (randomItem) {
+              console.log('🎁 Thêm random item vào character:', randomItem);
+              
+              // Thêm trực tiếp vào character inventory
+              if (!character.inventory) {
+                character.inventory = [];
+              }
+              character.inventory.push(randomItem);
+              
+              console.log(`✅ Đã nhận vật phẩm: ${randomItem.name}`);
+            }
           }
         }
         break;

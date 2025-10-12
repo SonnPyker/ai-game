@@ -12,6 +12,11 @@ class NPCRelationshipService {
   // Faction reputation storage
   private factionReputations: Map<string, number> = new Map();
 
+  // Cache size limits to prevent memory leaks
+  private readonly MAX_ANALYSIS_CACHE_SIZE = 50;
+  private readonly MAX_ENCOUNTERS_SIZE = 100;
+  private readonly MAX_RELATIONSHIPS_SIZE = 200;
+
   // Shared constants to avoid duplication
   private readonly GROUP_KEYWORDS = [
     'hơn chục', 'nhiều', 'một nhóm', 'các', 'những', 'tất cả', 'mọi người',
@@ -21,6 +26,11 @@ class NPCRelationshipService {
 
   private constructor() {
     this.loadFromStorage();
+    
+    // Clean up caches periodically
+    setInterval(() => {
+      this.enforceCacheLimits();
+    }, 5 * 60 * 1000); // Every 5 minutes
   }
 
   static getInstance(): NPCRelationshipService {
@@ -28,6 +38,28 @@ class NPCRelationshipService {
       NPCRelationshipService.instance = new NPCRelationshipService();
     }
     return NPCRelationshipService.instance;
+  }
+
+  // Enforce cache size limits to prevent memory leaks
+  private enforceCacheLimits(): void {
+    // Limit analysis cache
+    if (this.analysisCache.size > this.MAX_ANALYSIS_CACHE_SIZE) {
+      const entries = Array.from(this.analysisCache.entries());
+      const toRemove = entries.slice(0, entries.length - this.MAX_ANALYSIS_CACHE_SIZE);
+      toRemove.forEach(([key]) => this.analysisCache.delete(key));
+    }
+
+    // Limit encounters array
+    if (this.encounters.length > this.MAX_ENCOUNTERS_SIZE) {
+      this.encounters = this.encounters.slice(-this.MAX_ENCOUNTERS_SIZE);
+    }
+
+    // Limit relationships map
+    if (this.relationships.size > this.MAX_RELATIONSHIPS_SIZE) {
+      const entries = Array.from(this.relationships.entries());
+      const toRemove = entries.slice(0, entries.length - this.MAX_RELATIONSHIPS_SIZE);
+      toRemove.forEach(([key]) => this.relationships.delete(key));
+    }
   }
 
   // Generate combat stats for new NPCs

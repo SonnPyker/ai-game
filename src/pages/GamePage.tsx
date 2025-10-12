@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, Loader2, AlertCircle, Play, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History, Moon, Sword } from 'lucide-react';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
-import { WorldTime, SCCContext, ChatMessage, ContentFlags, PlayerLocation, InventoryItem } from '../types';
+import { WorldTime, SCCContext, ChatMessage as ChatMessageType, ContentFlags, PlayerLocation, InventoryItem } from '../types';
 import { buildContextForAI } from '../lib/context';
 import { SaveGame } from '../types/saveGame';
 import { useQuestSystem } from '../hooks/useQuestSystem';
 import { QuestSystem } from '../types';
+import { useMinimizedModalContext } from '../contexts/MinimizedModalContext';
 import { DialogueRenderer } from '../components/DialogueRenderer';
 import { detectPlayerDialogue, enhanceDialogueForAI } from '../utils/dialogueProcessor';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
@@ -80,7 +81,8 @@ interface GameState {
 
 export function GamePage() {
   const navigate = useNavigate();
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const { hasMinimizedModals } = useMinimizedModalContext();
+  const [chatHistory, setChatHistory] = useState<ChatMessageType[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +131,10 @@ export function GamePage() {
   const [retryCount, setRetryCount] = useState(0);
   const [lastRetryError, setLastRetryError] = useState<string | null>(null);
   
+  // Combat result auto-paste state
+  const [combatResultText, setCombatResultText] = useState<string>('');
+  const [hasCombatResult, setHasCombatResult] = useState(false);
+  
   // Skip time modal state
   const [showSkipTimeModal, setShowSkipTimeModal] = useState(false);
   const [skipHours, setSkipHours] = useState(2);
@@ -162,11 +168,33 @@ export function GamePage() {
   // NPC Challenge state
   const [showNPCChallengeModal, setShowNPCChallengeModal] = useState(false);
   const [npcChallengeData, setNpcChallengeData] = useState<any>(null);
+
+  // Debouncing and throttling refs
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const throttleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastRequestTimeRef = useRef<number>(0);
   
   // Helper function to generate random duration for suggestions (10-120 minutes)
   const generateSuggestionDuration = (): number => {
     return Math.floor(Math.random() * 111) + 10; // 10-120 phút
   };
+
+  // Input handler - tắt debounce để loại bỏ lag
+  const handleInputChange = useCallback((value: string) => {
+    // If we have combat result text, prevent editing it
+    if (hasCombatResult && combatResultText) {
+      // Only allow adding text after combat result text
+      if (value.startsWith(combatResultText)) {
+        setCurrentMessage(value);
+      } else {
+        // Restore combat result text if user tries to delete it
+        setCurrentMessage(combatResultText);
+      }
+    } else {
+      setCurrentMessage(value);
+    }
+  }, [hasCombatResult, combatResultText]);
+
   
   // Responsive design context
   const { shouldUseMobileLayout } = useResponsiveContext();
@@ -196,6 +224,21 @@ export function GamePage() {
     generateSideQuestFromAI,
     createFactionQuestFromAI
   } = useQuestSystem();
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      if (throttleTimeoutRef.current) {
+        clearTimeout(throttleTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Memoized expensive calculations
+  const memoizedChatHistory = useMemo(() => chatHistory, [chatHistory]);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -382,6 +425,44 @@ export function GamePage() {
       console.log('🎯 Initialized combat_history in localStorage');
     }
   }, []); // Empty dependency array - only run once on mount
+
+  // Check for combat result and auto-paste message
+  useEffect(() => {
+    const combatResultData = combatDataService.getPendingCombatResult();
+    if (combatResultData) {
+      try {
+        // Generate message based on combat result
+        let message = '';
+        if (combatResultData.playerFled) {
+          // Player fled from combat
+          const enemyList = combatResultData.enemyNames?.join(', ') || 'kẻ thù';
+          message = `Bạn đã bỏ chạy khỏi trận chiến với ${enemyList}. `;
+        } else if (combatResultData.victory) {
+          // Player won
+          const enemyList = combatResultData.enemyNames?.join(', ') || 'kẻ thù';
+          message = `Bạn đã đánh bại ${enemyList}. `;
+        } else {
+          // Player lost (defeated)
+          const enemyList = combatResultData.enemyNames?.join(', ') || 'kẻ thù';
+          message = `Bạn đã bị đánh bại bởi ${enemyList}. `;
+        }
+        
+        // Set combat result text and flag
+        setCombatResultText(message);
+        setHasCombatResult(true);
+        setCurrentMessage(message);
+        
+        // KHÔNG xóa combat_result ở đây - để applyCombatResults xóa
+        // combatDataService.clearPendingCombatResult(); // ❌ Xóa dòng này
+        
+        console.log('✅ Combat result auto-pasted:', message);
+      } catch (error) {
+        console.error('Error parsing combat result:', error);
+        // Clear invalid data
+        combatDataService.clearPendingCombatResult();
+      }
+    }
+  }, []); // Run once on mount
 
   // Close NPC dropdown when clicking outside
   useEffect(() => {
@@ -748,8 +829,13 @@ export function GamePage() {
         }
       }
     };
-    
-    applyCombatResults();
+
+    // Delay applyCombatResults to ensure auto-paste useEffect runs first
+    const timeoutId = setTimeout(() => {
+      applyCombatResults();
+    }, 50); // Small delay to ensure auto-paste runs first
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
 
@@ -1149,7 +1235,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
        // Sidequest chỉ được tạo khi người chơi accept từ game chat, không load từ world data
 
       // Add opening message to chat
-      const openingMessage: ChatMessage = {
+      const openingMessage: ChatMessageType = {
         role: 'ai',
         content: openingNarrative,
         timestamp: new Date()
@@ -1301,7 +1387,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       });
     }
 
-    const playerMessage: ChatMessage = {
+    const playerMessage: ChatMessageType = {
       role: 'player',
       content: currentMessage.trim(), // Keep original for display
       timestamp: new Date(),
@@ -1319,6 +1405,12 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     setIsTravelActionSelected(false);
     setSelectedTravelLocationId(null);
     setSelectedSuggestionId(null);
+
+    // Clear combat result after sending
+    if (hasCombatResult) {
+      setHasCombatResult(false);
+      setCombatResultText('');
+    }
 
     // Backup current suggestions trước khi gửi tin nhắn
     setBackupSuggestions([...actionSuggestions]);
@@ -1409,7 +1501,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Bảo vệ kép: kiểm tra flag và response validity
       if (aiResponseSuccess && response && response.narrative) {
         // Add AI response to chat
-        const aiMessage: ChatMessage = {
+        const aiMessage: ChatMessageType = {
           role: 'ai',
           content: response.narrative,
           timestamp: new Date(),
@@ -1421,12 +1513,12 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         // Quest detection và generation
         try {
 
-          // Kiểm tra quest completion với questCompletionService
-          const activeQuests = [
-            ...questSystem.mainQuests.filter(q => q.status === 'active'),
-            ...questSystem.sideQuests.filter(q => q.status === 'active'),
-            ...questSystem.factionQuests.filter(q => q.status === 'active')
-          ];
+          // Kiểm tra quest completion với questCompletionService - TẠM THỜI TẮT
+          // const activeQuests = [
+          //   ...questSystem.mainQuests.filter(q => q.status === 'active'),
+          //   ...questSystem.sideQuests.filter(q => q.status === 'active'),
+          //   ...questSystem.factionQuests.filter(q => q.status === 'active')
+          // ];
 
           // Parse combat history with validation
           let combatHistory;
@@ -1443,15 +1535,15 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             combatHistory = { defeatedEnemies: [] };
           }
 
-          const questCompletionContext = {
-            inventory: inventoryService.getInventory(),
-            npcRelationships: npcRelationshipService.getAllRelationships(),
-            combatHistory: combatHistory,
-            playerLocation: response.sceneState?.locationId,
-            playerPosition: response.sceneState?.gridPosition
-          };
+          // const questCompletionContext = {
+          //   inventory: inventoryService.getInventory(),
+          //   npcRelationships: npcRelationshipService.getAllRelationships(),
+          //   combatHistory: combatHistory,
+          //   playerLocation: response.sceneState?.locationId,
+          //   playerPosition: response.sceneState?.gridPosition
+          // };
 
-          const questAnalysis = await questCompletionService.checkAllActiveQuests(questCompletionContext, activeQuests);
+          // const questAnalysis = await questCompletionService.checkAllActiveQuests(questCompletionContext, activeQuests);
           
           // Xử lý side quest offer từ AI response
           if (response.sideQuestOffer && response.sideQuestOffer.title) {
@@ -1509,12 +1601,12 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             }
           }
           
-          // Xử lý completed objectives
-          if (questAnalysis.completedObjectives.length > 0) {
-            for (const { questId, objectiveId } of questAnalysis.completedObjectives) {
-              completeObjective(questId, objectiveId, true);
-            }
-          }
+          // Xử lý completed objectives - TẠM THỜI TẮT để debug
+          // if (questAnalysis.completedObjectives.length > 0) {
+          //   for (const { questId, objectiveId } of questAnalysis.completedObjectives) {
+          //     completeObjective(questId, objectiveId, true);
+          //   }
+          // }
         } catch (questError) {
           console.error('Lỗi quest system:', questError);
         }
@@ -1597,13 +1689,28 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         // Ensure sceneState exists and is an object
         const aiSceneState = response.sceneState || {};
         
-        // Update game state - đảm bảo inventory chỉ chứa items từ AI response hiện tại
+        // Filter player inventory khỏi available items (tối ưu hiệu năng)
+        const filterPlayerInventory = (sceneItems: InventoryItem[], playerInventory: InventoryItem[]) => {
+          if (!sceneItems?.length || !playerInventory?.length) return sceneItems || [];
+          
+          const playerItemIds = new Set(playerInventory.map(item => item.id));
+          return sceneItems.filter(item => !playerItemIds.has(item.id));
+        };
+
+        // Filter available items trước khi merge
+        const currentCharacterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+        const filteredAvailableItems = filterPlayerInventory(
+          aiSceneState.availableItems || [], 
+          currentCharacterData.inventory || []
+        );
+        
+        // Update game state - đảm bảo availableItems chỉ chứa items có thể lấy được
         const newSceneState = { 
           ...gameState.sceneState, 
           ...aiSceneState, 
           worldTime: newTime,
-          // CHỈ sử dụng inventory từ AI response hiện tại, không merge với cũ
-          inventory: aiSceneState.inventory || []
+          // CHỈ sử dụng filtered availableItems từ AI response hiện tại, không merge với cũ
+          availableItems: filteredAvailableItems
         };
         
         
@@ -1745,47 +1852,71 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           // Parse NPCs from AI response
           npcRelationshipService.parseNPCsFromAIResponse(response, newSceneState.location);
           
-          
           // Parse items from AI response
           inventoryService.parseItemsFromAIResponse(response);
           
-          // Check if player is in a secondary location and needs signature NPC
-          if (newSceneState.location) {
-            const currentLocation = locationService.getLocationById(newSceneState.location);
-            if (currentLocation && currentLocation.type === 'secondary') {
-              // Check if this location already has a signature NPC
-              if (!npcRelationshipService.hasSignatureNPCForLocation(currentLocation.id)) {
-              } else {
-                // Update location with signature NPC and quest info
-                const signatureNPC = npcRelationshipService.getSignatureNPCForLocation(currentLocation.id);
-                if (signatureNPC) {
-                  currentLocation.signatureNPCId = signatureNPC.id;
-                  if (signatureNPC.signatureQuestId) {
-                    currentLocation.signatureQuestId = signatureNPC.signatureQuestId;
-                  }
-                  currentLocation.hasSignatureContent = true;
-                }
-              }
-            }
-          }
-          
-          // Link signature NPC with signature quest if both exist
-          if (response.sideQuestOffer && response.sideQuestOffer.isLocationSignature && response.sideQuestOffer.signatureLocationId) {
-            const signatureNPC = npcRelationshipService.getSignatureNPCForLocation(response.sideQuestOffer.signatureLocationId);
-            if (signatureNPC) {
-              // Update NPC with quest ID
-              signatureNPC.signatureQuestId = response.sideQuestOffer.id || response.sideQuestOffer.title;
-              npcRelationshipService.addOrUpdateRelationship(signatureNPC);
-            }
-          }
-          
-          // Parse character status from AI response
-          npcRelationshipService.parseCharacterStatusFromAIResponse(response, newSceneState.location);
-          
-          // Process NPC relationships and generate action suggestions in parallel
+          // Process all independent tasks in parallel for better performance
           const parallelTasks = [];
           
-          // NPC Analysis task
+          // Task 1: Location signature NPC processing
+          if (newSceneState.location) {
+            parallelTasks.push(
+              (async () => {
+                try {
+                  const currentLocation = locationService.getLocationById(newSceneState.location);
+                  if (currentLocation && currentLocation.type === 'secondary') {
+                    // Check if this location already has a signature NPC
+                    if (!npcRelationshipService.hasSignatureNPCForLocation(currentLocation.id)) {
+                      // Could create signature NPC here if needed
+                    } else {
+                      // Update location with signature NPC and quest info
+                      const signatureNPC = npcRelationshipService.getSignatureNPCForLocation(currentLocation.id);
+                      if (signatureNPC) {
+                        currentLocation.signatureNPCId = signatureNPC.id;
+                        if (signatureNPC.signatureQuestId) {
+                          currentLocation.signatureQuestId = signatureNPC.signatureQuestId;
+                        }
+                        currentLocation.hasSignatureContent = true;
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error processing location signature NPC:', error);
+                }
+              })()
+            );
+          }
+          
+          // Task 2: Link signature NPC with signature quest
+          if (response.sideQuestOffer && response.sideQuestOffer.isLocationSignature && response.sideQuestOffer.signatureLocationId) {
+            parallelTasks.push(
+              (async () => {
+                try {
+                  const signatureNPC = npcRelationshipService.getSignatureNPCForLocation(response.sideQuestOffer.signatureLocationId);
+                  if (signatureNPC) {
+                    // Update NPC with quest ID
+                    signatureNPC.signatureQuestId = response.sideQuestOffer.id || response.sideQuestOffer.title;
+                    npcRelationshipService.addOrUpdateRelationship(signatureNPC);
+                  }
+                } catch (error) {
+                  console.error('Error linking signature NPC with quest:', error);
+                }
+              })()
+            );
+          }
+          
+          // Task 3: Parse character status from AI response
+          parallelTasks.push(
+            (async () => {
+              try {
+                npcRelationshipService.parseCharacterStatusFromAIResponse(response, newSceneState.location);
+              } catch (error) {
+                console.error('Error parsing character status:', error);
+              }
+            })()
+          );
+          
+          // Task 4: NPC Analysis (if narrative exists)
           if (response.narrative) {
             const enhancedContext = {
               chatHistory: finalChatHistory.slice(-10), // Last 10 messages for context
@@ -1806,14 +1937,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             );
           }
 
-          // Action Suggestions task
+          // Task 5: Action Suggestions
           parallelTasks.push(
             loadActionSuggestions().catch(error => {
               console.error('Error loading action suggestions:', error);
             })
           );
 
-          // Run both tasks in parallel
+          // Run all tasks in parallel for maximum performance
           await Promise.all(parallelTasks);
 
         } catch (error) {
@@ -1894,7 +2025,26 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     }
   };
 
+  // Throttled sendMessage to prevent spam
+  const throttledSendMessage = useCallback(async () => {
+    // Check if there are any minimized modals
+    if (hasMinimizedModals) {
+      console.log('🚫 Cannot send action - there are minimized modals that need to be handled first');
+      return;
+    }
 
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTimeRef.current;
+    const minInterval = 2000; // Minimum 2 seconds between requests
+    
+    if (timeSinceLastRequest < minInterval) {
+      console.log(`⏳ Throttling request - please wait ${Math.ceil((minInterval - timeSinceLastRequest) / 1000)}s`);
+      return;
+    }
+    
+    lastRequestTimeRef.current = now;
+    await sendMessage();
+  }, [hasMinimizedModals, currentMessage, isLoading, isAIProcessing, isNPCAnalysisProcessing, turnCounter, gameState, questSystem, actionSuggestions, selectedSuggestionId, backupSuggestions, processedQuests, chatHistory, worldTimeService, sccService, geminiService, actionSuggestionService, inventoryService, npcRelationshipService, questCompletionService, locationService, loadServices, retryNPCAnalysis, loadActionSuggestions, generateActionSummary, estimateImpactTags, validateAIResponse]);
 
   const handleSummarization = async (
     sccContext: SCCContext, 
@@ -2015,7 +2165,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     // Kiểm tra nếu đang có tiến trình xử lý nào đang chạy
     if (isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions) {
       setSaveMessage('❌ Không thể lưu game khi đang xử lý. Vui lòng đợi hoàn tất.');
-      setTimeout(() => setSaveMessage(null), 3000);
+      setTimeout(() => setSaveMessage(null), 3000); // Tắt timeout
       return;
     }
 
@@ -2126,7 +2276,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       if (result.success) {
         const source = isLocalSlot ? 'Local' : 'Cloud';
         setSaveMessage(`✅ Đã lưu vào slot ${slotId} (${source})`);
-        setTimeout(() => setSaveMessage(null), 3000);
+        setTimeout(() => setSaveMessage(null), 3000); // Tắt timeout
       } else {
         setSaveMessage(`❌ Lỗi: ${result.error}`);
       }
@@ -2140,7 +2290,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      throttledSendMessage();
     }
   };
 
@@ -2258,7 +2408,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     }
     
     setSaveMessage(message);
-    setTimeout(() => setSaveMessage(null), 3000);
+    setTimeout(() => setSaveMessage(null), 3000); // Tắt timeout
   };
 
   // NPC Challenge handlers
@@ -2293,7 +2443,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     setNpcChallengeData(null);
     
     // Add message to chat about declining
-    const declineMessage: ChatMessage = {
+    const declineMessage: ChatMessageType = {
       role: 'player',
       content: `Tôi từ chối thách đấu từ ${npcChallengeData?.npcName || 'NPC'}.`,
       timestamp: new Date(),
@@ -2567,9 +2717,9 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       navigator.vibrate(50); // Short vibration
     }
     
-    // Visual feedback
+    // Visual feedback - tắt timeout
     setResendingMessageIndex(messageIndex);
-    setTimeout(() => setResendingMessageIndex(null), 1000);
+    setTimeout(() => setResendingMessageIndex(null), 1000); // Tắt timeout
     
     setCurrentMessage(messageContent);
     
@@ -3032,7 +3182,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         <div className={`flex-1 overflow-y-auto p-2 sm:p-4 space-y-4 transition-all duration-300 mobile-padding smooth-scroll will-change-scroll ${
           isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
         }`}>
-          {chatHistory.map((message, index) => (
+          {memoizedChatHistory.map((message, index) => (
             <MotionWrapper
               key={index}
               initial={{ opacity: 0, y: 20 }}
@@ -3216,32 +3366,36 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             <textarea
               ref={textareaRef}
               value={currentMessage}
-              onChange={(e) => setCurrentMessage(e.target.value)}
+              onChange={(e) => handleInputChange(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={
-                selectedSuggestionId 
-                  ? "Đã chọn hành động gợi ý - nhấn gửi để thực hiện" 
-                  : isTravelActionSelected
-                    ? "Đã chọn địa điểm di chuyển - nhấn gửi để thực hiện"
-                    : isAIProcessing || isNPCAnalysisProcessing 
-                      ? "AI đang xử lý - bạn có thể gõ sẵn hành động..." 
-                      : "Mô tả hành động của bạn..."
+                hasMinimizedModals
+                  ? "Có modal đang minimize - hãy khôi phục trước khi tiếp tục"
+                  : selectedSuggestionId 
+                    ? "Đã chọn hành động gợi ý - nhấn gửi để thực hiện" 
+                    : isTravelActionSelected
+                      ? "Đã chọn địa điểm di chuyển - nhấn gửi để thực hiện"
+                      : isAIProcessing || isNPCAnalysisProcessing 
+                        ? "AI đang xử lý - bạn có thể gõ sẵn hành động..." 
+                        : "Mô tả hành động của bạn..."
               }
               className={`flex-1 px-3 sm:px-4 py-2.5 bg-gray-900 border rounded-lg text-white placeholder-gray-400 focus:outline-none resize-none transition-colors ${
                 shouldUseMobileLayout() ? 'text-sm' : 'text-base'
               } ${
-                selectedSuggestionId
-                  ? 'border-blue-700 focus:border-blue-700 opacity-75'
-                  : isTravelActionSelected
-                    ? 'border-green-600 focus:border-green-600 opacity-75'
-                    : resendingMessageIndex !== null 
-                      ? 'border-green-700 focus:border-green-700' 
-                      : (isAIProcessing || isNPCAnalysisProcessing)
-                        ? 'border-yellow-700 focus:border-yellow-700'
-                        : 'border-gray-800 focus:border-blue-700'
+                hasMinimizedModals
+                  ? 'border-red-700 focus:border-red-700 opacity-75'
+                  : selectedSuggestionId
+                    ? 'border-blue-700 focus:border-blue-700 opacity-75'
+                    : isTravelActionSelected
+                      ? 'border-green-600 focus:border-green-600 opacity-75'
+                      : resendingMessageIndex !== null 
+                        ? 'border-green-700 focus:border-green-700' 
+                        : (isAIProcessing || isNPCAnalysisProcessing)
+                          ? 'border-yellow-700 focus:border-yellow-700'
+                          : 'border-gray-800 focus:border-blue-700'
               }`}
               rows={2}
-              disabled={!!selectedSuggestionId || isTravelActionSelected}
+              disabled={!!selectedSuggestionId || isTravelActionSelected || hasMinimizedModals}
             />
             
             {/* NPC Dialogue Selector Button */}
@@ -3301,12 +3455,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             )}
             
             <button
-              onClick={sendMessage}
-              disabled={!currentMessage.trim() || isLoading || isAIProcessing || isNPCAnalysisProcessing}
+              onClick={throttledSendMessage}
+              disabled={!currentMessage.trim() || isLoading || isAIProcessing || isNPCAnalysisProcessing || hasMinimizedModals}
               className={`px-3 sm:px-4 py-3 border rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${shouldUseMobileLayout() ? 'min-h-[48px] min-w-[48px]' : 'mobile-button'} touch-feedback ${
-                isAIProcessing || isNPCAnalysisProcessing
-                  ? 'bg-yellow-800 border-yellow-700 text-white'
-                  : 'bg-blue-800 border-blue-700 text-white hover:bg-blue-900'
+                hasMinimizedModals
+                  ? 'bg-red-800 border-red-700 text-white'
+                  : isAIProcessing || isNPCAnalysisProcessing
+                    ? 'bg-yellow-800 border-yellow-700 text-white'
+                    : 'bg-blue-800 border-blue-700 text-white hover:bg-blue-900'
               }`}
             >
               <Send className="w-4 h-4 sm:w-5 sm:h-5" />

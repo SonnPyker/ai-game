@@ -3,15 +3,19 @@ import { MotionWrapper, MotionButton } from '../MotionWrapper';
 import { 
   Sword, 
   Shield, 
-  Zap, 
   Package, 
   ArrowRight, 
-  Target,
   RotateCcw,
   AlertTriangle,
-  X
+  X,
+  ChevronDown,
+  ChevronUp,
+  Menu,
+  Target,
+  Zap
 } from 'lucide-react';
 import { Combatant } from '../../services/combatService';
+import { useResponsiveContext } from '../../contexts/ResponsiveContext';
 
 interface ActionMenuProps {
   combatant: Combatant | null;
@@ -25,6 +29,8 @@ interface ActionMenuProps {
   isProcessing: boolean;
   selectedTarget?: string | null;
   onSelectTarget: (targetId: string | null) => void;
+  hasPerformedAction?: boolean;
+  canEndTurn?: boolean;
 }
 
 export function ActionMenu({
@@ -38,18 +44,33 @@ export function ActionMenu({
   onRun,
   isProcessing,
   selectedTarget,
-  onSelectTarget
+  onSelectTarget,
+  hasPerformedAction = false
 }: ActionMenuProps) {
   // All hooks must be called at the top level
-  const [showTargetSelection, setShowTargetSelection] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{
-    type: 'attack';
-    attackIndex: number;
-  } | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   
   // Touch gesture refs
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const longPressRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Use responsive context instead of window width detection
+  const { getEffectiveUIMode } = useResponsiveContext();
+  const isMobileMode = getEffectiveUIMode() === 'mobile';
+  
+  // Auto-collapse only on mobile mode by default
+  useEffect(() => {
+    if (isMobileMode) {
+      setIsCollapsed(true);
+    } else {
+      setIsCollapsed(false);
+    }
+  }, [isMobileMode]);
+
+  // Toggle collapse function
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   // Cleanup on unmount
   useEffect(() => {
@@ -71,7 +92,7 @@ export function ActionMenu({
   }
 
   const handleAttack = (attackIndex: number) => {
-    if (enemies.length === 0 || isProcessing) return;
+    if (enemies.length === 0 || isProcessing || hasPerformedAction) return;
     
     // Add immediate visual feedback
     const button = document.querySelector(`[data-attack-index="${attackIndex}"]`) as HTMLElement;
@@ -94,30 +115,16 @@ export function ActionMenu({
       }, 2000);
     }
     
-    if (enemies.length === 1) {
-      // Only one enemy, attack directly
-      onAttack(attackIndex, enemies[0].id);
-    } else {
-      // Multiple enemies, show target selection
-      setPendingAction({ type: 'attack', attackIndex });
-      setShowTargetSelection(true);
+    if (!selectedTarget) {
+      // No target selected, show message
+      console.log('Please select a target first by clicking on an enemy card');
+      return;
     }
+    
+    // Execute attack with selected target
+    onAttack(attackIndex, selectedTarget);
   };
 
-  const handleTargetSelect = (targetId: string) => {
-    if (pendingAction?.type === 'attack') {
-      onAttack(pendingAction.attackIndex, targetId);
-    }
-    setPendingAction(null);
-    setShowTargetSelection(false);
-    onSelectTarget(null);
-  };
-
-  const handleCancelTargetSelection = () => {
-    setPendingAction(null);
-    setShowTargetSelection(false);
-    onSelectTarget(null);
-  };
 
   // Touch gesture handlers
   const handleTouchStart = (e: React.TouchEvent, attackIndex: number) => {
@@ -182,8 +189,8 @@ export function ActionMenu({
   const getActionButtonClass = (isDisabled: boolean = false) => {
     const baseClass = "flex items-center justify-center space-x-2 p-3 sm:p-4 rounded-lg transition-all duration-200 font-medium text-sm sm:text-base";
     
-    if (isDisabled) {
-      return `${baseClass} bg-gray-700 text-gray-500 cursor-not-allowed`;
+    if (isDisabled || hasPerformedAction) {
+      return `${baseClass} bg-gray-700 text-gray-500 cursor-not-allowed opacity-50`;
     }
     
     return `${baseClass} bg-gray-700 hover:bg-gray-600 text-white hover:shadow-lg transform hover:scale-105`;
@@ -191,59 +198,40 @@ export function ActionMenu({
 
   return (
     <div className="space-y-4">
-      {/* Target Selection Modal */}
-      {showTargetSelection && (
-        <MotionWrapper
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={handleCancelTargetSelection}
-        >
-          <MotionWrapper
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-gray-900 rounded-lg shadow-2xl w-full max-w-md p-6"
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      {/* Action Menu Header with Toggle (only on mobile) */}
+      {isMobileMode && (
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white flex items-center">
+            <Menu className="w-5 h-5 mr-2" />
+            Hành Động
+          </h3>
+          <button
+            onClick={toggleCollapse}
+            className="p-2 hover:bg-gray-700/50 rounded-lg transition-colors"
+            title={isCollapsed ? "Mở rộng menu hành động" : "Thu gọn menu hành động"}
           >
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <Target className="w-5 h-5 mr-2" />
-              Chọn Mục Tiêu
-            </h3>
-            
-            <div className="space-y-2">
-              {enemies.map((enemy) => (
-                <button
-                  key={enemy.id}
-                  onClick={() => handleTargetSelect(enemy.id)}
-                  className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-white">{enemy.name}</div>
-                      <div className="text-sm text-gray-400">
-                        HP: {enemy.health.current}/{enemy.health.max} | AC: {enemy.armorClass}
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
-                  </div>
-                </button>
-              ))}
-            </div>
-            
-            <button
-              onClick={handleCancelTargetSelection}
-              className="w-full mt-4 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
-            >
-              Hủy
-            </button>
-          </MotionWrapper>
-        </MotionWrapper>
+            {isCollapsed ? (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+        </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+
+      {/* Action Buttons - Collapsible only on mobile */}
+      {isMobileMode ? (
+        <MotionWrapper
+          initial={false}
+          animate={{ 
+            height: isCollapsed ? 0 : 'auto',
+            opacity: isCollapsed ? 0 : 1
+          }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="overflow-hidden"
+        >
+          <div className="grid grid-cols-1 gap-2">
         {/* Attack Actions */}
         {combatant.attacks.map((attack, index) => (
           <MotionButton
@@ -253,7 +241,7 @@ export function ActionMenu({
             onTouchStart={(e: React.TouchEvent) => handleTouchStart(e, index)}
             onTouchEnd={(e: React.TouchEvent) => handleTouchEnd(e, index)}
             onTouchCancel={handleTouchCancel}
-            disabled={isProcessing || enemies.length === 0}
+            disabled={isProcessing || enemies.length === 0 || hasPerformedAction}
             className={getActionButtonClass(isProcessing || enemies.length === 0)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -271,7 +259,7 @@ export function ActionMenu({
         {/* Defend Action */}
         <MotionButton
           onClick={onDefend}
-          disabled={isProcessing}
+          disabled={isProcessing || hasPerformedAction}
           className={getActionButtonClass(isProcessing)}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -288,10 +276,13 @@ export function ActionMenu({
         {/* Inventory Action - Changed from Use Item to Inventory */}
         <MotionButton
           onClick={onInventory}
-          disabled={isProcessing}
+          disabled={isProcessing || hasPerformedAction}
           className={`
             flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium
-            bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg transform hover:scale-105
+            ${hasPerformedAction 
+              ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50' 
+              : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg transform hover:scale-105'
+            }
             ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
           `}
           whileHover={{ scale: 1.02 }}
@@ -326,8 +317,138 @@ export function ActionMenu({
             </div>
           </div>
         </MotionButton>
-      </div>
+          </div>
+        </MotionWrapper>
+      ) : (
+        /* Desktop Layout - Always visible */
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+          {/* Attack Actions */}
+          {combatant.attacks.map((attack, index) => (
+            <MotionButton
+              key={index}
+              data-attack-index={index}
+              onClick={() => handleAttack(index)}
+              onTouchStart={(e: React.TouchEvent) => handleTouchStart(e, index)}
+              onTouchEnd={(e: React.TouchEvent) => handleTouchEnd(e, index)}
+              onTouchCancel={handleTouchCancel}
+              disabled={isProcessing || enemies.length === 0 || hasPerformedAction}
+              className={getActionButtonClass(isProcessing || enemies.length === 0)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Sword className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">{attack.name}</div>
+                <div className="text-xs text-gray-400">
+                  +{attack.attackBonus} to hit, {attack.damage}
+                </div>
+              </div>
+            </MotionButton>
+          ))}
 
+          {/* Defend Action */}
+          <MotionButton
+            onClick={onDefend}
+            disabled={isProcessing || hasPerformedAction}
+            className={getActionButtonClass(isProcessing)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Shield className="w-5 h-5" />
+            <div className="text-left">
+              <div className="font-medium">Phòng Thủ</div>
+              <div className="text-xs text-gray-400">
+                Giảm 50% sát thương nhận vào
+              </div>
+            </div>
+          </MotionButton>
+
+          {/* Inventory Action */}
+          <MotionButton
+            onClick={onInventory}
+            disabled={isProcessing || hasPerformedAction}
+            className={`
+              flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium
+              ${hasPerformedAction 
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg transform hover:scale-105'
+              }
+              ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+            `}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Package className="w-5 h-5" />
+            <div className="text-left">
+              <div className="font-medium">Túi Đồ</div>
+              <div className="text-xs text-blue-200">
+                Mở túi đồ
+              </div>
+            </div>
+          </MotionButton>
+
+          {/* Run Action */}
+          <MotionButton
+            onClick={onRun}
+            disabled={isProcessing}
+            className={`
+              flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium
+              bg-red-700 hover:bg-red-600 text-white hover:shadow-lg transform hover:scale-105
+              ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+            `}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <ArrowRight className="w-5 h-5" />
+            <div className="text-left">
+              <div className="font-medium">Chạy Trốn</div>
+              <div className="text-xs text-gray-300">
+                Thoát khỏi combat
+              </div>
+            </div>
+          </MotionButton>
+        </div>
+      )}
+
+      {/* Quick Actions Bar - Only when collapsed on mobile */}
+      {isMobileMode && isCollapsed && (
+        <MotionWrapper
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gray-800/50 rounded-lg p-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-300">Hành động nhanh:</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {/* Quick Attack Button */}
+              {combatant.attacks.length > 0 && (
+                <button
+                  onClick={() => handleAttack(0)}
+                  disabled={isProcessing || enemies.length === 0 || hasPerformedAction}
+                  className="flex items-center space-x-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors text-sm"
+                >
+                  <Sword className="w-4 h-4" />
+                  <span>{combatant.attacks[0].name}</span>
+                </button>
+              )}
+              
+              {/* Quick Defend Button */}
+              <button
+                onClick={onDefend}
+                disabled={isProcessing || hasPerformedAction}
+                className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors text-sm"
+              >
+                <Shield className="w-4 h-4" />
+                <span>Phòng thủ</span>
+              </button>
+            </div>
+          </div>
+        </MotionWrapper>
+      )}
+
+      {/* Status Indicators - Always Visible */}
       {/* Selected Target Display */}
       {selectedTarget && (
         <MotionWrapper
@@ -370,6 +491,7 @@ export function ActionMenu({
           </div>
         </MotionWrapper>
       )}
+
 
       {/* No Enemies Warning */}
       {enemies.length === 0 && (

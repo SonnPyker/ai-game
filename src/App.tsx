@@ -3,8 +3,8 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Suspense, lazy } from 'react';
 import { Layout } from './components/Layout';
 import { ResponsiveProvider } from './contexts/ResponsiveContext';
+import { MinimizedModalProvider } from './contexts/MinimizedModalContext';
 import { AnimationController } from './components/AnimationController';
-// import { useRefreshHandler } from './hooks/useRefreshHandler';
 
 // Lazy load các pages lớn để giảm kích thước bundle chính
 const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })));
@@ -17,13 +17,12 @@ const CombatPage = lazy(() => import('./pages/CombatPage').then(module => ({ def
 const WorldBuilder = lazy(() => import('./components/WorldBuilder/WorldBuilder').then(module => ({ default: module.WorldBuilder })));
 
 function App() {
-  // Sử dụng hook để xử lý refresh (tạm thời tắt để tránh xung đột với navigation)
-  // useRefreshHandler();
 
   return (
     <ResponsiveProvider>
-      <AnimationController />
-      <Layout>
+      <MinimizedModalProvider>
+        <AnimationController />
+        <Layout>
         <Suspense fallback={
           <div className="min-h-screen bg-black flex items-center justify-center">
             <div className="glass-effect p-8 rounded-2xl text-center">
@@ -45,6 +44,7 @@ function App() {
         </Suspense>
         <SpeedInsights />
       </Layout>
+      </MinimizedModalProvider>
     </ResponsiveProvider>
   );
 }

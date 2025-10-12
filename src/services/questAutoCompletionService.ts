@@ -1,6 +1,7 @@
 import { questCompletionService } from './questCompletionService';
 import { inventoryService } from './inventoryService';
 import { npcRelationshipService } from './npcRelationshipService';
+import { locationService } from './locationService';
 import { QuestProgress } from '../types';
 
 class QuestAutoCompletionService {
@@ -47,7 +48,16 @@ class QuestAutoCompletionService {
           return { defeatedEnemies: [] };
         }
       })(),
-      playerLocation: JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId,
+      playerLocation: (() => {
+        try {
+          const playerLocation = JSON.parse(localStorage.getItem('player_location') || '{}');
+          const currentLocation = locationService.getLocationById(playerLocation.currentLocationId);
+          return currentLocation ? currentLocation.name : playerLocation.currentLocationId;
+        } catch (error) {
+          console.error('Error getting location name:', error);
+          return JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId;
+        }
+      })(),
       playerPosition: JSON.parse(localStorage.getItem('player_location') || '{}').gridPosition
     };
 
@@ -77,7 +87,16 @@ class QuestAutoCompletionService {
           return { defeatedEnemies: [] };
         }
       })(),
-      playerLocation: JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId,
+      playerLocation: (() => {
+        try {
+          const playerLocation = JSON.parse(localStorage.getItem('player_location') || '{}');
+          const currentLocation = locationService.getLocationById(playerLocation.currentLocationId);
+          return currentLocation ? currentLocation.name : playerLocation.currentLocationId;
+        } catch (error) {
+          console.error('Error getting location name:', error);
+          return JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId;
+        }
+      })(),
       playerPosition: JSON.parse(localStorage.getItem('player_location') || '{}').gridPosition
     };
 
@@ -107,7 +126,16 @@ class QuestAutoCompletionService {
           return { defeatedEnemies: [] };
         }
       })(),
-      playerLocation: JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId,
+      playerLocation: (() => {
+        try {
+          const playerLocation = JSON.parse(localStorage.getItem('player_location') || '{}');
+          const currentLocation = locationService.getLocationById(playerLocation.currentLocationId);
+          return currentLocation ? currentLocation.name : playerLocation.currentLocationId;
+        } catch (error) {
+          console.error('Error getting location name:', error);
+          return JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId;
+        }
+      })(),
       playerPosition: JSON.parse(localStorage.getItem('player_location') || '{}').gridPosition
     };
 

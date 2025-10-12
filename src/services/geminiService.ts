@@ -2037,6 +2037,13 @@ QUAN TRỌNG VỀ HÀNH ĐỘNG NGƯỜI CHƠI:
 - Nếu hành động của người chơi thay đổi tình huống, hãy phản ánh sự thay đổi đó ngay lập tức
 - Luôn bắt đầu narrative bằng việc phản hồi hành động của người chơi trước, sau đó mới mở rộng câu chuyện
 
+⚠️ QUAN TRỌNG VỀ TÍNH TỰ NHIÊN TRONG STORYTELLING:
+- Response phải nghe như một câu chuyện tự nhiên, KHÔNG như game instructions hay quest descriptions
+- KHÔNG sử dụng ngôn ngữ game như "nhiệm vụ", "mục tiêu", "quest", "objectives" trừ khi thực sự cần thiết
+- Thay vì nói "Bạn cần làm X", hãy mô tả tình huống và để người chơi tự hiểu
+- Tập trung vào storytelling và immersion, không phải game mechanics
+- Nếu có quest context, tích hợp nó một cách tinh tế vào narrative
+
 QUAN TRỌNG VỀ CẢNH 18+:
 - Khi người chơi thực hiện hành động 18+, NPCs PHẢI phản ứng theo yêu cầu của người chơi
 - KHÔNG được né tránh, từ chối, hoặc chuyển hướng khỏi hành động 18+ của người chơi nhưng vẫn phải phụ thuộc vào chỉ số quan hệ và arousal của npc đó
@@ -2374,6 +2381,15 @@ QUEST SYSTEM RULES:
 - TUYỆT ĐỐI KHÔNG được nói "điều này không liên quan đến quest" hoặc tương tự
 - Nếu người chơi làm gì đó không liên quan quest, hãy tìm cách tích hợp nó vào câu chuyện một cách sáng tạo
 
+⚠️ QUAN TRỌNG VỀ TÍNH TỰ NHIÊN TRONG RESPONSE:
+- ƯU TIÊN: Tập trung vào hành động và tình huống hiện tại của người chơi, KHÔNG phải quest
+- KHÔNG được làm cho response nghe như "game quest" - hãy kể như một câu chuyện tự nhiên
+- KHÔNG nhắc đến "nhiệm vụ", "mục tiêu", "quest", "objectives" trừ khi người chơi đang thực sự làm quest đó
+- Thay vì nói "Bạn cần tìm bandages cho Elena", hãy mô tả tình huống: "Elena đang cần bandages để sơ cứu"
+- Thay vì nói "Mục tiêu của bạn là...", hãy mô tả bối cảnh và để người chơi tự hiểu
+- Response phải nghe như storytelling tự nhiên, KHÔNG như game instructions
+- Nếu có quest context, hãy tích hợp nó một cách tinh tế vào narrative, không phô trương
+
 QUAN TRỌNG VỀ QUEST OBJECTIVES - 5 LOẠI CHÍNH:
 
 1. FIND_ITEM (Tìm đồ):
@@ -2527,7 +2543,7 @@ QUAN TRỌNG VỀ QUY TẮC TẠO QUEST:
     return `
 HƯỚNG DẪN VỀ VẬT PHẨM (ITEMS):
 - Khi người chơi nhận được, tìm thấy, hoặc mua vật phẩm, hãy mô tả chi tiết trong narrative
-- Thêm thông tin item vào sceneState.inventory theo format:
+- Thêm thông tin item vào sceneState.availableItems theo format:
   * name: tên vật phẩm
   * description: mô tả chi tiết
   * type: 'weapon' | 'armor' | 'consumable' | 'misc'
@@ -2581,6 +2597,41 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
 - TẠO MÔ TẢ CHI TIẾT về tác dụng và đặc điểm của item
 - VÍ DỤ TỐT: "Chìa khóa cổ", "Thuốc độc", "Bản đồ bí mật", "Đá quý ma thuật"
 - VÍ DỤ SAI: "Vật phẩm ngẫu nhiên", "Một vật phẩm hữu ích"
+
+⚠️ QUAN TRỌNG VỀ QUEST REWARDS - CẤU TRÚC JSON ĐẦY ĐỦ:
+- TẤT CẢ quest rewards PHẢI có cấu trúc JSON đầy đủ
+- Với item rewards, BẮT BUỘC phải có "items" array chứa thông tin chi tiết:
+  {
+    "type": "item",
+    "amount": 1,
+    "description": "Tên item (+số lượng)",
+    "items": [
+      {
+        "id": "unique_item_id",
+        "name": "Tên item cụ thể",
+        "description": "Mô tả chi tiết item",
+        "type": "misc|weapon|armor|consumable",
+        "rarity": "common|uncommon|rare|epic|legendary",
+        "quantity": 1,
+        "tags": ["reward", "quest", "loại_item"],
+        "icon": "emoji_phù_hợp",
+        "stats": {
+          "strength": 1,
+          "constitution": 1,
+          "intelligence": 1
+        }
+      }
+    ]
+  }
+- KHÔNG được tạo item rewards chỉ có description mà không có items array
+- Mỗi item phải có id duy nhất, name cụ thể, và thông tin đầy đủ
+
+⚠️ QUAN TRỌNG VỀ QUEST REWARDS - TUÂN THỦ NGHIÊM NGẶT:
+- KHÔNG BAO GIỜ sinh ra items từ quest rewards chưa được unlock
+- KIỂM TRA questSystem để đảm bảo quest đã unlock trước khi sinh items
+- KHÔNG sinh ra items từ main quest rewards của các act chưa unlock
+- KHÔNG sinh ra items từ side quest rewards chưa được offer hoặc completed
+- Items trong sceneState.availableItems PHẢI hợp lý với tình huống hiện tại, không phải từ quest rewards chưa unlock
 `;
   }
 
@@ -2611,6 +2662,7 @@ Quy tắc:
 - KHÔNG nhắc đến "prompt/JSON/meta".
 - QUAN TRỌNG: Sử dụng đúng ngôi kể đã được cài đặt trong WORLD (narration field). Nếu narration là "Ngôi thứ hai", hãy kể bằng "Bạn" thay vì "Anh ấy/Cô ấy". Nếu narration là "Ngôi thứ nhất", hãy kể bằng "Tôi". Nếu narration là "Ngôi thứ ba", hãy kể bằng "Anh ấy/Cô ấy".
 - Nếu hành động của người chơi vi phạm chính sách nội dung, hãy từ chối lịch sự và đề xuất hướng thay thế an toàn.
+- TUYỆT ĐỐI KHÔNG sử dụng dấu * để nhấn mạnh hoặc highlight từ ngữ trong narrative. Sử dụng ngôn ngữ tự nhiên và mô tả sinh động thay vì dấu *.
 
 LƯU Ý VỀ NGÔI KỂ:
 - Kiểm tra trường "narration" trong WORLD để xác định ngôi kể
@@ -2744,7 +2796,7 @@ ${narrativeRules}
 - CHARACTER: ${characterJson}
 - SCENARIO: ${scenarioJson}
 - SUMMARY (SCC): ${JSON.stringify(summary)}
-- SCENE_STATE: ${JSON.stringify(sceneState)} (chứa location, locationId, npcs, inventory, clocks, flags)
+- SCENE_STATE: ${JSON.stringify(sceneState)} (chứa location, locationId, npcs, availableItems, clocks, flags)
 - CHAT_DELTA (sau snapshot, ≤ ${chatDelta.length} lượt): ${JSON.stringify(chatDelta)}
 - PLAYER_ACTION: "${playerAction}"
 - GAME_TIME: ${JSON.stringify(worldTime || sceneState.worldTime || { hour: 12, minute: 0, day: 1, month: 1, year: 1 })}
@@ -2773,12 +2825,13 @@ QUAN TRỌNG VỀ OUTPUT:
 - KHÔNG thêm text giải thích
 - KHÔNG thêm comments
 - Bắt đầu bằng { và kết thúc bằng }
+- TUYỆT ĐỐI KHÔNG sử dụng dấu * trong narrative để nhấn mạnh từ ngữ
 
 ĐẦU RA (JSON, không thêm chữ khác):
 {
-  "narrative": "văn xuôi 105–170 từ (TỐI ĐA 170 TỪ), liền mạch, không bullet/emoji",
+  "narrative": "văn xuôi 105–170 từ (TỐI ĐA 170 TỪ), liền mạch, không bullet/emoji, KHÔNG sử dụng dấu *",
   "softGuidance": "1–2 câu định hướng kín đáo (có thể rỗng)",
-  "sceneState": { "các trường cần cập nhật (vị trí, NPC, manh mối, rủi ro, đồng hồ, inventory…)" },
+  "sceneState": { "các trường cần cập nhật (vị trí, NPC, manh mối, rủi ro, đồng hồ, availableItems…)" },
   "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện" },
   "sideQuestOffer": {
     "title": "tên quest phụ (chỉ có khi có cơ hội tự nhiên)",
@@ -2820,15 +2873,22 @@ QUAN TRỌNG VỀ OUTPUT:
       {
         "type": "item",
         "amount": 1,
+        "description": "Khẩu trang y tế (+1)",
         "items": [
           {
-            "name": "Vật phẩm ngẫu nhiên",
-            "description": "Một vật phẩm hữu ích",
+            "id": "medical_mask_001",
+            "name": "Khẩu trang y tế",
+            "description": "Khẩu trang y tế chất lượng cao để bảo vệ sức khỏe",
             "type": "misc",
-            "rarity": "common"
+            "rarity": "common",
+            "quantity": 1,
+            "tags": ["medical", "protection", "reward"],
+            "icon": "😷",
+            "stats": {
+              "constitution": 1
+            }
           }
-        ],
-        "description": "Vật phẩm ngẫu nhiên"
+        ]
       }
     ],
     "isLocationSignature": false,

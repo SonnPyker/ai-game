@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
 
@@ -11,19 +12,24 @@ interface MotionWrapperProps {
 /**
  * Wrapper component for framer-motion that automatically disables animations on mobile
  * Falls back to regular div when animations are disabled
+ * Supports ref forwarding for combat animations
  */
-export function MotionWrapper({ children, ...props }: MotionWrapperProps) {
-  const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
-  
-  // If animations are disabled, render regular div
-  if (!shouldUseAnimations()) {
-    return <div {...props}>{children}</div>;
+export const MotionWrapper = React.forwardRef<HTMLDivElement, MotionWrapperProps>(
+  ({ children, ...props }, ref) => {
+    const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
+    
+    // If animations are disabled, render regular div
+    if (!shouldUseAnimations()) {
+      return <div ref={ref} {...props}>{children}</div>;
+    }
+    
+    // Use motion.div with proper props when animations are enabled
+    const motionProps = getMotionProps(props);
+    return <motion.div ref={ref} {...motionProps}>{children}</motion.div>;
   }
-  
-  // Use motion.div with proper props when animations are enabled
-  const motionProps = getMotionProps(props);
-  return <motion.div {...motionProps}>{children}</motion.div>;
-}
+);
+
+MotionWrapper.displayName = 'MotionWrapper';
 
 // Convenience components for common motion elements
 export function MotionButton({ children, ...props }: MotionWrapperProps) {

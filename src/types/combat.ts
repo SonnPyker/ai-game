@@ -131,6 +131,55 @@ export interface CombatReplay {
   };
 }
 
+// Animation Types for Combat Visual Effects
+export enum CombatAnimationType {
+  DAMAGE = 'damage',
+  HEAL = 'heal',
+  MISS = 'miss',
+  CRITICAL = 'critical',
+  SHAKE = 'shake',
+  FLASH = 'flash',
+  HIGHLIGHT = 'highlight',
+  PULSE = 'pulse',
+  FADE_IN = 'fade_in',
+  FADE_OUT = 'fade_out'
+}
+
+// Animation Events
+export enum CombatAnimationEvent {
+  START = 'animation:start',
+  COMPLETE = 'animation:complete',
+  DAMAGE_TEXT = 'animation:damage_text',
+  COMBATANT_EFFECT = 'animation:combatant_effect',
+  QUEUE_PROCESS = 'animation:queue_process'
+}
+
+// Animation Data Interfaces
+export interface CombatDamageTextData {
+  id: string;
+  combatantId: string;
+  value: number;
+  type: CombatAnimationType.DAMAGE | CombatAnimationType.HEAL | CombatAnimationType.MISS | CombatAnimationType.CRITICAL;
+  position: { x: number; y: number };
+  timestamp: number;
+}
+
+export interface CombatEffectData {
+  combatantId: string;
+  effectType: CombatAnimationType.SHAKE | CombatAnimationType.FLASH | CombatAnimationType.HIGHLIGHT | CombatAnimationType.PULSE;
+  duration: number;
+  intensity?: 'low' | 'medium' | 'high';
+}
+
+// Combat Turn State
+export interface CombatTurnState {
+  hasPerformedAction: boolean;
+  canEndTurn: boolean;
+  actionType?: 'attack' | 'defend' | 'item' | 'ability';
+  actionTarget?: string;
+  timestamp: number;
+}
+
 export interface CombatResultData {
   // Combat metadata
   combatId: string;
@@ -139,6 +188,8 @@ export interface CombatResultData {
   
   // Combat outcome
   victory: boolean;
+  playerFled?: boolean; // True if player fled from combat
+  enemyNames: string[]; // Array of all enemy names for easy access
   enemiesDefeated: Array<{
     name: string;
     type: string;
