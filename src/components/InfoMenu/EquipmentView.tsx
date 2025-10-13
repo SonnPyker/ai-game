@@ -119,36 +119,6 @@ export function EquipmentView({
 
   return (
     <div className="space-y-6">
-      {/* Equipment Stats Summary */}
-      <div className="bg-gray-800/50 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-          <Shield className="w-5 h-5 mr-2" />
-          Tổng Bonuses Trang Bị
-        </h3>
-        
-        {Object.values(totalBonuses).some(value => value !== 0) ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-            {Object.entries(totalBonuses).map(([stat, value]) => (
-              <div key={stat} className="flex items-center justify-between">
-                <span className="text-gray-400 capitalize">
-                  {stat === 'strength' ? 'Sức mạnh' :
-                   stat === 'agility' ? 'Nhanh nhẹn' :
-                   stat === 'intelligence' ? 'Trí tuệ' :
-                   stat === 'constitution' ? 'Thể chất' :
-                   stat === 'wisdom' ? 'Khôn ngoan' :
-                   stat === 'charisma' ? 'Sức hút' : stat}
-                </span>
-                <span className={`font-medium ${getStatColor(value)}`}>
-                  {formatStatBonus(value)}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-400 text-sm">Chưa có trang bị nào được trang bị</p>
-        )}
-      </div>
-
       {/* Equipment Slots Grid */}
       <div className="bg-gray-800/50 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-white mb-4 text-center">
@@ -290,6 +260,36 @@ export function EquipmentView({
           </div>
         </>
       )}
+
+      {/* Equipment Stats Summary */}
+      <div className="bg-gray-800/50 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+          <Shield className="w-5 h-5 mr-2" />
+          Tổng Bonuses Trang Bị
+        </h3>
+        
+        {Object.values(totalBonuses).some(value => value !== 0) ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+            {Object.entries(totalBonuses).map(([stat, value]) => (
+              <div key={stat} className="flex items-center justify-between">
+                <span className="text-gray-400 capitalize">
+                  {stat === 'strength' ? 'Sức mạnh' :
+                   stat === 'agility' ? 'Nhanh nhẹn' :
+                   stat === 'intelligence' ? 'Trí tuệ' :
+                   stat === 'constitution' ? 'Thể chất' :
+                   stat === 'wisdom' ? 'Khôn ngoan' :
+                   stat === 'charisma' ? 'Sức hút' : stat}
+                </span>
+                <span className={`font-medium ${getStatColor(value)}`}>
+                  {formatStatBonus(value)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400 text-sm">Chưa có trang bị nào được trang bị</p>
+        )}
+      </div>
     </div>
   );
 }

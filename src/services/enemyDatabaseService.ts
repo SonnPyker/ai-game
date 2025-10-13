@@ -45,7 +45,7 @@ class EnemyDatabaseService {
           }
         },
         health: { current: 25, max: 25 },
-        armorClass: 12,
+        armorClass: 8,
         attacks: [
           {
             name: 'Scimitar',
@@ -440,7 +440,8 @@ class EnemyDatabaseService {
       
       if (generatedArmor) {
         equippedArmor = generatedArmor;
-        finalArmorClass = baseArmorClass + (equippedArmor.armorClass || 0);
+        // Use armor's AC + agility modifier (replace base AC, don't add to it)
+        finalArmorClass = (equippedArmor.armorClass || 0) + modifiers.agility;
       }
     }
 

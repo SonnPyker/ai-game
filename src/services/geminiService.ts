@@ -429,10 +429,10 @@ HƯỚNG DẪN MÔ TẢ Y HỌC:
       
       if (sceneState?.locationId) {
         locationId = sceneState.locationId;
-      } else if (sceneState?.location) {
+      } else if (sceneState?.location?.name) {
         // Nếu chỉ có location name, tìm locationId
         const allLocations = locationService.getAllLocations();
-        const foundLocation = allLocations.find(loc => loc.name === sceneState.location);
+        const foundLocation = allLocations.find(loc => loc.name === sceneState.location?.name);
         if (foundLocation) {
           locationId = foundLocation.id;
         }
@@ -1158,6 +1158,25 @@ QUAN TRỌNG VỀ ITEM REWARDS - TẠO TÊN VÀ MÔ TẢ CỤ THỂ:
 - SỬ DỤNG ĐÚNG RARITY: common, uncommon, rare, epic, legendary
 - VÍ DỤ TỐT: "Kiếm Thánh Quang", "Áo giáp Rồng", "Thuốc hồi sinh", "Chìa khóa ma thuật"
 - VÍ DỤ SAI: "Vật phẩm ngẫu nhiên", "Một vật phẩm hữu ích"
+
+🎲 RANDOM CONSUMABLE GENERATION - AI SÁNG TẠO:
+- **Khi tạo random consumable, AI phải sử dụng format mới và sáng tạo:**
+  * Tên: "Thuốc Sức Mạnh Rồng", "Bình Nước Thánh", "Viên Ngọc Tăng Trí", "Thuốc Tàng Hình"
+  * Effect: Sử dụng format "type:target:value:duration" hoặc combo effects
+  * Rarity: Phù hợp với level và context của quest
+  * Description: Mô tả chi tiết về tác dụng và nguồn gốc
+
+- **VÍ DỤ RANDOM CONSUMABLE SÁNG TẠO:**
+  * {"name": "Thuốc Sức Mạnh Rồng", "type": "consumable", "rarity": "rare", "effect": "stat_buff:strength:+4:5turns|damage_buff:+1d6:5turns"}
+  * {"name": "Bình Nước Thánh", "type": "consumable", "rarity": "uncommon", "effect": "heal:2d4:+2:instant|heal:cure_poison:instant"}
+  * {"name": "Viên Ngọc Tăng Trí", "type": "consumable", "rarity": "epic", "effect": "stat_buff:intelligence:+5:10turns|stat_buff:wisdom:+3:10turns"}
+  * {"name": "Thuốc Tàng Hình", "type": "consumable", "rarity": "rare", "effect": "stat_buff:stealth:+6:3turns|stat_buff:agility:+2:3turns"}
+
+- **THEME-BASED CONSUMABLE CREATION:**
+  * **Dungeon Theme**: "Thuốc Chống Ma", "Bình Nước Ma Thuật", "Viên Ngọc Sáng"
+  * **Forest Theme**: "Thuốc Rừng Xanh", "Nước Suối Thần", "Lá Cây Hồi Sinh"
+  * **Desert Theme**: "Thuốc Chống Nắng", "Nước Oasis", "Cát Ma Thuật"
+  * **Mountain Theme**: "Thuốc Chống Lạnh", "Đá Quý Sức Mạnh", "Tuyết Hồi Sinh"
 
 QUAN TRỌNG VỀ QUEST OBJECTIVES - 5 LOẠI CHÍNH:
 
@@ -2035,10 +2054,10 @@ QUEST SYSTEM CONTEXT:
    * Build relationship context section for prompts
    */
   private buildRelationshipSection(sceneState: SCCState, contentFlags?: ContentFlags): string {
-    const relationshipContext = npcRelationshipService.getRelationshipContext(sceneState.location);
+    const relationshipContext = npcRelationshipService.getRelationshipContext(sceneState.location?.name);
     
     const arousalContext = contentFlags?.adult_enabled && contentFlags.adult_intensity === 'direct' 
-      ? npcRelationshipService.getArousalContext(sceneState.location)
+      ? npcRelationshipService.getArousalContext(sceneState.location?.name)
       : '';
 
     return relationshipContext + arousalContext;
@@ -2569,11 +2588,33 @@ HƯỚNG DẪN VỀ VẬT PHẨM (ITEMS):
   * attackBonus (BẮT BUỘC cho weapon): +1 đến +5 (bonus tấn công)
   * damage (BẮT BUỘC cho weapon): "1d6+1" (sát thương)
   * damageType (BẮT BUỘC cho weapon): "physical|magical|fire|cold|lightning|poison|psychic"
+  * effect (BẮT BUỘC cho consumable): Sử dụng format mới "type:target:value:duration" hoặc combo effects
 
 QUAN TRỌNG VỀ EQUIPMENT STATS:
 - KHÔNG tạo stats bonuses (strength, agility, intelligence, etc.) cho equipment
 - Equipment chỉ cung cấp: armorClass (cho armor), attackBonus/damage (cho weapons)
 - Stats bonuses không tồn tại trong hệ thống này
+
+🎯 SCENE CONSUMABLE GENERATION - AI SÁNG TẠO THEO CONTEXT:
+- **Khi tạo consumable trong scene, AI phải phù hợp với context:**
+  * **Tavern/Shop**: "Thuốc Hồi Máu", "Bia Sức Mạnh", "Trà Tăng Trí"
+  * **Dungeon**: "Thuốc Chống Ma", "Bình Nước Ma Thuật", "Viên Ngọc Sáng"
+  * **Forest**: "Thuốc Rừng Xanh", "Nước Suối Thần", "Lá Cây Hồi Sinh"
+  * **Desert**: "Thuốc Chống Nắng", "Nước Oasis", "Cát Ma Thuật"
+  * **Mountain**: "Thuốc Chống Lạnh", "Đá Quý Sức Mạnh", "Tuyết Hồi Sinh"
+
+- **VÍ DỤ SCENE CONSUMABLE THEO CONTEXT:**
+  * Tavern: {"name": "Bia Sức Mạnh", "type": "consumable", "rarity": "common", "effect": "stat_buff:strength:+2:3turns"}
+  * Dungeon: {"name": "Thuốc Chống Ma", "type": "consumable", "rarity": "uncommon", "effect": "stat_buff:resistance:undead:5turns"}
+  * Forest: {"name": "Nước Suối Thần", "type": "consumable", "rarity": "rare", "effect": "heal:3d4:+3:instant|heal:cure_all:instant"}
+  * Desert: {"name": "Cát Ma Thuật", "type": "consumable", "rarity": "epic", "effect": "stat_buff:stealth:+8:4turns|damage_buff:+1d8:sand:4turns"}
+
+- **RARITY THEO CONTEXT:**
+  * **Common**: Tavern, shop thường, items cơ bản
+  * **Uncommon**: Dungeon sâu, forest nguy hiểm, items đặc biệt
+  * **Rare**: Boss room, ancient ruins, items quý hiếm
+  * **Epic**: Legendary locations, items cực mạnh
+  * **Legendary**: Unique locations, items duy nhất
 - QUEST REWARD ITEMS: KHÔNG BAO GIỜ có "stats" property
 
 QUAN TRỌNG VỀ WEAPON GENERATION:
@@ -2644,22 +2685,36 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
         "armorClass": 14, // AC từ 10-20
         "slot": "head|chest|hands|legs|feet|accessory1|accessory2|accessory3", // Vị trí trang bị
         // CHO CONSUMABLE - BẮT BUỘC:
-        "effect": "heal_1d4_plus_1|damage_buff_1d4_3turns|ac_buff_2_3turns|poison_damage_1d4_3turns|cure_poison"
+        "effect": "heal:1d4:+1:instant|damage_buff:+1d4:3turns|stat_buff:ac:+2:3turns|debuff:poison:1d4:3turns|heal:full:instant"
       }
     ]
   }
 - KHÔNG được tạo item rewards chỉ có description mà không có items array
 - Mỗi item phải có id duy nhất, name cụ thể, và thông tin đầy đủ
 
-QUAN TRỌNG VỀ CONSUMABLE GENERATION:
-- CONSUMABLE PHẢI có: effect (format chuẩn)
-- Effect format chuẩn:
-  * Healing: "heal_1d4_plus_1", "heal_2d4_plus_2", "heal_4d4_plus_4"
-  * Damage Buff: "damage_buff_1d4_3turns", "damage_buff_1d6_5turns", "damage_buff_2d6_4turns"
-  * AC Buff: "ac_buff_2_3turns", "ac_buff_3_5turns", "ac_buff_4_6turns"
-  * Stat Buff: "strength_plus_2_1hour", "agility_plus_3_1hour", "intelligence_plus_4_1hour"
-  * Debuff: "poison_damage_1d4_3turns", "weakness_debuff_2turns", "slow_debuff_4turns"
-  * Cure: "cure_poison", "cure_all"
+🚨 QUAN TRỌNG VỀ CONSUMABLE GENERATION - VALIDATION MẠNH:
+- CONSUMABLE PHẢI có: effect (format chuẩn) - KHÔNG ĐƯỢC THIẾU
+- CONSUMABLE KHÔNG ĐƯỢC có: damage, damageType, attackBonus, armorClass (chỉ dành cho weapon/armor)
+- Effect format chuẩn MỚI (type:target:value:duration):
+  * Healing: "heal:1d4:+1:instant", "heal:2d4:+2:instant", "heal:4d4:+4:instant", "heal:full:instant"
+  * Damage Buff: "damage_buff:+1d4:3turns", "damage_buff:+1d6:5turns", "damage_buff:+2d6:4turns"
+  * AC Buff: "stat_buff:ac:+2:3turns", "stat_buff:ac:+3:5turns", "stat_buff:ac:+4:6turns"
+  * Stat Buff: "stat_buff:strength:+2:5turns", "stat_buff:agility:+3:5turns", "stat_buff:intelligence:+4:5turns"
+  * Debuff: "debuff:poison:1d4:3turns", "debuff:weakness:2:2turns", "debuff:slow:1:4turns"
+  * Cure: "heal:cure_poison:instant", "heal:cure_all:instant"
+  * Special Effects: "stat_buff:luck:+5:1turns", "damage_buff:+1d6:1turns", "stat_buff:all:+1:3turns"
+  * Advanced Effects: "stat_buff:critical:+10:3turns", "damage_buff:+1d8:2turns", "stat_buff:resistance:fire:5turns"
+  * Combo Effects: "stat_buff:strength:+3:3turns|damage_buff:+1d4:3turns", "heal:2d4:+2:instant|stat_buff:ac:+2:5turns"
+  * Unique Effects: "stat_buff:regeneration:1d4:10turns", "damage_buff:+2d6:1turns", "stat_buff:immunity:poison:5turns"
+
+⚠️ VALIDATION RULES CHO CONSUMABLES:
+- BẮT BUỘC: effect field phải có và không rỗng
+- BẮT BUỘC: quantity >= 1
+- BẮT BUỘC: icon phải có (emoji phù hợp)
+- BẮT BUỘC: description phải đầy đủ (không bị cắt cụt)
+- CẤM: damage, damageType, attackBonus, armorClass fields
+- CẤM: slot field (consumables không có slot)
+
 - Rarity guidelines cho consumables:
   * Common: Level 1-3, effect đơn giản
   * Uncommon: Level 4-6, effect trung bình
@@ -2672,6 +2727,23 @@ QUAN TRỌNG VỀ CONSUMABLE GENERATION:
   * Medium: 4-6 turns (stat buff, debuff)
   * Long: 60 turns (1 hour = 60 turns)
 - KHÔNG tạo consumable nào thiếu effect hoặc effect không đúng format
+
+🎨 SÁNG TẠO CONSUMABLE MỚI - AI CÓ THỂ TẠO:
+- **Elemental Effects**: "stat_buff:fire_resistance:+5:5turns", "damage_buff:+1d6:fire:3turns"
+- **Mental Effects**: "stat_buff:wisdom:+4:4turns", "stat_buff:intelligence:+3:6turns"
+- **Physical Effects**: "stat_buff:constitution:+3:5turns", "stat_buff:strength:+2:4turns"
+- **Combat Effects**: "stat_buff:initiative:+5:3turns", "damage_buff:+1d8:critical:2turns"
+- **Defensive Effects**: "stat_buff:ac:+3:4turns", "stat_buff:damage_reduction:2:5turns"
+- **Utility Effects**: "stat_buff:stealth:+4:3turns", "stat_buff:perception:+3:6turns"
+- **Magical Effects**: "stat_buff:spell_power:+2:5turns", "damage_buff:+1d4:magical:4turns"
+- **Combo Potions**: Kết hợp nhiều effects với dấu | (VD: "heal:1d4:+1:instant|stat_buff:ac:+2:5turns")
+
+💡 GỢI Ý TẠO CONSUMABLE THEO THEME:
+- **Alchemy**: "stat_buff:all:+1:3turns", "heal:2d4:+2:instant"
+- **Magic**: "stat_buff:intelligence:+3:5turns", "damage_buff:+1d6:magical:4turns"
+- **Nature**: "stat_buff:constitution:+2:6turns", "heal:1d4:+1:instant"
+- **Combat**: "damage_buff:+1d4:3turns", "stat_buff:strength:+2:4turns"
+- **Stealth**: "stat_buff:agility:+3:5turns", "stat_buff:stealth:+4:3turns"
 
 ⚠️ QUAN TRỌNG VỀ QUEST REWARD ITEMS - THEO CHUẨN ENHANCED LOOT:
 - VŨ KHÍ (weapon): BẮT BUỘC có damage, damageType, attackBonus, slot
@@ -2686,7 +2758,7 @@ QUAN TRỌNG VỀ CONSUMABLE GENERATION:
   * slot: "head", "chest", "hands", "legs", "feet", "accessory1", "accessory2", "accessory3"
 
 - CONSUMABLE: BẮT BUỘC có effect
-  * effect: "heal_1d4_plus_1", "heal_2d4_plus_2", "strength_plus_2_1hour", "cure_poison", "full_heal_and_cure_all"
+  * effect: "heal:1d4:+1:instant", "heal:2d4:+2:instant", "stat_buff:strength:+2:5turns", "heal:cure_poison:instant", "heal:full:instant"
 
 - MISC: Không cần thêm trường gì đặc biệt, chỉ cần name, description, rarity, tags
 
@@ -2700,7 +2772,7 @@ QUAN TRỌNG VỀ CONSUMABLE GENERATION:
 - VÍ DỤ QUEST REWARD ITEMS ĐÚNG:
   * Weapon: {"name": "Kiếm ma thuật", "type": "weapon", "rarity": "uncommon", "damage": "1d6+1", "damageType": "magical", "attackBonus": 2, "slot": "weapon_main"}
   * Armor: {"name": "Áo giáp sắt", "type": "armor", "rarity": "uncommon", "armorClass": 14, "slot": "chest"}
-  * Consumable: {"name": "Thuốc hồi máu", "type": "consumable", "rarity": "common", "effect": "heal_1d4_plus_1"}
+  * Consumable: {"name": "Thuốc hồi máu", "type": "consumable", "rarity": "common", "effect": "heal:1d4:+1:instant"}
   * Misc: {"name": "Đồng xu cổ", "type": "misc", "rarity": "common"}
 
 
@@ -2866,29 +2938,90 @@ MỤC ĐÍCH:
       console.error('Error checking combat history data:', error);
     }
     
-    // Get world difficulty and calculate encounter chance
-    let encounterChance = 0.5; // Default 50% (trung bình)
+    // NEW ENCOUNTER RATE SYSTEM: 0% → tăng dần sau 4 turn → reset về 0% sau combat
+    let baseEncounterRate = 0.33; // Default 33% (trung bình)
     try {
       const worldData = JSON.parse(worldJson);
       const difficulty = worldData.difficulty?.toLowerCase() || 'trung bình';
       
       if (difficulty.includes('dễ') || difficulty.includes('easy')) {
-        encounterChance = 0.75; // 25% chance (1 - 0.75 = 0.25)
+        baseEncounterRate = 0.20; // 20% chance (dễ)
       } else if (difficulty.includes('khó') || difficulty.includes('hard')) {
-        encounterChance = 0.3; // 70% chance (1 - 0.3 = 0.7)
+        baseEncounterRate = 0.40; // 40% chance (khó)
       }
-      // Trung bình giữ nguyên 0.5 (50% chance)
+      // Trung bình giữ nguyên 0.33 (33% chance)
     } catch (error) {
       console.error('Error parsing world data for encounter chance:', error);
     }
     
-    // If player fled recently or just finished combat, set encounter chance to 0 (no random encounters)
-    if (playerFledRecently || playerJustFinishedCombat) {
-      encounterChance = 1.0; // 0% chance (1 - 1.0 = 0)
+    let encounterRate = 0; // Start with 0%
+    const currentTurn = turnCounter || 0;
+    
+    // Check for last combat encounter (victory/defeat/flee)
+    let lastCombatTurn = -1;
+    
+    // Check combat history for last defeat
+    try {
+      const combatHistoryData = localStorage.getItem('combat_history');
+      if (combatHistoryData) {
+        const combatHistory = JSON.parse(combatHistoryData);
+        if (combatHistory.defeatedEnemies && Array.isArray(combatHistory.defeatedEnemies)) {
+          const recentCombat = combatHistory.defeatedEnemies
+            .filter((enemy: any) => enemy.turn !== undefined)
+            .sort((a: any, b: any) => (b.turn || 0) - (a.turn || 0))[0];
+          
+          if (recentCombat) {
+            lastCombatTurn = recentCombat.turn || 0;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking combat history:', error);
+    }
+    
+    // Check flee data
+    try {
+      const fledData = localStorage.getItem('player_fled_random_combat');
+      if (fledData) {
+        const fleeInfo = JSON.parse(fledData);
+        const fleeTurn = fleeInfo.turn || 0;
+        if (fleeTurn > lastCombatTurn) {
+          lastCombatTurn = fleeTurn;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking flee data:', error);
+    }
+    
+    const turnsSinceLastEncounter = currentTurn - lastCombatTurn;
+    
+    console.log('🔍 New Encounter Rate System in geminiService:', {
+      currentTurn,
+      lastCombatTurn,
+      turnsSinceLastEncounter,
+      baseEncounterRate,
+      playerFledRecently,
+      playerJustFinishedCombat
+    });
+    
+    if (turnsSinceLastEncounter >= 4) {
+      // After 4 turns: reach target rate and maintain
+      encounterRate = baseEncounterRate;
+      console.log('🔍 Encounter rate: reached target rate', {
+        targetRate: baseEncounterRate,
+        turnsSinceLastEncounter
+      });
+    } else {
+      // First 4 turns after last encounter: 0% chance
+      encounterRate = 0;
+      console.log('🔍 Encounter rate: 0% (building up phase)', {
+        turnsSinceLastEncounter,
+        turnsUntilActive: 4 - turnsSinceLastEncounter
+      });
     }
     
     const combatEncounterChance = shouldCheckCombat ? Math.random() : 0;
-    const shouldTriggerCombat = combatEncounterChance > encounterChance;
+    const shouldTriggerCombat = combatEncounterChance < encounterRate;
     
     // Combat trigger check completed
     
@@ -2932,6 +3065,185 @@ ${narrativeRules}
 - SCENARIO: ${scenarioJson}
 - SUMMARY (SCC): ${JSON.stringify(summary)}
 - SCENE_STATE: ${JSON.stringify(sceneState)} (chứa location, locationId, npcs, availableItems, clocks, flags)
+
+📋 CHI TIẾT SCENE_STATE STRUCTURE:
+- **location**: Thông tin vị trí hiện tại
+  * name: Tên địa điểm (VD: "Tavern The Golden Dragon", "Dark Forest", "Ancient Ruins")
+  * description: Mô tả chi tiết địa điểm
+  * type: Loại địa điểm (tavern, dungeon, forest, city, ruins, etc.)
+  * atmosphere: Không khí (mysterious, dangerous, peaceful, bustling, etc.)
+  * features: Các đặc điểm nổi bật (tables, bar, fireplace, secret passages, etc.)
+
+- **locationId**: ID duy nhất của địa điểm (để tracking)
+
+- **npcs**: Danh sách NPCs có mặt tại scene
+  * id: ID duy nhất của NPC
+  * name: Tên NPC
+  * description: Mô tả ngoại hình, trang phục, thái độ
+  * role: Vai trò (bartender, merchant, guard, traveler, etc.)
+  * mood: Tâm trạng hiện tại (friendly, suspicious, angry, etc.)
+  * dialogue: Câu nói hoặc phản ứng của NPC
+  * position: Vị trí trong scene (behind_bar, at_table, near_door, etc.)
+  * status: Trạng thái (alive, unconscious, busy, available, etc.)
+
+- **availableItems**: Items có thể tìm thấy/lấy trong scene
+  * name: Tên item
+  * description: Mô tả chi tiết
+  * type: weapon/armor/consumable/misc
+  * rarity: common/uncommon/rare/epic/legendary
+  * quantity: Số lượng
+  * location: Vị trí cụ thể (on_table, in_chest, behind_bar, etc.)
+  * condition: Tình trạng (pristine, worn, broken, etc.)
+  * value: Giá trị (cho trading)
+  * effect: Effect string (cho consumables) - sử dụng format mới
+
+- **clocks**: Các sự kiện đang diễn ra theo thời gian
+  * id: ID duy nhất của clock
+  * name: Tên sự kiện
+  * description: Mô tả chi tiết
+  * progress: Tiến độ hiện tại (0-100)
+  * maxProgress: Tiến độ tối đa
+  * timeRemaining: Thời gian còn lại (turns hoặc real-time)
+  * consequences: Hậu quả khi hoàn thành
+  * urgency: Mức độ khẩn cấp (low, medium, high, critical)
+
+- **flags**: Các cờ trạng thái của scene
+  * discovered: Đã khám phá (true/false)
+  * cleared: Đã dọn sạch (true/false)
+  * locked: Bị khóa (true/false)
+  * dangerous: Nguy hiểm (true/false)
+  * peaceful: Hòa bình (true/false)
+  * magical: Có ma thuật (true/false)
+  * cursed: Bị nguyền rủa (true/false)
+  * blessed: Được ban phước (true/false)
+
+- **worldTime**: Thời gian trong game
+  * hour: Giờ (0-23)
+  * minute: Phút (0-59)
+  * day: Ngày (1-31)
+  * month: Tháng (1-12)
+  * year: Năm
+  * season: Mùa (spring, summer, autumn, winter)
+  * weather: Thời tiết (sunny, rainy, cloudy, stormy, etc.)
+
+- **environment**: Môi trường xung quanh
+  * lighting: Ánh sáng (bright, dim, dark, magical)
+  * temperature: Nhiệt độ (hot, warm, cool, cold, freezing)
+  * humidity: Độ ẩm (dry, normal, humid, wet)
+  * wind: Gió (calm, breezy, windy, stormy)
+  * sounds: Âm thanh (silent, quiet, normal, loud, chaotic)
+  * smells: Mùi hương (fresh, musty, sweet, foul, magical)
+
+- **interactions**: Các tương tác có thể thực hiện
+  * examine: Khám phá (object, area, person)
+  * search: Tìm kiếm (hidden_items, secrets, clues)
+  * talk: Nói chuyện (npc_id, topic)
+  * use: Sử dụng (item_id, target)
+  * move: Di chuyển (direction, destination)
+  * rest: Nghỉ ngơi (duration, safety_level)
+  * craft: Chế tạo (recipe, materials)
+  * trade: Buôn bán (npc_id, items)
+
+- **dangers**: Các mối nguy hiểm tiềm ẩn
+  * traps: Bẫy (type, location, trigger, damage)
+  * monsters: Quái vật (name, level, threat_level, location)
+  * environmental: Môi trường (poison_gas, falling_rocks, etc.)
+  * social: Xã hội (hostile_npcs, guards, etc.)
+
+- **secrets**: Các bí mật chưa khám phá
+  * hidden_passages: Lối đi bí mật
+  * secret_items: Vật phẩm ẩn
+  * hidden_rooms: Phòng ẩn
+  * coded_messages: Tin nhắn mã hóa
+  * ancient_knowledge: Kiến thức cổ xưa
+
+🔄 HƯỚNG DẪN CẬP NHẬT SCENE_STATE:
+- **Khi player thực hiện hành động, AI PHẢI cập nhật sceneState phù hợp:**
+  * Thay đổi npcs (mood, dialogue, position, status)
+  * Thêm/xóa availableItems (khi tìm thấy/lấy items)
+  * Cập nhật clocks (progress, timeRemaining)
+  * Thay đổi flags (discovered, cleared, dangerous, etc.)
+  * Cập nhật environment (lighting, temperature, sounds, etc.)
+  * Thêm/bớt interactions (dựa trên tình huống mới)
+  * Cập nhật dangers (khi phát hiện mối nguy hiểm mới)
+  * Reveal secrets (khi khám phá bí mật)
+
+- **VÍ DỤ CẬP NHẬT SCENE_STATE:**
+  * Player nói chuyện với NPC → cập nhật npcs[].mood, npcs[].dialogue
+  * Player tìm thấy item → thêm vào availableItems[]
+  * Player khám phá bí mật → cập nhật flags.discovered = true, thêm vào secrets[]
+  * Player gây ra tiếng ồn → cập nhật environment.sounds = "loud"
+  * Player thắp lửa → cập nhật environment.lighting = "bright", environment.temperature = "warm"
+  * Player phát hiện bẫy → thêm vào dangers.traps[]
+  * Player nghỉ ngơi → cập nhật worldTime, environment.sounds = "quiet"
+
+- **QUAN TRỌNG VỀ CONSISTENCY:**
+  * Tất cả thay đổi phải phù hợp với narrative
+  * Không tạo ra contradictions trong sceneState
+  * Giữ nguyên các thông tin không thay đổi
+  * Cập nhật real-time dựa trên player actions
+  * Đảm bảo sceneState phản ánh chính xác tình huống hiện tại
+
+📝 HƯỚNG DẪN CHI TIẾT CẬP NHẬT TỪNG TRƯỜNG SCENE_STATE:
+
+**1. location** - Cập nhật khi:
+- Player di chuyển đến địa điểm mới
+- Môi trường thay đổi đáng kể (từ sáng sang tối, từ yên tĩnh sang ồn ào)
+- Có sự kiện lớn ảnh hưởng đến địa điểm
+
+**2. npcs** - Cập nhật khi:
+- Player tương tác với NPC (thay đổi mood, dialogue, position)
+- NPC rời khỏi hoặc xuất hiện trong scene
+- NPC thay đổi trạng thái (từ friendly sang hostile, từ alive sang unconscious)
+- NPC có phản ứng với hành động của player
+
+**3. availableItems** - Cập nhật khi:
+- Player tìm thấy item mới (thêm vào array)
+- Player lấy item (xóa khỏi array hoặc giảm quantity)
+- Item bị phá hủy hoặc mất đi
+- Item xuất hiện do sự kiện (rơi từ trần nhà, NPC để lại)
+
+**4. clocks** - Cập nhật khi:
+- Có sự kiện đang diễn ra theo thời gian
+- Player thực hiện hành động ảnh hưởng đến tiến độ
+- Thời gian trôi qua (giảm timeRemaining)
+- Sự kiện hoàn thành (progress = maxProgress)
+
+**5. flags** - Cập nhật khi:
+- Player khám phá điều gì đó (discovered = true)
+- Player dọn sạch khu vực (cleared = true)
+- Tình huống thay đổi (dangerous, peaceful, magical, etc.)
+- Player mở khóa hoặc khóa cửa (locked = true/false)
+
+**6. worldTime** - Cập nhật khi:
+- Player nghỉ ngơi (tăng hour)
+- Thời gian trôi qua trong narrative
+- Có sự kiện thay đổi thời gian (ma thuật, time skip)
+- Chuyển mùa hoặc thay đổi thời tiết
+
+**7. environment** - Cập nhật khi:
+- Player thắp lửa (lighting = "bright", temperature = "warm")
+- Player gây tiếng ồn (sounds = "loud")
+- Thời tiết thay đổi (weather, temperature, wind)
+- Player sử dụng ma thuật (lighting = "magical")
+
+**8. interactions** - Cập nhật khi:
+- Có tương tác mới có thể thực hiện
+- Tương tác cũ không còn khả dụng
+- Player khám phá khả năng mới
+- Tình huống thay đổi mở ra cơ hội mới
+
+**9. dangers** - Cập nhật khi:
+- Player phát hiện bẫy hoặc quái vật
+- Mối nguy hiểm mới xuất hiện
+- Mối nguy hiểm cũ được giải quyết
+- Tình huống trở nên nguy hiểm hơn
+
+**10. secrets** - Cập nhật khi:
+- Player khám phá bí mật
+- Có manh mối mới về bí mật
+- Bí mật được giải mã hoàn toàn
+- Có bí mật mới được tiết lộ
 - CHAT_DELTA (sau snapshot, ≤ ${chatDelta.length} lượt): ${JSON.stringify(chatDelta)}
 - PLAYER_ACTION: "${playerAction}"
 - GAME_TIME: ${JSON.stringify(worldTime || sceneState.worldTime || { hour: 12, minute: 0, day: 1, month: 1, year: 1 })}
@@ -2963,7 +3275,19 @@ QUAN TRỌNG VỀ OUTPUT:
 {
   "narrative": "văn xuôi 105–170 từ (TỐI ĐA 170 TỪ), liền mạch, không bullet/emoji, KHÔNG sử dụng dấu *",
   "softGuidance": "1–2 câu định hướng kín đáo (có thể rỗng)",
-  "sceneState": { "các trường cần cập nhật (vị trí, NPC, manh mối, rủi ro, đồng hồ, availableItems…)" },
+  "sceneState": { 
+    "location": { "name": "string", "description": "string", "type": "string", "atmosphere": "string", "features": ["string"] },
+    "locationId": "string",
+    "npcs": [{ "id": "string", "name": "string", "description": "string", "role": "string", "mood": "string", "dialogue": "string", "position": "string", "status": "string" }],
+    "availableItems": [{ "name": "string", "description": "string", "type": "weapon|armor|consumable|misc", "rarity": "common|uncommon|rare|epic|legendary", "quantity": "number", "location": "string", "condition": "string", "value": "number", "effect": "string" }],
+    "clocks": [{ "id": "string", "name": "string", "description": "string", "progress": "number", "maxProgress": "number", "timeRemaining": "number", "consequences": "string", "urgency": "low|medium|high|critical" }],
+    "flags": { "discovered": "boolean", "cleared": "boolean", "locked": "boolean", "dangerous": "boolean", "peaceful": "boolean", "magical": "boolean", "cursed": "boolean", "blessed": "boolean" },
+    "worldTime": { "hour": "number", "minute": "number", "day": "number", "month": "number", "year": "number", "season": "spring|summer|autumn|winter", "weather": "string" },
+    "environment": { "lighting": "string", "temperature": "string", "humidity": "string", "wind": "string", "sounds": "string", "smells": "string" },
+    "interactions": { "examine": "array", "search": "array", "talk": "array", "use": "array", "move": "array", "rest": "array", "craft": "array", "trade": "array" },
+    "dangers": { "traps": "array", "monsters": "array", "environmental": "array", "social": "array" },
+    "secrets": { "hidden_passages": "array", "secret_items": "array", "hidden_rooms": "array", "coded_messages": "array", "ancient_knowledge": "array" }
+  },
   "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện" },
   "sideQuestOffer": {
     "title": "tên quest phụ (chỉ có khi có cơ hội tự nhiên)",
@@ -3302,7 +3626,8 @@ QUAN TRỌNG VỀ OUTPUT:
         rarity: this.determineRarityByLevel(enemyLevel)
       });
       
-      const finalAC = baseAC + (equippedArmor?.armorClass || 0);
+      // Use armor's AC + agility modifier (replace base AC, don't add to it)
+      const finalAC = equippedArmor ? (equippedArmor.armorClass || 0) + modifiers.agility : baseAC;
       
       return {
         name: enemyData.name,

@@ -16,7 +16,6 @@ import { Character, Enemy, InventoryItem } from '../types';
 import { combatService, CombatState, Combatant } from '../services/combatService';
 import { combatDataService } from '../services/combatDataService';
 import { inventoryService } from '../services/inventoryService';
-import { combatLevelService } from '../services/combatLevelService';
 import { levelSystemService } from '../services/levelSystemService';
 import { questCombatService } from '../services/questCombatService';
 import { enemyGenerationService } from '../services/enemyGenerationService';
@@ -413,7 +412,7 @@ export function CombatPage({}: CombatPageProps) {
             }
           },
           health: { current: 25, max: 25 },
-          armorClass: 12,
+          armorClass: 8,
           attacks: [
             {
               name: 'Scimitar',
@@ -542,11 +541,40 @@ export function CombatPage({}: CombatPageProps) {
       const success = combatService.useItem('player', item, targetId);
       
       if (success) {
-        // Decrease item quantity in inventory
-        if (item.quantity !== undefined && item.quantity > 0) {
+        // Only sync consumable items since combat inventory only contains consumables
+        if (item.type === 'consumable' && item.quantity !== undefined && item.quantity > 0) {
           item.quantity -= 1;
           
-          // Update character inventory in localStorage
+          // CRITICAL: Sync with inventoryService to ensure main inventory is updated
+          console.log('🔄 Syncing consumable usage with main inventory:', {
+            itemId: item.id,
+            itemName: item.name,
+            itemType: item.type,
+            newQuantity: item.quantity
+          });
+          
+          // Update through inventoryService to ensure consistency
+          if (item.quantity <= 0) {
+            // Remove item completely if quantity reaches 0
+            inventoryService.removeItem(item.id, 1);
+            console.log('🗑️ Removed consumable from main inventory:', item.name);
+          } else {
+            // Update quantity in main inventory
+            const mainInventoryItem = inventoryService.findItemInInventory(item.id);
+            if (mainInventoryItem && mainInventoryItem.type === 'consumable') {
+              mainInventoryItem.quantity = item.quantity;
+              // Force save by updating character data
+              const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+              const inventoryItem = characterData.inventory.find((invItem: any) => invItem.id === item.id);
+              if (inventoryItem) {
+                inventoryItem.quantity = item.quantity;
+                localStorage.setItem('currentCharacter', JSON.stringify(characterData));
+              }
+              console.log('📝 Updated consumable quantity in main inventory:', item.name, 'new quantity:', item.quantity);
+            }
+          }
+          
+          // Also update character inventory in localStorage for immediate UI update
           const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
           const inventoryItem = characterData.inventory.find((invItem: any) => invItem.id === item.id);
           if (inventoryItem) {
@@ -757,7 +785,7 @@ export function CombatPage({}: CombatPageProps) {
         // Find existing item by name and effect (not by id)
         const existingItem = characterData.inventory.find((item: any) => 
           item.name === newItem.name && 
-          item.stats?.effect === newItem.stats?.effect &&
+          item.effect === newItem.effect &&
           item.type === 'consumable'
         );
         
@@ -877,9 +905,6 @@ export function CombatPage({}: CombatPageProps) {
           const experienceGained = combatState?.rewards?.experience || 0;
           
           if (experienceGained > 0) {
-            // Add 1 XP to combat level (for participating in combat)
-            const combatLevelResult = combatLevelService.addCombatExperience(character, 1);
-            
             // Add full experience to regular character level
             const regularLevelResult = levelSystemService.addExperience(character, experienceGained);
             
@@ -887,12 +912,7 @@ export function CombatPage({}: CombatPageProps) {
             localStorage.setItem('currentCharacter', JSON.stringify(character));
             
             console.log(`💚 Experience gained: ${experienceGained} XP`);
-            console.log(`⚔️ Combat Level: ${combatLevelResult.previousCombatLevel} → ${combatLevelResult.newCombatLevel}`);
             console.log(`⭐ Character Level: ${regularLevelResult.previousLevel} → ${regularLevelResult.newLevel}`);
-            
-            if (combatLevelResult.leveledUp) {
-              console.log(`🎉 Combat Level Up! ${combatLevelResult.previousCombatLevel} → ${combatLevelResult.newCombatLevel}`);
-            }
             
             if (regularLevelResult.leveledUp) {
               console.log(`🎉 Character Level Up! ${regularLevelResult.previousLevel} → ${regularLevelResult.newLevel}`);
@@ -913,6 +933,33 @@ export function CombatPage({}: CombatPageProps) {
           // Set character in inventoryService to load existing inventory
           inventoryService.setCharacter(character);
         }
+        
+        // CRITICAL: Sync combat inventory changes with main inventory before adding rewards
+        // Only sync consumable items since combat inventory only contains consumables
+        console.log('🔄 Syncing combat consumable changes with main inventory...');
+        const combatInventory = combatState?.playerInventory || [];
+        const consumableItems = combatInventory.filter(item => item.type === 'consumable');
+        
+        consumableItems.forEach(combatItem => {
+          const mainItem = inventoryService.findItemInInventory(combatItem.id);
+          if (mainItem && mainItem.type === 'consumable') {
+            // Update quantity to match combat state
+            if (mainItem.quantity !== combatItem.quantity) {
+              console.log('📝 Syncing consumable quantity:', {
+                name: combatItem.name,
+                combatQuantity: combatItem.quantity,
+                mainQuantity: mainItem.quantity
+              });
+              mainItem.quantity = combatItem.quantity;
+            }
+          }
+        });
+        
+        // Save inventory changes before adding rewards
+        // Force save by updating character data
+        const updatedCharacterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+        updatedCharacterData.inventory = inventoryService.getInventory();
+        localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacterData));
         
         // Then add new items
         selectedItems.forEach(item => {
@@ -937,7 +984,7 @@ export function CombatPage({}: CombatPageProps) {
           character.equipment = inventoryService.getEquipment();
           character.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
           localStorage.setItem('currentCharacter', JSON.stringify(character));
-          console.log('✅ Updated character inventory after combat rewards');
+          console.log('✅ Updated character inventory after combat rewards and sync');
         }
       } catch (error) {
         console.error('Error adding items to inventory:', error);

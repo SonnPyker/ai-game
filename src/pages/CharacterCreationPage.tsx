@@ -7,6 +7,7 @@ import { nameGenerationService, NameGenerationOptions, GeneratedName } from '../
 import { levelSystemService } from '../services/levelSystemService';
 import { combatLevelService } from '../services/combatLevelService';
 import { currencyService } from '../services/currencyService';
+import { skillTreeService } from '../services/skillTreeService';
 import { Sparkles, Download, RotateCcw, Check, Globe, Upload, Shuffle, Star } from 'lucide-react';
 import { HelpTooltip } from '../components/HelpTooltip';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
@@ -345,6 +346,9 @@ export function CharacterCreationPage() {
     
     // Khởi tạo combat level
     combatLevelService.initializeCharacter(character);
+
+    // Khởi tạo skill tree
+    skillTreeService.initializeCharacter(character);
 
     // Khởi tạo currency dựa trên world data
     try {

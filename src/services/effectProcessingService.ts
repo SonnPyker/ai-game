@@ -80,15 +80,51 @@ class EffectProcessingService {
    * Apply consumable effect to combatant
    */
   public applyConsumableEffect(combatant: Combatant, item: InventoryItem, targetId?: string, allCombatants?: Combatant[]): StatusEffect[] {
-    console.log('applyConsumableEffect called:', { combatant: combatant.name, item: item.name, effect: item.stats?.effect });
+    console.log('applyConsumableEffect called:', { combatant: combatant.name, item: item.name, effect: item.effect });
     const effects: StatusEffect[] = [];
     
-    if (!item.stats?.effect) {
-      console.log('No effect found on item');
+    // STRONG VALIDATION for consumables
+    if (!item.effect) {
+      console.error('❌ CONSUMABLE VALIDATION FAILED: No effect found on item', {
+        itemName: item.name,
+        itemType: item.type,
+        itemId: item.id,
+        hasEffect: !!item.effect,
+        effectValue: item.effect
+      });
       return effects;
     }
+    
+    if (typeof item.effect !== 'string' || item.effect.trim() === '') {
+      console.error('❌ CONSUMABLE VALIDATION FAILED: Invalid effect format', {
+        itemName: item.name,
+        effect: item.effect,
+        effectType: typeof item.effect
+      });
+      return effects;
+    }
+    
+    // Check for invalid fields on consumables
+    const invalidFields = [];
+    if (item.damage) invalidFields.push('damage');
+    if (item.damageType) invalidFields.push('damageType');
+    if (item.attackBonus) invalidFields.push('attackBonus');
+    if (item.armorClass) invalidFields.push('armorClass');
+    
+    if (invalidFields.length > 0) {
+      console.error('❌ CONSUMABLE VALIDATION FAILED: Invalid weapon/armor fields on consumable', {
+        itemName: item.name,
+        invalidFields: invalidFields,
+        values: {
+          damage: item.damage,
+          damageType: item.damageType,
+          attackBonus: item.attackBonus,
+          armorClass: item.armorClass
+        }
+      });
+    }
 
-    const effectString = item.stats.effect;
+    const effectString = item.effect;
     console.log('Effect string:', effectString);
     
     // Try new format first

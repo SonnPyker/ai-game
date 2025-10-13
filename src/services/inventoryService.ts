@@ -1,5 +1,6 @@
 import { InventoryItem, Equipment, Character } from '../types';
 import { storageCache } from './storageCache';
+import { skillTreeService } from './skillTreeService';
 
 class InventoryService {
   private static instance: InventoryService;
@@ -96,8 +97,17 @@ class InventoryService {
     const foundItems: InventoryItem[] = [];
     
     // CHỈ parse items từ sceneState.availableItems của AI response hiện tại
+    console.log('🔍 Debug Item Detection:', {
+      hasSceneState: !!sceneState,
+      hasAvailableItems: !!sceneState.availableItems,
+      availableItemsCount: sceneState.availableItems?.length || 0,
+      availableItems: sceneState.availableItems
+    });
+    
     if (sceneState.availableItems && Array.isArray(sceneState.availableItems)) {
-      sceneState.availableItems.forEach((itemData: any) => {
+      sceneState.availableItems.forEach((itemData: any, index: number) => {
+        console.log(`🔍 Processing item ${index}:`, itemData);
+        
         if (this.isValidItemData(itemData)) {
           const item = this.createItemFromData(itemData);
           if (item) {
@@ -110,15 +120,23 @@ class InventoryService {
             
             if (!isQuestReward) {
               foundItems.push(item);
+              console.log(`✅ Added item to foundItems:`, item.name);
+            } else {
+              console.log(`❌ Skipped quest reward item:`, item.name);
             }
+          } else {
+            console.log(`❌ Failed to create item from data:`, itemData);
           }
+        } else {
+          console.log(`❌ Invalid item data:`, itemData);
         }
       });
     }
+    
+    console.log('🔍 Final foundItems count:', foundItems.length);
 
-    // Also check for items in other possible locations
-    const additionalItems = this.findItemsInResponse(aiResponse);
-    foundItems.push(...additionalItems);
+    // REMOVED: findItemsInResponse - chỉ lấy từ sceneState.availableItems
+    // Đảm bảo tuyệt đối chỉ lấy items từ availableItems trong scene
 
     return foundItems;
   }
@@ -178,10 +196,37 @@ class InventoryService {
 
   // Validate item data structure
   private isValidItemData(itemData: any): boolean {
-    return itemData && 
-           typeof itemData === 'object' &&
-           typeof itemData.name === 'string' &&
-           itemData.name.trim().length > 0;
+    if (!itemData || typeof itemData !== 'object' || typeof itemData.name !== 'string' || itemData.name.trim().length === 0) {
+      return false;
+    }
+    
+    // Additional validation for consumables
+    if (itemData.type === 'consumable' || this.determineItemType(itemData) === 'consumable') {
+      // Consumables MUST have effect field
+      if (!itemData.effect || typeof itemData.effect !== 'string' || itemData.effect.trim() === '') {
+        console.warn('⚠️ Consumable missing effect field:', {
+          name: itemData.name,
+          effect: itemData.effect,
+          willGenerateDefault: true
+        });
+        // Don't reject, will generate default effect
+      }
+      
+      // Consumables should NOT have weapon/armor fields
+      if (itemData.damage || itemData.damageType || itemData.attackBonus || itemData.armorClass) {
+        console.warn('⚠️ Consumable has invalid weapon/armor fields:', {
+          name: itemData.name,
+          invalidFields: {
+            damage: itemData.damage,
+            damageType: itemData.damageType,
+            attackBonus: itemData.attackBonus,
+            armorClass: itemData.armorClass
+          }
+        });
+      }
+    }
+    
+    return true;
   }
 
   // Create item from AI response data (without adding to inventory)
@@ -190,26 +235,79 @@ class InventoryService {
       return null;
     }
 
+    const itemType = this.determineItemType(itemData);
+    
+    console.log('🔍 Creating item from data:', {
+      name: itemData.name,
+      type: itemType,
+      originalData: itemData,
+      hasEffect: !!itemData.effect,
+      effectValue: itemData.effect
+    });
+    
     const item: InventoryItem = {
       id: this.generateItemId(),
       name: itemData.name.trim(),
       description: itemData.description || 'Một vật phẩm bí ẩn.',
-      type: this.determineItemType(itemData),
+      type: itemType,
       rarity: this.determineItemRarity(itemData),
-      quantity: itemData.quantity || 1,
-      icon: itemData.icon || this.getDefaultIcon(itemData.type),
+      quantity: Math.max(1, itemData.quantity || 1), // Đảm bảo quantity >= 1
+      icon: itemData.icon || this.getDefaultIcon(itemType),
       stats: {}, // Equipment không cung cấp stat bonuses
       slot: itemData.slot,
       isEquipped: false,
-      tags: itemData.tags || [], // Hỗ trợ tags array
-      
-      // NEW: Combat stats
-      damage: itemData.damage || this.autoDetectDamage(itemData),
-      attackBonus: itemData.attackBonus || this.autoDetectAttackBonus(itemData),
-      damageType: itemData.damageType || this.autoDetectDamageType(itemData),
-      armorClass: itemData.armorClass || this.autoDetectArmorClass(itemData),
-      weaponProperties: itemData.weaponProperties
+      tags: itemData.tags || [] // Hỗ trợ tags array
     };
+
+    // Chỉ thêm combat stats cho weapons và armor
+    if (itemType === 'weapon') {
+      item.damage = itemData.damage || this.autoDetectDamage(itemData);
+      item.attackBonus = itemData.attackBonus || this.autoDetectAttackBonus(itemData);
+      item.damageType = itemData.damageType || this.autoDetectDamageType(itemData);
+      item.weaponProperties = itemData.weaponProperties;
+    } else if (itemType === 'armor') {
+      item.armorClass = itemData.armorClass || this.autoDetectArmorClass(itemData);
+    }
+
+    // CONSUMABLE VALIDATION - BẮT BUỘC có effect
+    if (itemType === 'consumable') {
+      if (!itemData.effect || typeof itemData.effect !== 'string' || itemData.effect.trim() === '') {
+        console.error('❌ Consumable validation failed:', {
+          name: itemData.name,
+          type: itemType,
+          effect: itemData.effect,
+          error: 'Missing or invalid effect field'
+        });
+        
+        // Tạo effect mặc định dựa trên tên
+        item.effect = this.generateDefaultEffect(itemData.name);
+        console.warn('⚠️ Generated default effect:', item.effect);
+      } else {
+        item.effect = itemData.effect.trim();
+      }
+      
+      // Thêm consumable-specific fields
+      item.consumableType = this.determineConsumableType(itemData);
+      item.duration = itemData.duration || 0; // Instant by default
+      item.targetType = itemData.targetType || 'self';
+      item.requiresTarget = itemData.requiresTarget || false;
+      item.cooldown = itemData.cooldown || 0;
+      item.stackable = itemData.stackable !== false; // Default true
+      item.maxStacks = itemData.maxStacks || 1;
+      
+      // Preserve other fields from sceneState
+      if (itemData.condition) (item as any).condition = itemData.condition;
+      if (itemData.location) (item as any).location = itemData.location;
+      if (itemData.value) (item as any).value = itemData.value;
+    }
+
+    console.log('✅ Created item:', {
+      name: item.name,
+      type: item.type,
+      effect: item.effect,
+      consumableType: item.consumableType,
+      finalItem: item
+    });
 
     return item;
   }
@@ -662,6 +760,111 @@ class InventoryService {
     );
 
     return { totalItems, totalValue, equippedItems };
+  }
+
+  // Calculate item sell price with skill bonuses
+  public calculateSellPrice(item: InventoryItem): number {
+    if (!this.character) return 0;
+
+    // Base value calculation based on rarity
+    const rarityValues = { common: 1, uncommon: 5, rare: 25, epic: 100, legendary: 500, unique: 1000 };
+    let basePrice = rarityValues[item.rarity];
+
+    // Apply skill bonuses
+    const skillBonuses = skillTreeService.getActiveBonuses(this.character);
+    if (skillBonuses.sellPriceModifier) {
+      basePrice = Math.floor(basePrice * (1 + skillBonuses.sellPriceModifier / 100));
+    }
+
+    return basePrice;
+  }
+
+  // Calculate item buy price with skill bonuses
+  public calculateBuyPrice(item: InventoryItem): number {
+    if (!this.character) return 0;
+
+    // Base value calculation based on rarity
+    const rarityValues = { common: 1, uncommon: 5, rare: 25, epic: 100, legendary: 500, unique: 1000 };
+    let basePrice = rarityValues[item.rarity] * 2; // Buy price is typically 2x sell price
+
+    // Apply skill bonuses
+    const skillBonuses = skillTreeService.getActiveBonuses(this.character);
+    if (skillBonuses.shopPriceModifier) {
+      basePrice = Math.floor(basePrice * (1 + skillBonuses.shopPriceModifier / 100));
+    }
+
+    return basePrice;
+  }
+
+  // Generate default effect for consumables based on name
+  private generateDefaultEffect(name: string): string {
+    const lowerName = name.toLowerCase();
+    
+    // Healing potions
+    if (lowerName.includes('hồi') || lowerName.includes('heal') || lowerName.includes('potion') || 
+        lowerName.includes('thuốc') || lowerName.includes('bình')) {
+      if (lowerName.includes('nhỏ') || lowerName.includes('small')) {
+        return 'heal:1d4:+1:instant';
+      } else if (lowerName.includes('vừa') || lowerName.includes('medium')) {
+        return 'heal:2d4:+2:instant';
+      } else if (lowerName.includes('lớn') || lowerName.includes('large') || lowerName.includes('lớn')) {
+        return 'heal:3d4:+3:instant';
+      } else {
+        return 'heal:1d4:+1:instant'; // Default healing
+      }
+    }
+    
+    // Strength potions
+    if (lowerName.includes('sức mạnh') || lowerName.includes('strength') || lowerName.includes('bia')) {
+      return 'stat_buff:strength:+2:5turns';
+    }
+    
+    // Agility potions
+    if (lowerName.includes('nhanh nhẹn') || lowerName.includes('agility') || lowerName.includes('tốc độ')) {
+      return 'stat_buff:agility:+2:5turns';
+    }
+    
+    // AC potions
+    if (lowerName.includes('phòng thủ') || lowerName.includes('defense') || lowerName.includes('ac')) {
+      return 'stat_buff:ac:+2:5turns';
+    }
+    
+    // Damage buff potions
+    if (lowerName.includes('tấn công') || lowerName.includes('damage') || lowerName.includes('sát thương')) {
+      return 'damage_buff:+1d4:3turns';
+    }
+    
+    // Default healing if can't determine
+    return 'heal:1d4:+1:instant';
+  }
+
+  // Determine consumable type from data
+  private determineConsumableType(itemData: any): 'healing' | 'buff' | 'debuff' | 'cure' | 'special' {
+    if (itemData.consumableType) {
+      return itemData.consumableType;
+    }
+    
+    const name = itemData.name.toLowerCase();
+    const effect = itemData.effect?.toLowerCase() || '';
+    
+    if (effect.includes('heal') || name.includes('hồi') || name.includes('heal')) {
+      return 'healing';
+    }
+    
+    if (effect.includes('stat_buff') || effect.includes('damage_buff') || 
+        name.includes('tăng') || name.includes('buff')) {
+      return 'buff';
+    }
+    
+    if (effect.includes('debuff') || name.includes('độc') || name.includes('poison')) {
+      return 'debuff';
+    }
+    
+    if (effect.includes('cure') || name.includes('chữa') || name.includes('cure')) {
+      return 'cure';
+    }
+    
+    return 'special';
   }
 
   // NEW: Auto-detect damage for weapons

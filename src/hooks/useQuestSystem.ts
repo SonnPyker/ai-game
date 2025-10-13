@@ -230,7 +230,7 @@ const convertWorldQuestToQuestProgress = (worldQuest: any, act?: number): QuestP
         description: obj.description,
         completed: false,
         aiKeywords: obj.aiKeywords || [],
-        unlocked: index === 0 // Chỉ objective đầu tiên được unlock
+        unlocked: act === undefined ? (index === 0) : false // Chỉ unlock nếu quest không bị locked
       })),
       rewards: convertedQuest.rewards.map((reward: any) => ({
         type: reward.type,
@@ -302,7 +302,7 @@ const convertWorldQuestToQuestProgress = (worldQuest: any, act?: number): QuestP
       description: obj.description,
       completed: false,
       aiKeywords: obj.aiKeywords || [],
-      unlocked: index === 0 // Chỉ objective đầu tiên được unlock
+      unlocked: act === undefined ? (index === 0) : false // Chỉ unlock objective đầu tiên nếu quest không bị locked
     })) || [],
     rewards: rewards,
     createdAt: new Date()
@@ -407,7 +407,7 @@ export function useQuestSystem() {
             objectives: quest.objectives.map((obj: any) => ({
               ...obj,
               completedAt: obj.completedAt ? new Date(obj.completedAt) : undefined,
-              unlocked: obj.unlocked !== undefined ? obj.unlocked : true // Backward compatibility
+              unlocked: quest.status === 'locked' ? false : (obj.unlocked !== undefined ? obj.unlocked : true) // Fix inconsistency: locked quest = locked objectives
             })),
             rewards: quest.rewards.map((reward: any) => ({
               ...reward,
@@ -421,7 +421,7 @@ export function useQuestSystem() {
             objectives: quest.objectives.map((obj: any) => ({
               ...obj,
               completedAt: obj.completedAt ? new Date(obj.completedAt) : undefined,
-              unlocked: obj.unlocked !== undefined ? obj.unlocked : true // Backward compatibility
+              unlocked: quest.status === 'locked' ? false : (obj.unlocked !== undefined ? obj.unlocked : true) // Fix inconsistency: locked quest = locked objectives
             })),
             rewards: quest.rewards.map((reward: any) => ({
               ...reward,
@@ -435,7 +435,7 @@ export function useQuestSystem() {
             objectives: quest.objectives.map((obj: any) => ({
               ...obj,
               completedAt: obj.completedAt ? new Date(obj.completedAt) : undefined,
-              unlocked: obj.unlocked !== undefined ? obj.unlocked : true // Backward compatibility
+              unlocked: quest.status === 'locked' ? false : (obj.unlocked !== undefined ? obj.unlocked : true) // Fix inconsistency: locked quest = locked objectives
             })),
             rewards: quest.rewards.map((reward: any) => ({
               ...reward,
@@ -613,6 +613,10 @@ export function useQuestSystem() {
               );
               if (act1QuestIndex !== -1) {
                 newSystem.mainQuests[act1QuestIndex].status = 'active';
+                // Unlock objective đầu tiên khi quest được unlock
+                if (newSystem.mainQuests[act1QuestIndex].objectives.length > 0) {
+                  newSystem.mainQuests[act1QuestIndex].objectives[0].unlocked = true;
+                }
               }
             } else {
               // Unlock quest mới nếu cần
@@ -806,6 +810,10 @@ export function useQuestSystem() {
         if (existingQuestIndex !== -1) {
           // Unlock quest có sẵn
           questSystem.mainQuests[existingQuestIndex].status = 'active';
+          // Unlock objective đầu tiên khi quest được unlock
+          if (questSystem.mainQuests[existingQuestIndex].objectives.length > 0) {
+            questSystem.mainQuests[existingQuestIndex].objectives[0].unlocked = true;
+          }
           console.log(`✅ Unlocked existing quest for Act ${nextAct}:`, questSystem.mainQuests[existingQuestIndex].title);
         } else {
           // Nếu không tìm thấy quest có sẵn, tìm từ world data
@@ -815,6 +823,10 @@ export function useQuestSystem() {
           if (nextActQuest) {
             // Unlock quest từ world data
             nextActQuest.status = 'active';
+            // Unlock objective đầu tiên khi quest được unlock
+            if (nextActQuest.objectives.length > 0) {
+              nextActQuest.objectives[0].unlocked = true;
+            }
             questSystem.mainQuests.push(nextActQuest);
             console.log(`📥 Loaded quest from world data for Act ${nextAct}:`, nextActQuest.title);
           } else {

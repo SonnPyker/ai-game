@@ -287,11 +287,9 @@ class ConsumableDatabase {
       icon: template.icon,
       isEquipped: false,
       tags: template.tags,
-      stats: {
-        effect: template.effect,
-        healing: this.parseHealingFromEffect(template.effect),
-        damage: this.parseDamageFromEffect(template.effect)
-      }
+      effect: template.effect,
+      healing: this.parseHealingFromEffect(template.effect),
+      stats: {}
     };
   }
 
@@ -313,22 +311,6 @@ class ConsumableDatabase {
     return 0;
   }
 
-  /**
-   * Parse damage amount from effect string
-   */
-  private parseDamageFromEffect(effect: string): number {
-    if (!effect) return 0;
-    
-    // Match patterns like "damage_buff_1d4_3turns"
-    const damageMatch = effect.match(/damage_buff_(\d+)d(\d+)_\d+turns/);
-    if (damageMatch) {
-      const diceCount = parseInt(damageMatch[1]);
-      const diceSize = parseInt(damageMatch[2]);
-      return diceCount * (diceSize / 2); // Average roll
-    }
-    
-    return 0;
-  }
 
   /**
    * Generate unique item ID

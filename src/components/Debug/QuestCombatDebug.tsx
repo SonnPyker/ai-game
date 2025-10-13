@@ -22,11 +22,16 @@ export const QuestCombatDebug: React.FC<QuestCombatDebugProps> = ({ onClose }) =
   };
 
   const handleTestQuestUpdate = () => {
-    // Test quest progress update
-    const testEnemyName = "Kẻ Thù Trộm Cắp";
-    const updated = questCombatService.updateCombatObjectiveProgress(testEnemyName);
-    console.log(`Test quest update for ${testEnemyName}:`, updated);
-    handleRefresh();
+    // Test quest progress update using current active objective
+    const activeObjectives = questCombatService.getActiveCombatObjectives();
+    if (activeObjectives.length > 0) {
+      const testEnemyName = activeObjectives[0].targetEnemyName;
+      const updated = questCombatService.updateCombatObjectiveProgress(testEnemyName);
+      console.log(`Test quest update for ${testEnemyName}:`, updated);
+      handleRefresh();
+    } else {
+      console.log('No active combat objectives to test');
+    }
   };
 
   return (

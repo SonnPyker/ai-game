@@ -167,10 +167,10 @@ export function CombatantCard({
           <div className="text-xs text-gray-400 mb-1">Tấn công:</div>
           <div className="space-y-1">
             {combatant.attacks.slice(0, 2).map((attack, index) => {
-              // For player, show damage bonus from temporaryPlayerStats
+              // For player, show combined damage (base + bonus)
               let displayDamage = attack.damage;
-              if (!isEnemy && temporaryPlayerStats?.damageBonus) {
-                displayDamage = temporaryPlayerStats.damageBonus;
+              if (!isEnemy && temporaryPlayerStats?.damageBonus && temporaryPlayerStats.damageBonus.trim() !== '') {
+                displayDamage = `${attack.damage} + ${temporaryPlayerStats.damageBonus}`;
               }
               
               return (

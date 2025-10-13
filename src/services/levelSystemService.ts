@@ -74,6 +74,7 @@ class LevelSystemService {
     newXP: number;
     previousLevel: number;
     levelsGained: number;
+    socialSkillPointsEarned: number;
   } {
     if (xpToAdd <= 0) {
       return {
@@ -81,7 +82,8 @@ class LevelSystemService {
         newLevel: character.level || 1,
         newXP: character.experience || 0,
         previousLevel: character.level || 1,
-        levelsGained: 0
+        levelsGained: 0,
+        socialSkillPointsEarned: 0
       };
     }
 
@@ -108,6 +110,21 @@ class LevelSystemService {
       }
     }
 
+    // Tính social skill points
+    let socialSkillPointsEarned = 0;
+    if (levelsGained > 0) {
+      // Tính skill points: mỗi 3 character levels = 1 social skill point
+      const previousSkillPoints = Math.floor((previousLevel - 1) / 3);
+      const newSkillPoints = Math.floor((currentLevel - 1) / 3);
+      socialSkillPointsEarned = newSkillPoints - previousSkillPoints;
+
+      // Cập nhật skill points
+      if (!character.skillPoints) {
+        character.skillPoints = { combat: 0, social: 0 };
+      }
+      character.skillPoints.social += socialSkillPointsEarned;
+    }
+
     // Cập nhật character
     character.experience = currentXP;
     character.level = currentLevel;
@@ -117,7 +134,8 @@ class LevelSystemService {
       newLevel: currentLevel,
       newXP: currentXP,
       previousLevel: previousLevel,
-      levelsGained: levelsGained
+      levelsGained: levelsGained,
+      socialSkillPointsEarned
     };
   }
 

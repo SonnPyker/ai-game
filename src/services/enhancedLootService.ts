@@ -253,11 +253,9 @@ class EnhancedLootService {
         armorClass: item.armorClass || 0
       };
     } else if (type === 'consumable') {
-      inventoryItem.stats = {
-        effect: item.effect || '',
-        healing: this.parseHealingFromEffect(item.effect) || 0,
-        damage: this.parseDamageFromEffect(item.effect) || 0
-      };
+      inventoryItem.effect = item.effect || '';
+      inventoryItem.healing = this.parseHealingFromEffect(item.effect) || 0;
+      inventoryItem.stats = {};
     }
 
     return inventoryItem;
@@ -281,23 +279,6 @@ class EnhancedLootService {
     return 0;
   }
 
-  /**
-   * Parse damage amount from effect string
-   */
-  private parseDamageFromEffect(effect: string): number {
-    if (!effect) return 0;
-    
-    // Match patterns like "damage_1d4_plus_1" or "poison_1d6"
-    const damageMatch = effect.match(/(?:damage|poison)_(\d+)d(\d+)(?:_plus_(\d+))?/);
-    if (damageMatch) {
-      const diceCount = parseInt(damageMatch[1]);
-      const diceSize = parseInt(damageMatch[2]);
-      const bonus = damageMatch[3] ? parseInt(damageMatch[3]) : 0;
-      return diceCount * (diceSize / 2) + bonus; // Average roll
-    }
-    
-    return 0;
-  }
 
   /**
    * Get item level based on rarity

@@ -25,6 +25,7 @@ import { questCombatService } from '../services/questCombatService';
 import { npcHealthUpdateService } from '../services/npcHealthUpdateService';
 import { RandomCombatModal } from '../components/CombatPage/RandomCombatModal';
 import { QuestCombatDebug } from '../components/Debug/QuestCombatDebug';
+import { DiscardItemModal } from '../components/DiscardItemModal';
 
 // Lazy load các services lớn để giảm kích thước bundle chính
 let geminiService: any;
@@ -151,6 +152,10 @@ export function GamePage() {
     reason: string;
   } | null>(null);
   const [showQuestCombatDebug, setShowQuestCombatDebug] = useState(false);
+  
+  // Discard item modal state
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [itemToDiscard, setItemToDiscard] = useState<InventoryItem | null>(null);
   
   // NPC Dialogue Selector state - with persistence
   const [selectedNPCForDialogue, setSelectedNPCForDialogue] = useState<string | null>(() => {
@@ -1426,8 +1431,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     let aiResponseSuccess = false;
 
     try {
-      // Load data
-      const worldData = localStorage.getItem('world_gen_result');
+      // Load data - prioritize currentWorldData for difficulty field
+      let worldData = localStorage.getItem('currentWorldData');
+      if (!worldData) {
+        worldData = localStorage.getItem('world_gen_result');
+      }
       const characterData = localStorage.getItem('currentCharacter');
       const scenarioData = localStorage.getItem('rp_scenario');
 
@@ -1718,13 +1726,26 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           return !isQuestReward;
         });
         
+        // CRITICAL: Reset availableItems when starting a new turn
+        // This ensures items don't persist across turns unless explicitly added by AI
+        const shouldResetAvailableItems = !aiSceneState.availableItems || aiSceneState.availableItems.length === 0;
+        
+        console.log('🔄 Turn Reset Debug:', {
+          turnCounter: turnCounter + 1,
+          hasAISceneState: !!aiSceneState,
+          hasAvailableItems: !!aiSceneState.availableItems,
+          availableItemsCount: aiSceneState.availableItems?.length || 0,
+          shouldReset: shouldResetAvailableItems,
+          previousAvailableItems: gameState.sceneState?.availableItems?.length || 0
+        });
+        
         // Update game state - đảm bảo availableItems chỉ chứa items có thể lấy được
         const newSceneState = { 
           ...gameState.sceneState, 
           ...aiSceneState, 
           worldTime: newTime,
-          // CHỈ sử dụng filtered availableItems từ AI response hiện tại, không merge với cũ
-          availableItems: filteredAvailableItems
+          // Reset availableItems nếu AI không cung cấp items mới, hoặc sử dụng filtered items từ AI
+          availableItems: shouldResetAvailableItems ? [] : filteredAvailableItems
         };
         
         // Loại bỏ mainQuests khỏi sceneState nếu có
@@ -2851,44 +2872,45 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
   };
 
   const handleDropItem = (itemId: string) => {
-    // Check if item is equipped
+    // Check if item exists
     const item = inventoryService.findItemInInventory(itemId);
     if (!item) return;
     
-    let confirmMessage = 'Bạn có chắc chắn muốn vứt bỏ vật phẩm này?';
-    if (item.isEquipped) {
-      confirmMessage = `Vật phẩm "${item.name}" đang được trang bị. Vứt bỏ sẽ tự động gỡ trang bị. Bạn có chắc chắn muốn tiếp tục?`;
-    }
+    // Show custom modal instead of browser dialog
+    setItemToDiscard(item);
+    setShowDiscardModal(true);
+  };
+
+  const handleDiscard = (quantity: number) => {
+    if (!itemToDiscard) return;
     
-    if (confirm(confirmMessage)) {
-      const success = inventoryService.removeItem(itemId);
-      if (success) {
-        // Update character data in localStorage
-        const updatedInventory = inventoryService.getInventory();
-        const updatedEquipment = inventoryService.getEquipment();
-        
-        try {
-          const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
-          characterData.inventory = updatedInventory;
-          characterData.equipment = updatedEquipment;
-          characterData.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
-          localStorage.setItem('currentCharacter', JSON.stringify(characterData));
-          
-          // Reload character data from localStorage to update UI
-          const reloadedCharacterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
-          setGameState(prev => ({
-            ...prev,
-            character: reloadedCharacterData
-          }));
-          
-          // Show success message
-          if (item.isEquipped) {
-          } else {
-          }
-        } catch (error) {
-          console.error('Failed to update character data:', error);
-        }
-      }
+    const success = inventoryService.removeItem(itemToDiscard.id, quantity);
+    if (success) {
+      updateCharacterDataAfterInventoryChange();
+      console.log(`🗑️ Đã vứt bỏ ${quantity} cái "${itemToDiscard.name}"`);
+    }
+  };
+
+  const updateCharacterDataAfterInventoryChange = () => {
+    // Update character data in localStorage
+    const updatedInventory = inventoryService.getInventory();
+    const updatedEquipment = inventoryService.getEquipment();
+    
+    try {
+      const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+      characterData.inventory = updatedInventory;
+      characterData.equipment = updatedEquipment;
+      characterData.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
+      localStorage.setItem('currentCharacter', JSON.stringify(characterData));
+      
+      // Reload character data from localStorage to update UI
+      const reloadedCharacterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+      setGameState(prev => ({
+        ...prev,
+        character: reloadedCharacterData
+      }));
+    } catch (error) {
+      console.error('Failed to update character data:', error);
     }
   };
 
@@ -3675,6 +3697,17 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           onClose={() => setShowQuestCombatDebug(false)}
         />
       )}
+
+      {/* Discard Item Modal */}
+      <DiscardItemModal
+        isOpen={showDiscardModal}
+        onClose={() => {
+          setShowDiscardModal(false);
+          setItemToDiscard(null);
+        }}
+        item={itemToDiscard}
+        onDiscard={handleDiscard}
+      />
 
       {/* Skip Time Modal */}
       {showSkipTimeModal && (

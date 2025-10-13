@@ -36,7 +36,7 @@ export function CombatInventory({
     return inventory.filter(item => {
       // Only show consumable items
       if (item.type === 'consumable') {
-        if (item.stats?.effect) return true; // Any consumable with effect
+        if (item.effect) return true; // Any consumable with effect
         if (item.damage) return true; // Damaging consumables
         if (item.name.toLowerCase().includes('heal') || 
             item.name.toLowerCase().includes('potion') ||
@@ -54,8 +54,8 @@ export function CombatInventory({
     // Check if item requires a target (damaging items or debuff items)
     let requiresTarget = !!item.damage;
     
-    if (item.stats?.effect) {
-      const effect = item.stats.effect;
+      if (item.effect) {
+        const effect = item.effect;
       
       // Check new format first
       if (effect.includes(':')) {
@@ -125,8 +125,8 @@ export function CombatInventory({
     }
     
     // Check for consumable effects - try new format first
-    if (item.stats?.effect) {
-      const effect = item.stats.effect;
+      if (item.effect) {
+        const effect = item.effect;
       
       // Try new format: type:target:value:duration
       if (effect.includes(':')) {
@@ -220,8 +220,8 @@ export function CombatInventory({
     }
     
     // Check for consumable effects - try new format first
-    if (item.stats?.effect) {
-      const effect = item.stats.effect;
+      if (item.effect) {
+        const effect = item.effect;
       
       // Try new format: type:target:value:duration
       if (effect.includes(':')) {

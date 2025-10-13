@@ -48,6 +48,13 @@ export function ActionMenu({
   extraActionUsed = false,
   temporaryPlayerStats
 }: ActionMenuProps) {
+  
+  // Function to calculate combined damage display
+  const getCombinedDamage = (baseDamage: string, damageBonus?: string): string => {
+    // Chỉ hiển thị damageBonus nếu nó có giá trị thực sự (từ status effects)
+    if (!damageBonus || damageBonus.trim() === '') return baseDamage;
+    return `${baseDamage} + ${damageBonus}`;
+  };
   // All hooks must be called at the top level
   const [isCollapsed, setIsCollapsed] = useState(false);
   
@@ -234,7 +241,7 @@ export function ActionMenu({
                       <div className="text-left">
                         <div className="font-medium">{attack.name}</div>
                         <div className="text-xs text-gray-400">
-                          +{attack.attackBonus} to hit, {temporaryPlayerStats?.damageBonus || attack.damage}
+                          +{attack.attackBonus} to hit, {getCombinedDamage(attack.damage, temporaryPlayerStats?.damageBonus)}
                         </div>
                       </div>
                     </MotionButton>
@@ -330,7 +337,7 @@ export function ActionMenu({
                   <div className="text-left">
                     <div className="font-medium">{attack.name}</div>
                     <div className="text-xs text-gray-400">
-                      +{attack.attackBonus} to hit, {temporaryPlayerStats?.damageBonus || attack.damage}
+                      +{attack.attackBonus} to hit, {getCombinedDamage(attack.damage, temporaryPlayerStats?.damageBonus)}
                     </div>
                   </div>
                 </MotionButton>

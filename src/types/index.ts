@@ -3,7 +3,7 @@ export interface Character {
   name: string;
   level?: number; // Character Level (tổng thể)
   combatLevel?: number; // Combat Level (chỉ cho chiến đấu)
-  combatExperience?: number; // Số lần tham gia chiến đấu
+  combatExperience?: number; // XP combat level (mỗi combat thắng = 1 XP)
   stats?: CharacterStats;
   personality?: string;
   backstory: string;
@@ -47,6 +47,9 @@ export interface Character {
   currency?: number; // Số tiền chính hiện tại
   secondaryCurrency?: number; // Số tiền phụ hiện tại
   experience?: number; // Kinh nghiệm hiện tại
+  // Skill Tree system
+  skillPoints?: { combat: number; social: number }; // Điểm kỹ năng chưa dùng
+  skillTree?: SkillTree; // Skill tree đã học
 }
 
 
@@ -116,11 +119,18 @@ export interface InventoryItem {
     // Combat stats
     attackBonus?: number;
     armorClass?: number;
-    // Consumable stats
-    effect?: string;
-    healing?: number;
-    damage?: number;
   };
+  
+  // Consumable specific properties
+  effect?: string; // Effect string using new format (type:target:value:duration)
+  healing?: number; // Legacy healing value (deprecated, use effect instead)
+  consumableType?: 'healing' | 'buff' | 'debuff' | 'cure' | 'special'; // Type of consumable effect
+  duration?: number; // Duration in turns (0 = instant)
+  targetType?: 'self' | 'enemy' | 'any'; // Who can use this consumable
+  requiresTarget?: boolean; // Whether this consumable requires a target selection
+  cooldown?: number; // Cooldown in turns before can be used again
+  stackable?: boolean; // Whether multiple instances can be active at once
+  maxStacks?: number; // Maximum number of stacks (if stackable)
   slot?: 'weapon_main' | 'weapon_off' | 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'accessory1' | 'accessory2' | 'accessory3';
   equipped_at?: Date;
   // Tags system for quest rewards
@@ -416,13 +426,255 @@ export interface SCCSummary {
 }
 
 export interface SCCState {
-  location?: string;
+  // Location information
+  location?: {
+    name: string;
+    description: string;
+    type: string; // tavern, dungeon, forest, city, ruins, etc.
+    atmosphere: string; // mysterious, dangerous, peaceful, bustling, etc.
+    features: string[]; // tables, bar, fireplace, secret passages, etc.
+  };
   locationId?: string; // ID của location hiện tại
-  npcs?: { name: string; state?: string }[];
-  availableItems?: InventoryItem[]; // Items có thể lấy được trong scene hiện tại
-  clocks?: { name: string; value: number; max: number }[];
-  flags?: Record<string, boolean>;
+  
+  // NPCs present in the scene
+  npcs?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    role: string; // bartender, merchant, guard, traveler, etc.
+    mood: string; // friendly, suspicious, angry, etc.
+    dialogue: string; // Current dialogue or reaction
+    position: string; // behind_bar, at_table, near_door, etc.
+    status: string; // alive, unconscious, busy, available, etc.
+  }>;
+  
+  // Items available in the scene
+  availableItems?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    type: 'weapon' | 'armor' | 'consumable' | 'misc';
+    rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+    quantity: number;
+    icon: string;
+    location: string; // on_table, in_chest, behind_bar, etc.
+    condition: string; // pristine, worn, broken, etc.
+    value: number; // for trading
+    // Consumable specific properties
+    effect?: string; // Effect string using new format
+    consumableType?: ConsumableEffectType;
+    duration?: number; // Duration in turns
+    targetType?: 'self' | 'enemy' | 'any';
+    requiresTarget?: boolean;
+    cooldown?: number; // Cooldown in turns
+    stackable?: boolean;
+    maxStacks?: number;
+    level?: number; // Required level to use
+    tags?: string[]; // Tags for categorization
+    flavorText?: string; // Additional flavor text
+    usageInstructions?: string; // How to use this consumable
+    // Equipment specific properties
+    damage?: string; // For weapons
+    damageType?: string; // For weapons
+    attackBonus?: number; // For weapons
+    armorClass?: number; // For armor
+    slot?: string; // Equipment slot
+  }>;
+  
+  // Time-based events (clocks)
+  clocks?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    progress: number; // 0-100
+    maxProgress: number;
+    timeRemaining: number; // turns or real-time
+    consequences: string; // what happens when completed
+    urgency: 'low' | 'medium' | 'high' | 'critical';
+  }>;
+  
+  // Scene state flags
+  flags?: {
+    discovered: boolean; // đã khám phá
+    cleared: boolean; // đã dọn sạch
+    locked: boolean; // bị khóa
+    dangerous: boolean; // nguy hiểm
+    peaceful: boolean; // hòa bình
+    magical: boolean; // có ma thuật
+    cursed: boolean; // bị nguyền rủa
+    blessed: boolean; // được ban phước
+  };
+  
+  // World time
   worldTime?: WorldTime;
+  
+  // Environment details
+  environment?: {
+    lighting: string; // bright, dim, dark, magical
+    temperature: string; // hot, warm, cool, cold, freezing
+    humidity: string; // dry, normal, humid, wet
+    wind: string; // calm, breezy, windy, stormy
+    sounds: string; // silent, quiet, normal, loud, chaotic
+    smells: string; // fresh, musty, sweet, foul, magical
+  };
+  
+  // Available interactions
+  interactions?: {
+    examine: string[]; // objects, areas, persons that can be examined
+    search: string[]; // hidden_items, secrets, clues that can be searched
+    talk: Array<{ npc_id: string; topics: string[] }>; // NPCs and conversation topics
+    use: Array<{ item_id: string; targets: string[] }>; // items and their possible targets
+    move: Array<{ direction: string; destination: string }>; // movement options
+    rest: Array<{ duration: string; safety_level: string }>; // rest options
+    craft: Array<{ recipe: string; materials: string[] }>; // crafting options
+    trade: Array<{ npc_id: string; items: string[] }>; // trading options
+  };
+  
+  // Dangers present
+  dangers?: {
+    traps: Array<{
+      type: string;
+      location: string;
+      trigger: string;
+      damage: string;
+    }>;
+    monsters: Array<{
+      name: string;
+      level: number;
+      threat_level: string;
+      location: string;
+    }>;
+    environmental: string[]; // poison_gas, falling_rocks, etc.
+    social: string[]; // hostile_npcs, guards, etc.
+  };
+  
+  // Secrets not yet discovered
+  secrets?: {
+    hidden_passages: string[]; // secret doors, hidden paths
+    secret_items: string[]; // hidden treasures, concealed objects
+    hidden_rooms: string[]; // secret chambers, concealed spaces
+    coded_messages: string[]; // encrypted texts, coded communications
+    ancient_knowledge: string[]; // lost lore, forgotten wisdom
+  };
+}
+
+// Temporary Player Stats for Combat
+export interface TemporaryPlayerStats {
+  // Core stats (base + equipment + status effects)
+  coreStats: {
+    strength: number;
+    agility: number;
+    intelligence: number;
+    constitution: number;
+    wisdom: number;
+    charisma: number;
+    modifiers: {
+      strength: number;
+      agility: number;
+      intelligence: number;
+      constitution: number;
+      wisdom: number;
+      charisma: number;
+    };
+  };
+  // Combat stats
+  armorClass: number; // AC with equipment + status effects
+  attackBonus: number; // From stats + equipment + status effects
+  damageBonus: string; // Extra damage dice from buffs (e.g., "+2d4")
+  // Equipment bonuses
+  equipmentBonuses: {
+    ac: number;
+    attack: number;
+    damage: string;
+    stats: { [key: string]: number };
+  };
+  // Status effect modifiers
+  statusEffectModifiers: {
+    ac: number;
+    attack: number;
+    damage: string;
+    stats: { [key: string]: number };
+  };
+}
+
+// Status Effects for Combat
+export interface StatusEffect {
+  id: string;
+  name: string;
+  description: string;
+  duration: number; // 0 for instant, >0 for turns
+  icon: string; // Icon để hiển thị
+  effects: {
+    healthModifier?: number;
+    armorClassModifier?: number;
+    attackModifier?: number;
+    damageModifier?: string; // String for dice notation (e.g., "1d4", "+2")
+    statModifiers?: { [key: string]: number };
+  };
+}
+
+// Consumable Effect Types
+export type ConsumableEffectType = 'heal' | 'stat_buff' | 'damage_buff' | 'debuff' | 'cure' | 'special';
+
+// Parsed Consumable Effect
+export interface ParsedConsumableEffect {
+  type: ConsumableEffectType;
+  target: string; // stat name, 'self', 'enemy', etc.
+  value: string; // modifier value (e.g., "+2", "1d4", "2")
+  duration: string; // duration (e.g., "5turns", "instant")
+}
+
+// Consumable Usage Context
+export interface ConsumableUsageContext {
+  user: string; // user ID
+  target?: string; // target ID (if requires target)
+  combatTurn: number; // current combat turn
+  location: string; // where it's being used
+  conditions?: string[]; // special conditions
+}
+
+// Consumable Effect Result
+export interface ConsumableEffectResult {
+  success: boolean;
+  message: string;
+  effects: StatusEffect[];
+  healing?: number; // amount healed (if any)
+  damage?: number; // amount of damage dealt (if any)
+  statChanges?: { [key: string]: number }; // stat changes applied
+  duration?: number; // effect duration
+}
+
+// Consumable Database Entry
+export interface ConsumableDatabaseEntry {
+  id: string;
+  name: string;
+  description: string;
+  effect: string; // Effect string using new format
+  consumableType: ConsumableEffectType;
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  value: number; // gold value
+  icon: string;
+  duration: number; // Duration in turns
+  targetType: 'self' | 'enemy' | 'any';
+  requiresTarget: boolean;
+  cooldown: number; // Cooldown in turns
+  stackable: boolean;
+  maxStacks: number;
+  level: number; // Required level to use
+  tags: string[]; // Tags for categorization
+  flavorText?: string; // Additional flavor text
+  usageInstructions?: string; // How to use this consumable
+}
+
+// Consumable Category
+export interface ConsumableCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string; // CSS color for UI
+  effects: ConsumableEffectType[];
+  sortOrder: number;
 }
 
 // Combat Stats System
@@ -451,6 +703,7 @@ export interface CombatStats {
   attacks: Attack[];
   abilities?: SpecialAbility[];
   equippedArmor?: InventoryItem; // Chest armor đang mặc
+  statusEffects?: StatusEffect[]; // Active status effects
 }
 
 export interface Attack {
@@ -605,4 +858,107 @@ export interface StyleGuidance {
   whenOnSafe: string;          // Hướng dẫn khi 18+ ON an toàn
   whenOnDirect: string;        // Hướng dẫn khi 18+ ON tả thực
   rejectionMessage: string;    // Thông báo từ chối vi phạm
+}
+
+// Combat State for Combat System
+export interface CombatState {
+  id: string;
+  isActive: boolean;
+  isPlayerTurn: boolean;
+  currentTurnCombatant: string | null;
+  combatants: Combatant[];
+  turnOrder: string[];
+  currentTurn: number;
+  turnLogs: TurnLog[];
+  temporaryPlayerStats?: TemporaryPlayerStats;
+  playerInventory?: InventoryItem[]; // Player's consumable inventory during combat
+}
+
+// Combatant interface for combat
+export interface Combatant {
+  id: string;
+  name: string;
+  type: 'player' | 'enemy' | 'npc';
+  characterData?: Character; // For player and NPC combatants
+  stats: CombatStats;
+  statusEffects: StatusEffect[];
+  equippedArmor?: InventoryItem;
+  isAlive: boolean;
+  initiative: number;
+}
+
+// Turn Log for combat history
+export interface TurnLog {
+  turn: number;
+  combatantId: string;
+  combatantName: string;
+  isPlayerTurn: boolean;
+  actions: CombatLogEntry[];
+}
+
+// Combat Log Entry
+export interface CombatLogEntry {
+  id: string;
+  type: 'initiative' | 'attack' | 'damage' | 'heal' | 'status' | 'death' | 'victory' | 'defeat' | 'info';
+  message: string;
+  details?: string;
+}
+
+// Skill Tree System Types
+export interface SkillTreeSkill {
+  id: string;
+  name: string;
+  description: string;
+  tier: 1 | 2 | 3 | 'special';
+  category: 'combat' | 'social';
+  prerequisites?: string[]; // IDs của skills cần thiết
+  cost: number; // Số skill points cần để học
+  bonuses: SkillBonuses;
+  icon?: string;
+  isLearned?: boolean; // Trạng thái học của skill này
+}
+
+export interface SkillBonuses {
+  // Combat bonuses
+  armorClass?: number;
+  attackBonus?: number;
+  damageBonus?: string; // Dice notation như "+1d4", "+2d6"
+  initiative?: number;
+  criticalChance?: number; // Percentage
+  // Social bonuses
+  statBonuses?: {
+    strength?: number;
+    agility?: number;
+    intelligence?: number;
+    constitution?: number;
+    wisdom?: number;
+    charisma?: number;
+  };
+  // Special bonuses
+  shopPriceModifier?: number; // Percentage, negative = cheaper
+  sellPriceModifier?: number; // Percentage, positive = more money
+  reputationGainModifier?: number; // Percentage
+  relationshipGainModifier?: number; // Percentage
+  // Special abilities
+  specialAbilities?: string[]; // IDs của special abilities
+}
+
+export interface SkillTree {
+  combat: {
+    learned: string[]; // IDs của skills đã học
+    available: string[]; // IDs của skills có thể học
+  };
+  social: {
+    learned: string[]; // IDs của skills đã học
+    available: string[]; // IDs của skills có thể học
+  };
+}
+
+export interface SkillTreeService {
+  getSkillDefinitions(): SkillTreeSkill[];
+  canLearnSkill(character: Character, skillId: string): boolean;
+  learnSkill(character: Character, skillId: string): boolean;
+  resetSkillTree(character: Character, cost: number): boolean;
+  getActiveBonuses(character: Character): SkillBonuses;
+  calculateSkillPointsFromLevels(character: Character): { combat: number; social: number };
 }

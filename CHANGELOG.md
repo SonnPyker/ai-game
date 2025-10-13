@@ -7,6 +7,13 @@ và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.
 
 ## [5.1.0-beta] - 2025-01-12
 
+### 🌟 Major Features
+- **Skill Tree System**: Complete implementation of combat and social skill trees
+- **Combat Level Progression**: Every 3 combat levels grants +1 skill point and +7 HP
+- **Social Level Progression**: Every 3 character levels grants +1 social skill point
+- **Direct Stat Bonuses**: Skill tree bonuses directly modify core stats
+- **HP Recalculation**: Constitution changes properly recalculate HP using character creation formula
+
 ### 🎮 Combat System Enhancements
 - **Real-time Combat Log**: Combat log now displays actions in real-time during player turns with smooth animations
 - **Attack Button Damage Display**: Attack buttons now show combined damage (base + buff) from temporary player stats
@@ -15,9 +22,20 @@ và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.
 - **Status Effect Icons**: Enhanced status effect display with proper damage modifier handling
 - **Combat State Optimization**: Removed combatLog field and improved combat state management
 
+### 🎯 Skill Tree System
+- **Combat Skills**: 12 predefined combat skills with attack, damage, AC, and initiative bonuses
+- **Social Skills**: 12 predefined social skills with stat bonuses and special abilities
+- **Skill Point Management**: Separate combat and social skill points with reset functionality
+- **Prerequisites System**: Skills require previous tier skills to be learned
+- **Tier System**: 3 tiers plus special skills with different costs and bonuses
+- **UI Integration**: Responsive skill tree view with mobile and desktop layouts
+
 ### 🔧 Technical Improvements
 - **Effect Processing Service**: Refactored to handle new standardized effect string format
 - **Combat Service**: Added getCurrentTurnActions() method for real-time action tracking
+- **Skill Tree Service**: Complete service for skill management and bonus calculation
+- **HP Calculation**: Proper HP recalculation when Constitution changes
+- **Damage Bonus Integration**: Skill tree damage bonuses properly integrated into combat
 - **TypeScript Fixes**: Resolved all TypeScript compilation errors
 - **UI Synchronization**: Improved real-time updates between combat state and UI components
 

@@ -6,6 +6,8 @@ import { combatNarrationService } from './combatNarrationService';
 import { enhancedLootService } from './enhancedLootService';
 import { combatAnimationService } from './combatAnimationService';
 import { effectProcessingService } from './effectProcessingService';
+import { skillTreeService } from './skillTreeService';
+import { combatLevelService } from './combatLevelService';
 
 export interface Combatant {
   id: string;
@@ -258,7 +260,15 @@ class CombatService {
   private calculatePlayerAC(player: Character): number {
     // Use AC from coreStats if available
     if (player.coreStats?.armorClass !== undefined) {
-      return player.coreStats.armorClass;
+      let ac = player.coreStats.armorClass;
+      
+      // Apply skill tree bonuses
+      const skillBonuses = skillTreeService.getActiveBonuses(player);
+      if (skillBonuses.armorClass) {
+        ac += skillBonuses.armorClass;
+      }
+      
+      return ac;
     }
     
     // Fallback calculation for backward compatibility
@@ -272,6 +282,12 @@ class CombatService {
     if (player.equipment?.chest && player.equipment.chest.armorClass) {
       // Use armor's AC + agility modifier
       ac = player.equipment.chest.armorClass + agilityModifier;
+    }
+    
+    // Apply skill tree bonuses
+    const skillBonuses = skillTreeService.getActiveBonuses(player);
+    if (skillBonuses.armorClass) {
+      ac += skillBonuses.armorClass;
     }
     
     return ac;
@@ -322,9 +338,8 @@ class CombatService {
       if (weapon.attackBonus) {
         tempStats.equipmentBonuses.attack += weapon.attackBonus;
       }
-      if (weapon.damage) {
-        tempStats.equipmentBonuses.damage = weapon.damage;
-      }
+      // REMOVED: weapon.damage không được thêm vào equipmentBonuses.damage
+      // Weapon damage được xử lý riêng trong getPlayerAttacks()
     }
     
     // 3. Add status effect modifiers
@@ -355,23 +370,34 @@ class CombatService {
     });
     
     // 4. Calculate final values
+    // Get skill tree bonuses first
+    const skillBonuses = skillTreeService.getActiveBonuses(character);
+    
     tempStats.armorClass = baseStats.armorClass + 
       tempStats.equipmentBonuses.ac + 
-      tempStats.statusEffectModifiers.ac;
+      tempStats.statusEffectModifiers.ac +
+      (skillBonuses.armorClass || 0);
     
-    // Calculate attack bonus from strength modifier + equipment + status effects
+    // Calculate attack bonus from strength modifier + equipment + status effects + skill tree
     tempStats.attackBonus = baseStats.modifiers.strength + 
       tempStats.equipmentBonuses.attack + 
-      tempStats.statusEffectModifiers.attack;
+      tempStats.statusEffectModifiers.attack +
+      (skillBonuses.attackBonus || 0);
     
-    // Combine damage bonuses
+    // Combine damage bonuses (status effects + skill tree)
     const damageParts = [];
-    if (tempStats.equipmentBonuses.damage) {
-      damageParts.push(tempStats.equipmentBonuses.damage);
+    
+    // Add skill tree damage bonus (loại bỏ dấu +)
+    if (skillBonuses.damageBonus) {
+      const cleanSkillBonus = skillBonuses.damageBonus.replace(/^\+/, '');
+      damageParts.push(cleanSkillBonus);
     }
+    
+    // Add status effect damage bonus
     if (tempStats.statusEffectModifiers.damage) {
       damageParts.push(tempStats.statusEffectModifiers.damage);
     }
+    
     tempStats.damageBonus = damageParts.join(' + ');
     
     return tempStats;
@@ -393,10 +419,11 @@ class CombatService {
       const weapon = player.equipment.weapon_main;
       if (weapon.damage) {
         const attackBonus = this.calculateAttackBonus(player, weapon);
+        const finalDamage = weapon.damage || '1d4';
         attacks.push({
           name: weapon.name,
           attackBonus,
-          damage: weapon.damage,
+          damage: finalDamage,
           damageType: (weapon.damageType as 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic') || 'physical'
         });
       }
@@ -406,10 +433,11 @@ class CombatService {
       const weapon = player.equipment.weapon_off;
       if (weapon.damage) {
         const attackBonus = this.calculateAttackBonus(player, weapon);
+        const finalDamage = weapon.damage || '1d4';
         attacks.push({
           name: weapon.name,
           attackBonus,
-          damage: weapon.damage,
+          damage: finalDamage,
           damageType: (weapon.damageType as 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic') || 'physical'
         });
       }
@@ -418,10 +446,11 @@ class CombatService {
     // Default unarmed attack if no weapons
     if (attacks.length === 0) {
       const attackBonus = this.calculateAttackBonus(player);
+      const finalDamage = '1d4';
       attacks.push({
         name: 'Unarmed Strike',
         attackBonus,
-        damage: '1d4',
+        damage: finalDamage,
         damageType: 'physical'
       });
     }
@@ -451,7 +480,11 @@ class CombatService {
       bonus += weapon.attackBonus;
     }
     
-    // Equipment no longer provides stat bonuses
+    // Apply skill tree bonuses
+    const skillBonuses = skillTreeService.getActiveBonuses(player);
+    if (skillBonuses.attackBonus) {
+      bonus += skillBonuses.attackBonus;
+    }
     
     return bonus;
   }
@@ -518,7 +551,12 @@ class CombatService {
       let damageDescription = `${attacker.name} hits for`;
       let damageParts = [];
       
-      // For player, use temporaryPlayerStats.damageBonus if available
+      // Always roll base weapon damage first
+      const baseDamageRoll = DiceRoller.roll(attack.damage, `${attack.name} base damage`);
+      totalDamage = baseDamageRoll.total;
+      damageParts.push(`${baseDamageRoll.total} (${attack.damage})`);
+      
+      // For player, add damageBonus if available
       if (attackerId === 'player' && this.currentCombat.temporaryPlayerStats?.damageBonus) {
         const damageBonus = this.currentCombat.temporaryPlayerStats.damageBonus;
         // Split by " + " to get individual damage components
@@ -527,16 +565,11 @@ class CombatService {
         for (const component of damageComponents) {
           const trimmed = component.trim();
           if (trimmed) {
-            const roll = DiceRoller.roll(trimmed, `${attack.name} damage (${trimmed})`);
+            const roll = DiceRoller.roll(trimmed, `${attack.name} bonus damage (${trimmed})`);
             totalDamage += roll.total;
             damageParts.push(`${roll.total} (${trimmed})`);
           }
         }
-      } else {
-        // Use base weapon damage
-        const damageRoll = DiceRoller.roll(attack.damage, `${attack.name} damage`);
-        totalDamage = damageRoll.total;
-        damageParts.push(`${damageRoll.total} (${attack.damage})`);
       }
       
       // Add strength modifier for melee weapons
@@ -882,6 +915,22 @@ class CombatService {
       }
     });
     
+    // Add combat XP if player won
+    if (this.currentCombat.winner === 'player') {
+      const player = this.getCombatant('player');
+      if (player && player.characterData) {
+        // Add 1 XP combat level for winning the combat
+        const combatLevelResult = combatLevelService.addCombatExperience(player.characterData, 1);
+        
+        // Log combat level up if it happened
+        if (combatLevelResult.leveledUp) {
+          this.addTurnAction('info', 
+            `Combat Level Up! Level ${combatLevelResult.previousCombatLevel} → ${combatLevelResult.newCombatLevel}`
+          );
+        }
+      }
+    }
+
     // Set rewards - even for defeat, we still track what happened
     this.currentCombat.rewards = {
       experience: totalExperience,

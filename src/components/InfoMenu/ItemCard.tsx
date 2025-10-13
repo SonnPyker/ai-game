@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { InventoryItem } from '../../types';
 import { 
   MoreVertical, 
@@ -35,6 +35,38 @@ export function ItemCard({
   className = ''
 }: ItemCardProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<'bottom' | 'top' | 'center'>('bottom');
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Calculate menu position based on viewport
+  const calculateMenuPosition = () => {
+    if (!menuButtonRef.current) return;
+    
+    const buttonRect = menuButtonRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const menuHeight = 120; // Approximate menu height
+    
+    // Check if there's enough space below the button
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceAbove = buttonRect.top;
+    
+    if (spaceBelow < menuHeight && spaceAbove < menuHeight) {
+      // Not enough space above or below, use center positioning
+      setMenuPosition('center');
+    } else if (spaceBelow < menuHeight && spaceAbove > menuHeight) {
+      setMenuPosition('top');
+    } else {
+      setMenuPosition('bottom');
+    }
+  };
+
+  // Update menu position when menu opens
+  useEffect(() => {
+    if (showMenu) {
+      calculateMenuPosition();
+    }
+  }, [showMenu]);
 
   // Rarity colors
   const getRarityColor = (rarity: string) => {
@@ -171,6 +203,7 @@ export function ItemCard({
         {showActions && (
           <div className="relative flex-shrink-0">
             <button
+              ref={menuButtonRef}
               onClick={() => setShowMenu(!showMenu)}
               className="p-1 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
             >
@@ -186,7 +219,14 @@ export function ItemCard({
                 />
                 
                 {/* Menu */}
-                <div className="absolute right-0 top-8 z-20 bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px]">
+                <div 
+                  ref={menuRef}
+                  className={`z-20 bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px] ${
+                    menuPosition === 'center' 
+                      ? 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2' 
+                      : `absolute right-0 ${menuPosition === 'top' ? 'bottom-8' : 'top-8'}`
+                  }`}
+                >
                   {onViewDetails && (
                     <button
                       onClick={() => handleAction('view')}

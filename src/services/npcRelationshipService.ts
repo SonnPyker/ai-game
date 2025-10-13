@@ -1,6 +1,7 @@
-import { NPCRelationship, NPCEncounter, ContentFlags } from '../types';
+import { NPCRelationship, NPCEncounter, ContentFlags, Character } from '../types';
 import { npcArousalService } from './npcArousalService';
 import { armorGenerationService } from './armorGenerationService';
+import { skillTreeService } from './skillTreeService';
 
 class NPCRelationshipService {
   private static instance: NPCRelationshipService;
@@ -563,7 +564,7 @@ QUAN TRỌNG:
     }
   }
 
-  updateRelationshipLevel(npcId: string, change: number, consciousnessLevel?: number): void {
+  updateRelationshipLevel(npcId: string, change: number, consciousnessLevel?: number, character?: Character): void {
     const relationship = this.relationships.get(npcId);
     if (relationship) {
       let finalChange = change;
@@ -583,6 +584,14 @@ QUAN TRỌNG:
         // consciousnessLevel > 0.5: ý thức bình thường, không giảm tác động
       }
       
+      // Apply social skill bonuses
+      if (character) {
+        const skillBonuses = skillTreeService.getActiveBonuses(character);
+        if (skillBonuses.relationshipGainModifier) {
+          finalChange = Math.round(finalChange * (1 + skillBonuses.relationshipGainModifier / 100));
+        }
+      }
+      
       // Chỉ áp dụng giảm tác động cho hành động tiêu cực
       if (finalChange < 0) {
         relationship.relationshipLevel = Math.max(-100, Math.min(100, relationship.relationshipLevel + finalChange));
@@ -597,10 +606,20 @@ QUAN TRỌNG:
     }
   }
 
-  updateReputation(npcId: string, change: number): void {
+  updateReputation(npcId: string, change: number, character?: Character): void {
     const relationship = this.relationships.get(npcId);
     if (relationship) {
-      relationship.reputation = Math.max(-100, Math.min(100, relationship.reputation + change));
+      let finalChange = change;
+      
+      // Apply social skill bonuses
+      if (character) {
+        const skillBonuses = skillTreeService.getActiveBonuses(character);
+        if (skillBonuses.reputationGainModifier) {
+          finalChange = Math.round(finalChange * (1 + skillBonuses.reputationGainModifier / 100));
+        }
+      }
+      
+      relationship.reputation = Math.max(-100, Math.min(100, relationship.reputation + finalChange));
       relationship.lastInteraction = new Date();
       this.saveToStorage();
     }

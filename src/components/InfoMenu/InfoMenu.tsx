@@ -21,7 +21,8 @@ import {
   MessageSquare,
   AlertTriangle,
   EyeOff,
-  Coins
+  Coins,
+  TreePine
 } from 'lucide-react';
 import { WorldData, Character, WorldTime, QuestSystem, QuestProgress, ContentFlags, InventoryItem } from '../../types';
 import { npcRelationshipService } from '../../services/npcRelationshipService';
@@ -37,6 +38,7 @@ import { NPCArousalBar } from '../NPCArousalBar';
 import { MapView } from './MapView';
 import { InventoryView } from './InventoryView';
 import { EquipmentView } from './EquipmentView';
+import { SkillTreeView } from './SkillTreeView';
 // CombatConfirmationModal moved to CombatPage
 import { useResponsiveContext } from '../../contexts/ResponsiveContext';
 import { getCharacterDisplayTitle, getCharacterDisplayTitleWithAI, updateCharacterTitle, getCharacterTitle } from '../../utils/characterTitleExtractor';
@@ -160,6 +162,14 @@ export function InfoMenu({
     window.location.href = `/combat?npcId=${npc.id}`;
   }, []);
 
+  // Function to handle character update from skill tree
+  const handleCharacterUpdate = useCallback((updatedCharacter: Character) => {
+    // Update character in localStorage
+    localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
+    // Force re-render
+    setForceUpdate(prev => prev + 1);
+  }, []);
+
   // Combat functions removed - now handled in CombatPage
 
   
@@ -179,7 +189,7 @@ export function InfoMenu({
   });
   const [expandedNPCs, setExpandedNPCs] = useState<Set<string>>(new Set());
   const [forceUpdate, setForceUpdate] = useState<number>(0);
-  const [characterSubSection, setCharacterSubSection] = useState<'info' | 'inventory' | 'equipment' | 'currency'>('info');
+  const [characterSubSection, setCharacterSubSection] = useState<'info' | 'inventory' | 'equipment' | 'skilltree'>('info');
   
   // Theo dõi thay đổi responsive và chuyển section khi cần
   useEffect(() => {
@@ -413,18 +423,18 @@ export function InfoMenu({
             }`)}
           >
             <Sword className="w-4 h-4" />
-            <span>Trang bị</span>
+            <span>Trang bị & Tiền tệ</span>
           </button>
           <button
-            onClick={() => setCharacterSubSection('currency')}
+            onClick={() => setCharacterSubSection('skilltree')}
             className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
-              characterSubSection === 'currency'
+              characterSubSection === 'skilltree'
                 ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
             }`)}
           >
-            <Coins className="w-4 h-4" />
-            <span>Tiền tệ</span>
+            <TreePine className="w-4 h-4" />
+            <span>Kỹ năng</span>
           </button>
         </div>
         
@@ -440,15 +450,23 @@ export function InfoMenu({
           />
         )}
         {characterSubSection === 'equipment' && (
-          <EquipmentView
-            equipment={characterData.equipment || {}}
-            inventory={characterData.inventory || []}
-            onEquipItem={onEquipItem}
-            onUnequipItem={onUnequipItem}
-            onViewItemDetails={onViewItemDetails}
+          <div className="space-y-4">
+            {renderCurrencyInfo()}
+            <EquipmentView
+              equipment={characterData.equipment || {}}
+              inventory={characterData.inventory || []}
+              onEquipItem={onEquipItem}
+              onUnequipItem={onUnequipItem}
+              onViewItemDetails={onViewItemDetails}
+            />
+          </div>
+        )}
+        {characterSubSection === 'skilltree' && characterData && (
+          <SkillTreeView
+            character={characterData}
+            onCharacterUpdate={handleCharacterUpdate}
           />
         )}
-        {characterSubSection === 'currency' && renderCurrencyInfo()}
       </div>
     );
   };
@@ -624,7 +642,7 @@ export function InfoMenu({
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-400">Combat Level</span>
                   <span className="text-orange-400">
-                    {characterData.combatExperience || 0}/{combatLevelService.getCombatLevelInfo(characterData).totalBattlesForNextLevel} (Level {characterData.combatLevel || 1})
+                    {characterData.combatExperience || 0}/{combatLevelService.getXPForCombatLevel(characterData.combatLevel || 1)} XP (Level {characterData.combatLevel || 1})
                   </span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
@@ -744,68 +762,76 @@ export function InfoMenu({
 
     return (
       <div className="space-y-4">
-        {/* Main Currency */}
-        {characterData.currency !== undefined && (
-          <div className="bg-gray-800/50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Coins className="w-6 h-6 text-yellow-400" />
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    {currencyService.getCurrencyName(worldData)}
-                  </h3>
-                  <p className="text-sm text-gray-400">Tiền tệ chính</p>
+        {/* Currency Header */}
+        <div className="bg-gray-800/50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+            <Coins className="w-5 h-5 mr-2" />
+            Tiền Tệ
+          </h3>
+          
+          {/* Main Currency */}
+          {characterData.currency !== undefined && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Coins className="w-6 h-6 text-yellow-400" />
+                  <div>
+                    <h4 className="text-lg font-semibold text-white">
+                      {currencyService.getCurrencyName(worldData)}
+                    </h4>
+                    <p className="text-sm text-gray-400">Tiền tệ chính</p>
+                  </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-yellow-400">
-                  {characterData.currency.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-400">
-                  Số dư hiện tại
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Secondary Currency */}
-        {characterData.secondaryCurrency !== undefined && (
-          <div className="bg-gray-800/50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Coins className="w-6 h-6 text-gray-300" />
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    {currencyService.getSecondaryCurrencyName(worldData)}
-                  </h3>
-                  <p className="text-sm text-gray-400">Tiền tệ phụ</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-gray-300">
-                  {characterData.secondaryCurrency.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-400">
-                  Số dư hiện tại
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-yellow-400">
+                    {characterData.currency.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Số dư hiện tại
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* No Currency Message */}
-        {characterData.currency === undefined && characterData.secondaryCurrency === undefined && (
-          <div className="bg-gray-800/50 rounded-lg p-8 text-center">
-            <Coins className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-400 mb-2">
-              Chưa có tiền tệ
-            </h3>
-            <p className="text-sm text-gray-500">
-              Bạn chưa có tiền tệ nào. Hãy hoàn thành nhiệm vụ để kiếm tiền!
-            </p>
-          </div>
-        )}
+          {/* Secondary Currency */}
+          {characterData.secondaryCurrency !== undefined && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Coins className="w-6 h-6 text-gray-300" />
+                  <div>
+                    <h4 className="text-lg font-semibold text-white">
+                      {currencyService.getSecondaryCurrencyName(worldData)}
+                    </h4>
+                    <p className="text-sm text-gray-400">Tiền tệ phụ</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-gray-300">
+                    {characterData.secondaryCurrency.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Số dư hiện tại
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* No Currency Message */}
+          {characterData.currency === undefined && characterData.secondaryCurrency === undefined && (
+            <div className="text-center py-8">
+              <Coins className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+              <h4 className="text-lg font-semibold text-gray-400 mb-2">
+                Chưa có tiền tệ
+              </h4>
+              <p className="text-sm text-gray-500">
+                Bạn chưa có tiền tệ nào. Hãy hoàn thành nhiệm vụ để kiếm tiền!
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
