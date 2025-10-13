@@ -19,14 +19,14 @@ class EnemyGenerationService {
 
 
   // Create enemy from NPC data
-  public createEnemyFromNPC(npcId: string, npcName: string, npcLevel: number = 1): Enemy {
-    const combatStats = enemyDatabaseService.generateRandomEnemyStats(npcLevel);
+  public createEnemyFromNPC(npcId: string, npcName: string, npcLevel: number = 1, npcType?: Enemy['type']): Enemy {
+    const combatStats = enemyDatabaseService.generateRandomEnemyStats(npcLevel, npcType);
     return enemyDatabaseService.createEnemyFromNPC(npcId, npcName, combatStats);
   }
 
   // Generate random enemy for testing
   public generateRandomEnemy(level: number = 1, type?: Enemy['type']): Enemy {
-    const combatStats = enemyDatabaseService.generateRandomEnemyStats(level);
+    const combatStats = enemyDatabaseService.generateRandomEnemyStats(level, type);
     
     const enemyTypes = ['humanoid', 'beast', 'undead', 'demon', 'elemental', 'construct', 'other'];
     const selectedType = type || (enemyTypes[Math.floor(Math.random() * enemyTypes.length)] as Enemy['type']);

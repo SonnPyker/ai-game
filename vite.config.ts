@@ -109,6 +109,13 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true
+    open: true,
+    hmr: {
+      overlay: true
+    }
+  },
+  define: {
+    __HMR_CONFIG_NAME__: JSON.stringify('vite'),
+    global: 'globalThis'
   }
 })

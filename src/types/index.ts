@@ -450,6 +450,7 @@ export interface CombatStats {
   armorClass: number; // AC trong DnD
   attacks: Attack[];
   abilities?: SpecialAbility[];
+  equippedArmor?: InventoryItem; // Chest armor đang mặc
 }
 
 export interface Attack {

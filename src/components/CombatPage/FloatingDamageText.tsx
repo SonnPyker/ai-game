@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Easing } from 'framer-motion';
 import { 
   CombatDamageTextData, 
   CombatAnimationType 
@@ -58,7 +58,7 @@ const FloatingDamageText: React.FC<FloatingDamageTextProps> = ({ text, onComplet
         y: -80,
         transition: {
           duration: 1.2,
-          ease: "easeOut"
+          ease: "easeOut" as Easing
         }
       },
       exit: { 
@@ -80,7 +80,7 @@ const FloatingDamageText: React.FC<FloatingDamageTextProps> = ({ text, onComplet
           scale: [0.5, 1.2, 1],
           transition: {
             duration: 1.5,
-            ease: "easeOut",
+            ease: "easeOut" as Easing,
             times: [0, 0.2, 1]
           }
         }

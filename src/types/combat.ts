@@ -2,7 +2,7 @@
 import { InventoryItem } from './index';
 
 export interface CombatAction {
-  type: 'attack' | 'defend' | 'use_item' | 'ability' | 'move';
+  type: 'attack' | 'defend' | 'use_item' | 'useItem' | 'ability' | 'move';
   targetId?: string;
   attackIndex?: number;
   itemId?: string;
@@ -34,7 +34,6 @@ export interface CombatNarrationTemplate {
 export interface CombatLogEntry {
   type: 'attack' | 'damage' | 'status' | 'death' | 'victory' | 'defeat' | 'info' | 'heal' | 'initiative';
   message: string;
-  timestamp: Date;
   combatantId?: string;
   targetId?: string;
   id?: string;
@@ -47,7 +46,6 @@ export interface TurnLog {
   combatantName: string;
   actions: CombatLogEntry[];
   description: string; // Mô tả tổng quan lượt chơi
-  timestamp: Date;
   isPlayerTurn: boolean;
 }
 
@@ -175,15 +173,16 @@ export interface CombatEffectData {
 export interface CombatTurnState {
   hasPerformedAction: boolean;
   canEndTurn: boolean;
-  actionType?: 'attack' | 'defend' | 'item' | 'ability';
+  mainActionUsed: boolean;
+  extraActionUsed: boolean;
+  mainActionType?: 'attack' | 'defend' | 'ability';
+  extraActionType?: 'consumable';
   actionTarget?: string;
-  timestamp: number;
 }
 
 export interface CombatResultData {
   // Combat metadata
   combatId: string;
-  timestamp: Date;
   duration: number; // in seconds
   
   // Combat outcome

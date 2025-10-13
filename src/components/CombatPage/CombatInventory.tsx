@@ -34,31 +34,54 @@ export function CombatInventory({
   // Filter items that can be used in combat
   const usableItems = useMemo(() => {
     return inventory.filter(item => {
-      // Weapons (if equipped)
-      if (item.type === 'weapon' && item.isEquipped) return true;
-      
-      // Consumables with damage or healing properties
+      // Only show consumable items
       if (item.type === 'consumable') {
+        if (item.stats?.effect) return true; // Any consumable with effect
         if (item.damage) return true; // Damaging consumables
         if (item.name.toLowerCase().includes('heal') || 
             item.name.toLowerCase().includes('potion') ||
             item.name.toLowerCase().includes('thuốc')) return true;
+        return true; // Show all consumables regardless of other properties
       }
-      
-      // Misc items with damage
-      if (item.type === 'misc' && item.damage) return true;
       
       return false;
     });
   }, [inventory]);
 
   const handleUseItem = (item: InventoryItem) => {
-    // If item requires a target (damaging items), show target selection
-    if (item.damage && enemies.length > 0) {
+    console.log('handleUseItem called with item:', item);
+    
+    // Check if item requires a target (damaging items or debuff items)
+    let requiresTarget = !!item.damage;
+    
+    if (item.stats?.effect) {
+      const effect = item.stats.effect;
+      
+      // Check new format first
+      if (effect.includes(':')) {
+        const parts = effect.split(':');
+        if (parts.length >= 3) {
+          const [type] = parts;
+          requiresTarget = type === 'debuff'; // Only debuffs need target
+        }
+      } else {
+        // Fallback to old format
+        requiresTarget = requiresTarget || (
+          effect.startsWith('poison_') ||
+          effect.startsWith('weakness_') ||
+          effect.startsWith('slow_')
+        );
+      }
+    }
+    
+    console.log('requiresTarget:', requiresTarget, 'enemies.length:', enemies.length);
+    
+    if (requiresTarget && enemies.length > 0) {
       setPendingItem(item);
       setShowTargetSelection(true);
     } else {
-      // Use item directly (healing items, etc.)
+      // Use item directly (healing items, buffs, etc.)
+      console.log('Using item directly:', item.id);
       onUseItem(item.id);
       onClose();
     }
@@ -100,29 +123,155 @@ export function CombatInventory({
     if (item.damage) {
       return `Gây ${item.damage} sát thương ${item.damageType || 'vật lý'}`;
     }
+    
+    // Check for consumable effects - try new format first
+    if (item.stats?.effect) {
+      const effect = item.stats.effect;
+      
+      // Try new format: type:target:value:duration
+      if (effect.includes(':')) {
+        const parts = effect.split(':');
+        if (parts.length >= 3) {
+          const [type, target, value, duration] = parts;
+          
+          switch (type) {
+            case 'heal':
+              return `Hồi phục ${value} HP ngay lập tức`;
+            case 'stat_buff':
+              const statNames: { [key: string]: string } = {
+                'strength': 'Sức mạnh',
+                'agility': 'Nhanh nhẹn', 
+                'constitution': 'Thể chất',
+                'intelligence': 'Trí tuệ',
+                'wisdom': 'Khôn ngoan',
+                'charisma': 'Sức hút',
+                'ac': 'Phòng thủ (AC)'
+              };
+              const durationText = duration === 'instant' ? 'ngay lập tức' : `trong ${duration}`;
+              return `Tăng ${statNames[target] || target} ${value} ${durationText}`;
+            case 'damage_buff':
+              // For damage_buff, the format is: damage_buff:value:duration (no target)
+              const damageValue = parts.length >= 3 ? parts[1] : value; // +1d4
+              const damageDuration = parts.length >= 3 ? parts[2] : duration; // 3turns
+              const durationText2 = damageDuration === 'instant' ? 'ngay lập tức' : `trong ${damageDuration}`;
+              return `Tăng sát thương ${damageValue} ${durationText2}`;
+            case 'debuff':
+              const debuffNames: { [key: string]: string } = {
+                'poison': 'Độc',
+                'weakness': 'Yếu đuối',
+                'slow': 'Chậm chạp'
+              };
+              const durationText3 = duration === 'instant' ? 'ngay lập tức' : `trong ${duration}`;
+              return `Gây ${debuffNames[target] || target} ${value} cho mục tiêu ${durationText3}`;
+            case 'cure':
+              const cureNames: { [key: string]: string } = {
+                'poison': 'độc tố',
+                'all': 'tất cả hiệu ứng tiêu cực'
+              };
+              return `Loại bỏ ${cureNames[target] || target} ngay lập tức`;
+            default:
+              return item.description || 'Không có mô tả';
+          }
+        }
+      }
+      
+      // Fallback to old format for backward compatibility
+      if (effect.startsWith('heal_')) {
+        return 'Hồi phục HP';
+      } else if (effect.startsWith('damage_buff_')) {
+        return 'Tăng sát thương tấn công';
+      } else if (effect.startsWith('ac_buff_')) {
+        return 'Tăng AC (Áo giáp)';
+      } else if (effect.includes('_plus_') && effect.includes('_1hour')) {
+        const statName = effect.split('_plus_')[0];
+        const statNames: { [key: string]: string } = {
+          'strength': 'Sức mạnh',
+          'agility': 'Nhanh nhẹn', 
+          'constitution': 'Thể chất',
+          'intelligence': 'Trí tuệ',
+          'wisdom': 'Khôn ngoan',
+          'charisma': 'Sức hút'
+        };
+        return `Tăng ${statNames[statName] || statName}`;
+      } else if (effect.startsWith('poison_')) {
+        return 'Gây độc cho mục tiêu';
+      } else if (effect.startsWith('weakness_')) {
+        return 'Làm yếu mục tiêu';
+      } else if (effect.startsWith('slow_')) {
+        return 'Làm chậm mục tiêu';
+      } else if (effect.startsWith('cure_')) {
+        return 'Chữa trị hiệu ứng tiêu cực';
+      }
+    }
+    
+    // Fallback to name-based detection
     if (item.name.toLowerCase().includes('heal') || 
         item.name.toLowerCase().includes('potion') ||
         item.name.toLowerCase().includes('thuốc')) {
       return 'Hồi phục HP';
     }
-    return item.description;
+    
+    return item.description || 'Sử dụng vật phẩm';
   };
 
   const getItemActionText = (item: InventoryItem) => {
     if (item.damage) {
       return 'Tấn công';
     }
+    
+    // Check for consumable effects - try new format first
+    if (item.stats?.effect) {
+      const effect = item.stats.effect;
+      
+      // Try new format: type:target:value:duration
+      if (effect.includes(':')) {
+        const parts = effect.split(':');
+        if (parts.length >= 3) {
+          const [type] = parts;
+          
+          switch (type) {
+            case 'heal':
+              return 'Hồi phục';
+            case 'stat_buff':
+            case 'damage_buff':
+              return 'Tăng cường';
+            case 'debuff':
+              return 'Gây hiệu ứng';
+            case 'cure':
+              return 'Chữa trị';
+            default:
+              return 'Sử dụng';
+          }
+        }
+      }
+      
+      // Fallback to old format for backward compatibility
+      if (effect.startsWith('heal_')) {
+        return 'Hồi phục';
+      } else if (effect.startsWith('damage_buff_') || effect.startsWith('ac_buff_') || 
+                 (effect.includes('_plus_') && effect.includes('_1hour'))) {
+        return 'Tăng cường';
+      } else if (effect.startsWith('poison_') || effect.startsWith('weakness_') || 
+                 effect.startsWith('slow_')) {
+        return 'Gây hiệu ứng';
+      } else if (effect.startsWith('cure_')) {
+        return 'Chữa trị';
+      }
+    }
+    
+    // Fallback to name-based detection
     if (item.name.toLowerCase().includes('heal') || 
         item.name.toLowerCase().includes('potion') ||
         item.name.toLowerCase().includes('thuốc')) {
       return 'Hồi phục';
     }
+    
     return 'Sử dụng';
   };
 
   return (
     <>
-      <div className="h-full flex flex-col">
+      <div className="h-full max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
@@ -143,7 +292,7 @@ export function CombatInventory({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto max-h-96 p-6">
           {usableItems.length === 0 ? (
             <div className="text-center py-12">
               <Package className="w-16 h-16 text-gray-500 mx-auto mb-4" />
@@ -205,17 +354,27 @@ export function CombatInventory({
                         </div>
                       )}
                       
+                      {/* Quantity Display */}
+                      {item.quantity !== undefined && (
+                        <div className="text-xs text-gray-400 mb-2">
+                          Số lượng: {item.quantity}
+                        </div>
+                      )}
+                      
                       <button
                         onClick={() => handleUseItem(item)}
+                        disabled={item.quantity === 0}
                         className={`
                           w-full py-2 px-4 rounded-lg transition-colors font-medium
-                          ${item.damage 
-                            ? 'bg-red-600 hover:bg-red-700 text-white' 
-                            : 'bg-green-600 hover:bg-green-700 text-white'
+                          ${item.quantity === 0
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                            : item.damage 
+                              ? 'bg-red-600 hover:bg-red-700 text-white' 
+                              : 'bg-green-600 hover:bg-green-700 text-white'
                           }
                         `}
                       >
-                        {getItemActionText(item)}
+                        {item.quantity === 0 ? 'Đã hết' : getItemActionText(item)}
                       </button>
                     </div>
                   </div>

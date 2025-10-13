@@ -5,6 +5,22 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0-beta] - 2025-01-12
+
+### 🎮 Combat System Enhancements
+- **Real-time Combat Log**: Combat log now displays actions in real-time during player turns with smooth animations
+- **Attack Button Damage Display**: Attack buttons now show combined damage (base + buff) from temporary player stats
+- **Temporary Player Stats System**: Implemented comprehensive temporary stats system for combat buffs/debuffs
+- **Standardized Effect Format**: Unified consumable effect string format (type:target:value:duration)
+- **Status Effect Icons**: Enhanced status effect display with proper damage modifier handling
+- **Combat State Optimization**: Removed combatLog field and improved combat state management
+
+### 🔧 Technical Improvements
+- **Effect Processing Service**: Refactored to handle new standardized effect string format
+- **Combat Service**: Added getCurrentTurnActions() method for real-time action tracking
+- **TypeScript Fixes**: Resolved all TypeScript compilation errors
+- **UI Synchronization**: Improved real-time updates between combat state and UI components
+
 ## [5.0.0-beta] - 2025-01-12
 
 ### 🚀 Hệ thống Parallel API Processing

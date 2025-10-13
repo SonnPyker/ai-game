@@ -25,7 +25,7 @@ export function useCombatVisualEffects(combatantId: string) {
   });
 
   const [floatingTexts, setFloatingTexts] = useState<CombatDamageTextData[]>([]);
-  const animationTimeoutRef = useRef<NodeJS.Timeout>();
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const elementRef = useRef<HTMLElement>(null);
 
   // Cleanup animation classes after animation completes

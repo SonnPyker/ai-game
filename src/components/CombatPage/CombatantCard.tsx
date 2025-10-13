@@ -1,9 +1,10 @@
 // import React from 'react';
 import { Heart, Shield, Sword, Target } from 'lucide-react';
-import { Combatant } from '../../services/combatService';
+import { Combatant, combatService } from '../../services/combatService';
 import { MotionWrapper } from '../MotionWrapper';
 import { useCombatVisualEffects } from '../../hooks/useCombatVisualEffects';
 import { FloatingDamageContainer } from './FloatingDamageText';
+import { StatusEffectIcons } from './StatusEffectIcons';
 
 interface CombatantCardProps {
   combatant: Combatant;
@@ -11,14 +12,16 @@ interface CombatantCardProps {
   isSelected?: boolean;
   isPlayerTurn?: boolean;
   onSelect?: () => void;
+  temporaryPlayerStats?: any; // TemporaryPlayerStats
 }
 
 export function CombatantCard({ 
   combatant, 
   isEnemy, 
   isSelected = false, 
-  isPlayerTurn = false,
-  onSelect 
+  isPlayerTurn = false, 
+  onSelect,
+  temporaryPlayerStats
 }: CombatantCardProps) {
   const hpPercentage = (combatant.health.current / combatant.health.max) * 100;
   const isAlive = combatant.isAlive;
@@ -117,7 +120,12 @@ export function CombatantCard({
         <div className="flex items-center space-x-1">
           <Shield className="w-4 h-4 text-blue-400" />
           <span className="text-gray-300">AC:</span>
-          <span className="font-mono">{combatant.armorClass}</span>
+          <span className="font-mono">
+            {!isEnemy && temporaryPlayerStats 
+              ? temporaryPlayerStats.armorClass 
+              : combatService.calculateACWithEffects(combatant)
+            }
+          </span>
         </div>
         
         <div className="flex items-center space-x-1">
@@ -137,19 +145,43 @@ export function CombatantCard({
         </div>
       )}
 
+      {/* Equipped Armor */}
+      {combatant.equippedArmor && (
+        <div className="mt-3">
+          <div className="text-xs text-gray-400 mb-1">Áo giáp:</div>
+          <div className="flex items-center space-x-2 text-xs bg-gray-700/50 rounded px-2 py-1">
+            <span className="text-lg">{combatant.equippedArmor.icon}</span>
+            <div className="flex-1">
+              <div className="font-medium text-gray-200">{combatant.equippedArmor.name}</div>
+              <div className="text-gray-400">
+                +{combatant.equippedArmor.armorClass || 0} AC
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Attacks */}
       {combatant.attacks.length > 0 && (
         <div className="mt-3">
           <div className="text-xs text-gray-400 mb-1">Tấn công:</div>
           <div className="space-y-1">
-            {combatant.attacks.slice(0, 2).map((attack, index) => (
-              <div key={index} className="text-xs bg-gray-700/50 rounded px-2 py-1">
-                <div className="font-medium">{attack.name}</div>
-                <div className="text-gray-300">
-                  +{attack.attackBonus} to hit, {attack.damage} {attack.damageType}
+            {combatant.attacks.slice(0, 2).map((attack, index) => {
+              // For player, show damage bonus from temporaryPlayerStats
+              let displayDamage = attack.damage;
+              if (!isEnemy && temporaryPlayerStats?.damageBonus) {
+                displayDamage = temporaryPlayerStats.damageBonus;
+              }
+              
+              return (
+                <div key={index} className="text-xs bg-gray-700/50 rounded px-2 py-1">
+                  <div className="font-medium">{attack.name}</div>
+                  <div className="text-gray-300">
+                    +{attack.attackBonus} to hit, {displayDamage} {attack.damageType}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {combatant.attacks.length > 2 && (
               <div className="text-xs text-gray-500">
                 +{combatant.attacks.length - 2} tấn công khác
@@ -163,16 +195,10 @@ export function CombatantCard({
       {combatant.statusEffects.length > 0 && (
         <div className="mt-3">
           <div className="text-xs text-gray-400 mb-1">Hiệu ứng:</div>
-          <div className="flex flex-wrap gap-1">
-            {combatant.statusEffects.map((effect) => (
-              <span
-                key={effect.id}
-                className="text-xs bg-purple-600/20 text-purple-400 px-2 py-1 rounded"
-              >
-                {effect.name}
-              </span>
-            ))}
-          </div>
+          <StatusEffectIcons 
+            statusEffects={combatant.statusEffects}
+            className="justify-start"
+          />
         </div>
       )}
 

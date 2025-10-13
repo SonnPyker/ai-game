@@ -118,14 +118,6 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
     }
   };
 
-  // Format timestamp
-  const formatTime = (timestamp: Date) => {
-    return new Date(timestamp).toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  };
 
   // Format dice roll details
   const formatDiceDetails = (details: any) => {
@@ -173,8 +165,38 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
           </div>
         ) : (
           <AnimatePresence>
-            {/* Render turn-based logs if available, otherwise fallback to individual logs */}
-            {turnLogs.length > 0 ? (
+            {/* Show real-time actions during player turn, otherwise show turn-based logs */}
+            {isPlayerTurn && log.length > 0 ? (
+              // Real-time actions with staggered animation
+              log.map((entry, index) => (
+                <MotionWrapper
+                  key={`action-${entry.id || index}`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="mb-2"
+                >
+                  <div className="bg-gray-800/40 rounded-lg p-3 border-l-4 border-l-blue-400">
+                    <div className="flex items-start space-x-2">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getLogIcon(entry.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-200">
+                          {entry.message}
+                        </div>
+                        {entry.details && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {formatDiceDetails(entry.details)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </MotionWrapper>
+              ))
+            ) : turnLogs.length > 0 ? (
               turnLogs.map((turnLog, index) => (
                 <MotionWrapper
                   key={`turn-${turnLog.turn}-${turnLog.combatantId}`}
@@ -201,7 +223,7 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
                       Turn {turnLog.turn} - {turnLog.combatantName}
                     </span>
                     <div className="text-xs text-gray-400 ml-auto">
-                      {formatTime(turnLog.timestamp)}
+                      Turn {turnLog.turn}
                     </div>
                   </div>
 
@@ -286,7 +308,7 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
                       {formatDiceDetails(entry.details)}
                       
                       <div className="text-xs text-gray-500 mt-1">
-                        {formatTime(entry.timestamp)}
+                        Action
                       </div>
                     </div>
                   </div>

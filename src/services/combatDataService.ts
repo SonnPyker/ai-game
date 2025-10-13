@@ -5,7 +5,6 @@ class CombatDataService {
   private readonly STORAGE_KEY = 'combat_result';
   private readonly HISTORY_KEY = 'combat_history';
   private readonly MAX_HISTORY_SIZE = 50;
-  private readonly MAX_HISTORY_AGE_DAYS = 7;
 
   public static getInstance(): CombatDataService {
     if (!CombatDataService.instance) {
@@ -65,17 +64,8 @@ class CombatDataService {
     try {
       const history = this.getCombatHistory();
       if (Array.isArray(history)) {
-        const now = Date.now();
-        const maxAge = this.MAX_HISTORY_AGE_DAYS * 24 * 60 * 60 * 1000; // Convert days to milliseconds
-        
-        // Filter out old entries
-        const filteredHistory = history.filter(entry => {
-          if (entry.timestamp) {
-            const entryTime = new Date(entry.timestamp).getTime();
-            return (now - entryTime) <= maxAge;
-          }
-          return true; // Keep entries without timestamp
-        });
+        // Filter out old entries (keep all entries since timestamp was removed)
+        const filteredHistory = history;
         
         // Limit size
         const limitedHistory = filteredHistory.slice(-this.MAX_HISTORY_SIZE);

@@ -5,6 +5,7 @@ import { npcRelationshipService } from './npcRelationshipService';
 import { nameGenerationService } from './nameGenerationService';
 import { locationService } from './locationService';
 import { questCombatService } from './questCombatService';
+import { armorGenerationService } from './armorGenerationService';
 
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
@@ -2643,12 +2644,34 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
         "armorClass": 14, // AC từ 10-20
         "slot": "head|chest|hands|legs|feet|accessory1|accessory2|accessory3", // Vị trí trang bị
         // CHO CONSUMABLE - BẮT BUỘC:
-        "effect": "heal_1d4_plus_1|strength_plus_2_1hour|cure_poison|full_heal_and_cure_all"
+        "effect": "heal_1d4_plus_1|damage_buff_1d4_3turns|ac_buff_2_3turns|poison_damage_1d4_3turns|cure_poison"
       }
     ]
   }
 - KHÔNG được tạo item rewards chỉ có description mà không có items array
 - Mỗi item phải có id duy nhất, name cụ thể, và thông tin đầy đủ
+
+QUAN TRỌNG VỀ CONSUMABLE GENERATION:
+- CONSUMABLE PHẢI có: effect (format chuẩn)
+- Effect format chuẩn:
+  * Healing: "heal_1d4_plus_1", "heal_2d4_plus_2", "heal_4d4_plus_4"
+  * Damage Buff: "damage_buff_1d4_3turns", "damage_buff_1d6_5turns", "damage_buff_2d6_4turns"
+  * AC Buff: "ac_buff_2_3turns", "ac_buff_3_5turns", "ac_buff_4_6turns"
+  * Stat Buff: "strength_plus_2_1hour", "agility_plus_3_1hour", "intelligence_plus_4_1hour"
+  * Debuff: "poison_damage_1d4_3turns", "weakness_debuff_2turns", "slow_debuff_4turns"
+  * Cure: "cure_poison", "cure_all"
+- Rarity guidelines cho consumables:
+  * Common: Level 1-3, effect đơn giản
+  * Uncommon: Level 4-6, effect trung bình
+  * Rare: Level 7-9, effect mạnh
+  * Epic: Level 10-12, effect rất mạnh
+  * Legendary: Level 13+, effect cực mạnh
+- Duration guidelines:
+  * Instant: 0 turns (healing, cure)
+  * Short: 1-3 turns (damage buff, AC buff)
+  * Medium: 4-6 turns (stat buff, debuff)
+  * Long: 60 turns (1 hour = 60 turns)
+- KHÔNG tạo consumable nào thiếu effect hoặc effect không đúng format
 
 ⚠️ QUAN TRỌNG VỀ QUEST REWARD ITEMS - THEO CHUẨN ENHANCED LOOT:
 - VŨ KHÍ (weapon): BẮT BUỘC có damage, damageType, attackBonus, slot
@@ -3272,6 +3295,15 @@ QUAN TRỌNG VỀ OUTPUT:
       const attackBonus = 2 + modifiers.strength;
       const damage = `1d6+${modifiers.strength}`;
       
+      // Generate chest armor for the enemy
+      const equippedArmor = armorGenerationService.generateChestArmor({
+        level: enemyLevel,
+        enemyType: enemyData.type,
+        rarity: this.determineRarityByLevel(enemyLevel)
+      });
+      
+      const finalAC = baseAC + (equippedArmor?.armorClass || 0);
+      
       return {
         name: enemyData.name,
         type: enemyData.type,
@@ -3282,7 +3314,7 @@ QUAN TRỌNG VỀ OUTPUT:
           current: baseHealth,
           max: baseHealth
         },
-        armorClass: baseAC,
+        armorClass: finalAC,
         attacks: [{
           name: enemyData.attackName,
           attackBonus: attackBonus,
@@ -3300,12 +3332,24 @@ QUAN TRỌNG VỀ OUTPUT:
         },
         experienceReward: 50 + (enemyLevel * 25),
         description: enemyData.description,
+        equippedArmor, // Include generated armor
         loot: [] // REMOVED: AI-generated loot to prevent invalid items
       };
     } catch (error) {
       console.error('Error generating random combat enemy:', error);
       return null;
     }
+  }
+
+  /**
+   * Determine rarity by level for armor generation
+   */
+  private determineRarityByLevel(level: number): 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' {
+    if (level <= 2) return 'common';
+    if (level <= 5) return Math.random() < 0.3 ? 'uncommon' : 'common';
+    if (level <= 8) return Math.random() < 0.4 ? 'rare' : Math.random() < 0.6 ? 'uncommon' : 'common';
+    if (level <= 12) return Math.random() < 0.3 ? 'epic' : Math.random() < 0.5 ? 'rare' : 'uncommon';
+    return Math.random() < 0.2 ? 'legendary' : Math.random() < 0.4 ? 'epic' : 'rare';
   }
 
   /**

@@ -5,6 +5,7 @@ import { enemyAIService } from './enemyAIService';
 import { combatNarrationService } from './combatNarrationService';
 import { enhancedLootService } from './enhancedLootService';
 import { combatAnimationService } from './combatAnimationService';
+import { effectProcessingService } from './effectProcessingService';
 
 export interface Combatant {
   id: string;
@@ -22,6 +23,8 @@ export interface Combatant {
   isAlive: boolean;
   statusEffects: StatusEffect[];
   isDefending: boolean; // New: Defend status
+  equippedArmor?: InventoryItem; // Chest armor đang mặc
+  inventory?: InventoryItem[]; // Inventory cho enemy/NPC
   // For enemies/NPCs
   enemyData?: Enemy;
   // For player
@@ -33,12 +36,51 @@ export interface StatusEffect {
   name: string;
   description: string;
   duration: number; // turns remaining
+  icon: string; // Icon để hiển thị
   effects: {
     healthModifier?: number;
     armorClassModifier?: number;
     attackModifier?: number;
-    damageModifier?: number;
+    damageModifier?: string;
     statModifiers?: { [key: string]: number };
+  };
+}
+
+export interface TemporaryPlayerStats {
+  // Core stats (base + equipment + status effects)
+  coreStats: {
+    strength: number;
+    agility: number;
+    intelligence: number;
+    constitution: number;
+    wisdom: number;
+    charisma: number;
+    modifiers: {
+      strength: number;
+      agility: number;
+      intelligence: number;
+      constitution: number;
+      wisdom: number;
+      charisma: number;
+    };
+  };
+  // Combat stats
+  armorClass: number; // AC with equipment + status effects
+  attackBonus: number; // From stats + equipment + status effects
+  damageBonus: string; // Extra damage dice from buffs (e.g., "+2d4")
+  // Equipment bonuses
+  equipmentBonuses: {
+    ac: number;
+    attack: number;
+    damage: string;
+    stats: { [key: string]: number };
+  };
+  // Status effect modifiers
+  statusEffectModifiers: {
+    ac: number;
+    attack: number;
+    damage: string;
+    stats: { [key: string]: number };
   };
 }
 
@@ -48,7 +90,6 @@ export interface CombatLogEntry {
   type: 'initiative' | 'attack' | 'damage' | 'heal' | 'status' | 'death' | 'victory' | 'defeat' | 'info';
   message: string;
   details?: any;
-  timestamp: Date;
 }
 
 export interface CombatState {
@@ -56,7 +97,6 @@ export interface CombatState {
   currentTurn: number;
   currentCombatantIndex: number;
   turnOrder: string[]; // combatant IDs in initiative order
-  combatLog: CombatLogEntry[];
   turnLogs: TurnLog[]; // Grouped logs by turn
   isActive: boolean;
   isPlayerTurn: boolean;
@@ -69,6 +109,8 @@ export interface CombatState {
   worldDifficulty?: string; // For AI difficulty mapping
   lastAttackKey?: string; // Prevent duplicate attacks
   turnState?: CombatTurnState; // Current turn state for manual turn control
+  playerInventory?: InventoryItem[]; // Player's current inventory for combat UI
+  temporaryPlayerStats?: TemporaryPlayerStats; // Player's temporary stats with buffs/debuffs
 }
 
 class CombatService {
@@ -147,6 +189,11 @@ class CombatService {
         isAlive: true,
         statusEffects: [],
         isDefending: false,
+        equippedArmor: (enemy as any).equippedArmor, // Include equipped armor
+        inventory: (enemy as any).inventory || effectProcessingService.generateEnemyConsumables(
+          enemy.combatLevel || enemy.level || 1,
+          worldDifficulty === 'easy' ? 'easy' : worldDifficulty === 'hard' ? 'hard' : 'medium'
+        ), // Generate consumables for enemy
         enemyData: enemy
       };
 
@@ -166,17 +213,18 @@ class CombatService {
       currentTurn: 1,
       currentCombatantIndex: 0,
       turnOrder,
-      combatLog: [],
       turnLogs: [],
       isActive: true,
       isPlayerTurn: turnOrder[0] === 'player',
       winner: undefined,
       rewards: undefined,
       worldDifficulty,
+      playerInventory: player.inventory || [], // Initialize player inventory
       turnState: {
         hasPerformedAction: false,
         canEndTurn: false,
-        timestamp: Date.now()
+        mainActionUsed: false,
+        extraActionUsed: false,
       }
     };
 
@@ -185,7 +233,10 @@ class CombatService {
     this.currentTurnCombatant = turnOrder[0];
 
     // Log combat start
-    this.addCombatLog('initiative', `Combat bắt đầu! Thứ tự lượt đi: ${combatants.map(c => c.name).join(', ')}`);
+    this.addTurnAction('initiative', `Combat bắt đầu! Thứ tự lượt đi: ${combatants.map(c => c.name).join(', ')}`);
+
+    // Initialize temporary player stats
+    this.updateTemporaryPlayerStats();
 
     return this.currentCombat;
   }
@@ -197,7 +248,7 @@ class CombatService {
       const initiativeModifier = combatant.stats.modifiers.agility;
       combatant.initiative = initiativeRoll.total + initiativeModifier;
       
-      this.addCombatLog('initiative', 
+      this.addTurnAction('initiative', 
         `${combatant.name} roll initiative: ${initiativeRoll.total} + ${initiativeModifier} = ${combatant.initiative}`
       );
     });
@@ -224,6 +275,114 @@ class CombatService {
     }
     
     return ac;
+  }
+
+  // Calculate AC with status effects
+  public calculateACWithEffects(combatant: Combatant): number {
+    let ac = combatant.armorClass;
+    
+    // Apply status effects that modify AC
+    if (combatant.statusEffects) {
+      combatant.statusEffects.forEach(effect => {
+        if (effect.effects?.armorClassModifier) {
+          ac += effect.effects.armorClassModifier;
+        }
+      });
+    }
+    
+    return ac;
+  }
+
+  // Calculate temporary player stats with all modifiers
+  public calculateTemporaryPlayerStats(): TemporaryPlayerStats | null {
+    const player = this.getAlivePlayer();
+    if (!player || !player.characterData) return null;
+    
+    const character = player.characterData;
+    const baseStats = character.coreStats!;
+    
+    // 1. Start with base stats
+    const tempStats: TemporaryPlayerStats = {
+      coreStats: JSON.parse(JSON.stringify(baseStats)),
+      armorClass: baseStats.armorClass,
+      attackBonus: 0,
+      damageBonus: '',
+      equipmentBonuses: { ac: 0, attack: 0, damage: '', stats: {} },
+      statusEffectModifiers: { ac: 0, attack: 0, damage: '', stats: {} }
+    };
+    
+    // 2. Add equipment bonuses
+    if (player.equippedArmor?.armorClass) {
+      tempStats.equipmentBonuses.ac += player.equippedArmor.armorClass;
+    }
+    
+    // Calculate weapon bonuses
+    if (character.equipment?.weapon_main) {
+      const weapon = character.equipment.weapon_main;
+      if (weapon.attackBonus) {
+        tempStats.equipmentBonuses.attack += weapon.attackBonus;
+      }
+      if (weapon.damage) {
+        tempStats.equipmentBonuses.damage = weapon.damage;
+      }
+    }
+    
+    // 3. Add status effect modifiers
+    player.statusEffects.forEach(effect => {
+      if (effect.effects.armorClassModifier) {
+        tempStats.statusEffectModifiers.ac += effect.effects.armorClassModifier;
+      }
+      if (effect.effects.attackModifier) {
+        tempStats.statusEffectModifiers.attack += effect.effects.attackModifier;
+      }
+      if (effect.effects.damageModifier) {
+        // damageModifier is a string (e.g., "1d4", "+2", "-2")
+        if (tempStats.statusEffectModifiers.damage) {
+          tempStats.statusEffectModifiers.damage += ` + ${effect.effects.damageModifier}`;
+        } else {
+          tempStats.statusEffectModifiers.damage = effect.effects.damageModifier;
+        }
+      }
+      if (effect.effects.statModifiers) {
+        Object.entries(effect.effects.statModifiers).forEach(([stat, value]) => {
+          tempStats.statusEffectModifiers.stats[stat] = 
+            (tempStats.statusEffectModifiers.stats[stat] || 0) + value;
+          if (stat in tempStats.coreStats) {
+            (tempStats.coreStats as any)[stat] += value;
+          }
+        });
+      }
+    });
+    
+    // 4. Calculate final values
+    tempStats.armorClass = baseStats.armorClass + 
+      tempStats.equipmentBonuses.ac + 
+      tempStats.statusEffectModifiers.ac;
+    
+    // Calculate attack bonus from strength modifier + equipment + status effects
+    tempStats.attackBonus = baseStats.modifiers.strength + 
+      tempStats.equipmentBonuses.attack + 
+      tempStats.statusEffectModifiers.attack;
+    
+    // Combine damage bonuses
+    const damageParts = [];
+    if (tempStats.equipmentBonuses.damage) {
+      damageParts.push(tempStats.equipmentBonuses.damage);
+    }
+    if (tempStats.statusEffectModifiers.damage) {
+      damageParts.push(tempStats.statusEffectModifiers.damage);
+    }
+    tempStats.damageBonus = damageParts.join(' + ');
+    
+    return tempStats;
+  }
+
+  // Update temporary player stats in combat state
+  private updateTemporaryPlayerStats(): void {
+    if (!this.currentCombat) return;
+    const tempStats = this.calculateTemporaryPlayerStats();
+    this.currentCombat.temporaryPlayerStats = tempStats || undefined;
+    console.log('Updated temporaryPlayerStats:', tempStats);
   }
 
   // Get player attacks from equipped weapons
@@ -327,12 +486,12 @@ class CombatService {
     // Set the attack key AFTER successful validation
     this.currentCombat.lastAttackKey = lastAttackKey;
     
-    // Mark that player has performed an action
+    // Mark that player has performed main action
     if (attackerId === 'player' && this.currentCombat.turnState) {
       this.currentCombat.turnState.hasPerformedAction = true;
-      this.currentCombat.turnState.actionType = 'attack';
+      this.currentCombat.turnState.mainActionUsed = true;
+      this.currentCombat.turnState.mainActionType = 'attack';
       this.currentCombat.turnState.actionTarget = defenderId;
-      this.currentCombat.turnState.timestamp = Date.now();
     }
     
     const attack = attacker.attacks[attackIndex];
@@ -341,8 +500,8 @@ class CombatService {
     const attackRoll = DiceRoller.roll('d20', `${attacker.name} attacks with ${attack.name}`);
     const totalAttack = attackRoll.total + attack.attackBonus;
     
-    this.addCombatLog('attack', 
-      `${attacker.name} attacks ${defender.name} with ${attack.name}: ${attackRoll.total} + ${attack.attackBonus} = ${totalAttack}`
+    this.addTurnAction('attack', 
+      `${attacker.name} attacks ${defender.name} with ${attack.name}: ${attackRoll.total} + ${attack.attackBonus} = ${totalAttack} vs AC ${this.calculateACWithEffects(defender)}`
     );
     
     // Add delay only for player attacks (for visual feedback)
@@ -351,12 +510,34 @@ class CombatService {
     }
     
     // Check if hit
-    const hit = totalAttack >= defender.armorClass;
+    const hit = totalAttack >= this.calculateACWithEffects(defender);
     
     if (hit) {
       // Step 2: Damage Roll with delay
-      const damageRoll = DiceRoller.roll(attack.damage, `${attack.name} damage`);
-      let totalDamage = damageRoll.total;
+      let totalDamage = 0;
+      let damageDescription = `${attacker.name} hits for`;
+      let damageParts = [];
+      
+      // For player, use temporaryPlayerStats.damageBonus if available
+      if (attackerId === 'player' && this.currentCombat.temporaryPlayerStats?.damageBonus) {
+        const damageBonus = this.currentCombat.temporaryPlayerStats.damageBonus;
+        // Split by " + " to get individual damage components
+        const damageComponents = damageBonus.split(' + ');
+        
+        for (const component of damageComponents) {
+          const trimmed = component.trim();
+          if (trimmed) {
+            const roll = DiceRoller.roll(trimmed, `${attack.name} damage (${trimmed})`);
+            totalDamage += roll.total;
+            damageParts.push(`${roll.total} (${trimmed})`);
+          }
+        }
+      } else {
+        // Use base weapon damage
+        const damageRoll = DiceRoller.roll(attack.damage, `${attack.name} damage`);
+        totalDamage = damageRoll.total;
+        damageParts.push(`${damageRoll.total} (${attack.damage})`);
+      }
       
       // Add strength modifier for melee weapons
       let strengthBonus = 0;
@@ -366,14 +547,14 @@ class CombatService {
       }
       
       // Create damage description
-      let damageDescription = `${attacker.name} hits for ${damageRoll.total} damage (${attack.damage})`;
+      damageDescription += ` ${damageParts.join(' + ')}`;
       if (strengthBonus > 0) {
         damageDescription += ` + ${strengthBonus} strength = ${totalDamage} total damage`;
       } else {
         damageDescription += ` = ${totalDamage} total damage`;
       }
       
-      this.addCombatLog('damage', damageDescription);
+      this.addTurnAction('damage', damageDescription);
       
       // Add delay only for player attacks (for visual feedback)
       if (attackerId === 'player') {
@@ -386,7 +567,7 @@ class CombatService {
       return true;
     } else {
       // Miss animation
-      this.addCombatLog('attack', `${attacker.name} misses ${defender.name} (AC ${defender.armorClass})`);
+      this.addTurnAction('attack', `${attacker.name} misses ${defender.name} (AC ${this.calculateACWithEffects(defender)})`);
       
       // Trigger miss animation
       this.triggerMissAnimation(defenderId, attackerId);
@@ -406,7 +587,7 @@ class CombatService {
     let finalDamage = damage;
     if (combatant.isDefending) {
       finalDamage = Math.floor(damage * 0.5); // 50% damage reduction
-      this.addCombatLog('status', `${combatant.name} giảm 50% sát thương nhờ phòng thủ (${damage} → ${finalDamage})`);
+      this.addTurnAction('status', `${combatant.name} giảm 50% sát thương nhờ phòng thủ (${damage} → ${finalDamage})`);
     }
     
     // Trigger damage animation
@@ -418,14 +599,14 @@ class CombatService {
     }
     combatant.health.current = Math.max(0, combatant.health.current - finalDamage);
     
-    this.addCombatLog('damage', 
+    this.addTurnAction('damage', 
       `${combatant.name} takes ${finalDamage} damage (${combatant.health.current}/${combatant.health.max} HP)`
     );
     
     // Check if combatant dies
     if (combatant.health.current <= 0) {
       combatant.isAlive = false;
-      this.addCombatLog('death', `${combatant.name} is defeated!`);
+      this.addTurnAction('death', `${combatant.name} is defeated!`);
       
       // Trigger death animation
       this.triggerDeathAnimation(combatantId);
@@ -446,19 +627,19 @@ class CombatService {
     let finalDamage = damage;
     if (combatant.isDefending) {
       finalDamage = Math.floor(damage * 0.5); // 50% damage reduction
-      this.addCombatLog('status', `${combatant.name} giảm 50% sát thương nhờ phòng thủ (${damage} → ${finalDamage})`);
+      this.addTurnAction('status', `${combatant.name} giảm 50% sát thương nhờ phòng thủ (${damage} → ${finalDamage})`);
     }
     
     combatant.health.current = Math.max(0, combatant.health.current - finalDamage);
     
-    this.addCombatLog('damage', 
+    this.addTurnAction('damage', 
       `${combatant.name} takes ${finalDamage} damage (${combatant.health.current}/${combatant.health.max} HP)`
     );
     
     // Check if combatant dies
     if (combatant.health.current <= 0) {
       combatant.isAlive = false;
-      this.addCombatLog('death', `${combatant.name} is defeated!`);
+      this.addTurnAction('death', `${combatant.name} is defeated!`);
       
       // Check if combat ends after death
       this.checkCombatEnd();
@@ -473,55 +654,96 @@ class CombatService {
     if (!combatant || !combatant.isAlive) return false;
     
     combatant.isDefending = true;
-    this.addCombatLog('status', `${combatant.name} phòng thủ`);
     
-    // Mark that player has performed an action
+    // Add defend status effect
+    const defendEffect: StatusEffect = {
+      id: `defend_${combatantId}_${Date.now()}`,
+      name: 'Phòng Thủ',
+      description: 'Giảm 50% sát thương nhận vào',
+      duration: 1, // Lasts for 1 turn
+      icon: '🛡️',
+      effects: {
+        armorClassModifier: 0, // Visual only, actual damage reduction is handled in applyDamageWithEffects
+        healthModifier: 0
+      }
+    };
+    
+    // Remove any existing defend effect first
+    combatant.statusEffects = combatant.statusEffects.filter(effect => effect.name !== 'Phòng Thủ');
+    combatant.statusEffects.push(defendEffect);
+    
+    this.addTurnAction('status', `${combatant.name} phòng thủ`);
+    
+    // Mark that player has performed main action
     if (combatantId === 'player' && this.currentCombat.turnState) {
       this.currentCombat.turnState.hasPerformedAction = true;
-      this.currentCombat.turnState.actionType = 'defend';
-      this.currentCombat.turnState.timestamp = Date.now();
+      this.currentCombat.turnState.mainActionUsed = true;
+      this.currentCombat.turnState.mainActionType = 'defend';
     }
     
     // Trigger defend animation
     this.triggerDefendAnimation(combatantId);
     
+    // Update temporary player stats if this is the player
+    if (combatantId === 'player') {
+      this.updateTemporaryPlayerStats();
+    }
+    
     return true;
   }
 
-  // Use item in combat
+  // Use item in combat (extra action)
   public useItem(combatantId: string, item: InventoryItem, targetId?: string): boolean {
-    if (!this.currentCombat) return false;
+    console.log('combatService.useItem called:', { combatantId, item, targetId });
+    if (!this.currentCombat) {
+      console.log('No current combat');
+      return false;
+    }
     
     const combatant = this.getCombatant(combatantId);
-    if (!combatant || !combatant.isAlive) return false;
+    if (!combatant || !combatant.isAlive) {
+      console.log('Combatant not found or not alive:', combatantId);
+      return false;
+    }
     
-    // Only player can use items for now
-    if (combatant.type !== 'player') return false;
+    // Check if combatant can use extra action
+    if (combatantId === 'player' && this.currentCombat.turnState) {
+      if (this.currentCombat.turnState.extraActionUsed) {
+        return false;
+      }
+    }
     
     // Check if item can be used in combat
-    if (item.type === 'consumable' && item.damage) {
-      // Damaging consumable (bomb, poison, etc.)
-      if (targetId) {
-        const target = this.getCombatant(targetId);
-        if (target && target.isAlive) {
-          const damageRoll = DiceRoller.roll(item.damage, `${item.name} damage`);
-          this.addCombatLog('damage', 
-            `${combatant.name} uses ${item.name} on ${target.name} for ${damageRoll.total} damage`
-          );
-          this.applyDamage(targetId, damageRoll.total);
-          return true;
+    if (item.type === 'consumable') {
+      // Use effect processing service for all consumables
+      const effects = effectProcessingService.applyConsumableEffect(combatant, item, targetId, this.currentCombat.combatants);
+      
+      // Mark extra action as used (regardless of effects length for instant effects like healing)
+      if (combatantId === 'player' && this.currentCombat.turnState) {
+        this.currentCombat.turnState.extraActionUsed = true;
+        this.currentCombat.turnState.extraActionType = 'consumable';
+      }
+      
+      // Log the item usage
+      this.addTurnAction('heal', 
+        `${combatant.name} sử dụng ${item.name}`
+      );
+      
+      // Log each effect
+      effects.forEach(effect => {
+        if (effect.duration === 0) {
+          // Instant effect
+          this.addTurnAction('heal', effect.description);
+        } else {
+          // Duration effect
+          this.addTurnAction('status', effect.description);
         }
-      }
-    } else if (item.type === 'consumable' && !item.damage) {
-      // Healing or utility consumable
-      if (item.name.toLowerCase().includes('heal') || item.name.toLowerCase().includes('potion')) {
-        const healAmount = Math.floor(Math.random() * 8) + 2; // 2-9 healing
-        combatant.health.current = Math.min(combatant.health.max, combatant.health.current + healAmount);
-        this.addCombatLog('heal', 
-          `${combatant.name} uses ${item.name} and heals ${healAmount} HP (${combatant.health.current}/${combatant.health.max} HP)`
-        );
-        return true;
-      }
+      });
+      
+      // Update temporary player stats after using item
+      this.updateTemporaryPlayerStats();
+      
+      return true;
     }
     
     return false;
@@ -538,14 +760,21 @@ class CombatService {
     this.currentCombat.currentCombatantIndex = 
       (this.currentCombat.currentCombatantIndex + 1) % this.currentCombat.turnOrder.length;
     
+    // Update player turn status
+    const currentCombatantId = this.currentCombat.turnOrder[this.currentCombat.currentCombatantIndex];
+    const isPlayerTurn = currentCombatantId === 'player';
+    this.currentCombat.isPlayerTurn = isPlayerTurn;
+    
     // If we've completed a full round, increment turn counter
     if (this.currentCombat.currentCombatantIndex === 0) {
       this.currentCombat.currentTurn++;
     }
     
-    // Update player turn status
-    const currentCombatantId = this.currentCombat.turnOrder[this.currentCombat.currentCombatantIndex];
-    this.currentCombat.isPlayerTurn = currentCombatantId === 'player';
+    // Process status effects for the current combatant at the start of their turn
+    const currentCombatantForEffects = this.getCombatant(currentCombatantId);
+    if (currentCombatantForEffects) {
+      this.processCombatantStatusEffects(currentCombatantForEffects);
+    }
     
     // Reset turn tracking for NEXT combatant
     this.currentTurnActions = [];
@@ -566,8 +795,11 @@ class CombatService {
     this.currentCombat.turnState = {
       hasPerformedAction: false,
       canEndTurn: false,
-      timestamp: Date.now()
+      mainActionUsed: false,
+      extraActionUsed: false,
     };
+    
+    // Don't process status effects here - only at the end of complete turn cycle
     
     // Skip dead combatants
     const currentCombatant = this.getCombatant(currentCombatantId);
@@ -588,13 +820,13 @@ class CombatService {
       this.currentCombat.isActive = false;
       this.currentCombat.winner = 'enemies';
       this.calculateRewards(); // Calculate rewards even for defeat
-      this.addCombatLog('defeat', 'Bạn đã bị đánh bại!');
+      this.addTurnAction('defeat', 'Bạn đã bị đánh bại!');
     } else if (enemies.length === 0) {
       // All enemies defeated
       this.currentCombat.isActive = false;
       this.currentCombat.winner = 'player';
       this.calculateRewards();
-      this.addCombatLog('victory', 'Bạn đã chiến thắng!');
+      this.addTurnAction('victory', 'Bạn đã chiến thắng!');
     }
   }
 
@@ -665,8 +897,9 @@ class CombatService {
     const defeatedEnemies = this.currentCombat.combatants
       .filter(c => c.type === 'enemy' && !c.isAlive);
     
-    // Calculate combat statistics
-    const damageDealtLogs = this.currentCombat.combatLog
+    // Calculate combat statistics from turnLogs
+    const damageDealtLogs = this.currentCombat.turnLogs
+      .flatMap(turnLog => turnLog.actions)
       .filter(log => log.type === 'damage' && log.message.includes(player?.name || ''));
     
     const totalDamageDealt = damageDealtLogs.reduce((sum, log) => {
@@ -684,7 +917,6 @@ class CombatService {
 
     return {
       combatId: `combat_${Date.now()}`,
-      timestamp: new Date(),
       duration: 0, // Will be calculated
       victory: this.currentCombat.winner === 'player',
       playerFled: this.currentCombat.winner === 'fled', // Check if player fled
@@ -708,7 +940,8 @@ class CombatService {
         totalDamageTaken: healthLost,
         turnsPlayed: this.currentCombat.currentTurn,
         attacksLanded: damageDealtLogs.length,
-        attacksMissed: this.currentCombat.combatLog
+        attacksMissed: this.currentCombat.turnLogs
+          .flatMap(turnLog => turnLog.actions)
           .filter(log => log.type === 'attack' && log.message.includes('misses')).length
       },
       rewards: this.currentCombat.rewards || {
@@ -730,8 +963,8 @@ class CombatService {
     return this.currentCombat;
   }
 
-  // Add entry to combat log
-  private addCombatLog(type: CombatLogEntry['type'], message: string, details?: any): void {
+  // Add entry to current turn actions (replaces addTurnAction)
+  private addTurnAction(type: CombatLogEntry['type'], message: string, details?: any): void {
     if (!this.currentCombat) return;
     
     const entry: CombatLogEntry = {
@@ -740,22 +973,11 @@ class CombatService {
       type,
       message,
       details,
-      timestamp: new Date()
     };
     
-    // Ensure combatLog is an array
-    if (!Array.isArray(this.currentCombat.combatLog)) {
-      this.currentCombat.combatLog = [];
-    }
-    this.currentCombat.combatLog.push(entry);
     this.currentTurnActions.push(entry);
   }
 
-  // Get combat log
-  public getCombatLog(): CombatLogEntry[] {
-    if (!this.currentCombat) return [];
-    return [...this.currentCombat.combatLog];
-  }
 
   // End combat
   public endCombat(): void {
@@ -765,6 +987,9 @@ class CombatService {
         combatAnimationService.cleanupCombatantTexts(combatant.id);
       });
     }
+    
+    // Clear combat state from localStorage
+    localStorage.removeItem('current_combat_state');
     
     this.currentCombat = null;
   }
@@ -831,7 +1056,6 @@ class CombatService {
       combatantName: combatant.name,
       actions: [...this.currentTurnActions],
       description,
-      timestamp: new Date(),
       isPlayerTurn: combatant.type === 'player'
     };
     
@@ -846,6 +1070,11 @@ class CombatService {
   public getTurnLogs(): TurnLog[] {
     if (!this.currentCombat) return [];
     return [...this.currentCombat.turnLogs];
+  }
+
+  // Get current turn actions (real-time)
+  public getCurrentTurnActions(): CombatLogEntry[] {
+    return [...this.currentTurnActions];
   }
 
   // Execute enemy AI turn
@@ -871,7 +1100,7 @@ class CombatService {
     } catch (error) {
       console.error('Error executing enemy turn:', error);
       // Fallback to defend action
-      this.addCombatLog('status', `${currentCombatant.name} phòng thủ do lỗi AI`);
+      this.addTurnAction('status', `${currentCombatant.name} phòng thủ do lỗi AI`);
       // End turn even on error
       this.endTurn();
     }
@@ -920,33 +1149,36 @@ class CombatService {
         if (action.targetId && action.attackIndex !== undefined) {
           const target = this.getCombatant(action.targetId);
           if (target && target.isAlive) {
-            this.addCombatLog('attack', action.description);
+            this.addTurnAction('attack', action.description);
             await this.performAttack(enemy.id, target.id, action.attackIndex);
           }
         }
         break;
         
       case 'defend':
-        this.addCombatLog('status', action.description);
+        this.addTurnAction('status', action.description);
         this.defend(enemy.id);
         break;
         
       case 'use_item':
-        if (action.itemId) {
-          this.addCombatLog('heal', action.description);
-          // Implement item usage logic here
+        if (action.itemId && action.targetId) {
+          const item = enemy.inventory?.find(i => i.id === action.itemId);
+          if (item) {
+            this.addTurnAction('heal', action.description);
+            this.useItem(enemy.id, item, action.targetId);
+          }
         }
         break;
         
       case 'ability':
         if (action.abilityId) {
-          this.addCombatLog('status', action.description);
+          this.addTurnAction('status', action.description);
           // Implement ability usage logic here
         }
         break;
         
       default:
-        this.addCombatLog('status', action.description);
+        this.addTurnAction('status', action.description);
     }
     
     // Add delay after enemy action for better visibility
@@ -1199,26 +1431,132 @@ class CombatService {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  // Check if player can end turn
-  public canEndTurn(): boolean {
-    if (!this.currentCombat || !this.currentCombat.isPlayerTurn) return false;
-    
-    const turnState = this.currentCombat.turnState;
-    if (!turnState) return false;
-    
-    // Player can end turn if they've performed an action or after a timeout
-    const timeSinceTurnStart = Date.now() - turnState.timestamp;
-    const turnTimeout = 30000; // 30 seconds timeout
-    
-    return turnState.hasPerformedAction || timeSinceTurnStart > turnTimeout;
-  }
-
   // Get current turn state
   public getTurnState(): CombatTurnState | undefined {
     return this.currentCombat?.turnState;
   }
 
+  // Check if player can end turn (must have used main action)
+  public canEndTurn(): boolean {
+    if (!this.currentCombat?.turnState) return false;
+    return this.currentCombat.turnState.mainActionUsed;
+  }
 
+
+  // Process status effects for a specific combatant
+  private processCombatantStatusEffects(combatant: Combatant): void {
+    if (!combatant.isAlive) return;
+    
+    // Process regular status effects
+    effectProcessingService.processStatusEffects(combatant);
+    
+    // Handle defend effect specifically - it only lasts 1 turn
+    const defendEffect = combatant.statusEffects.find(effect => effect.name === 'Phòng Thủ');
+    if (defendEffect && defendEffect.duration <= 0) {
+      // Remove defend effect and reset defending state
+      combatant.statusEffects = combatant.statusEffects.filter(effect => effect.name !== 'Phòng Thủ');
+      combatant.isDefending = false;
+    }
+    
+    // Update temporary player stats if this is the player
+    if (combatant.id === 'player') {
+      this.updateTemporaryPlayerStats();
+    }
+  }
+
+  // Add enemy to current combat (for testing)
+  public addEnemyToCombat(enemy: Enemy): void {
+    if (!this.currentCombat) return;
+    
+    // Convert enemy to combatant
+    const enemyCombatant: Combatant = {
+      id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: enemy.name,
+      type: 'enemy',
+      level: enemy.level,
+      combatLevel: enemy.combatLevel,
+      characterLevel: enemy.characterLevel,
+      stats: enemy.stats,
+      health: { current: enemy.health.current, max: enemy.health.max },
+      armorClass: enemy.armorClass,
+      attacks: enemy.attacks,
+      abilities: enemy.abilities,
+      initiative: Math.floor(Math.random() * 20) + 1, // Random initiative
+      isAlive: true,
+      statusEffects: [],
+      isDefending: false,
+      equippedArmor: enemy.equippedArmor,
+      inventory: effectProcessingService.generateEnemyConsumables(
+        enemy.combatLevel || enemy.level || 1,
+        this.currentCombat.worldDifficulty === 'easy' ? 'easy' : this.currentCombat.worldDifficulty === 'hard' ? 'hard' : 'medium'
+      ),
+      enemyData: enemy
+    };
+    
+    // Add to combatants array
+    this.currentCombat.combatants.push(enemyCombatant);
+    
+    // Add to turn order (insert after player)
+    const playerIndex = this.currentCombat.turnOrder.indexOf('player');
+    if (playerIndex !== -1) {
+      this.currentCombat.turnOrder.splice(playerIndex + 1, 0, enemyCombatant.id);
+    } else {
+      this.currentCombat.turnOrder.push(enemyCombatant.id);
+    }
+    
+    console.log(`Added enemy ${enemy.name} to combat`);
+  }
+
+  // Save combat state to localStorage
+  public saveCombatState(): void {
+    if (!this.currentCombat) return;
+    
+    const combatData = {
+      combatants: this.currentCombat.combatants,
+      turnOrder: this.currentCombat.turnOrder,
+      currentCombatantIndex: this.currentCombat.currentCombatantIndex,
+      currentTurn: this.currentCombat.currentTurn,
+      isPlayerTurn: this.currentCombat.isPlayerTurn,
+      isActive: this.currentCombat.isActive,
+      worldDifficulty: this.currentCombat.worldDifficulty,
+      playerInventory: this.currentCombat.playerInventory,
+      turnState: this.currentCombat.turnState,
+      lastAttackKey: this.currentCombat.lastAttackKey,
+      turnLogs: this.currentCombat.turnLogs,
+      rewards: this.currentCombat.rewards,
+      temporaryPlayerStats: this.currentCombat.temporaryPlayerStats,
+    };
+    
+    localStorage.setItem('current_combat_state', JSON.stringify(combatData));
+  }
+
+  // Restore combat state from localStorage
+  public restoreCombatState(combatData: any): void {
+    this.currentCombat = {
+      combatants: combatData.combatants || [],
+      turnOrder: combatData.turnOrder || [],
+      currentCombatantIndex: combatData.currentCombatantIndex || 0,
+      currentTurn: combatData.currentTurn || 1,
+      isPlayerTurn: combatData.isPlayerTurn || false,
+      isActive: combatData.isActive || true,
+      worldDifficulty: combatData.worldDifficulty || 'medium',
+      playerInventory: combatData.playerInventory || [],
+      turnState: combatData.turnState || {
+        hasPerformedAction: false,
+        canEndTurn: false,
+        mainActionUsed: false,
+        extraActionUsed: false,
+      },
+      lastAttackKey: combatData.lastAttackKey,
+      turnLogs: combatData.turnLogs || [],
+      rewards: combatData.rewards || null,
+      temporaryPlayerStats: combatData.temporaryPlayerStats || null
+    };
+    
+    // Update current turn tracking
+    this.currentTurnActions = [];
+    this.currentTurnCombatant = this.currentCombat?.turnOrder[this.currentCombat.currentCombatantIndex] || null;
+  }
 
 }
 

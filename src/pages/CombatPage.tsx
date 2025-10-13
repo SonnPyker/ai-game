@@ -8,7 +8,9 @@ import {
   Pause,
   MessageSquare,
   Pin,
-  PinOff
+  PinOff,
+  Plus,
+  TestTube
 } from 'lucide-react';
 import { Character, Enemy, InventoryItem } from '../types';
 import { combatService, CombatState, Combatant } from '../services/combatService';
@@ -17,6 +19,8 @@ import { inventoryService } from '../services/inventoryService';
 import { combatLevelService } from '../services/combatLevelService';
 import { levelSystemService } from '../services/levelSystemService';
 import { questCombatService } from '../services/questCombatService';
+import { enemyGenerationService } from '../services/enemyGenerationService';
+import { effectProcessingService } from '../services/effectProcessingService';
 import { MotionWrapper } from '../components/MotionWrapper';
 
 // Combat Components
@@ -78,6 +82,21 @@ export function CombatPage({}: CombatPageProps) {
     const initializeCombat = async () => {
       try {
         isInitializedRef.current = true;
+        
+        // Check for saved combat state first
+        const savedCombatState = localStorage.getItem('current_combat_state');
+        if (savedCombatState) {
+          try {
+            const combatData = JSON.parse(savedCombatState);
+            combatService.restoreCombatState(combatData);
+            setCombatState({ ...combatService.getCurrentCombat()! });
+            console.log('✅ Restored combat state from localStorage');
+            return;
+          } catch (error) {
+            console.error('Error restoring combat state:', error);
+            localStorage.removeItem('current_combat_state');
+          }
+        }
         
         // Check for NPC combat from URL params
         const urlParams = new URLSearchParams(window.location.search);
@@ -182,6 +201,8 @@ export function CombatPage({}: CombatPageProps) {
       const currentCombat = combatService.getCurrentCombat();
       if (currentCombat && (!combatState || currentCombat !== combatState)) {
         setCombatState({ ...currentCombat });
+        // Auto-save combat state
+        combatService.saveCombatState();
       }
     }, 100); // Check every 100ms
 
@@ -391,7 +412,7 @@ export function CombatPage({}: CombatPageProps) {
               charisma: -1
             }
           },
-          health: { current: 7, max: 7 },
+          health: { current: 25, max: 25 },
           armorClass: 12,
           attacks: [
             {
@@ -499,15 +520,41 @@ export function CombatPage({}: CombatPageProps) {
   const handleUseItem = useCallback(async (itemId: string, targetId?: string) => {
     if (!combatState || !combatState.isPlayerTurn || isProcessing) return;
 
+    console.log('handleUseItem called with itemId:', itemId, 'targetId:', targetId);
     setIsProcessing(true);
     
     try {
-      const item = inventoryService.findItemInInventory(itemId);
-      if (!item) return;
+      // Try to find item in combat inventory first, then fallback to regular inventory
+      let item = combatState.playerInventory?.find(i => i.id === itemId);
+      if (!item) {
+        const foundItem = inventoryService.findItemInInventory(itemId);
+        if (foundItem) {
+          item = foundItem;
+        }
+      }
+      
+      if (!item) {
+        console.log('Item not found:', itemId);
+        return;
+      }
 
+      console.log('Using item:', item);
       const success = combatService.useItem('player', item, targetId);
       
       if (success) {
+        // Decrease item quantity in inventory
+        if (item.quantity !== undefined && item.quantity > 0) {
+          item.quantity -= 1;
+          
+          // Update character inventory in localStorage
+          const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+          const inventoryItem = characterData.inventory.find((invItem: any) => invItem.id === item.id);
+          if (inventoryItem) {
+            inventoryItem.quantity = item.quantity;
+            localStorage.setItem('currentCharacter', JSON.stringify(characterData));
+          }
+        }
+        
         // Update combat state
         setCombatState({ ...combatService.getCurrentCombat()! });
         
@@ -517,9 +564,8 @@ export function CombatPage({}: CombatPageProps) {
           return;
         }
         
-        // End turn
-        combatService.endTurn();
-        setCombatState({ ...combatService.getCurrentCombat()! });
+        // Don't end turn automatically - consumable is extra action
+        // Player can continue with main action or end turn manually
       }
     } catch (error) {
       console.error('Error using item:', error);
@@ -575,11 +621,22 @@ export function CombatPage({}: CombatPageProps) {
       // Set combat winner as fled
       combatService.setPlayerFled();
       
-      // Update character data with current inventory before fleeing
+      // Update character data with current HP and inventory before fleeing
       try {
         const characterData = localStorage.getItem('currentCharacter');
         if (characterData) {
           const character = JSON.parse(characterData);
+          
+          // Get current player combatant to update HP
+          const playerCombatant = combatService.getAlivePlayer();
+          if (playerCombatant) {
+            // Update character HP with current combat HP
+            character.health = {
+              current: playerCombatant.health.current,
+              max: playerCombatant.health.max
+            };
+            console.log('Updated character HP from combat:', playerCombatant.health, 'to character:', character.health);
+          }
           
           // Load current inventory into inventoryService
           inventoryService.setCharacter(character);
@@ -590,10 +647,10 @@ export function CombatPage({}: CombatPageProps) {
           character.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
           localStorage.setItem('currentCharacter', JSON.stringify(character));
           
-          console.log('✅ Updated character inventory before fleeing');
+          console.log('✅ Updated character data before fleeing');
         }
       } catch (error) {
-        console.error('Error updating character inventory before fleeing:', error);
+        console.error('Error updating character data before fleeing:', error);
       }
       
       // Generate combat result data for fleeing
@@ -609,6 +666,7 @@ export function CombatPage({}: CombatPageProps) {
       
       // Run away (end combat)
       combatService.endCombat();
+      localStorage.removeItem('current_combat_state'); // Clear saved combat state
       navigate('/game');
     } catch (error) {
       console.error('Error running away:', error);
@@ -641,6 +699,104 @@ export function CombatPage({}: CombatPageProps) {
       }
     } catch (error) {
       console.error('Error ending turn:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [combatState, isProcessing]);
+
+  // Test function: Add enemy
+  const handleAddTestEnemy = useCallback(async () => {
+    if (!combatState || isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+      
+      // Generate a test enemy
+      const testEnemy = enemyGenerationService.generateRandomEnemy(
+        combatState.currentTurn + 1
+      );
+      
+      // Add enemy to combat
+      combatService.addEnemyToCombat(testEnemy);
+      
+      // Update combat state
+      setCombatState({ ...combatService.getCurrentCombat()! });
+      
+      console.log('✅ Added test enemy:', testEnemy.name);
+    } catch (error) {
+      console.error('Error adding test enemy:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [combatState, isProcessing]);
+
+  // Test function: Add consumable to player
+  const handleAddTestConsumable = useCallback(async () => {
+    if (!combatState || isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+      
+      // Get current character
+      const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
+      if (!characterData.inventory) {
+        characterData.inventory = [];
+      }
+      
+      // Generate test consumables
+      const testConsumables = effectProcessingService.generateEnemyConsumables(
+        combatState.currentTurn + 1,
+        'medium'
+      );
+      
+      console.log('Generated consumables:', testConsumables);
+      
+      // Add first consumable to player inventory
+      if (testConsumables.length > 0) {
+        const newItem = testConsumables[0];
+        // Find existing item by name and effect (not by id)
+        const existingItem = characterData.inventory.find((item: any) => 
+          item.name === newItem.name && 
+          item.stats?.effect === newItem.stats?.effect &&
+          item.type === 'consumable'
+        );
+        
+        if (existingItem) {
+          existingItem.quantity += 1;
+          console.log('Merged with existing item:', existingItem.name, 'New quantity:', existingItem.quantity);
+        } else {
+          characterData.inventory.push({
+            ...newItem,
+            quantity: 1
+          });
+          console.log('Added new item:', newItem.name);
+        }
+        
+        // Save updated character
+        localStorage.setItem('currentCharacter', JSON.stringify(characterData));
+        console.log('Updated character inventory:', characterData.inventory);
+        
+        // Update player combatant inventory in combat state
+        const currentCombat = combatService.getCurrentCombat();
+        if (currentCombat) {
+          const playerCombatant = currentCombat.combatants.find(c => c.id === 'player');
+          if (playerCombatant) {
+            playerCombatant.inventory = characterData.inventory;
+            console.log('Updated player combatant inventory:', playerCombatant.inventory);
+          }
+          
+          // Update playerInventory in combat state
+          currentCombat.playerInventory = characterData.inventory;
+          console.log('Updated combat state playerInventory:', currentCombat.playerInventory);
+        }
+        
+        // Update combat state to reflect inventory changes
+        setCombatState({ ...combatService.getCurrentCombat()! });
+        
+        console.log('✅ Added test consumable:', testConsumables[0].name);
+      }
+    } catch (error) {
+      console.error('Error adding test consumable:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -701,11 +857,21 @@ export function CombatPage({}: CombatPageProps) {
         }
       }
       
-      // Add combat experience to character
+      // Update character data with current HP and experience
       try {
         const characterData = localStorage.getItem('currentCharacter');
         if (characterData) {
           const character = JSON.parse(characterData) as Character;
+          
+          // Update character HP with current combat HP
+          const playerCombatant = combatService.getAlivePlayer();
+          if (playerCombatant) {
+            character.health = {
+              current: playerCombatant.health.current,
+              max: playerCombatant.health.max
+            };
+            console.log('Updated character HP after combat:', character.health);
+          }
           
           // Get actual experience from combat rewards
           const experienceGained = combatState?.rewards?.experience || 0;
@@ -753,9 +919,20 @@ export function CombatPage({}: CombatPageProps) {
           inventoryService.addItem(item);
         });
         
-        // Update character data with new inventory
+        // Update character data with new inventory and current HP
         if (characterData) {
           const character = JSON.parse(characterData);
+          
+          // Update HP from combat state if not already updated
+          const playerCombatant = combatService.getAlivePlayer();
+          if (playerCombatant) {
+            character.health = {
+              current: playerCombatant.health.current,
+              max: playerCombatant.health.max
+            };
+            console.log('Updated character HP after combat (inventory section):', character.health);
+          }
+          
           character.inventory = inventoryService.getInventory();
           character.equipment = inventoryService.getEquipment();
           character.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
@@ -769,6 +946,7 @@ export function CombatPage({}: CombatPageProps) {
     
     // Clear pending combat data
     localStorage.removeItem('pending_combat');
+    localStorage.removeItem('current_combat_state'); // Clear saved combat state
     
     combatService.endCombat();
     navigate('/game');
@@ -848,6 +1026,29 @@ export function CombatPage({}: CombatPageProps) {
             >
               {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
             </button>
+
+            {/* Test Buttons */}
+            <div className="flex items-center space-x-1 border-l border-gray-600 pl-2">
+              {/* Add Enemy Test Button */}
+              <button
+                onClick={handleAddTestEnemy}
+                disabled={isProcessing}
+                className="p-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                title="Thêm Enemy Test"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              
+              {/* Add Consumable Test Button */}
+              <button
+                onClick={handleAddTestConsumable}
+                disabled={isProcessing}
+                className="p-2 text-green-400 hover:text-green-300 transition-colors disabled:opacity-50"
+                title="Thêm Consumable Test"
+              >
+                <TestTube className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -884,6 +1085,7 @@ export function CombatPage({}: CombatPageProps) {
                     combatant={player}
                     isEnemy={false}
                     isPlayerTurn={combatState?.isPlayerTurn || false}
+                    temporaryPlayerStats={combatState?.temporaryPlayerStats}
                   />
                 ))}
               </div>
@@ -905,8 +1107,10 @@ export function CombatPage({}: CombatPageProps) {
                     isProcessing={isProcessing}
                     selectedTarget={selectedTarget}
                     onSelectTarget={setSelectedTarget}
-                    hasPerformedAction={hasPerformedAction}
                     canEndTurn={canEndTurn}
+                    mainActionUsed={turnState?.mainActionUsed || false}
+                    extraActionUsed={turnState?.extraActionUsed || false}
+                    temporaryPlayerStats={combatState?.temporaryPlayerStats}
                   />
                   
                   <button
@@ -960,7 +1164,7 @@ export function CombatPage({}: CombatPageProps) {
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <CombatInventory
-                inventory={inventoryService.getInventory()}
+                inventory={combatState?.playerInventory || inventoryService.getInventory()}
                 onUseItem={handleUseItem}
                 onClose={() => setShowInventory(false)}
                 onSelectTarget={setSelectedTarget}
@@ -1015,7 +1219,7 @@ export function CombatPage({}: CombatPageProps) {
             {/* Combat Log Content */}
             <div className="flex-1 overflow-hidden min-h-0">
               <CombatLog
-                log={combatService.getCombatLog()}
+                log={combatService.getCurrentTurnActions()}
                 turnLogs={combatService.getTurnLogs()}
                 isPlayerTurn={combatState?.isPlayerTurn || false}
                 isInMenu={true}

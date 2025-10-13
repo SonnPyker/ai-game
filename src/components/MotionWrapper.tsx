@@ -9,6 +9,12 @@ interface MotionWrapperProps {
   [key: string]: any;
 }
 
+// Helper function to filter out motion-specific props for DOM elements
+function filterMotionProps(props: any) {
+  const { whileHover, whileTap, whileInView, initial, animate, exit, transition, layout, ...domProps } = props;
+  return domProps;
+}
+
 /**
  * Wrapper component for framer-motion that automatically disables animations on mobile
  * Falls back to regular div when animations are disabled
@@ -18,9 +24,9 @@ export const MotionWrapper = React.forwardRef<HTMLDivElement, MotionWrapperProps
   ({ children, ...props }, ref) => {
     const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
     
-    // If animations are disabled, render regular div
+    // If animations are disabled, render regular div with only DOM-safe props
     if (!shouldUseAnimations()) {
-      return <div ref={ref} {...props}>{children}</div>;
+      return <div ref={ref} {...filterMotionProps(props)}>{children}</div>;
     }
     
     // Use motion.div with proper props when animations are enabled
@@ -36,7 +42,7 @@ export function MotionButton({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <button {...props}>{children}</button>;
+    return <button {...filterMotionProps(props)}>{children}</button>;
   }
   
   const motionProps = getMotionProps(props);
@@ -47,7 +53,7 @@ export function MotionSpan({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <span {...props}>{children}</span>;
+    return <span {...filterMotionProps(props)}>{children}</span>;
   }
   
   const motionProps = getMotionProps(props);
@@ -58,7 +64,7 @@ export function MotionP({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <p {...props}>{children}</p>;
+    return <p {...filterMotionProps(props)}>{children}</p>;
   }
   
   const motionProps = getMotionProps(props);
@@ -69,7 +75,7 @@ export function MotionH1({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <h1 {...props}>{children}</h1>;
+    return <h1 {...filterMotionProps(props)}>{children}</h1>;
   }
   
   const motionProps = getMotionProps(props);
@@ -80,7 +86,7 @@ export function MotionH2({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <h2 {...props}>{children}</h2>;
+    return <h2 {...filterMotionProps(props)}>{children}</h2>;
   }
   
   const motionProps = getMotionProps(props);
@@ -91,7 +97,7 @@ export function MotionH3({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <h3 {...props}>{children}</h3>;
+    return <h3 {...filterMotionProps(props)}>{children}</h3>;
   }
   
   const motionProps = getMotionProps(props);
@@ -102,7 +108,7 @@ export function MotionH4({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <h4 {...props}>{children}</h4>;
+    return <h4 {...filterMotionProps(props)}>{children}</h4>;
   }
   
   const motionProps = getMotionProps(props);
@@ -113,7 +119,7 @@ export function MotionH5({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <h5 {...props}>{children}</h5>;
+    return <h5 {...filterMotionProps(props)}>{children}</h5>;
   }
   
   const motionProps = getMotionProps(props);
@@ -124,7 +130,7 @@ export function MotionH6({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <h6 {...props}>{children}</h6>;
+    return <h6 {...filterMotionProps(props)}>{children}</h6>;
   }
   
   const motionProps = getMotionProps(props);
@@ -135,7 +141,7 @@ export function MotionUl({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <ul {...props}>{children}</ul>;
+    return <ul {...filterMotionProps(props)}>{children}</ul>;
   }
   
   const motionProps = getMotionProps(props);
@@ -146,7 +152,7 @@ export function MotionLi({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <li {...props}>{children}</li>;
+    return <li {...filterMotionProps(props)}>{children}</li>;
   }
   
   const motionProps = getMotionProps(props);
@@ -157,7 +163,7 @@ export function MotionForm({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <form {...props}>{children}</form>;
+    return <form {...filterMotionProps(props)}>{children}</form>;
   }
   
   const motionProps = getMotionProps(props);
@@ -168,7 +174,7 @@ export function MotionInput({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <input {...props}>{children}</input>;
+    return <input {...filterMotionProps(props)}>{children}</input>;
   }
   
   const motionProps = getMotionProps(props);
@@ -179,7 +185,7 @@ export function MotionTextarea({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <textarea {...props}>{children}</textarea>;
+    return <textarea {...filterMotionProps(props)}>{children}</textarea>;
   }
   
   const motionProps = getMotionProps(props);
@@ -190,7 +196,7 @@ export function MotionLabel({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <label {...props}>{children}</label>;
+    return <label {...filterMotionProps(props)}>{children}</label>;
   }
   
   const motionProps = getMotionProps(props);
@@ -201,7 +207,7 @@ export function MotionNav({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <nav {...props}>{children}</nav>;
+    return <nav {...filterMotionProps(props)}>{children}</nav>;
   }
   
   const motionProps = getMotionProps(props);
@@ -212,7 +218,7 @@ export function MotionHeader({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <header {...props}>{children}</header>;
+    return <header {...filterMotionProps(props)}>{children}</header>;
   }
   
   const motionProps = getMotionProps(props);
@@ -223,7 +229,7 @@ export function MotionFooter({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <footer {...props}>{children}</footer>;
+    return <footer {...filterMotionProps(props)}>{children}</footer>;
   }
   
   const motionProps = getMotionProps(props);
@@ -234,7 +240,7 @@ export function MotionMain({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <main {...props}>{children}</main>;
+    return <main {...filterMotionProps(props)}>{children}</main>;
   }
   
   const motionProps = getMotionProps(props);
@@ -245,7 +251,7 @@ export function MotionArticle({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <article {...props}>{children}</article>;
+    return <article {...filterMotionProps(props)}>{children}</article>;
   }
   
   const motionProps = getMotionProps(props);
@@ -256,7 +262,7 @@ export function MotionAside({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <aside {...props}>{children}</aside>;
+    return <aside {...filterMotionProps(props)}>{children}</aside>;
   }
   
   const motionProps = getMotionProps(props);
@@ -267,7 +273,7 @@ export function MotionSection({ children, ...props }: MotionWrapperProps) {
   const { shouldUseAnimations, getMotionProps } = useResponsiveContext();
   
   if (!shouldUseAnimations()) {
-    return <section {...props}>{children}</section>;
+    return <section {...filterMotionProps(props)}>{children}</section>;
   }
   
   const motionProps = getMotionProps(props);

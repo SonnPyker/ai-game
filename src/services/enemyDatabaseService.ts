@@ -1,4 +1,5 @@
-import { Enemy, CombatStats, Attack } from '../types';
+import { Enemy, CombatStats, Attack, InventoryItem } from '../types';
+import { armorGenerationService } from './armorGenerationService';
 
 class EnemyDatabaseService {
   private static instance: EnemyDatabaseService;
@@ -43,7 +44,7 @@ class EnemyDatabaseService {
             charisma: -1
           }
         },
-        health: { current: 7, max: 7 },
+        health: { current: 25, max: 25 },
         armorClass: 12,
         attacks: [
           {
@@ -92,7 +93,7 @@ class EnemyDatabaseService {
             charisma: -1
           }
         },
-        health: { current: 15, max: 15 },
+        health: { current: 35, max: 35 },
         armorClass: 13,
         attacks: [
           {
@@ -145,7 +146,7 @@ class EnemyDatabaseService {
             charisma: -3
           }
         },
-        health: { current: 13, max: 13 },
+        health: { current: 30, max: 30 },
         armorClass: 13,
         attacks: [
           {
@@ -203,7 +204,7 @@ class EnemyDatabaseService {
             charisma: -1
           }
         },
-        health: { current: 25, max: 25 },
+        health: { current: 50, max: 50 },
         armorClass: 14,
         attacks: [
           {
@@ -268,7 +269,7 @@ class EnemyDatabaseService {
             charisma: 3
           }
         },
-        health: { current: 32, max: 32 },
+        health: { current: 60, max: 60 },
         armorClass: 16,
         attacks: [
           {
@@ -381,7 +382,7 @@ class EnemyDatabaseService {
   }
 
   // Generate random enemy stats based on combat level
-  public generateRandomEnemyStats(level: number): CombatStats {
+  public generateRandomEnemyStats(level: number, enemyType?: Enemy['type']): CombatStats {
     // Use level as seed for consistent stats
     const seed = level * 9301 + 49297;
     
@@ -423,8 +424,25 @@ class EnemyDatabaseService {
       max: baseHP
     };
 
-    // Calculate AC (10 + agility modifier + equipment bonus)
-    const armorClass = 10 + modifiers.agility;
+    // Calculate base AC (10 + agility modifier)
+    const baseArmorClass = 10 + modifiers.agility;
+
+    // Generate chest armor if enemy type is provided
+    let equippedArmor: InventoryItem | undefined;
+    let finalArmorClass = baseArmorClass;
+    
+    if (enemyType) {
+      const generatedArmor = armorGenerationService.generateChestArmor({
+        level,
+        enemyType,
+        rarity: this.determineRarityByLevel(level)
+      });
+      
+      if (generatedArmor) {
+        equippedArmor = generatedArmor;
+        finalArmorClass = baseArmorClass + (equippedArmor.armorClass || 0);
+      }
+    }
 
     // Generate basic attack
     const attacks: Attack[] = [
@@ -441,9 +459,19 @@ class EnemyDatabaseService {
       combatLevel: level,
       stats: { ...baseStats, modifiers },
       health,
-      armorClass,
-      attacks
+      armorClass: finalArmorClass,
+      attacks,
+      equippedArmor
     };
+  }
+
+  // Determine rarity by level
+  private determineRarityByLevel(level: number): 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' {
+    if (level <= 2) return 'common';
+    if (level <= 5) return Math.random() < 0.3 ? 'uncommon' : 'common';
+    if (level <= 8) return Math.random() < 0.4 ? 'rare' : Math.random() < 0.6 ? 'uncommon' : 'common';
+    if (level <= 12) return Math.random() < 0.3 ? 'epic' : Math.random() < 0.5 ? 'rare' : 'uncommon';
+    return Math.random() < 0.2 ? 'legendary' : Math.random() < 0.4 ? 'epic' : 'rare';
   }
 
   // Create enemy from NPC

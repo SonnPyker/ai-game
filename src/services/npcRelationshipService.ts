@@ -1,5 +1,6 @@
 import { NPCRelationship, NPCEncounter, ContentFlags } from '../types';
 import { npcArousalService } from './npcArousalService';
+import { armorGenerationService } from './armorGenerationService';
 
 class NPCRelationshipService {
   private static instance: NPCRelationshipService;
@@ -115,7 +116,16 @@ class NPCRelationshipService {
     const maxHP = 20 + (combatLevel * 5) + stats.modifiers.constitution;
     const currentHP = maxHP;
     
-    const armorClass = 10 + stats.modifiers.agility + Math.floor(random * 3);
+    const baseArmorClass = 10 + stats.modifiers.agility + Math.floor(random * 3);
+    
+    // Generate chest armor for NPC
+    const equippedArmor = armorGenerationService.generateChestArmor({
+      level: combatLevel,
+      enemyType: 'humanoid', // NPCs are typically humanoid
+      rarity: this.determineRarityByLevel(combatLevel)
+    });
+    
+    const finalArmorClass = baseArmorClass + (equippedArmor?.armorClass || 0);
     
     // Generate attacks based on NPC type and combat level with AI
     const attacks = this.generateAttacksForNPC(npcName, combatLevel, stats, npcData);
@@ -128,10 +138,22 @@ class NPCRelationshipService {
         current: currentHP,
         max: maxHP
       },
-      armorClass,
+      armorClass: finalArmorClass,
       attacks,
-      abilities: []
+      abilities: [],
+      equippedArmor // Include generated armor
     };
+  }
+
+  /**
+   * Determine rarity by level for armor generation
+   */
+  private determineRarityByLevel(level: number): 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' {
+    if (level <= 2) return 'common';
+    if (level <= 5) return Math.random() < 0.3 ? 'uncommon' : 'common';
+    if (level <= 8) return Math.random() < 0.4 ? 'rare' : Math.random() < 0.6 ? 'uncommon' : 'common';
+    if (level <= 12) return Math.random() < 0.3 ? 'epic' : Math.random() < 0.5 ? 'rare' : 'uncommon';
+    return Math.random() < 0.2 ? 'legendary' : Math.random() < 0.4 ? 'epic' : 'rare';
   }
 
   // Generate attacks for NPC based on name, profession, and context using AI

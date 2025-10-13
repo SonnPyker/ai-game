@@ -23,6 +23,13 @@ export class EnemyAIService {
     // Map world difficulty to AI difficulty if not specified
     const aiDifficulty = this.mapWorldDifficultyToAI(difficulty, worldDifficulty);
     
+    // Check if enemy should use consumable first
+    const consumableAction = this.decideConsumableUsage(enemy, allCombatants, aiDifficulty);
+    if (consumableAction) {
+      return consumableAction;
+    }
+    
+    // Otherwise, decide main action
     switch (aiDifficulty) {
       case 'easy':
         return this.easyAI(enemy, allCombatants);
@@ -54,6 +61,216 @@ export class EnemyAIService {
     }
     
     return combatDifficulty;
+  }
+
+  /**
+   * Quyết định sử dụng consumable dựa trên AI difficulty
+   */
+  private decideConsumableUsage(
+    enemy: Combatant,
+    allCombatants: Combatant[],
+    aiDifficulty: 'easy' | 'medium' | 'hard'
+  ): CombatAction | null {
+    // Check if enemy has inventory and consumables
+    if (!enemy.inventory || enemy.inventory.length === 0) {
+      return null;
+    }
+
+    const consumables = enemy.inventory.filter(item => item.type === 'consumable' && item.quantity > 0);
+    if (consumables.length === 0) {
+      return null;
+    }
+
+    const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
+    if (alivePlayers.length === 0) {
+      return null;
+    }
+
+    // Calculate HP percentage
+    const hpPercentage = (enemy.health.current / enemy.health.max) * 100;
+
+    switch (aiDifficulty) {
+      case 'easy':
+        return this.easyConsumableAI(enemy, consumables, alivePlayers, hpPercentage);
+      case 'medium':
+        return this.mediumConsumableAI(enemy, consumables, alivePlayers, hpPercentage);
+      case 'hard':
+        return this.hardConsumableAI(enemy, consumables, alivePlayers, hpPercentage);
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Easy AI Consumable Logic - Chỉ dùng healing khi HP thấp
+   */
+  private easyConsumableAI(
+    enemy: Combatant,
+    consumables: any[],
+    _alivePlayers: Combatant[],
+    hpPercentage: number
+  ): CombatAction | null {
+    // Only use healing when HP < 30%
+    if (hpPercentage < 30) {
+      const healingItem = consumables.find(item => 
+        item.stats?.effect?.startsWith('heal_') || 
+        item.name.toLowerCase().includes('heal') ||
+        item.name.toLowerCase().includes('potion')
+      );
+      
+      if (healingItem) {
+        return {
+          type: 'use_item',
+          targetId: enemy.id,
+          itemId: healingItem.id,
+          description: `${enemy.name} sử dụng ${healingItem.name} để hồi máu`,
+          priority: 2
+        };
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Medium AI Consumable Logic - Dùng healing và buff cơ bản
+   */
+  private mediumConsumableAI(
+    enemy: Combatant,
+    consumables: any[],
+    _alivePlayers: Combatant[],
+    hpPercentage: number
+  ): CombatAction | null {
+    // Use healing when HP < 50%
+    if (hpPercentage < 50) {
+      const healingItem = consumables.find(item => 
+        item.stats?.effect?.startsWith('heal_') || 
+        item.name.toLowerCase().includes('heal') ||
+        item.name.toLowerCase().includes('potion')
+      );
+      
+      if (healingItem) {
+        return {
+          type: 'use_item',
+          targetId: enemy.id,
+          itemId: healingItem.id,
+          description: `${enemy.name} sử dụng ${healingItem.name} để hồi máu`,
+          priority: 2
+        };
+      }
+    }
+
+    // Use damage buff if available and HP > 50%
+    if (hpPercentage > 50 && Math.random() < 0.3) {
+      const buffItem = consumables.find(item => 
+        item.stats?.effect?.startsWith('damage_buff_') ||
+        item.name.toLowerCase().includes('strength') ||
+        item.name.toLowerCase().includes('berserker')
+      );
+      
+      if (buffItem) {
+        return {
+          type: 'use_item',
+          targetId: enemy.id,
+          itemId: buffItem.id,
+          description: `${enemy.name} sử dụng ${buffItem.name} để tăng sức mạnh`,
+          priority: 1
+        };
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Hard AI Consumable Logic - Chiến thuật thông minh
+   */
+  private hardConsumableAI(
+    enemy: Combatant,
+    consumables: any[],
+    alivePlayers: Combatant[],
+    hpPercentage: number
+  ): CombatAction | null {
+    // Use healing when HP < 60%
+    if (hpPercentage < 60) {
+      const healingItem = consumables.find(item => 
+        item.stats?.effect?.startsWith('heal_') || 
+        item.name.toLowerCase().includes('heal') ||
+        item.name.toLowerCase().includes('potion')
+      );
+      
+      if (healingItem) {
+        return {
+          type: 'use_item',
+          targetId: enemy.id,
+          itemId: healingItem.id,
+          description: `${enemy.name} sử dụng ${healingItem.name} để hồi máu`,
+          priority: 2
+        };
+      }
+    }
+
+    // Use damage buff if available and HP > 60%
+    if (hpPercentage > 60 && Math.random() < 0.4) {
+      const buffItem = consumables.find(item => 
+        item.stats?.effect?.startsWith('damage_buff_') ||
+        item.name.toLowerCase().includes('strength') ||
+        item.name.toLowerCase().includes('berserker')
+      );
+      
+      if (buffItem) {
+        return {
+          type: 'use_item',
+          targetId: enemy.id,
+          itemId: buffItem.id,
+          description: `${enemy.name} sử dụng ${buffItem.name} để tăng sức mạnh`,
+          priority: 1
+        };
+      }
+    }
+
+    // Use AC buff if available and HP > 70%
+    if (hpPercentage > 70 && Math.random() < 0.3) {
+      const acBuffItem = consumables.find(item => 
+        item.stats?.effect?.startsWith('ac_buff_') ||
+        item.name.toLowerCase().includes('shield') ||
+        item.name.toLowerCase().includes('stone')
+      );
+      
+      if (acBuffItem) {
+        return {
+          type: 'use_item',
+          targetId: enemy.id,
+          itemId: acBuffItem.id,
+          description: `${enemy.name} sử dụng ${acBuffItem.name} để tăng phòng thủ`,
+          priority: 1
+        };
+      }
+    }
+
+    // Use debuff on player if available
+    if (Math.random() < 0.2) {
+      const debuffItem = consumables.find(item => 
+        item.stats?.effect?.startsWith('poison_') ||
+        item.stats?.effect?.startsWith('weakness_') ||
+        item.stats?.effect?.startsWith('slow_') ||
+        item.name.toLowerCase().includes('poison') ||
+        item.name.toLowerCase().includes('bomb')
+      );
+      
+      if (debuffItem) {
+        const target = this.selectRandomTarget(alivePlayers);
+        return {
+          type: 'use_item',
+          targetId: target.id,
+          itemId: debuffItem.id,
+          description: `${enemy.name} sử dụng ${debuffItem.name} để làm yếu ${target.name}`,
+          priority: 1
+        };
+      }
+    }
+    
+    return null;
   }
 
   /**

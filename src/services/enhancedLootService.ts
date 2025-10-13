@@ -1,4 +1,5 @@
 import { InventoryItem, Enemy } from '../types';
+import { consumableDatabase } from './consumableDatabase';
 
 interface LootTable {
   misc: Array<{
@@ -150,6 +151,20 @@ class EnhancedLootService {
   private selectRandomConsumableItem(enemy: Enemy): any {
     const enemyLevel = enemy.level || 1;
     
+    // Use consumable database instead of loot table
+    const template = consumableDatabase.getRandomConsumable(enemyLevel);
+    if (template) {
+      return {
+        name: template.name,
+        description: template.description,
+        effect: template.effect,
+        rarity: template.rarity,
+        value: this.getItemLevel(template.rarity) * 10,
+        tags: template.tags
+      };
+    }
+    
+    // Fallback to loot table if database fails
     const availableItems = this.lootTable.consumables.filter(item => {
       const levelMatch = this.getItemLevel(item.rarity) <= enemyLevel + 2;
       return levelMatch;
