@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, Minus, Plus } from 'lucide-react';
 import { InventoryItem } from '../types';
 import { useModalMinimize } from '../hooks/useModalMinimize';
-import { MinimizedModal } from './MinimizedModal';
 import { ModalHeader } from './ModalHeader';
 import { MotionWrapper } from './MotionWrapper';
 
@@ -19,7 +18,12 @@ export function DiscardItemModal({
   item,
   onDiscard
 }: DiscardItemModalProps) {
-  const { isMinimized, minimize, restore } = useModalMinimize('discard-item-modal');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'discard-item-modal',
+    title: 'Vứt bỏ vật phẩm',
+    subtitle: item?.name,
+    icon: <Trash2 className="w-5 h-5 text-red-400" />
+  });
   const [discardQuantity, setDiscardQuantity] = useState(1);
 
   // Reset quantity when modal opens or item changes
@@ -33,14 +37,7 @@ export function DiscardItemModal({
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title="Vứt bỏ vật phẩm"
-        subtitle={`${item.name} (${discardQuantity}/${item.quantity || 1})`}
-        icon={<Trash2 className="w-5 h-5 text-red-400" />}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   const isEquipped = item.isEquipped;

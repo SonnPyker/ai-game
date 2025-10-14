@@ -2,7 +2,6 @@ import React from 'react';
 import { Sword, Shield, AlertTriangle } from 'lucide-react';
 import { MotionWrapper } from '../MotionWrapper';
 import { ModalHeader } from '../ModalHeader';
-import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface RandomCombatModalProps {
@@ -24,7 +23,12 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
   location,
   reason
 }) => {
-  const { isMinimized, minimize, restore } = useModalMinimize('random-combat-modal');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'random-combat-modal',
+    title: 'Chiến đấu ngẫu nhiên',
+    subtitle: location,
+    icon: <Sword className="w-5 h-5 text-red-400" />
+  });
   
   if (!isOpen) return null;
 
@@ -42,14 +46,7 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title="Chiến đấu ngẫu nhiên"
-        subtitle={`Gặp ${enemyName} tại ${safeLocation}`}
-        icon={<Sword className="w-5 h-5 text-red-400" />}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   return (

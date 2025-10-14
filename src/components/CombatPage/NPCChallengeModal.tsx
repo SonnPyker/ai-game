@@ -1,7 +1,6 @@
 import { MotionWrapper } from '../MotionWrapper';
 import { Sword, AlertTriangle, User, Zap, Shield } from 'lucide-react';
 import { ModalHeader } from '../ModalHeader';
-import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface NPCChallengeModalProps {
@@ -34,20 +33,18 @@ export function NPCChallengeModal({
   onDeclineChallenge,
   challengeData
 }: NPCChallengeModalProps) {
-  const { isMinimized, minimize, restore } = useModalMinimize('npc-challenge-modal');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'npc-challenge-modal',
+    title: 'Thách đấu NPC',
+    subtitle: challengeData?.npcName || 'NPC',
+    icon: <Sword className="w-5 h-5 text-red-400" />
+  });
 
   if (!isOpen) return null;
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title="Thách đấu từ NPC"
-        subtitle={`${challengeData.npcName} thách đấu bạn`}
-        icon={<Sword className="w-5 h-5 text-red-400" />}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   const getDifficultyColor = (difficulty: string) => {

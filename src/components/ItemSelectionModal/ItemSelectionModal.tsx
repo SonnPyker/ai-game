@@ -9,7 +9,6 @@ import {
   XCircle
 } from 'lucide-react';
 import { ModalHeader } from '../ModalHeader';
-import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface ItemSelectionModalProps {
@@ -30,7 +29,12 @@ export function ItemSelectionModal({
   description = "Bạn đã tìm thấy một số vật phẩm. Hãy chọn những gì bạn muốn lấy:"
 }: ItemSelectionModalProps) {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const { isMinimized, minimize, restore } = useModalMinimize('item-selection-modal');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'item-selection-modal',
+    title: title,
+    subtitle: `${items.length} vật phẩm`,
+    icon: <Package className="w-5 h-5 text-green-400" />
+  });
 
   // Initialize selected items when modal opens
   useEffect(() => {
@@ -51,13 +55,7 @@ export function ItemSelectionModal({
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title={title}
-        icon={<Package className="w-5 h-5 text-green-400" />}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   // Select all items by default

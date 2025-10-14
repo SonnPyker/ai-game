@@ -75,10 +75,10 @@ class InventoryService {
         Math.floor((character.coreStats.agility - 10) / 2);
       ac += agilityModifier;
       
-      // Check for chest armor equipment
-      if (character.equipment?.chest && character.equipment.chest.armorClass) {
+      // Check for armor equipment
+      if (character.equipment?.armor && character.equipment.armor.armorClass) {
         // Use armor's AC + agility modifier
-        ac = character.equipment.chest.armorClass + agilityModifier;
+        ac = character.equipment.armor.armorClass + agilityModifier;
       }
       
       character.coreStats.armorClass = ac;
@@ -541,42 +541,19 @@ class InventoryService {
   // Determine appropriate slot for item
   private determineSlotForItem(item: InventoryItem): string | null {
     if (item.type === 'weapon') {
-      // Check if main weapon slot is free
-      if (!this.equipment.weapon_main) {
-        return 'weapon_main';
-      } else if (!this.equipment.weapon_off) {
-        return 'weapon_off';
-      }
-      return 'weapon_main'; // Replace main weapon
+      return 'weapon';
     }
 
     if (item.type === 'armor') {
-      // Determine armor slot based on name
-      const name = item.name.toLowerCase();
+      return 'armor';
+    }
 
-      if (name.includes('helmet') || name.includes('hat') || name.includes('mũ')) {
-        return 'head';
-      }
-      if (name.includes('chest') || name.includes('armor') || name.includes('giáp') || 
-          name.includes('robe') || name.includes('shirt')) {
-        return 'chest';
-      }
-      if (name.includes('gloves') || name.includes('gauntlets') || name.includes('găng')) {
-        return 'hands';
-      }
-      if (name.includes('pants') || name.includes('trousers') || name.includes('quần')) {
-        return 'legs';
-      }
-      if (name.includes('boots') || name.includes('shoes') || name.includes('giày')) {
-        return 'feet';
-      }
-      if (name.includes('ring') || name.includes('amulet') || name.includes('trang sức')) {
-        // Find free accessory slot
-        if (!this.equipment.accessory1) return 'accessory1';
-        if (!this.equipment.accessory2) return 'accessory2';
-        if (!this.equipment.accessory3) return 'accessory3';
-        return 'accessory1'; // Replace first accessory
-      }
+    if (item.type === 'misc') {
+      // Find free accessory slot
+      if (!this.equipment.accessory1) return 'accessory1';
+      if (!this.equipment.accessory2) return 'accessory2';
+      if (!this.equipment.accessory3) return 'accessory3';
+      return 'accessory1'; // Replace first accessory
     }
 
     return null; // Cannot be equipped
@@ -625,11 +602,11 @@ class InventoryService {
     const agilityModifier = this.character.coreStats.modifiers?.agility || 0;
     ac += agilityModifier;
     
-    // Check for chest armor equipment
-    const chestArmor = this.equipment.chest;
-    if (chestArmor && chestArmor.armorClass) {
+    // Check for armor equipment
+    const armor = this.equipment.armor;
+    if (armor && armor.armorClass) {
       // Use armor's AC + agility modifier
-      ac = chestArmor.armorClass + agilityModifier;
+      ac = armor.armorClass + agilityModifier;
     }
     
     return ac;
@@ -721,7 +698,7 @@ class InventoryService {
         return item.type === 'weapon';
       }
       
-      if (['head', 'chest', 'hands', 'legs', 'feet', 'accessory1', 'accessory2', 'accessory3'].includes(slot)) {
+      if (['armor', 'accessory1', 'accessory2', 'accessory3'].includes(slot)) {
         // Check if item has a specific slot property that matches the requested slot
         if (item.slot) {
           return item.slot === slot;

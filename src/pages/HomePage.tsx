@@ -14,7 +14,7 @@ import { npcRelationshipService } from '../services/npcRelationshipService';
 export function HomePage() {
   const navigate = useNavigate();
 
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
     // Reset game data nhưng giữ lại save slots và API keys
     const keysToRemove = [
       'rp_chat',
@@ -46,6 +46,10 @@ export function HomePage() {
     
     // Clear NPC relationship data
     npcRelationshipService.clearAllData();
+    
+    // Clear merchant shops data
+    const { merchantService } = await import('../services/merchantService');
+    merchantService.clearAllMerchantShops();
     
     // Clear selected NPC for dialogue
     localStorage.removeItem('selectedNPCForDialogue');

@@ -1,5 +1,6 @@
-import { Location, PlayerLocation, WorldTime, WorldData } from '../types';
+import { Location, PlayerLocation, WorldTime, WorldData, MerchantShop } from '../types';
 import { worldTimeService } from './worldTimeService';
+import { merchantService } from './merchantService';
 
 class LocationService {
   private static instance: LocationService;
@@ -500,6 +501,53 @@ class LocationService {
       canTravel: true, // Luôn có thể di chuyển nếu location tồn tại
       pathType
     };
+  }
+
+  /**
+   * Khởi tạo merchant shops cho tất cả shop locations
+   */
+  public initializeMerchantShops(locations: Location[]): void {
+    const shopLocations = locations.filter(loc => loc.locationType === 'shop');
+    
+    for (const location of shopLocations) {
+      // Kiểm tra xem shop đã tồn tại chưa
+      const existingShop = merchantService.getMerchantShopByLocation(location.id);
+      if (!existingShop) {
+        // Shop sẽ được tạo bằng AI khi player mở shop
+        console.log(`Shop will be created by AI when player opens shop for location: ${location.name}`);
+      }
+    }
+  }
+
+  /**
+   * Lấy merchant shop theo location ID
+   */
+  public getMerchantShopByLocation(locationId: string): MerchantShop | null {
+    return merchantService.getMerchantShopByLocation(locationId);
+  }
+
+  /**
+   * Kiểm tra xem location có phải là shop không
+   */
+  public isShopLocation(locationId: string): boolean {
+    const location = this.getLocationById(locationId);
+    return location?.locationType === 'shop';
+  }
+
+  /**
+   * Lấy tất cả shop locations
+   */
+  public getShopLocations(): Location[] {
+    const worldData = this.getWorldData();
+    const locations = worldData.locations || [];
+    return locations.filter((loc: Location) => loc.locationType === 'shop');
+  }
+
+  /**
+   * Kiểm tra và restock tất cả shops (CHỈ DÙNG AI)
+   */
+  public async checkAndRestockAllShops(currentTime: WorldTime): Promise<void> {
+    await merchantService.checkAndRestockShops(currentTime);
   }
 }
 

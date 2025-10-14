@@ -1027,14 +1027,16 @@ Tạo 3 kỹ năng ngẫu nhiên từ các loại sau (KHÔNG bắt buộc phả
 
 **DAMAGE SKILLS**: Kỹ năng gây sát thương trong combat
 - BẮT BUỘC có ít nhất 2 effects trong array
-- Ví dụ: ["instant_damage:2d6", "stat_buff:strength:+1:self:2turns"]
+- Ví dụ: ["instant_damage:1d6+2", "stat_buff:strength:+1:self:2turns"]
+- Damage phải cân bằng: 1d6+2, 1d8+1, 1d4+1d4 (tổng 3-10 damage)
 - Cooldown: 2-4 lượt (random quanh 3)
 - Icon: emoji phù hợp (⚔️, 🔥, ⚡, etc.)
 - requiresTarget: true
 
 **HEALING SKILLS**: Kỹ năng hồi phục/buff trong combat
 - BẮT BUỘC có ít nhất 2 effects trong array
-- Ví dụ: ["instant_heal:2d4:+2", "stat_buff:constitution:+2:self:3turns"] hoặc ["defend", "stat_buff:ac:+1:self:2turns"]
+- Ví dụ: ["instant_heal:1d6+2", "stat_buff:constitution:+1:self:2turns"] hoặc ["defend", "stat_buff:ac:+1:self:2turns"]
+- Healing phải cân bằng: 1d6+2, 1d4+1+1d4+1d4, 1d4+1d4 (tổng 3-10 healing)
 - Cooldown: 2-4 lượt (random quanh 3)
 - Icon: emoji phù hợp (💚, ✨, 🛡️, etc.)
 - requiresTarget: false
@@ -1057,7 +1059,7 @@ JSON FORMAT:
       "description": "Mô tả ngắn gọn về cách sử dụng và hiệu quả",
       "level": 1,
       "skillType": "damage",
-      "effects": ["instant_damage:2d6", "stat_buff:strength:+1:self:2turns"],
+      "effects": ["instant_damage:1d6+2", "stat_buff:strength:+1:self:2turns"],
       "cooldown": 3,
       "currentCooldown": 0,
       "icon": "⚔️",
@@ -1069,7 +1071,7 @@ JSON FORMAT:
       "description": "Mô tả ngắn gọn về cách sử dụng và hiệu quả",
       "level": 1,
       "skillType": "healing",
-      "effects": ["instant_heal:2d4:+2", "stat_buff:constitution:+2:self:3turns"],
+      "effects": ["instant_heal:1d6+2", "stat_buff:constitution:+1:self:2turns"],
       "cooldown": 3,
       "currentCooldown": 0,
       "icon": "💚",
@@ -1208,8 +1210,9 @@ YÊU CẦU NỘI DUNG:
 3) Ẩn hoạ & xung đột chủ đạo.
 4) Tạo main quest cho tất cả 5 Acts - mỗi Act phải có main quest riêng với độ khó tăng dần.
 5) Quest phải mang tính tổng quát, phù hợp với nhiều loại nhân vật khác nhau.
-6) Tạo TỐI THIỂU 5 địa điểm cốt truyện chính (type: "story") + 2-3 địa điểm phụ (type: "secondary").
-7) Đặt gridPosition cho mỗi location trên grid 15x15 (x: 0-14, y: 0-14), đảm bảo khoảng cách hợp lý giữa các địa điểm.
+6) Tạo TỐI THIỂU 5 địa điểm cốt truyện chính (type: "story") + 2-3 địa điểm phụ (type: "secondary") + TỐI THIỂU 2 địa điểm mua bán (locationType: "shop").
+7) Địa điểm shop phải có tên và mô tả phù hợp với thế giới (VD: "Cửa hàng rèn", "Chợ trời", "Hội quán thương nhân").
+8) Đặt gridPosition cho mỗi location trên grid 15x15 (x: 0-14, y: 0-14), đảm bảo khoảng cách hợp lý giữa các địa điểm.
 
 GIỚI HẠN ĐỘ DÀI:
 - narrativeOpening: 150-200 từ
@@ -1248,7 +1251,17 @@ SCHEMA JSON (bắt buộc):
       "description": "string", 
       "role": "string",
       "type": "story",
+      "locationType": "story",
       "gridPosition": { "x": 7, "y": 7 }
+    },
+    {
+      "id": "loc_shop_1",
+      "name": "Cửa hàng phù hợp cốt truyện",
+      "description": "Mô tả shop",
+      "role": "Mua bán vũ khí, giáp, consumable, skill books",
+      "type": "secondary",
+      "locationType": "shop",
+      "gridPosition": { "x": 5, "y": 8 }
     }
   ],
   "keyEntities": [
@@ -1318,7 +1331,7 @@ QUAN TRỌNG VỀ INVENTORY ITEM STRUCTURE - TUÂN THỦ NGHIÊM NGẶT:
   * icon: string (emoji phù hợp: ⚔️ cho weapon, 🛡️ cho armor, 🧪 cho consumable, 📦 cho misc)
   * isEquipped: boolean (luôn false khi tạo mới)
   * stats: object (các chỉ số tăng cường, có thể để 0 nếu không có)
-  * slot: string (slot trang bị phù hợp: "weapon_main", "weapon_off", "head", "chest", etc.)
+  * slot: string (slot trang bị phù hợp: "weapon", "armor", "accessory1", "accessory2", "accessory3")
   * tags: array (luôn bao gồm ["reward"])
 - KHÔNG ĐƯỢC BỎ SÓT BẤT KỲ TRƯỜNG NÀO
 - ĐẢM BẢO ITEM CÓ THỂ TRANG BỊ ĐƯỢC
@@ -1347,10 +1360,10 @@ QUAN TRỌNG VỀ ITEM REWARDS - TẠO TÊN VÀ MÔ TẢ CỤ THỂ:
   * Description: Mô tả chi tiết về tác dụng và nguồn gốc
 
 - **VÍ DỤ RANDOM CONSUMABLE SÁNG TẠO:**
-  * {"name": "Thuốc Sức Mạnh Rồng", "type": "consumable", "rarity": "rare", "effect": "stat_buff:strength:+4:5turns|damage_buff:+1d6:5turns"}
-  * {"name": "Bình Nước Thánh", "type": "consumable", "rarity": "uncommon", "effect": "heal:2d4:+2:instant|heal:cure_poison:instant"}
-  * {"name": "Viên Ngọc Tăng Trí", "type": "consumable", "rarity": "epic", "effect": "stat_buff:intelligence:+5:10turns|stat_buff:wisdom:+3:10turns"}
-  * {"name": "Thuốc Tàng Hình", "type": "consumable", "rarity": "rare", "effect": "stat_buff:stealth:+6:3turns|stat_buff:agility:+2:3turns"}
+  * {"name": "Thuốc Sức Mạnh Rồng", "type": "consumable", "rarity": "rare", "effect": "stat_buff:strength:+4:5turns|damage_buff:+1d6:5turns", "value": 150}
+  * {"name": "Bình Nước Thánh", "type": "consumable", "rarity": "uncommon", "effect": "heal:2d4:+2:instant|heal:cure_poison:instant", "value": 75}
+  * {"name": "Viên Ngọc Tăng Trí", "type": "consumable", "rarity": "epic", "effect": "stat_buff:intelligence:+5:10turns|stat_buff:wisdom:+3:10turns", "value": 300}
+  * {"name": "Thuốc Tàng Hình", "type": "consumable", "rarity": "rare", "effect": "stat_buff:stealth:+6:3turns|stat_buff:agility:+2:3turns", "value": 120}
 
 - **THEME-BASED CONSUMABLE CREATION:**
   * **Dungeon Theme**: "Thuốc Chống Ma", "Bình Nước Ma Thuật", "Viên Ngọc Sáng"
@@ -1555,6 +1568,7 @@ SCHEMA:
               "type": "weapon/armor/consumable/misc",
               "rarity": "common/uncommon/rare/epic/legendary",
               "quantity": 1,
+              "value": 100,
               "icon": "⚔️/🛡️/🧪/📦",
               "isEquipped": false,
               "stats": {
@@ -1565,7 +1579,7 @@ SCHEMA:
                 "wisdom": 0,
                 "charisma": 0
               },
-              "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+              "slot": "weapon/armor/accessory1/accessory2/accessory3",
               "tags": ["reward"]
             }
           ],
@@ -1637,6 +1651,7 @@ SCHEMA:
                 "type": "weapon/armor/consumable/misc",
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
+                "value": 100,
                 "icon": "⚔️/🛡️/🧪/📦",
                 "isEquipped": false,
                 "stats": {
@@ -1647,7 +1662,7 @@ SCHEMA:
                   "wisdom": 0,
                   "charisma": 0
                 },
-                "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+                "slot": "weapon/armor/accessory1/accessory2/accessory3",
                 "tags": ["reward"]
               }
             ],
@@ -1718,6 +1733,7 @@ SCHEMA:
                 "type": "weapon/armor/consumable/misc",
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
+                "value": 100,
                 "icon": "⚔️/🛡️/🧪/📦",
                 "isEquipped": false,
                 "stats": {
@@ -1728,7 +1744,7 @@ SCHEMA:
                   "wisdom": 0,
                   "charisma": 0
                 },
-                "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+                "slot": "weapon/armor/accessory1/accessory2/accessory3",
                 "tags": ["reward"]
               }
             ],
@@ -1776,6 +1792,7 @@ SCHEMA:
                 "type": "weapon/armor/consumable/misc",
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
+                "value": 100,
                 "icon": "⚔️/🛡️/🧪/📦",
                 "isEquipped": false,
                 "stats": {
@@ -1786,7 +1803,7 @@ SCHEMA:
                   "wisdom": 0,
                   "charisma": 0
                 },
-                "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+                "slot": "weapon/armor/accessory1/accessory2/accessory3",
                 "tags": ["reward"]
               }
             ],
@@ -1834,6 +1851,7 @@ SCHEMA:
                 "type": "weapon/armor/consumable/misc",
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
+                "value": 100,
                 "icon": "⚔️/🛡️/🧪/📦",
                 "isEquipped": false,
                 "stats": {
@@ -1844,7 +1862,7 @@ SCHEMA:
                   "wisdom": 0,
                   "charisma": 0
                 },
-                "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+                "slot": "weapon/armor/accessory1/accessory2/accessory3",
                 "tags": ["reward"]
               }
             ],
@@ -1892,6 +1910,7 @@ SCHEMA:
                 "type": "weapon/armor/consumable/misc",
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
+                "value": 100,
                 "icon": "⚔️/🛡️/🧪/📦",
                 "isEquipped": false,
                 "stats": {
@@ -1902,7 +1921,7 @@ SCHEMA:
                   "wisdom": 0,
                   "charisma": 0
                 },
-                "slot": "weapon_main/weapon_off/head/chest/hands/legs/feet/accessory1/accessory2/accessory3",
+                "slot": "weapon/armor/accessory1/accessory2/accessory3",
                 "tags": ["reward"]
               }
             ],
@@ -2696,6 +2715,9 @@ QUAN TRỌNG VỀ NPCs:
 - Khi tạo NPC trong sceneState.npcs, hãy mô tả chi tiết về họ trong narrative
 - Bao gồm tên, trạng thái hiện tại, mô tả ngắn, tags (thương gia, quý tộc, tội phạm, v.v.), và faction nếu có
 - QUAN TRỌNG: Tags phải bằng tiếng Việt (ví dụ: "thương gia", "quý tộc", "học giả", "chiến binh", "nông dân", "thợ thủ công", "tội phạm", "quan chức", "pháp sư", "thầy thuốc")
+- Tại các location có locationType: 'shop', AI có thể tạo NPC merchant với tags: ['merchant', 'shopkeeper']
+- Merchant NPCs có thể mua/bán items, skill books, và thương lượng giá
+- Khi player yêu cầu mua/bán, AI nên hướng dẫn sử dụng /shop command
 - QUAN TRỌNG VỀ FACTION: 
   * KHÔNG phải tất cả NPC đều có faction
   * CHỈ gán faction khi NPC có lý do cụ thể và phù hợp với faction đó
@@ -2724,6 +2746,27 @@ QUAN TRỌNG VỀ HỆ THỐNG NPC ĐẶC TRƯNG CHO ĐỊA ĐIỂM PHỤ:
 - Các NPC khác tại địa điểm phụ (nếu có) KHÔNG được đánh dấu isLocationSignature: true
 - CHỈ có 1 NPC đặc trưng duy nhất cho mỗi địa điểm phụ
 - QUAN TRỌNG: Sử dụng chính xác locationId từ thông tin VỊ TRÍ HIỆN TẠI ở trên
+
+QUAN TRỌNG VỀ HỆ THỐNG MERCHANT SIGNATURE NPC CHO SHOP LOCATIONS:
+- KHI NGƯỜI CHƠI VÀO SHOP LOCATION (locationType: 'shop' hoặc ID bắt đầu bằng 'loc_shop'), BẮT BUỘC phải tạo NPCs
+- NPC ĐẦU TIÊN trong sceneState.npcs ở SHOP LOCATION (locationType: 'shop' hoặc ID bắt đầu bằng 'loc_shop') BẮT BUỘC phải là Merchant Signature NPC với các thuộc tính:
+  * isMerchantSignature: true
+  * isLocationSignature: false (QUAN TRỌNG: Không được vừa là location signature và merchant signature)
+  * merchantSignatureLocationId: ID của shop location hiện tại (lấy từ thông tin VỊ TRÍ HIỆN TẠI ở trên)
+  * tags: BẮT BUỘC phải chứa ['merchant', 'shopkeeper'] + tags phù hợp với loại shop
+  * description: mô tả chi tiết về vai trò merchant và loại hàng hóa bán
+  * merchantShopId: ID của merchant shop (sẽ được hệ thống tự động gán)
+- Merchant Signature NPC phải có:
+  * Tên phù hợp với loại shop (ví dụ: "Chủ tiệm thuốc Ayame", "Thợ rèn Kurogane", "Chủ chợ trời")
+  * Mô tả chi tiết về cửa hàng và hàng hóa
+  * Tính cách phù hợp với thương gia (thân thiện, khôn ngoan, có kinh nghiệm)
+- CHỈ có 1 Merchant Signature NPC duy nhất cho mỗi shop location
+- Merchant Signature NPC KHÔNG được tạo quest (khác với location signature NPC)
+- QUAN TRỌNG: Sử dụng chính xác locationId từ thông tin VỊ TRÍ HIỆN TẠI ở trên
+- QUAN TRỌNG: Các NPC khác tại shop location (nếu có) KHÔNG được đánh dấu isMerchantSignature: true
+- QUAN TRỌNG: 1 NPC KHÔNG THỂ vừa có isLocationSignature: true và isMerchantSignature: true
+- Merchant Signature NPC sẽ là người duy nhất có thể mua/bán với player tại shop location này
+- QUAN TRỌNG: Nếu đã có NPC với tags ['merchant', 'shopkeeper'] tại shop location nhưng chưa có isMerchantSignature: true, BẮT BUỘC phải cập nhật NPC đó thành merchant signature NPC
 
 QUAN TRỌNG VỀ SIGNATURE QUEST (NHIỆM VỤ PHỤ ĐẶC TRƯNG):
 - KHI NPC đặc trưng được tạo, BẮT BUỘC phải tạo sideQuestOffer với:
@@ -2763,7 +2806,8 @@ HƯỚNG DẪN VỀ VẬT PHẨM (ITEMS):
   * type: 'weapon' | 'armor' | 'consumable' | 'misc'
   * rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
   * quantity: số lượng
-  * slot (nếu là trang bị): 'weapon_main' | 'weapon_off' | 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'accessory1' | 'accessory2' | 'accessory3'
+  * value: giá trị bán (gold) - BẮT BUỘC cho tất cả items
+  * slot (nếu là trang bị): 'weapon' | 'armor' | 'accessory1' | 'accessory2' | 'accessory3'
   * armorClass (BẮT BUỘC cho armor): 10-20 (AC của áo giáp, dựa trên rarity)
   * attackBonus (BẮT BUỘC cho weapon): +1 đến +5 (bonus tấn công)
   * damage (BẮT BUỘC cho weapon): "1d6+1" (sát thương)
@@ -2784,10 +2828,10 @@ QUAN TRỌNG VỀ EQUIPMENT STATS:
   * **Mountain**: "Thuốc Chống Lạnh", "Đá Quý Sức Mạnh", "Tuyết Hồi Sinh"
 
 - **VÍ DỤ SCENE CONSUMABLE THEO CONTEXT:**
-  * Tavern: {"name": "Bia Sức Mạnh", "type": "consumable", "rarity": "common", "effect": "stat_buff:strength:+2:3turns"}
-  * Dungeon: {"name": "Thuốc Chống Ma", "type": "consumable", "rarity": "uncommon", "effect": "stat_buff:resistance:undead:5turns"}
-  * Forest: {"name": "Nước Suối Thần", "type": "consumable", "rarity": "rare", "effect": "heal:3d4:+3:instant|heal:cure_all:instant"}
-  * Desert: {"name": "Cát Ma Thuật", "type": "consumable", "rarity": "epic", "effect": "stat_buff:stealth:+8:4turns|damage_buff:+1d8:sand:4turns"}
+  * Tavern: {"name": "Bia Sức Mạnh", "type": "consumable", "rarity": "common", "effect": "stat_buff:strength:+2:3turns", "value": 25}
+  * Dungeon: {"name": "Thuốc Chống Ma", "type": "consumable", "rarity": "uncommon", "effect": "stat_buff:resistance:undead:5turns", "value": 50}
+  * Forest: {"name": "Nước Suối Thần", "type": "consumable", "rarity": "rare", "effect": "heal:3d4:+3:instant|heal:cure_all:instant", "value": 100}
+  * Desert: {"name": "Cát Ma Thuật", "type": "consumable", "rarity": "epic", "effect": "stat_buff:stealth:+8:4turns|damage_buff:+1d8:sand:4turns", "value": 250}
 
 - **RARITY THEO CONTEXT:**
   * **Common**: Tavern, shop thường, items cơ bản
@@ -2795,6 +2839,13 @@ QUAN TRỌNG VỀ EQUIPMENT STATS:
   * **Rare**: Boss room, ancient ruins, items quý hiếm
   * **Epic**: Legendary locations, items cực mạnh
   * **Legendary**: Unique locations, items duy nhất
+
+- **TỶ LỆ RARITY (áp dụng cho tất cả item generation):**
+  * **Common**: 50% - Items cơ bản, dễ tìm
+  * **Uncommon**: 25% - Items đặc biệt, tương đối phổ biến
+  * **Rare**: 15% - Items quý hiếm, khó tìm
+  * **Epic**: 8% - Items cực mạnh, rất hiếm
+  * **Legendary**: 2% - Items duy nhất, cực kỳ hiếm
 - QUEST REWARD ITEMS: KHÔNG BAO GIỜ có "stats" property
 
 QUAN TRỌNG VỀ WEAPON GENERATION:
@@ -2805,7 +2856,7 @@ QUAN TRỌNG VỀ WEAPON GENERATION:
 - KHÔNG tạo weapon nào thiếu damage hoặc attackBonus
 
 QUAN TRỌNG VỀ ARMOR GENERATION:
-- TẤT CẢ armor với slot chest PHẢI có đầy đủ: armorClass
+- TẤT CẢ armor với slot armor PHẢI có đầy đủ: armorClass
 - armorClass: 10-20 (dựa trên rarity và loại armor)
 - Common armor: AC 11-12, Uncommon: AC 12-13, Rare: AC 13-14, Epic: AC 14-15, Legendary: AC 15-16
 - Cloaks/robes: AC thấp hơn (10-12), Plate armor: AC cao hơn (13-16)
@@ -2854,16 +2905,17 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
         "type": "misc|weapon|armor|consumable",
         "rarity": "common|uncommon|rare|epic|legendary",
         "quantity": 1,
+        "value": 100,
         "tags": ["reward", "quest", "loại_item"],
         "icon": "emoji_phù_hợp",
         // CHO WEAPON - BẮT BUỘC:
         "damage": "1d6+1", // Sát thương
         "damageType": "physical|magical|fire|cold|lightning|poison|psychic|radiant|bludgeoning|slashing|piercing",
         "attackBonus": 2, // Bonus tấn công (+1 đến +5)
-        "slot": "weapon_main|weapon_off", // Vị trí trang bị
+        "slot": "weapon", // Vị trí trang bị
         // CHO ARMOR - BẮT BUỘC:
         "armorClass": 14, // AC từ 10-20
-        "slot": "head|chest|hands|legs|feet|accessory1|accessory2|accessory3", // Vị trí trang bị
+        "slot": "armor|accessory1|accessory2|accessory3", // Vị trí trang bị
         // CHO CONSUMABLE - BẮT BUỘC:
         "effect": "heal:1d4:+1:instant|damage_buff:+1d4:3turns|stat_buff:ac:+2:3turns|debuff:poison:1d4:3turns|heal:full:instant"
       }
@@ -2930,12 +2982,12 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
   * damage: "1d4", "1d6", "1d6+1", "1d8+2", "2d6+4" (dựa trên rarity)
   * damageType: "physical", "magical", "fire", "cold", "lightning", "poison", "psychic", "radiant", "bludgeoning", "slashing", "piercing"
   * attackBonus: +0 đến +5 (dựa trên rarity: common=0-1, uncommon=1-2, rare=2-3, epic=3-4, legendary=4-5)
-  * slot: "weapon_main" hoặc "weapon_off"
+  * slot: "weapon"
 
 - ÁO GIÁP (armor): BẮT BUỘC có armorClass, slot
   * armorClass: 10-20 (dựa trên rarity và loại armor)
   * Common: AC 11-12, Uncommon: AC 12-13, Rare: AC 13-14, Epic: AC 14-15, Legendary: AC 15-16
-  * slot: "head", "chest", "hands", "legs", "feet", "accessory1", "accessory2", "accessory3"
+  * slot: "armor", "accessory1", "accessory2", "accessory3"
 
 - CONSUMABLE: BẮT BUỘC có effect
   * effect: "heal:1d4:+1:instant", "heal:2d4:+2:instant", "stat_buff:strength:+2:5turns", "heal:cure_poison:instant", "heal:full:instant"
@@ -2950,9 +3002,9 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
   * legendary: level 15+, value 501+
 
 - VÍ DỤ QUEST REWARD ITEMS ĐÚNG:
-  * Weapon: {"name": "Kiếm ma thuật", "type": "weapon", "rarity": "uncommon", "damage": "1d6+1", "damageType": "magical", "attackBonus": 2, "slot": "weapon_main"}
-  * Armor: {"name": "Áo giáp sắt", "type": "armor", "rarity": "uncommon", "armorClass": 14, "slot": "chest"}
-  * Consumable: {"name": "Thuốc hồi máu", "type": "consumable", "rarity": "common", "effect": "heal:1d4:+1:instant"}
+  * Weapon: {"name": "Kiếm ma thuật", "type": "weapon", "rarity": "uncommon", "damage": "1d6+1", "damageType": "magical", "attackBonus": 2, "slot": "weapon", "value": 150}
+  * Armor: {"name": "Áo giáp sắt", "type": "armor", "rarity": "uncommon", "armorClass": 14, "slot": "armor", "value": 120}
+  * Consumable: {"name": "Thuốc hồi máu", "type": "consumable", "rarity": "common", "effect": "heal:1d4:+1:instant", "value": 25}
   * Misc: {"name": "Đồng xu cổ", "type": "misc", "rarity": "common"}
 
 
@@ -4002,6 +4054,36 @@ Trả về JSON format:
     } catch (error) {
       console.error('Error generating world details:', error);
       throw new Error('Có lỗi xảy ra khi tạo chi tiết thế giới');
+    }
+  }
+
+  /**
+   * Tạo dữ liệu merchant shop bằng AI
+   */
+  async generateMerchantShopData(prompt: string): Promise<any> {
+    console.log('Generating merchant shop data with AI...');
+    
+    try {
+      const response = await this.generateContent(prompt, undefined);
+      
+      if (response && typeof response === 'string') {
+        // Parse JSON response
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const shopData = JSON.parse(jsonMatch[0]);
+          console.log('AI generated merchant shop data:', shopData);
+          return shopData;
+        } else {
+          console.warn('No valid JSON found in AI response');
+          return null;
+        }
+      } else {
+        console.warn('No response from AI');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error generating merchant shop data:', error);
+      return null;
     }
   }
 }

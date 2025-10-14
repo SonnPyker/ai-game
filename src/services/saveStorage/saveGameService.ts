@@ -46,7 +46,8 @@ export class SaveGameService {
     uiState?: any,
     contentFlags?: any,
     playerLocation?: any,
-    combatHistory?: any
+    combatHistory?: any,
+    merchantShopsData?: any
   ): Promise<SaveResult> {
     try {
       if (!this.isInitialized) {
@@ -68,7 +69,8 @@ export class SaveGameService {
         uiState,
         contentFlags,
         playerLocation,
-        combatHistory
+        combatHistory,
+        merchantShopsData
       );
 
       // Lưu vào storage

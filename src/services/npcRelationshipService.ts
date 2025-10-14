@@ -126,7 +126,10 @@ class NPCRelationshipService {
       rarity: this.determineRarityByLevel(combatLevel)
     });
     
-    const finalArmorClass = baseArmorClass + (equippedArmor?.armorClass || 0);
+    // Calculate final AC: if armor is equipped, use armor AC + agility modifier, otherwise use base AC
+    const finalArmorClass = equippedArmor?.armorClass 
+      ? equippedArmor.armorClass + stats.modifiers.agility
+      : baseArmorClass;
     
     // Generate attacks based on NPC type and combat level with AI
     const attacks = this.generateAttacksForNPC(npcName, combatLevel, stats, npcData);
@@ -1617,7 +1620,16 @@ OUTPUT JSON:
 
   // Parse NPCs from AI response and update relationships
   parseNPCsFromAIResponse(aiResponse: any, currentLocation?: string): void {
-    // Tìm tất cả các trường có chứa "npc" (case insensitive)
+    // ƯU TIÊN: Xử lý sceneState.npcs trước tiên nếu có
+    if (aiResponse.sceneState && aiResponse.sceneState.npcs && Array.isArray(aiResponse.sceneState.npcs)) {
+      console.log('🚀 PRIORITY: Processing sceneState.npcs first:', aiResponse.sceneState.npcs);
+      this.processNPCs(aiResponse.sceneState.npcs, currentLocation);
+      // Force save ngay lập tức sau khi xử lý sceneState.npcs
+      this.saveToStorage();
+      console.log('🚀 PRIORITY: sceneState.npcs processed and saved immediately');
+    }
+
+    // Tìm tất cả các trường có chứa "npc" (case insensitive) - fallback
     const npcFields = this.findNPCFields(aiResponse);
 
     // Xử lý từng trường NPC tìm được
@@ -1676,10 +1688,18 @@ OUTPUT JSON:
 
   // Helper method to process NPCs array
   private processNPCs(npcs: any[], currentLocation?: string): void {
+    console.log('Processing NPCs:', npcs, 'at location:', currentLocation);
     npcs.forEach((npc: any) => {
-      if (npc.name && this.isValidIndividualNPC(npc.name)) {
+      console.log('Processing NPC:', npc.name, 'isMerchantSignature:', npc.isMerchantSignature);
+      
+      // Check if NPC is valid
+      const isValid = npc.name && this.isValidIndividualNPC(npc.name);
+      console.log('NPC valid check:', npc.name, 'isValid:', isValid);
+      
+      if (isValid) {
         // Tìm NPC existing bằng tên chính xác hoặc tên tương tự
         const existing = this.findRelationshipByNameOrSimilar(npc.name);
+        console.log('Found existing NPC:', existing ? existing.name : 'None');
         
         if (existing) {
           // Update existing NPC - cập nhật tên nếu có tên mới chi tiết hơn
@@ -1700,26 +1720,69 @@ OUTPUT JSON:
             existing.faction = npc.faction;
           }
           
+          // Cập nhật location signature fields nếu có
+          if (npc.isLocationSignature !== undefined) {
+            existing.isLocationSignature = npc.isLocationSignature;
+          }
+          if (npc.signatureLocationId) {
+            existing.signatureLocationId = npc.signatureLocationId;
+          }
+          if (npc.signatureQuestId) {
+            existing.signatureQuestId = npc.signatureQuestId;
+          }
+          
+          // Cập nhật merchant signature fields nếu có
+          if (npc.isMerchantSignature !== undefined) {
+            existing.isMerchantSignature = npc.isMerchantSignature;
+          }
+          if (npc.merchantSignatureLocationId) {
+            existing.merchantSignatureLocationId = npc.merchantSignatureLocationId;
+          }
+          if (npc.merchantShopId) {
+            existing.merchantShopId = npc.merchantShopId;
+          }
+          
           // Enhanced note generation based on scene state and context
           this.updateNPCNotesFromSceneState(existing, npc, currentLocation);
+          
+          // Save updated NPC
+          this.relationships.set(existing.id, existing);
+          this.saveToStorage();
+          console.log('Successfully updated existing NPC:', existing.name);
         } else {
           // Create new NPC relationship
-          this.addOrUpdateRelationship({
+          console.log('Creating new NPC relationship for:', npc.name);
+          const newNPCData: Partial<NPCRelationship> = {
             name: npc.name,
             description: npc.description || '',
             location: currentLocation,
             tags: npc.tags || [],
             faction: npc.faction || undefined, // Faction là optional, chỉ có khi AI gán
-            status: 'neutral',
+            status: 'neutral' as const,
             relationshipLevel: 0,
             reputation: 0,
             totalInteractions: 0,
             notes: this.generateInitialNotes(npc, currentLocation),
+            lastInteraction: new Date(),
             // Location signature NPC system
             isLocationSignature: npc.isLocationSignature || false,
             signatureLocationId: npc.signatureLocationId || undefined,
-            signatureQuestId: npc.signatureQuestId || undefined
-          });
+            signatureQuestId: npc.signatureQuestId || undefined,
+            // Merchant signature NPC system
+            isMerchantSignature: npc.isMerchantSignature || false,
+            merchantSignatureLocationId: npc.merchantSignatureLocationId || undefined,
+            merchantShopId: npc.merchantShopId || undefined
+          };
+          console.log('New NPC data:', newNPCData);
+          
+          // Validate signature exclusivity before creating
+          if (!this.validateNPCSignatureExclusivity(newNPCData)) {
+            console.error('NPC signature validation failed for:', npc.name);
+            return;
+          }
+          
+          this.addOrUpdateRelationship(newNPCData);
+          console.log('Successfully created NPC relationship for:', npc.name);
         }
       }
     });
@@ -1734,6 +1797,76 @@ OUTPUT JSON:
 
   hasSignatureNPCForLocation(locationId: string): boolean {
     return this.getSignatureNPCForLocation(locationId) !== undefined;
+  }
+
+  // Merchant Signature NPC Management
+  getMerchantSignatureNPCForLocation(locationId: string): NPCRelationship | undefined {
+    return Array.from(this.relationships.values()).find(npc => 
+      npc.isMerchantSignature && npc.merchantSignatureLocationId === locationId
+    );
+  }
+
+  hasMerchantSignatureNPCForLocation(locationId: string): boolean {
+    return this.getMerchantSignatureNPCForLocation(locationId) !== undefined;
+  }
+
+  // Get all merchant signature NPCs
+  getAllMerchantSignatureNPCs(): NPCRelationship[] {
+    return Array.from(this.relationships.values()).filter(npc => 
+      npc.isMerchantSignature === true
+    );
+  }
+
+  // Validate NPC signature exclusivity
+  validateNPCSignatureExclusivity(npc: NPCRelationship | Partial<NPCRelationship>): boolean {
+    // 1 NPC không thể vừa là location signature và merchant signature
+    if (npc.isLocationSignature && npc.isMerchantSignature) {
+      console.error('NPC cannot be both location signature and merchant signature:', npc.id || npc.name);
+      return false;
+    }
+    return true;
+  }
+
+  // Update NPC with signature validation
+  updateNPCSignature(npcId: string, updates: Partial<NPCRelationship>): boolean {
+    const npc = this.relationships.get(npcId);
+    if (!npc) return false;
+
+    const updatedNPC = { ...npc, ...updates };
+    
+    // Validate signature exclusivity
+    if (!this.validateNPCSignatureExclusivity(updatedNPC)) {
+      return false;
+    }
+
+    this.relationships.set(npcId, updatedNPC);
+    this.saveToStorage();
+    return true;
+  }
+
+  // Auto-update existing merchant NPCs to merchant signature NPCs
+  autoUpdateMerchantSignatureNPCs(shopLocationId: string): void {
+    const merchantNPCs = Array.from(this.relationships.values()).filter(npc => 
+      npc.location === shopLocationId && 
+      npc.tags && 
+      npc.tags.includes('merchant') && 
+      npc.tags.includes('shopkeeper') &&
+      !npc.isMerchantSignature
+    );
+
+    merchantNPCs.forEach(npc => {
+      // Update to merchant signature NPC
+      npc.isMerchantSignature = true;
+      npc.merchantSignatureLocationId = shopLocationId;
+      npc.isLocationSignature = false; // Ensure not both
+      
+      this.relationships.set(npc.id, npc);
+      console.log(`Auto-updated NPC ${npc.name} to merchant signature NPC for shop location ${shopLocationId}`);
+    });
+
+    if (merchantNPCs.length > 0) {
+      this.saveToStorage();
+    }
   }
 
   getSignatureNPCs(): NPCRelationship[] {

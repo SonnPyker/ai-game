@@ -1,4 +1,4 @@
-import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime, ContentFlags, QuestSystem, NPCRelationship, PlayerLocation, ComfyUISettings } from './index';
+import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime, ContentFlags, QuestSystem, NPCRelationship, PlayerLocation, ComfyUISettings, MerchantShop } from './index';
 
 // NPC Relationship Data for save games
 export interface NPCRelationshipData {
@@ -28,6 +28,7 @@ export interface SaveGame {
   combatHistory?: any; // Lịch sử combat và enemies đã đánh bại
   comfyUISettings?: ComfyUISettings; // ComfyUI settings
   generatedImages?: string[]; // Danh sách file ảnh đã tạo
+  merchantShops?: { [key: string]: MerchantShop }; // Merchant shops data
 }
 
 // Metadata của save game

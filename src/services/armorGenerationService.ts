@@ -43,10 +43,10 @@ class ArmorGenerationService {
       rarity: finalRarity,
       quantity: 1,
       icon: armorData.icon,
-      slot: 'chest',
+      slot: 'armor',
       armorClass: armorData.armorClass,
       isEquipped: false,
-      tags: ['armor', 'chest', enemyType],
+      tags: ['armor', 'protection', enemyType],
       stats: {
         armorClass: armorData.armorClass
       }

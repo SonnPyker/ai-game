@@ -141,7 +141,7 @@ export interface InventoryItem {
   cooldown?: number; // Cooldown in turns before can be used again
   stackable?: boolean; // Whether multiple instances can be active at once
   maxStacks?: number; // Maximum number of stacks (if stackable)
-  slot?: 'weapon_main' | 'weapon_off' | 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'accessory1' | 'accessory2' | 'accessory3';
+  slot?: 'weapon' | 'armor' | 'accessory1' | 'accessory2' | 'accessory3';
   equipped_at?: Date;
   // Tags system for quest rewards
   tags?: string[]; // Tags để phân loại items (type tags + 'reward' tag)
@@ -155,6 +155,9 @@ export interface InventoryItem {
   // NEW: Delivery quest fields
   deliveryQuestId?: string; // Quest ID nếu item này dùng để giao
   deliveryNPCId?: string; // NPC cần giao cho
+  // NEW: Trading fields
+  value?: number; // Giá bán (50% của giá mua) - KHUYẾN NGHỊ
+  buyPrice?: number; // Giá mua từ merchant
 }
 
 export interface WeaponProperties {
@@ -171,13 +174,8 @@ export interface WeaponProperties {
 }
 
 export interface Equipment {
-  weapon_main?: InventoryItem;      // Vũ khí chính
-  weapon_off?: InventoryItem;       // Vũ khí phụ
-  head?: InventoryItem;             // Mũ
-  chest?: InventoryItem;            // Áo giáp
-  hands?: InventoryItem;            // Găng tay
-  legs?: InventoryItem;             // Quần
-  feet?: InventoryItem;             // Giày
+  weapon?: InventoryItem;           // Vũ khí
+  armor?: InventoryItem;            // Áo giáp
   accessory1?: InventoryItem;       // Phụ kiện 1
   accessory2?: InventoryItem;       // Phụ kiện 2
   accessory3?: InventoryItem;       // Phụ kiện 3
@@ -355,6 +353,9 @@ export interface Location {
   signatureNPCId?: string; // ID of the signature NPC for this location
   signatureQuestId?: string; // ID of the signature quest for this location
   hasSignatureContent?: boolean; // true if this location has signature NPC and quest
+  // Merchant shop system
+  locationType?: 'shop' | 'story' | 'secondary'; // Thêm type shop
+  merchantShop?: MerchantShop; // Nếu là shop location
 }
 
 export interface PlayerLocation {
@@ -768,6 +769,11 @@ export interface NPCRelationship {
   isLocationSignature?: boolean; // true if this NPC is the signature NPC for a location
   signatureLocationId?: string; // ID of the location this NPC is signature for
   signatureQuestId?: string; // ID of the signature quest this NPC offers
+  // Merchant signature NPC system
+  isMerchantSignature?: boolean; // true if this NPC is the merchant signature for a shop location
+  merchantSignatureLocationId?: string; // ID of the shop location this NPC is merchant for
+  merchantShopId?: string; // ID of the merchant shop this NPC manages
+  // QUAN TRỌNG: 1 NPC không thể vừa isLocationSignature và isMerchantSignature
   // Arousal system for 18+ content
   arousal?: {
     level: number; // 0 to 100 (not interested to very aroused)
@@ -1072,4 +1078,35 @@ export interface CharacterAppearance {
     accessories: string[];
   };
   distinctive_features: string[]; // Scars, tattoos, etc.
+}
+
+// Merchant Shop System Types
+export interface MerchantShop {
+  locationId: string;
+  merchantNPCId: string;
+  lastRestockTime: WorldTime; // Thời gian reset lần cuối
+  inventory: MerchantInventory;
+  skillBookChance: number; // Tăng mỗi ngày, max 70%
+  currency: number; // Tiền của merchant (vô hạn)
+}
+
+export interface MerchantInventory {
+  weapons: InventoryItem[];
+  armor: InventoryItem[];
+  consumables: InventoryItem[];
+  skillBooks: SkillBook[];
+}
+
+export interface SkillBook {
+  id: string;
+  name: string;
+  description: string;
+  skillType: 'damage' | 'healing' | 'social';
+  skillLevel: 1 | 2 | 3;
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  price: number; // Tính dựa trên level + rarity
+  icon: string;
+  quantity: number;
+  // Skill data đầy đủ (tương tự character creation skills)
+  skill: CharacterSkill;
 }

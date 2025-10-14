@@ -4,6 +4,7 @@ import { Suspense, lazy } from 'react';
 import { Layout } from './components/Layout';
 import { ResponsiveProvider } from './contexts/ResponsiveContext';
 import { MinimizedModalProvider } from './contexts/MinimizedModalContext';
+import { MinimizedModalContainer } from './components/MinimizedModalContainer';
 import { AnimationController } from './components/AnimationController';
 
 // Lazy load các pages lớn để giảm kích thước bundle chính
@@ -42,6 +43,7 @@ function App() {
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </Suspense>
+        <MinimizedModalContainer />
         <SpeedInsights />
       </Layout>
       </MinimizedModalProvider>

@@ -13,7 +13,6 @@ import {
 import { NPCRelationship } from '../../types';
 import { MotionWrapper } from '../MotionWrapper';
 import { ModalHeader } from '../ModalHeader';
-import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface CombatConfirmationModalProps {
@@ -40,20 +39,18 @@ export function CombatConfirmationModal({
   preparationStatus
 }: CombatConfirmationModalProps) {
   const [showDetails, setShowDetails] = useState(false);
-  const { isMinimized, minimize, restore } = useModalMinimize('combat-confirmation-modal');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'combat-confirmation-modal',
+    title: 'Xác nhận chiến đấu',
+    subtitle: npc?.name || 'Kẻ thù',
+    icon: <Sword className="w-5 h-5 text-red-400" />
+  });
 
   if (!isOpen) return null;
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title="Xác nhận Chiến đấu"
-        subtitle={`Chuẩn bị đối đầu với ${npc.name}`}
-        icon={<Sword className="w-5 h-5 text-red-400" />}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   const isReady = preparationStatus.hasCombatStats && 

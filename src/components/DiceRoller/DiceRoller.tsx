@@ -4,7 +4,6 @@ import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, RotateCcw, Zap, Shield, Sword
 import { DiceRoller, DiceRoll, DiceRollResult } from '../../utils/diceRoller';
 import { MotionWrapper } from '../MotionWrapper';
 import { ModalHeader } from '../ModalHeader';
-import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface DiceRollerProps {
@@ -18,7 +17,11 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
   const [rollHistory, setRollHistory] = useState<(DiceRoll | DiceRollResult)[]>([]);
   const [isRolling, setIsRolling] = useState(false);
   const [customNotation, setCustomNotation] = useState('');
-  const { isMinimized, minimize, restore } = useModalMinimize('dice-roller-modal');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'dice-roller-modal',
+    title: 'Dice Roller',
+    icon: <Dice1 className="w-5 h-5 text-blue-400" />
+  });
 
   const availableDice = DiceRoller.getAvailableDice();
   const diceExamples = DiceRoller.getDiceExamples();
@@ -163,13 +166,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title="Dice Roller"
-        icon={<Dice1 className="w-5 h-5 text-blue-400" />}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   return (

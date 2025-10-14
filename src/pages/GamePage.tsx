@@ -13,6 +13,7 @@ import { DialogueRenderer } from '../components/DialogueRenderer';
 import { detectPlayerDialogue, enhanceDialogueForAI } from '../utils/dialogueProcessor';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
 import { actionSuggestionService, SuggestedAction, ActionLogEntry } from '../services/actionSuggestionService';
+import { tradingHistoryService } from '../services/tradingHistoryService';
 import { locationService } from '../services/locationService';
 import { inventoryService } from '../services/inventoryService';
 import { ItemSelectionModal } from '../components/ItemSelectionModal/ItemSelectionModal';
@@ -30,6 +31,13 @@ import { comfyUIService } from '../services/comfyUIService';
 import { imageStorageService } from '../services/imageStorageService';
 import { promptExtractionService } from '../services/promptExtractionService';
 import { ImageGenerationButton } from '../components/ImageGenerationButton';
+import { merchantService } from '../services/merchantService';
+import { tradingService } from '../services/tradingService';
+import { skillBookService } from '../services/skillBookService';
+import { MerchantShopModal } from '../components/Shop/MerchantShopModal';
+import { SkillBookPreview } from '../components/Shop/SkillBookPreview';
+import { NegotiationPanel } from '../components/Shop/NegotiationPanel';
+import { MerchantShop, SkillBook } from '../types';
 
 // ImageDisplay component for handling base64 images
 const ImageDisplay = ({ filepath, prompt }: { filepath: string; prompt?: string }) => {
@@ -274,6 +282,18 @@ export function GamePage() {
   const [showNPCChallengeModal, setShowNPCChallengeModal] = useState(false);
   const [npcChallengeData, setNpcChallengeData] = useState<any>(null);
 
+  // Merchant Shop state
+  const [showMerchantShop, setShowMerchantShop] = useState(false);
+  const [currentShop, setCurrentShop] = useState<MerchantShop | null>(null);
+  const [showSkillBookPreview, setShowSkillBookPreview] = useState(false);
+  const [selectedSkillBook, setSelectedSkillBook] = useState<SkillBook | null>(null);
+  const [showNegotiationPanel, setShowNegotiationPanel] = useState(false);
+  const [negotiationData, setNegotiationData] = useState<{
+    item: InventoryItem | SkillBook;
+    basePrice: number;
+    type: 'buy' | 'sell';
+  } | null>(null);
+
   // Debouncing and throttling refs
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const throttleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -368,6 +388,12 @@ export function GamePage() {
     while (retryCount < maxRetries) {
       try {
         setIsNPCAnalysisProcessing(true);
+        
+        // ƯU TIÊN: Xử lý sceneState.npcs ngay lập tức nếu có
+        if (enhancedContext.sceneState && enhancedContext.sceneState.npcs && Array.isArray(enhancedContext.sceneState.npcs)) {
+          console.log('🚀 PRIORITY: Processing sceneState.npcs immediately:', enhancedContext.sceneState.npcs);
+          npcRelationshipService.parseNPCsFromAIResponse({ sceneState: enhancedContext.sceneState }, location);
+        }
         
         await npcRelationshipService.updateRelationshipsFromNarrative(
           narrative, 
@@ -2039,6 +2065,17 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 worldTime: newTime,
                 playerLocation: locationService.getCurrentLocation()
               }));
+
+              // Lưu thời gian mới vào localStorage ngay lập tức
+              if (newTime) {
+                const completeWorldData = localStorage.getItem('world_gen_result');
+                if (completeWorldData) {
+                  const worldDataParsed = JSON.parse(completeWorldData);
+                  worldDataParsed.currentTime = newTime;
+                  localStorage.setItem('world_gen_result', JSON.stringify(worldDataParsed));
+                  console.log('🕐 Travel time saved to localStorage:', newTime);
+                }
+              }
             }
           }
         } catch (travelError) {
@@ -2062,19 +2099,47 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
               (async () => {
                 try {
                   const currentLocation = locationService.getLocationById(newSceneState.location);
-                  if (currentLocation && currentLocation.type === 'secondary') {
-                    // Check if this location already has a signature NPC
-                    if (!npcRelationshipService.hasSignatureNPCForLocation(currentLocation.id)) {
-                      // Could create signature NPC here if needed
-                    } else {
-                      // Update location with signature NPC and quest info
-                      const signatureNPC = npcRelationshipService.getSignatureNPCForLocation(currentLocation.id);
-                      if (signatureNPC) {
-                        currentLocation.signatureNPCId = signatureNPC.id;
-                        if (signatureNPC.signatureQuestId) {
-                          currentLocation.signatureQuestId = signatureNPC.signatureQuestId;
+                  if (currentLocation) {
+                    // Process location signature NPC for secondary locations
+                    if (currentLocation.type === 'secondary') {
+                      if (!npcRelationshipService.hasSignatureNPCForLocation(currentLocation.id)) {
+                        // Could create signature NPC here if needed
+                      } else {
+                        // Update location with signature NPC and quest info
+                        const signatureNPC = npcRelationshipService.getSignatureNPCForLocation(currentLocation.id);
+                        if (signatureNPC) {
+                          currentLocation.signatureNPCId = signatureNPC.id;
+                          if (signatureNPC.signatureQuestId) {
+                            currentLocation.signatureQuestId = signatureNPC.signatureQuestId;
+                          }
+                          currentLocation.hasSignatureContent = true;
                         }
-                        currentLocation.hasSignatureContent = true;
+                      }
+                    }
+                    
+                    // Process merchant signature NPC for shop locations
+                    if (currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop')) {
+                      // Auto-update existing merchant NPCs to merchant signature NPCs
+                      npcRelationshipService.autoUpdateMerchantSignatureNPCs(currentLocation.id);
+                      
+                      if (!npcRelationshipService.hasMerchantSignatureNPCForLocation(currentLocation.id)) {
+                        // Could create merchant signature NPC here if needed
+                      } else {
+                        // Update location with merchant signature NPC info
+                        const merchantSignatureNPC = npcRelationshipService.getMerchantSignatureNPCForLocation(currentLocation.id);
+                        if (merchantSignatureNPC) {
+                          // Validate signature exclusivity
+                          if (!npcRelationshipService.validateNPCSignatureExclusivity(merchantSignatureNPC)) {
+                            console.error('Merchant signature NPC has conflicting signature types:', merchantSignatureNPC.id);
+                          }
+                          
+                          // Link merchant NPC with merchant shop
+                          const merchantShop = merchantService.getMerchantShopByLocation(currentLocation.id);
+                          if (merchantShop) {
+                            merchantService.linkMerchantShopWithNPC(currentLocation.id, merchantSignatureNPC.id);
+                            merchantSignatureNPC.merchantShopId = merchantShop.locationId;
+                          }
+                        }
                       }
                     }
                   }
@@ -2154,6 +2219,15 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
           // Run all tasks in parallel for maximum performance
           await Promise.all(parallelTasks);
+
+          // Task 7: Check and restock merchant shops
+          if (newTime) {
+            try {
+              await locationService.checkAndRestockAllShops(newTime);
+            } catch (error) {
+              console.error('Error checking merchant shops:', error);
+            }
+          }
 
         } catch (error) {
           console.error('Error processing NPC relationships:', error);
@@ -2407,6 +2481,9 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Get current NPC relationship data
       const npcRelationshipData = npcRelationshipService.exportForSaveGame();
 
+      // Get current merchant shops data
+      const merchantShopsData = merchantService.exportForSaveGame();
+
       // Get combat history from localStorage
       const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
 
@@ -2440,7 +2517,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         actionSuggestions: actionSuggestions,
         actionLog: actionLog,
         playerLocation: playerLocationData ? JSON.parse(playerLocationData) : undefined,
-        combatHistory: combatHistory
+        combatHistory: combatHistory,
+        merchantShops: merchantShopsData.shops
       };
 
       // Determine if it's a local or cloud slot
@@ -2556,6 +2634,183 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     
     setShowQuestOfferModal(false);
     setPendingQuestOffer(null);
+  };
+
+  // Merchant Shop handlers
+  const handleOpenShop = async (locationId: string) => {
+    console.log('handleOpenShop called with locationId:', locationId);
+    
+    try {
+      // Import merchantService dynamically
+      const { merchantService } = await import('../services/merchantService');
+      
+      // Get or create shop for this location
+      let shop = merchantService.getMerchantShopByLocation(locationId);
+      if (!shop) {
+        console.log('Shop not found, creating new one for location:', locationId);
+        shop = await merchantService.ensureMerchantShopExists(locationId);
+      }
+      
+      if (shop) {
+        console.log('Opening shop modal for shop:', shop);
+        setCurrentShop(shop);
+        setShowMerchantShop(true);
+      } else {
+        console.error('Failed to get or create shop for location:', locationId);
+      }
+    } catch (error) {
+      console.error('Error in handleOpenShop:', error);
+    }
+  };
+
+  const handleBuyItem = async (item: InventoryItem, shop: MerchantShop) => {
+    try {
+      const characterData = localStorage.getItem('currentCharacter');
+      if (!characterData) return;
+
+      const character = JSON.parse(characterData);
+      const merchant = tradingService.getMerchantRelationship(shop.locationId);
+      
+      const result = tradingService.processBuyTransaction(character, item, merchant);
+      
+      if (result.success) {
+        // Update character data
+        localStorage.setItem('currentCharacter', JSON.stringify(character));
+        
+        // Decrease item quantity in shop
+        const { merchantService } = await import('../services/merchantService');
+        merchantService.decreaseItemQuantity(shop.locationId, item.id);
+        
+        // Refresh current shop data
+        const updatedShop = merchantService.getMerchantShopByLocation(shop.locationId);
+        if (updatedShop) {
+          setCurrentShop(updatedShop);
+        }
+        
+        // Update character state
+        setCharacterDataUpdate(prev => prev + 1);
+        
+        // Add to trading history
+        tradingHistoryService.saveBuyTransaction(
+          item.name,
+          item.type || 'misc',
+          1, // quantity
+          result.finalPrice,
+          result.finalPrice,
+          shop.locationId,
+          undefined, // merchantName
+          gameState.worldTime || undefined,
+          turnCounter + 1
+        );
+        
+        // Update action log display (without trading entries)
+        // Trading entries are now handled by tradingHistoryService
+        
+        // Update relationship
+        tradingService.updateRelationshipAfterTrade(character, merchant, 'buy', result.finalPrice);
+      }
+    } catch (error) {
+      console.error('Error buying item:', error);
+    }
+  };
+
+  const handleSellItem = async (item: InventoryItem, shop: MerchantShop) => {
+    try {
+      const characterData = localStorage.getItem('currentCharacter');
+      if (!characterData) return;
+
+      const character = JSON.parse(characterData);
+      const merchant = tradingService.getMerchantRelationship(shop.locationId);
+      
+      const result = tradingService.processSellTransaction(character, item, merchant);
+      
+      if (result.success) {
+        // Update character data
+        localStorage.setItem('currentCharacter', JSON.stringify(character));
+        
+        // Update character state
+        setCharacterDataUpdate(prev => prev + 1);
+        
+        // Add to trading history
+        tradingHistoryService.saveSellTransaction(
+          item.name,
+          item.type || 'misc',
+          item.quantity || 1,
+          result.finalPrice / (item.quantity || 1), // unit price
+          result.finalPrice, // total price
+          shop.locationId,
+          undefined, // merchantName
+          gameState.worldTime || undefined,
+          turnCounter + 1
+        );
+        
+        // Update action log display (without trading entries)
+        // Trading entries are now handled by tradingHistoryService
+        
+        // Update relationship
+        tradingService.updateRelationshipAfterTrade(character, merchant, 'sell', result.finalPrice);
+      }
+    } catch (error) {
+      console.error('Error selling item:', error);
+    }
+  };
+
+  const handleUseSkillBook = async (skillBook: SkillBook) => {
+    try {
+      const characterData = localStorage.getItem('currentCharacter');
+      if (!characterData) return;
+
+      const character = JSON.parse(characterData);
+      const result = skillBookService.useSkillBook(character, skillBook);
+      
+      if (result.success) {
+        // Update character data
+        localStorage.setItem('currentCharacter', JSON.stringify(character));
+        
+        // Update character state
+        setCharacterDataUpdate(prev => prev + 1);
+        
+        // Add to action log (skill book usage is not trading)
+        actionSuggestionService.saveActionLog({
+          id: `action_${Date.now()}`,
+          actionId: undefined,
+          text: `Sử dụng skill book: ${skillBook.name}`,
+          summary: `Học skill: ${result.skill?.name || 'Unknown'}`,
+          durationMinutes: 0,
+          startedAt: gameState.worldTime!,
+          endedAt: gameState.worldTime!,
+          turn: turnCounter + 1,
+          impactTags: ['skill', 'learning'],
+          source: 'manual'
+        });
+        
+        // Update action log display
+        setActionLog(prev => [{
+          id: `action_${Date.now()}`,
+          actionId: undefined,
+          text: `Sử dụng skill book: ${skillBook.name}`,
+          summary: `Học skill: ${result.skill?.name || 'Unknown'}`,
+          durationMinutes: 0,
+          startedAt: gameState.worldTime!,
+          endedAt: gameState.worldTime!,
+          turn: turnCounter + 1,
+          impactTags: ['skill', 'learning'],
+          source: 'manual'
+        }, ...prev.slice(0, 99)]);
+        
+        // Close skill book preview
+        setShowSkillBookPreview(false);
+        setSelectedSkillBook(null);
+      }
+    } catch (error) {
+      console.error('Error using skill book:', error);
+    }
+  };
+
+
+  const handleNegotiationComplete = (_newPrice: number) => {
+    setShowNegotiationPanel(false);
+    setNegotiationData(null);
   };
 
   // Handle skip time
@@ -2781,6 +3036,9 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Clear existing NPC data before loading save
       npcRelationshipService.clearAllData();
       
+      // Clear existing merchant shops before loading save
+      merchantService.clearAllMerchantShops();
+      
       // Clear existing player location before loading save
       localStorage.removeItem('player_location');
       
@@ -2840,6 +3098,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         npcRelationshipService.importFromSaveGame(saveGame.npcRelationships);
       }
       
+      // Khôi phục merchant shops data nếu có
+      if (saveGame.merchantShops) {
+        merchantService.loadFromSaveGame({ shops: saveGame.merchantShops });
+      }
+      
       // Khôi phục player location nếu có
       if (saveGame.playerLocation) {
         locationService.savePlayerLocation(saveGame.playerLocation);
@@ -2867,6 +3130,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
   // Lấy dữ liệu game hiện tại cho SaveManager
   const getCurrentGameData = () => {
     const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
+    const merchantShopsData = merchantService.exportForSaveGame();
     
     const gameData = {
       worldData: gameState.worldTime ? JSON.parse(localStorage.getItem('world_gen_result') || '{}') : null,
@@ -2891,7 +3155,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       },
       contentFlags: gameState.contentFlags,
       playerLocation: gameState.playerLocation,
-      combatHistory: combatHistory
+      combatHistory: combatHistory,
+      merchantShopsData: merchantShopsData
     };
     
     return gameData;
@@ -3931,6 +4196,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             onDropItem={handleDropItem}
             onViewItemDetails={handleViewItemDetails}
             selectedNPCForDialogue={selectedNPCForDialogue}
+            onOpenShop={handleOpenShop}
           />
         </Suspense>
       )}
@@ -4130,6 +4396,72 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             </div>
           </div>
         </div>
+      )}
+
+      {/* Merchant Shop Modal */}
+      <MerchantShopModal
+        isOpen={showMerchantShop}
+        onClose={() => setShowMerchantShop(false)}
+        shop={currentShop}
+        character={(() => {
+          try {
+            const characterData = localStorage.getItem('currentCharacter');
+            return characterData ? JSON.parse(characterData) : null;
+          } catch {
+            return null;
+          }
+        })()}
+        locationId={gameState.sceneState?.location || ''}
+        onBuyItem={handleBuyItem}
+        onSellItem={handleSellItem}
+        onUseSkillBook={handleUseSkillBook}
+      />
+
+      {/* Skill Book Preview Modal */}
+      {showSkillBookPreview && selectedSkillBook && (
+        <SkillBookPreview
+          skillBook={selectedSkillBook}
+          onClose={() => {
+            setShowSkillBookPreview(false);
+            setSelectedSkillBook(null);
+          }}
+          onConfirm={() => {
+            if (selectedSkillBook) {
+              handleUseSkillBook(selectedSkillBook);
+            }
+          }}
+          isBuying={true}
+          price={selectedSkillBook.price}
+          canAfford={(() => {
+            try {
+              const characterData = localStorage.getItem('currentCharacter');
+              const character = characterData ? JSON.parse(characterData) : null;
+              return character && character.currency >= selectedSkillBook.price;
+            } catch {
+              return false;
+            }
+          })()}
+        />
+      )}
+
+      {/* Negotiation Panel Modal */}
+      {showNegotiationPanel && negotiationData && (
+        <NegotiationPanel
+          isOpen={showNegotiationPanel}
+          onClose={() => setShowNegotiationPanel(false)}
+          character={(() => {
+            try {
+              const characterData = localStorage.getItem('currentCharacter');
+              return characterData ? JSON.parse(characterData) : null;
+            } catch {
+              return null;
+            }
+          })()}
+          merchant={tradingService.getMerchantRelationship(currentShop?.locationId || '')}
+          basePrice={negotiationData.basePrice}
+          type={negotiationData.type}
+          onPriceChange={handleNegotiationComplete}
+        />
       )}
     </div>
   );

@@ -18,6 +18,7 @@ import {
   FileText,
   Trash2,
   Clock,
+  Loader2,
   MessageSquare,
   AlertTriangle,
   EyeOff,
@@ -37,6 +38,7 @@ import { SCCJournal } from './SCCJournal';
 import { NPCArousalBar } from '../NPCArousalBar';
 import { MapView } from './MapView';
 import { InventoryView } from './InventoryView';
+import { MerchantSignatureNPC } from '../Shop/MerchantSignatureNPC';
 import { EquipmentView } from './EquipmentView';
 import { SkillTreeView } from './SkillTreeView';
 // CombatConfirmationModal moved to CombatPage
@@ -62,6 +64,7 @@ interface InfoMenuProps {
   isAIProcessing?: boolean;
   isNPCAnalysisProcessing?: boolean;
   contentFlags?: ContentFlags;
+  onOpenShop?: (locationId: string) => void;
   // Game info props
   turnCounter?: number;
   onToggleAdultContent?: () => void;
@@ -113,10 +116,14 @@ export function InfoMenu({
   onUnequipItem,
   onDropItem,
   onViewItemDetails,
-  selectedNPCForDialogue
+  selectedNPCForDialogue,
+  onOpenShop
 }: InfoMenuProps) {
   // Responsive design context
   const { shouldUseMobileLayout, getTransitionClass } = useResponsiveContext();
+  
+  // Loading state for shop opening
+  const [shopLoadingStates, setShopLoadingStates] = useState<{ [key: string]: boolean }>({});
   
   // Function to highlight names and locations with /.../ syntax
   const highlightNames = (text: string) => {
@@ -596,14 +603,14 @@ export function InfoMenu({
                     if (characterData.coreStats.armorClass !== undefined) {
                       return characterData.coreStats.armorClass;
                     }
-                    // Calculate AC for old saves: check for chest armor first
+                    // Calculate AC for old saves: check for armor first
                     const agilityModifier = characterData.coreStats.modifiers?.agility ?? 
                       Math.floor((characterData.coreStats.agility - 10) / 2);
                     
-                    // Check for chest armor equipment
-                    if (characterData.equipment?.chest && characterData.equipment.chest.armorClass) {
+                    // Check for armor equipment
+                    if (characterData.equipment?.armor && characterData.equipment.armor.armorClass) {
                       // Use armor's AC + agility modifier
-                      return characterData.equipment.chest.armorClass + agilityModifier;
+                      return characterData.equipment.armor.armorClass + agilityModifier;
                     }
                     
                     // Default: 10 + agility modifier
@@ -831,6 +838,67 @@ export function InfoMenu({
               </p>
             </div>
           )}
+
+          {/* Debug Currency Buttons */}
+          <div className="mt-4 p-3 bg-red-900/20 border border-red-700/50 rounded-lg">
+            <h4 className="text-sm font-semibold text-red-400 mb-2 flex items-center">
+              <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+              Debug Tools
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  if (characterData) {
+                    const newCurrency = (characterData.currency || 0) + 1000;
+                    const updatedCharacter = { ...characterData, currency: newCurrency };
+                    localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
+                    window.location.reload();
+                  }
+                }}
+                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors duration-200"
+              >
+                +1,000 {currencyService.getCurrencyName(worldData)}
+              </button>
+              <button
+                onClick={() => {
+                  if (characterData) {
+                    const newCurrency = (characterData.currency || 0) + 10000;
+                    const updatedCharacter = { ...characterData, currency: newCurrency };
+                    localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
+                    window.location.reload();
+                  }
+                }}
+                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors duration-200"
+              >
+                +10,000 {currencyService.getCurrencyName(worldData)}
+              </button>
+              <button
+                onClick={() => {
+                  if (characterData) {
+                    const newCurrency = (characterData.currency || 0) + 100000;
+                    const updatedCharacter = { ...characterData, currency: newCurrency };
+                    localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
+                    window.location.reload();
+                  }
+                }}
+                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors duration-200"
+              >
+                +100,000 {currencyService.getCurrencyName(worldData)}
+              </button>
+              <button
+                onClick={() => {
+                  if (characterData) {
+                    const updatedCharacter = { ...characterData, currency: 0 };
+                    localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
+                    window.location.reload();
+                  }
+                }}
+                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors duration-200"
+              >
+                Reset Tiền
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -943,7 +1011,44 @@ export function InfoMenu({
             <div className="space-y-3">
               {worldData.locations.map((location: any, index: number) => (
                 <div key={index} className="text-sm">
-                  <div className="text-white font-medium">{typeof location.name === 'string' ? location.name : JSON.stringify(location.name)}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-white font-medium">{typeof location.name === 'string' ? location.name : JSON.stringify(location.name)}</div>
+                    {(location.locationType === 'shop' || location.id.startsWith('loc_shop')) && (
+                      <button
+                        onClick={async () => {
+                          if (onOpenShop && !shopLoadingStates[location.id]) {
+                            setShopLoadingStates(prev => ({ ...prev, [location.id]: true }));
+                            try {
+                              onOpenShop(location.id);
+                            } finally {
+                              // Reset loading state after a short delay
+                              setTimeout(() => {
+                                setShopLoadingStates(prev => ({ ...prev, [location.id]: false }));
+                              }, 2000);
+                            }
+                          }
+                        }}
+                        disabled={shopLoadingStates[location.id]}
+                        className={`px-3 py-1 border rounded text-xs transition-colors flex items-center space-x-1 ${
+                          shopLoadingStates[location.id]
+                            ? 'bg-gray-600/20 border-gray-500/50 text-gray-400 cursor-not-allowed'
+                            : 'bg-yellow-600/20 border-yellow-500/50 text-yellow-300 hover:bg-yellow-600/30'
+                        }`}
+                      >
+                        {shopLoadingStates[location.id] ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Đang tạo...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Coins className="w-3 h-3" />
+                            <span>Mở Shop</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                   <div className="text-gray-400">
                     {(() => {
                       const description = typeof location.description === 'string' ? location.description : JSON.stringify(location.description);
@@ -1473,6 +1578,15 @@ export function InfoMenu({
                             </span>
                           ))}
                         </div>
+                      )}
+
+                      {/* Merchant Signature NPC Component */}
+                      {relationship.isMerchantSignature && (
+                        <MerchantSignatureNPC
+                          npc={relationship}
+                          merchantShop={null}
+                          onOpenShop={onOpenShop || (() => {})}
+                        />
                       )}
 
                     </div>

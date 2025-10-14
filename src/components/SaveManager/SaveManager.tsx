@@ -42,6 +42,7 @@ interface SaveManagerProps {
     contentFlags?: any;
     playerLocation?: any;
     combatHistory?: any;
+    merchantShopsData?: any;
   };
   isProcessing?: boolean; // Thêm prop để kiểm tra trạng thái xử lý
 }
@@ -178,7 +179,8 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         currentGameData.uiState,
         currentGameData.contentFlags,
         currentGameData.playerLocation,
-        currentGameData.combatHistory
+        currentGameData.combatHistory,
+        currentGameData.merchantShopsData
       );
 
       if (result.success) {

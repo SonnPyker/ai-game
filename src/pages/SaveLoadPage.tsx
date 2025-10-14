@@ -108,6 +108,10 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         // Clear existing NPC data before loading save
         npcRelationshipService.clearAllData();
         
+        // Clear existing merchant shops before loading save
+        const { merchantService } = await import('../services/merchantService');
+        merchantService.clearAllMerchantShops();
+        
         // Clear faction data when loading different game
         localStorage.removeItem('faction_quests');
         
@@ -145,6 +149,13 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         // Khôi phục quest system nếu có
         if (saveGame.questSystem) {
           localStorage.setItem('quest_system', JSON.stringify(saveGame.questSystem));
+        }
+
+        // Khôi phục merchant shops nếu có
+        if (saveGame.merchantShops) {
+          // Import merchant shops data vào merchantService
+          const { merchantService } = await import('../services/merchantService');
+          merchantService.loadFromSaveGame({ shops: saveGame.merchantShops });
         }
 
         // Khôi phục action suggestions và action log nếu có

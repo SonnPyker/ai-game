@@ -183,7 +183,8 @@ export class MigrationService {
     uiState?: any,
     contentFlags?: any,
     playerLocation?: any,
-    combatHistory?: any
+    combatHistory?: any,
+    merchantShopsData?: any
   ): SaveGame {
     // Debug logging
     console.log('🎯 createSaveGameFromRuntime called with combatHistory:', combatHistory);
@@ -228,7 +229,8 @@ export class MigrationService {
       playerLocation: playerLocation,
       combatHistory: combatHistory,
       comfyUISettings: comfyUISettings,
-      generatedImages: generatedImages
+      generatedImages: generatedImages,
+      merchantShops: merchantShopsData?.shops || {}
     };
     
     console.log('🎯 Created SaveGame with combatHistory:', saveGame.combatHistory);
@@ -266,7 +268,7 @@ export class MigrationService {
           description: 'Kỹ năng tấn công cơ bản',
           level: 1,
           skillType: 'damage',
-          effects: ['instant_damage:1d4', 'stat_buff:strength:+1:self:2turns'],
+          effects: ['instant_damage:1d6+2', 'stat_buff:strength:+1:self:2turns'],
           cooldown: 3,
           currentCooldown: 0,
           icon: '⚔️',
@@ -278,7 +280,7 @@ export class MigrationService {
           description: 'Kỹ năng hồi phục cơ bản',
           level: 1,
           skillType: 'healing',
-          effects: ['instant_heal:1d4:+1', 'stat_buff:constitution:+1:self:2turns'],
+          effects: ['instant_heal:1d6+2', 'stat_buff:constitution:+1:self:2turns'],
           cooldown: 3,
           currentCooldown: 0,
           icon: '💚',
@@ -432,7 +434,7 @@ export class MigrationService {
           description: 'Tấn công với sức mạnh toàn bộ',
           level: 1,
           skillType: 'damage',
-          effects: ['instant_damage:2d4', 'stat_buff:strength:+1:self:2turns'],
+          effects: ['instant_damage:1d6+2', 'stat_buff:strength:+1:self:2turns'],
           cooldown: 2,
           currentCooldown: 0,
           icon: '⚔️',

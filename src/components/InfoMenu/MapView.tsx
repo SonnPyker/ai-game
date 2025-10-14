@@ -83,10 +83,36 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
   const getLocationColor = (cell: GridCell) => {
     if (!cell.location) return '';
     
+    // Check if location is a shop by ID pattern or name patterns
+    const isShopById = cell.location.id && cell.location.id.startsWith('loc_shop');
+    const isShopByName = cell.location.name && (
+      cell.location.name.toLowerCase().includes('chợ') ||
+      cell.location.name.toLowerCase().includes('cửa hàng') ||
+      cell.location.name.toLowerCase().includes('tiệm') ||
+      cell.location.name.toLowerCase().includes('shop') ||
+      cell.location.name.toLowerCase().includes('market') ||
+      cell.location.name.toLowerCase().includes('store')
+    );
+    
+    // Debug logging
+    if (isShopById || isShopByName) {
+      console.log('Shop location detected:', {
+        id: cell.location.id,
+        name: cell.location.name,
+        type: cell.location.type,
+        locationType: cell.location.locationType,
+        isCurrentLocation: cell.isCurrentLocation,
+        isNearby: cell.isNearby,
+        detectedBy: isShopById ? 'ID pattern' : 'name pattern'
+      });
+    }
+    
     if (cell.isCurrentLocation) {
       return 'bg-green-500 text-white border-2 border-green-300 shadow-lg';
     } else if (cell.isNearby) {
       return 'bg-blue-400 text-white border-2 border-blue-200 shadow-md';
+    } else if (cell.location.locationType === 'shop' || isShopById || isShopByName) {
+      return 'bg-yellow-500 text-white border-2 border-yellow-300 shadow-md';
     } else if (cell.location.type === 'story') {
       return 'bg-red-500 text-white border-2 border-red-300 shadow-md';
     } else {
@@ -127,8 +153,8 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
               <span className="text-white">Địa điểm phụ</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-blue-400 rounded border border-blue-300"></div>
-              <span className="text-white">Địa điểm lân cận</span>
+              <div className="w-4 h-4 bg-yellow-500 rounded border border-yellow-400"></div>
+              <span className="text-white">Cửa hàng</span>
             </div>
           </div>
         </div>
@@ -296,12 +322,16 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
                 </div>
                 
                 <div className="flex items-center space-x-2 text-sm">
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    location.type === 'story' 
-                      ? 'bg-yellow-500/20 text-yellow-300' 
-                      : 'bg-blue-500/20 text-blue-300'
-                  }`}>
-                    {location.type === 'story' ? 'Cốt truyện chính' : 'Địa điểm phụ'}
+                <span className={`px-2 py-1 rounded text-xs ${
+                  location.locationType === 'shop' || location.id.startsWith('loc_shop')
+                    ? 'bg-yellow-500/20 text-yellow-300' 
+                    : location.type === 'story' 
+                    ? 'bg-red-500/20 text-red-300'
+                    : 'bg-blue-500/20 text-blue-300'
+                }`}>
+                  {location.locationType === 'shop' || location.id.startsWith('loc_shop') ? 'Cửa hàng' :
+                   location.type === 'story' ? 'Cốt truyện chính' : 
+                   'Địa điểm phụ'}
                   </span>
                   <span className="text-gray-400">•</span>
                   <span className="text-gray-300">{location.role}</span>
@@ -385,11 +415,15 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
               
               <div className="flex items-center space-x-2 text-sm">
                 <span className={`px-2 py-1 rounded text-xs ${
-                  currentLocation.type === 'story' 
+                  currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop')
                     ? 'bg-yellow-500/20 text-yellow-300' 
+                    : currentLocation.type === 'story' 
+                    ? 'bg-red-500/20 text-red-300'
                     : 'bg-blue-500/20 text-blue-300'
                 }`}>
-                  {currentLocation.type === 'story' ? 'Cốt truyện chính' : 'Địa điểm phụ'}
+                  {currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop') ? 'Cửa hàng' :
+                   currentLocation.type === 'story' ? 'Cốt truyện chính' : 
+                   'Địa điểm phụ'}
                 </span>
                 <span className="text-gray-400">•</span>
                 <span className="text-gray-300">{currentLocation.role}</span>

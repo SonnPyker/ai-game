@@ -14,7 +14,6 @@ import {
 import { authService, AuthState } from '../../services/saveStorage/authService';
 import { MotionWrapper } from '../MotionWrapper';
 import { ModalHeader } from '../ModalHeader';
-import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface AuthModalProps {
@@ -34,7 +33,11 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
-  const { isMinimized, minimize, restore } = useModalMinimize('auth-modal');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'auth-modal',
+    title: 'Xác thực',
+    icon: <User className="w-5 h-5 text-blue-400" />
+  });
 
   useEffect(() => {
     const unsubscribe = authService.subscribe(setAuthState);
@@ -135,13 +138,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title={getModalTitle()}
-        icon={getModalIcon()}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   return (

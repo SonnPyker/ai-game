@@ -5,6 +5,34 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.6.0-beta] - 2025-01-12
+
+### 🛒 Trading System Overhaul
+- **Separate Trading History**: Trading transactions are now separated from action log
+- **Trading History Service**: New dedicated service for managing buy/sell transactions
+- **Trading Statistics**: Real-time stats showing total buy/sell transactions and gold spent/earned
+- **Advanced Filtering**: Filter by transaction type (buy/sell) and item type (weapon/armor/consumable/misc)
+- **Transaction Details**: Detailed view with quantity, unit price, location, merchant, and timestamps
+
+### 📊 Action Log Improvements
+- **Trading Tab Integration**: Added "Mua bán" tab within Action Log for trading history
+- **Minimize Functionality**: Action Log now supports minimize/restore with dragable minimized tabs
+- **Dynamic Subtitle**: Minimized tabs show real-time count of actions/transactions
+- **Consistent UI**: Trading history uses same UI patterns as action log for consistency
+- **Scroll Fixes**: Fixed scrolling issues and improved UI synchronization
+
+### 🎯 Enhanced Item System
+- **Item Value Field**: Added value field to all items for easier price calculation
+- **Rarity Distribution**: Increased spawn rates for Epic (8%) and Legendary (2%) items in shops
+- **Quantity Management**: Proper item quantity handling for consumables (1-10) vs single items
+- **Real-time Updates**: Shop inventory updates in real-time when items are purchased
+
+### 🔧 Technical Improvements
+- **Service Architecture**: Modular trading system with dedicated services
+- **Type Safety**: Enhanced TypeScript interfaces for trading and inventory systems
+- **Performance**: Optimized data loading and state management
+- **Error Handling**: Improved error handling for trading operations
+
 ## [5.5.0-beta] - 2025-01-12
 
 ### 🎨 Multiple LoRA Support System

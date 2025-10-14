@@ -3,7 +3,6 @@ import { Package, CheckCircle, AlertCircle } from 'lucide-react';
 import { QuestProgress, InventoryItem } from '../../types';
 import { inventoryService } from '../../services/inventoryService';
 import { ModalHeader } from '../ModalHeader';
-import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface QuestDeliveryPanelProps {
@@ -24,7 +23,12 @@ export function QuestDeliveryPanel({
   const [deliveryItems, setDeliveryItems] = useState<InventoryItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [isDelivering, setIsDelivering] = useState(false);
-  const { isMinimized, minimize, restore } = useModalMinimize('quest-delivery-panel');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'quest-delivery-panel',
+    title: 'Giao hàng Quest',
+    subtitle: `${deliveryItems.length} vật phẩm`,
+    icon: <Package className="w-5 h-5 text-green-400" />
+  });
 
   useEffect(() => {
     // Get delivery items for this NPC
@@ -88,14 +92,7 @@ export function QuestDeliveryPanel({
   if (deliveryItems.length === 0) {
     // Show minimized modal if minimized
     if (isMinimized) {
-      return (
-        <MinimizedModal
-          title={`Giao đồ cho ${npcName}`}
-          subtitle="Không có vật phẩm để giao"
-          icon={<Package className="w-5 h-5 text-gray-400" />}
-          onRestore={restore}
-        />
-      );
+      return null; // MinimizedModal is now handled by MinimizedModalContainer
     }
 
     return (
@@ -132,14 +129,7 @@ export function QuestDeliveryPanel({
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title={`Giao đồ cho ${npcName}`}
-        subtitle={`${deliveryItems.length} vật phẩm có thể giao`}
-        icon={<Package className="w-5 h-5 text-green-400" />}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   return (

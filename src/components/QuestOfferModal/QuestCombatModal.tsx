@@ -10,7 +10,6 @@ import {
 import { QuestCombatData } from '../../types/combat';
 import { MotionWrapper } from '../MotionWrapper';
 import { ModalHeader } from '../ModalHeader';
-import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface QuestCombatModalProps {
@@ -27,7 +26,12 @@ export function QuestCombatModal({
   combatData
 }: QuestCombatModalProps) {
   const [isStarting, setIsStarting] = useState(false);
-  const { isMinimized, minimize, restore } = useModalMinimize('quest-combat-modal');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'quest-combat-modal',
+    title: 'Chiến đấu Quest',
+    subtitle: combatData?.questTitle || 'Quest',
+    icon: <Sword className="w-5 h-5 text-red-400" />
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -39,14 +43,7 @@ export function QuestCombatModal({
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title="Chiến Đấu Nhiệm Vụ"
-        subtitle={combatData.questTitle}
-        icon={<Sword className="w-5 h-5 text-red-400" />}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   const handleStartCombat = async () => {

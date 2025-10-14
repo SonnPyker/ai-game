@@ -4,10 +4,6 @@ import { ItemCard } from './ItemCard';
 import { 
   Sword, 
   Shield, 
-  Crown, 
-  Shirt, 
-  Hand, 
-  Footprints,
   Gem,
   Plus,
   Minus
@@ -21,7 +17,7 @@ interface EquipmentViewProps {
   onViewItemDetails?: (item: InventoryItem) => void;
 }
 
-type EquipmentSlot = 'weapon_main' | 'weapon_off' | 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'accessory1' | 'accessory2' | 'accessory3';
+type EquipmentSlot = 'weapon' | 'armor' | 'accessory1' | 'accessory2' | 'accessory3';
 
 interface SlotInfo {
   key: EquipmentSlot;
@@ -32,16 +28,11 @@ interface SlotInfo {
 }
 
 const SLOT_CONFIG: SlotInfo[] = [
-  { key: 'head', label: 'Mũ', icon: <Crown className="w-5 h-5" />, position: { row: 1, col: 2 }, size: 'normal' },
-  { key: 'weapon_main', label: 'Vũ khí chính', icon: <Sword className="w-5 h-5" />, position: { row: 2, col: 1 }, size: 'normal' },
-  { key: 'chest', label: 'Áo giáp', icon: <Shield className="w-5 h-5" />, position: { row: 2, col: 2 }, size: 'large' },
-  { key: 'weapon_off', label: 'Vũ khí phụ', icon: <Sword className="w-5 h-5" />, position: { row: 2, col: 3 }, size: 'normal' },
-  { key: 'hands', label: 'Găng tay', icon: <Hand className="w-5 h-5" />, position: { row: 3, col: 1 }, size: 'normal' },
-  { key: 'accessory1', label: 'Phụ kiện 1', icon: <Gem className="w-5 h-5" />, position: { row: 3, col: 3 }, size: 'normal' },
-  { key: 'legs', label: 'Quần', icon: <Shirt className="w-5 h-5" />, position: { row: 4, col: 1 }, size: 'normal' },
-  { key: 'accessory2', label: 'Phụ kiện 2', icon: <Gem className="w-5 h-5" />, position: { row: 4, col: 3 }, size: 'normal' },
-  { key: 'feet', label: 'Giày', icon: <Footprints className="w-5 h-5" />, position: { row: 5, col: 1 }, size: 'normal' },
-  { key: 'accessory3', label: 'Phụ kiện 3', icon: <Gem className="w-5 h-5" />, position: { row: 5, col: 3 }, size: 'normal' }
+  { key: 'weapon', label: 'Vũ khí', icon: <Sword className="w-5 h-5" />, position: { row: 1, col: 1 }, size: 'normal' },
+  { key: 'armor', label: 'Áo giáp', icon: <Shield className="w-5 h-5" />, position: { row: 1, col: 2 }, size: 'large' },
+  { key: 'accessory1', label: 'Phụ kiện 1', icon: <Gem className="w-5 h-5" />, position: { row: 1, col: 3 }, size: 'normal' },
+  { key: 'accessory2', label: 'Phụ kiện 2', icon: <Gem className="w-5 h-5" />, position: { row: 2, col: 1 }, size: 'normal' },
+  { key: 'accessory3', label: 'Phụ kiện 3', icon: <Gem className="w-5 h-5" />, position: { row: 2, col: 3 }, size: 'normal' }
 ];
 
 export function EquipmentView({ 
@@ -75,17 +66,21 @@ export function EquipmentView({
     return inventory.filter(item => {
       if (item.isEquipped) return false;
       
-      if (slot.startsWith('weapon')) {
+      if (slot === 'weapon') {
         return item.type === 'weapon';
       }
       
-      if (['head', 'chest', 'hands', 'legs', 'feet', 'accessory1', 'accessory2', 'accessory3'].includes(slot)) {
+      if (slot === 'armor') {
+        return item.type === 'armor';
+      }
+      
+      if (['accessory1', 'accessory2', 'accessory3'].includes(slot)) {
         // Check if item has a specific slot property that matches the requested slot
         if (item.slot) {
           return item.slot === slot;
         }
         // Fallback to type check for items without slot property
-        return item.type === 'armor';
+        return item.type === 'misc';
       }
       
       return false;
@@ -126,7 +121,7 @@ export function EquipmentView({
         </h3>
         
         {/* Equipment Grid */}
-        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+        <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
           {SLOT_CONFIG.map((slotInfo) => {
             const item = equipment[slotInfo.key];
             const isEmpty = !item;
@@ -135,7 +130,7 @@ export function EquipmentView({
               <div
                 key={slotInfo.key}
                 className={`relative ${
-                  slotInfo.size === 'large' ? 'col-span-1 row-span-2' : ''
+                  slotInfo.size === 'large' ? 'row-span-2' : ''
                 }`}
                 style={{
                   gridRow: slotInfo.position.row,

@@ -1,7 +1,6 @@
 import { MotionWrapper } from '../MotionWrapper';
 import { CheckCircle, Target, Gift } from 'lucide-react';
 import { ModalHeader } from '../ModalHeader';
-import { MinimizedModal } from '../MinimizedModal';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
 
 interface QuestOfferModalProps {
@@ -32,19 +31,17 @@ export function QuestOfferModal({
   onDecline, 
   questOffer 
 }: QuestOfferModalProps) {
-  const { isMinimized, minimize, restore } = useModalMinimize('quest-offer-modal');
+  const { isMinimized, minimize } = useModalMinimize({
+    modalId: 'quest-offer-modal',
+    title: 'Quest Mới',
+    icon: <Target className="w-5 h-5 text-yellow-400" />
+  });
 
   if (!isOpen || !questOffer) return null;
 
   // Show minimized modal if minimized
   if (isMinimized) {
-    return (
-      <MinimizedModal
-        title="Quest Mới"
-        icon={<Target className="w-5 h-5 text-yellow-400" />}
-        onRestore={restore}
-      />
-    );
+    return null; // MinimizedModal is now handled by MinimizedModalContainer
   }
 
   return (

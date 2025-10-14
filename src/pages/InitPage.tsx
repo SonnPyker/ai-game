@@ -109,7 +109,7 @@ export function InitPage() {
     }
   ];
 
-  const handleStepClick = (step: typeof steps[0]) => {
+  const handleStepClick = async (step: typeof steps[0]) => {
     // Không cho phép click nếu bước bị disabled
     if (step.disabled) {
       return;
@@ -131,6 +131,10 @@ export function InitPage() {
       localStorage.removeItem('combat_result'); // Xóa combat result khi reset world
       // Clear NPC relationship data when starting new world
       npcRelationshipService.clearAllData();
+      
+      // Clear merchant shops data when starting new world
+      const { merchantService } = await import('../services/merchantService');
+      merchantService.clearAllMerchantShops();
     } else if (step.id === 'character') {
       // Reset scenario
       localStorage.removeItem('rp_scenario');

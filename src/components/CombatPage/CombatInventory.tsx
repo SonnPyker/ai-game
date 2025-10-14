@@ -6,7 +6,7 @@ import {
   Package, 
   Target,
   Zap,
-  Heart
+  Beaker
 } from 'lucide-react';
 import { InventoryItem } from '../../types';
 import { Combatant } from '../../services/combatService';
@@ -108,10 +108,7 @@ export function CombatInventory({
       case 'weapon':
         return <Sword className="w-5 h-5 text-orange-400" />;
       case 'consumable':
-        if (item.damage) {
-          return <Zap className="w-5 h-5 text-red-400" />;
-        }
-        return <Heart className="w-5 h-5 text-green-400" />;
+        return <Beaker className="w-5 h-5 text-green-400" />;
       case 'misc':
         return <Package className="w-5 h-5 text-blue-400" />;
       default:

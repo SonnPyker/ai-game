@@ -287,10 +287,10 @@ class CombatService {
     const agilityModifier = player.coreStats?.modifiers?.agility || 0;
     ac += agilityModifier;
     
-    // Check for chest armor equipment
-    if (player.equipment?.chest && player.equipment.chest.armorClass) {
+    // Check for armor equipment
+    if (player.equipment?.armor && player.equipment.armor.armorClass) {
       // Use armor's AC + agility modifier
-      ac = player.equipment.chest.armorClass + agilityModifier;
+      ac = player.equipment.armor.armorClass + agilityModifier;
     }
     
     // Apply skill tree bonuses
@@ -342,8 +342,8 @@ class CombatService {
     }
     
     // Calculate weapon bonuses
-    if (character.equipment?.weapon_main) {
-      const weapon = character.equipment.weapon_main;
+    if (character.equipment?.weapon) {
+      const weapon = character.equipment.weapon;
       if (weapon.attackBonus) {
         tempStats.equipmentBonuses.attack += weapon.attackBonus;
       }
@@ -424,22 +424,8 @@ class CombatService {
   private getPlayerAttacks(player: Character): Attack[] {
     const attacks: Attack[] = [];
     
-    if (player.equipment?.weapon_main) {
-      const weapon = player.equipment.weapon_main;
-      if (weapon.damage) {
-        const attackBonus = this.calculateAttackBonus(player, weapon);
-        const finalDamage = weapon.damage || '1d4';
-        attacks.push({
-          name: weapon.name,
-          attackBonus,
-          damage: finalDamage,
-          damageType: (weapon.damageType as 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic') || 'physical'
-        });
-      }
-    }
-    
-    if (player.equipment?.weapon_off) {
-      const weapon = player.equipment.weapon_off;
+    if (player.equipment?.weapon) {
+      const weapon = player.equipment.weapon;
       if (weapon.damage) {
         const attackBonus = this.calculateAttackBonus(player, weapon);
         const finalDamage = weapon.damage || '1d4';
