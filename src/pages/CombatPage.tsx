@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Zap, 
-  ArrowRight,
   Play,
   Pause,
   MessageSquare,
@@ -13,6 +12,7 @@ import {
   TestTube
 } from 'lucide-react';
 import { Character, Enemy, InventoryItem } from '../types';
+import { translateEffectFormat } from '../utils/skillEffectTranslator';
 import { combatService, CombatState, Combatant } from '../services/combatService';
 import { combatDataService } from '../services/combatDataService';
 import { inventoryService } from '../services/inventoryService';
@@ -41,6 +41,7 @@ export function CombatPage({}: CombatPageProps) {
   const [combatState, setCombatState] = useState<CombatState | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
+  const [showSkills, setShowSkills] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -602,6 +603,35 @@ export function CombatPage({}: CombatPageProps) {
     }
   }, [combatState, isProcessing]);
 
+  // Handle skill use
+  const handleUseSkill = useCallback(async (skillId: string, targetIds?: string[]) => {
+    if (!combatState || !combatState.isPlayerTurn || isProcessing) return;
+
+    setIsProcessing(true);
+    
+    try {
+      const success = combatService.useSkill('player', skillId, targetIds);
+      
+      if (success) {
+        // Update combat state
+        setCombatState({ ...combatService.getCurrentCombat()! });
+        
+        // Check if combat ended
+        if (!combatService.getCurrentCombat()?.isActive) {
+          setShowResults(true);
+          return;
+        }
+        
+        // Don't end turn automatically - skill is skill action
+        // Player can continue with main action or end turn manually
+      }
+    } catch (error) {
+      console.error('Error using skill:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [combatState, isProcessing]);
+
   // Handle defend action (now with manual turn control)
   const handleDefend = useCallback(async () => {
     if (!combatState || !combatState.isPlayerTurn || isProcessing) return;
@@ -1003,10 +1033,12 @@ export function CombatPage({}: CombatPageProps) {
   const playerCombatants = combatState ? combatService.getAlivePlayers() : [];
   const aliveEnemies = combatState ? combatService.getAliveEnemies() : [];
   
+  // Get skills from combat state (already migrated)
+  const playerSkills = playerCombatants[0]?.skills || [];
+  
   // Get turn state for UI
   const turnState = combatService.getTurnState();
   const canEndTurn = combatService.canEndTurn();
-  const hasPerformedAction = turnState?.hasPerformedAction || false;
 
 
   // Show loading only if we're not showing confirmation modal
@@ -1149,6 +1181,7 @@ export function CombatPage({}: CombatPageProps) {
                     onDefend={handleDefend}
                     onUseItem={handleUseItem}
                     onInventory={() => setShowInventory(!showInventory)}
+                    onSkills={() => setShowSkills(!showSkills)}
                     onEndTurn={handleEndTurn}
                     onRun={handleRun}
                     isProcessing={isProcessing}
@@ -1157,28 +1190,10 @@ export function CombatPage({}: CombatPageProps) {
                     canEndTurn={canEndTurn}
                     mainActionUsed={turnState?.mainActionUsed || false}
                     extraActionUsed={turnState?.extraActionUsed || false}
+                    skillActionUsed={turnState?.skillActionUsed || false}
+                    skills={playerSkills}
                     temporaryPlayerStats={combatState?.temporaryPlayerStats}
                   />
-                  
-                  <button
-                    onClick={handleEndTurn}
-                    disabled={!canEndTurn || isProcessing}
-                    className={`
-                      w-full py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 font-medium text-lg
-                      ${canEndTurn && !isProcessing
-                        ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 ring-2 ring-green-400 ring-opacity-50'
-                        : 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
-                      }
-                    `}
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                    <span>
-                      {hasPerformedAction ? 'Kết Thúc Lượt' : 'Chờ Hành Động...'}
-                    </span>
-                    {hasPerformedAction && (
-                      <div className="ml-2 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    )}
-                  </button>
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -1192,6 +1207,95 @@ export function CombatPage({}: CombatPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Skills Modal */}
+      <AnimatePresence>
+        {showSkills && (
+          <MotionWrapper
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowSkills(false)}
+          >
+            <MotionWrapper
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-900 rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-white">Kỹ Năng Nhân Vật</h2>
+                  <button
+                    onClick={() => setShowSkills(false)}
+                    className="text-gray-400 hover:text-white text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {playerSkills.length > 0 ? (
+                    playerSkills.map((skill: any, index: number) => (
+                      <div key={skill.id || index} className="p-4 bg-white/5 rounded-lg border border-white/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-2xl">{skill.icon}</span>
+                            <div>
+                              <h3 className="text-lg font-medium text-white">{skill.name}</h3>
+                              <p className="text-sm text-gray-400">{skill.skillType}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (skill.requiresTarget && aliveEnemies.length > 0) {
+                                // TODO: Show target selection modal
+                                // For now, use first enemy as target
+                                handleUseSkill(skill.id, [aliveEnemies[0].id]);
+                              } else {
+                                handleUseSkill(skill.id);
+                              }
+                              setShowSkills(false);
+                            }}
+                            disabled={isProcessing || (turnState?.skillActionUsed || false) || (skill.currentCooldown > 0)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              isProcessing || (turnState?.skillActionUsed || false) || (skill.currentCooldown > 0)
+                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                : skill.skillType === 'damage'
+                                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                                  : skill.skillType === 'healing'
+                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                    : 'bg-purple-600 hover:bg-purple-700 text-white'
+                            }`}
+                          >
+                            {skill.currentCooldown > 0 ? `Cooldown: ${skill.currentCooldown}` : 'Sử dụng'}
+                          </button>
+                        </div>
+                        <p className="text-sm text-gray-300 mb-2">{skill.description}</p>
+                        <div className="text-xs text-blue-300">
+                          <span className="font-medium">Hiệu quả: </span>
+                          {translateEffectFormat(skill.effects)}
+                        </div>
+                        <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
+                          <span>Level: {skill.level}</span>
+                          <span>Cooldown: {skill.cooldown} lượt</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <p>Chưa có kỹ năng nào</p>
+                      <p className="text-sm">Tạo nhân vật mới để có kỹ năng</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </MotionWrapper>
+          </MotionWrapper>
+        )}
+      </AnimatePresence>
 
       {/* Inventory Modal */}
       <AnimatePresence>

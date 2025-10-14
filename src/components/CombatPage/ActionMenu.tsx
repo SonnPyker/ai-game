@@ -12,6 +12,7 @@ import {
   Menu
 } from 'lucide-react';
 import { Combatant } from '../../services/combatService';
+import { CharacterSkill } from '../../types';
 import { useResponsiveContext } from '../../contexts/ResponsiveContext';
 
 interface ActionMenuProps {
@@ -21,6 +22,7 @@ interface ActionMenuProps {
   onDefend: () => void;
   onUseItem?: (itemId: string, targetId?: string) => void;
   onInventory?: () => void;
+  onSkills?: () => void;
   onEndTurn?: () => void;
   onRun: () => void;
   isProcessing: boolean;
@@ -29,6 +31,8 @@ interface ActionMenuProps {
   canEndTurn?: boolean;
   mainActionUsed?: boolean;
   extraActionUsed?: boolean;
+  skillActionUsed?: boolean;
+  skills?: CharacterSkill[];
   temporaryPlayerStats?: any; // TemporaryPlayerStats
 }
 
@@ -39,13 +43,17 @@ export function ActionMenu({
   onDefend,
   onUseItem: _onUseItem,
   onInventory,
+  onSkills,
   onEndTurn: _onEndTurn,
   onRun,
   isProcessing,
   selectedTarget,
   onSelectTarget,
+  canEndTurn = false,
   mainActionUsed = false,
   extraActionUsed = false,
+  skillActionUsed = false,
+  skills = [],
   temporaryPlayerStats
 }: ActionMenuProps) {
   
@@ -269,7 +277,7 @@ export function ActionMenu({
               {/* Extra Actions Section */}
               <div>
                 <h4 className="text-sm font-medium text-gray-300 mb-2">Hành động phụ (tùy chọn):</h4>
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {/* Inventory Action */}
                   <MotionButton
                     onClick={onInventory}
@@ -287,6 +295,28 @@ export function ActionMenu({
                       <div className="font-medium">Túi Đồ</div>
                       <div className="text-xs text-blue-200">
                         Mở túi đồ
+                      </div>
+                    </div>
+                  </MotionButton>
+
+                  {/* Skills Action */}
+                  <MotionButton
+                    onClick={onSkills}
+                    disabled={isProcessing}
+                    className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium ${
+                      skillActionUsed 
+                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50' 
+                        : 'bg-purple-600 hover:bg-purple-700 text-white hover:shadow-lg transform hover:scale-105'
+                    }`}
+                    whileHover={skillActionUsed ? {} : { scale: 1.02 }}
+                    whileTap={skillActionUsed ? {} : { scale: 0.98 }}
+                    title={`Kỹ năng có sẵn: ${skills.length}`}
+                  >
+                    <Sword className="w-5 h-5" />
+                    <div className="text-left">
+                      <div className="font-medium">Kỹ Năng</div>
+                      <div className="text-xs text-purple-200">
+                        {skillActionUsed ? 'Đã sử dụng' : (skills.length > 0 ? `${skills.length} kỹ năng` : 'Chưa có kỹ năng')}
                       </div>
                     </div>
                   </MotionButton>
@@ -362,6 +392,7 @@ export function ActionMenu({
             </div>
           </div>
 
+
           {/* Extra Actions Section */}
           <div>
             <h4 className="text-sm font-medium text-gray-300 mb-2">Hành động phụ (tùy chọn):</h4>
@@ -387,23 +418,69 @@ export function ActionMenu({
                 </div>
               </MotionButton>
 
-              {/* Run Action */}
+              {/* Skills Action */}
               <MotionButton
-                onClick={onRun}
+                onClick={onSkills}
                 disabled={isProcessing}
-                className="flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium bg-red-700 hover:bg-red-600 text-white hover:shadow-lg transform hover:scale-105"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium ${
+                  skillActionUsed 
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50' 
+                    : 'bg-purple-600 hover:bg-purple-700 text-white hover:shadow-lg transform hover:scale-105'
+                }`}
+                whileHover={skillActionUsed ? {} : { scale: 1.02 }}
+                whileTap={skillActionUsed ? {} : { scale: 0.98 }}
+                title={`Kỹ năng có sẵn: ${skills.length}`}
               >
-                <ArrowRight className="w-5 h-5" />
+                <Sword className="w-5 h-5" />
                 <div className="text-left">
-                  <div className="font-medium">Chạy Trốn</div>
-                  <div className="text-xs text-gray-300">
-                    Thoát khỏi combat
+                  <div className="font-medium">Kỹ Năng</div>
+                  <div className="text-xs text-purple-200">
+                    {skillActionUsed ? 'Đã sử dụng' : (skills.length > 0 ? `${skills.length} kỹ năng` : 'Chưa có kỹ năng')}
                   </div>
                 </div>
               </MotionButton>
             </div>
+          </div>
+
+          {/* Bottom Actions - Run and End Turn */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            {/* Run Action */}
+            <MotionButton
+              onClick={onRun}
+              disabled={isProcessing}
+              className="flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium bg-red-700 hover:bg-red-600 text-white hover:shadow-lg transform hover:scale-105 flex-1"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <ArrowRight className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">Chạy Trốn</div>
+                <div className="text-xs text-gray-300">
+                  Thoát khỏi combat
+                </div>
+              </div>
+            </MotionButton>
+
+            {/* End Turn Action */}
+            <MotionButton
+              onClick={_onEndTurn}
+              disabled={isProcessing || !canEndTurn}
+              className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium flex-1 ${
+                !canEndTurn
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
+                  : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-lg transform hover:scale-105'
+              }`}
+              whileHover={!canEndTurn ? {} : { scale: 1.02 }}
+              whileTap={!canEndTurn ? {} : { scale: 0.98 }}
+            >
+              <RotateCcw className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">Kết Thúc Lượt</div>
+                <div className="text-xs text-gray-300">
+                  {!canEndTurn ? 'Cần dùng hành động chính' : 'Chuyển lượt'}
+                </div>
+              </div>
+            </MotionButton>
           </div>
         </div>
       )}

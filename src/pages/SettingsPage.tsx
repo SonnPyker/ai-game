@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { ApiKeyConfig } from '../components/Settings/ApiKeyConfig';
 import { MultiApiKeyManager } from '../components/Settings/MultiApiKeyManager';
 import { VersionInfo } from '../components/Settings/VersionInfo';
+import { ComfyUISettings } from '../components/Settings/ComfyUISettings';
 import { geminiService } from '../services/geminiService';
-import { Key, Info } from 'lucide-react';
+import { Key, Info, Image } from 'lucide-react';
 import { MotionWrapper } from '../components/MotionWrapper';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
 
@@ -12,7 +13,7 @@ export function SettingsPage() {
   const [isApiConfigured, setIsApiConfigured] = useState(false);
   const [showMultiKeyManager, setShowMultiKeyManager] = useState(true); // Default to multi-key mode
   const [useMultiKeyMode, setUseMultiKeyMode] = useState(true);
-  const [activeTab, setActiveTab] = useState<'api' | 'info'>('api');
+  const [activeTab, setActiveTab] = useState<'api' | 'comfyui' | 'info'>('api');
 
   useEffect(() => {
     // Kiểm tra trạng thái API khi component mount
@@ -65,6 +66,12 @@ export function SettingsPage() {
       label: 'API Keys',
       icon: Key,
       description: 'Cấu hình API keys cho AI'
+    },
+    {
+      id: 'comfyui' as const,
+      label: 'ComfyUI',
+      icon: Image,
+      description: 'Cấu hình ComfyUI cho tạo ảnh'
     },
     {
       id: 'info' as const,
@@ -210,6 +217,8 @@ export function SettingsPage() {
             </MotionWrapper>
           </div>
         );
+      case 'comfyui':
+        return <ComfyUISettings />;
       case 'info':
         return <VersionInfo />;
       default:

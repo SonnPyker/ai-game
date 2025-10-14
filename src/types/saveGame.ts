@@ -1,4 +1,4 @@
-import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime, ContentFlags, QuestSystem, NPCRelationship, PlayerLocation } from './index';
+import { WorldData, Character, ChatMessage, SCCSummary, SCCState, WorldTime, ContentFlags, QuestSystem, NPCRelationship, PlayerLocation, ComfyUISettings } from './index';
 
 // NPC Relationship Data for save games
 export interface NPCRelationshipData {
@@ -26,6 +26,8 @@ export interface SaveGame {
   actionLog?: any[]; // Lịch sử hành động đã thực hiện
   playerLocation?: PlayerLocation; // Vị trí hiện tại của người chơi
   combatHistory?: any; // Lịch sử combat và enemies đã đánh bại
+  comfyUISettings?: ComfyUISettings; // ComfyUI settings
+  generatedImages?: string[]; // Danh sách file ảnh đã tạo
 }
 
 // Metadata của save game

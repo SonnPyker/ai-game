@@ -1,11 +1,13 @@
-import { Character, Enemy, CombatStats, Attack, InventoryItem } from '../types';
+import { Character, Enemy, CombatStats, Attack, InventoryItem, CharacterSkill } from '../types';
 import { DiceRoller } from '../utils/diceRoller';
 import { TurnLog, CombatAction, CombatResultData, CombatTurnState, CombatAnimationType } from '../types/combat';
+import { MigrationService } from './saveStorage/migrationService';
 import { enemyAIService } from './enemyAIService';
 import { combatNarrationService } from './combatNarrationService';
 import { enhancedLootService } from './enhancedLootService';
 import { combatAnimationService } from './combatAnimationService';
 import { effectProcessingService } from './effectProcessingService';
+import { skillEffectService } from './skillEffectService';
 import { skillTreeService } from './skillTreeService';
 import { combatLevelService } from './combatLevelService';
 
@@ -21,6 +23,7 @@ export interface Combatant {
   armorClass: number;
   attacks: Attack[];
   abilities?: any[];
+  skills?: CharacterSkill[]; // Character skills for combat
   initiative: number;
   isAlive: boolean;
   statusEffects: StatusEffect[];
@@ -134,15 +137,19 @@ class CombatService {
   public initiateCombat(player: Character, enemies: Enemy[], worldDifficulty?: string): CombatState {
     const combatants: Combatant[] = [];
 
+    // Migrate character skills if needed
+    const migrationService = new MigrationService();
+    const migratedPlayer = migrationService.migrateCharacterSkills(player);
+
     // Add player
     const playerCombatant: Combatant = {
       id: 'player',
-      name: player.name,
+      name: migratedPlayer.name,
       type: 'player',
-      level: player.level || 1, // Legacy level
-      combatLevel: player.combatLevel || player.level || 1, // Combat Level
-      characterLevel: player.level || 1, // Character Level
-      stats: player.coreStats || {
+      level: migratedPlayer.level || 1, // Legacy level
+      combatLevel: migratedPlayer.combatLevel || migratedPlayer.level || 1, // Combat Level
+      characterLevel: migratedPlayer.level || 1, // Character Level
+      stats: migratedPlayer.coreStats || {
         strength: 10,
         agility: 10,
         constitution: 10,
@@ -151,14 +158,15 @@ class CombatService {
         charisma: 10,
         modifiers: { strength: 0, agility: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 }
       },
-      health: player.health || { current: 20, max: 20 },
-      armorClass: this.calculatePlayerAC(player),
-      attacks: this.getPlayerAttacks(player),
+      health: migratedPlayer.health || { current: 20, max: 20 },
+      armorClass: this.calculatePlayerAC(migratedPlayer),
+      attacks: this.getPlayerAttacks(migratedPlayer),
+      skills: migratedPlayer.skills ? migratedPlayer.skills.map(skill => ({ ...skill, currentCooldown: 0 })) : [], // Copy skills and reset cooldown
       initiative: 0,
       isAlive: true,
       statusEffects: [],
       isDefending: false,
-      characterData: player
+      characterData: migratedPlayer
     };
 
     combatants.push(playerCombatant);
@@ -221,12 +229,13 @@ class CombatService {
       winner: undefined,
       rewards: undefined,
       worldDifficulty,
-      playerInventory: player.inventory || [], // Initialize player inventory
+      playerInventory: migratedPlayer.inventory || [], // Initialize player inventory
       turnState: {
         hasPerformedAction: false,
         canEndTurn: false,
         mainActionUsed: false,
         extraActionUsed: false,
+        skillActionUsed: false,
       }
     };
 
@@ -240,7 +249,7 @@ class CombatService {
     // Initialize temporary player stats
     this.updateTemporaryPlayerStats();
 
-    return this.currentCombat;
+    return this.currentCombat!;
   }
 
   // Roll initiative for all combatants
@@ -782,6 +791,87 @@ class CombatService {
     return false;
   }
 
+  // Use skill in combat (skill action)
+  public useSkill(combatantId: string, skillId: string, targetIds?: string[]): boolean {
+    if (!this.currentCombat) {
+      return false;
+    }
+    
+    const combatant = this.getCombatant(combatantId);
+    if (!combatant || !combatant.isAlive) {
+      return false;
+    }
+    
+    // Check if combatant can use skill action
+    if (combatantId === 'player' && this.currentCombat.turnState) {
+      if (this.currentCombat.turnState.skillActionUsed) {
+        return false;
+      }
+    }
+    
+    // Find the skill
+    const skill = combatant.skills?.find(s => s.id === skillId);
+    if (!skill) {
+      return false;
+    }
+    
+    // Check cooldown
+    if (skill.currentCooldown > 0) {
+      return false;
+    }
+    
+    // Check if skill requires target
+    if (skill.requiresTarget && (!targetIds || targetIds.length === 0)) {
+      return false; // Need target selection
+    }
+    
+    // Apply skill effects using new service
+    const results = skillEffectService.applySkillEffects(
+      combatant, 
+      skill, 
+      targetIds || [], 
+      this.currentCombat.combatants
+    );
+    
+    // Log the skill usage
+    this.addTurnAction('info', 
+      `${combatant.name} sử dụng kỹ năng ${skill.name}`
+    );
+    
+    // Log results and trigger floating text for damage
+    results.forEach(result => {
+      this.addTurnAction(result.logType, result.description);
+      
+      // Trigger floating text for damage results
+      if (result.logType === 'damage') {
+        // Extract damage amount and target from description
+        const damageMatch = result.description.match(/gây (\d+) sát thương cho (.+?)(?:\s|$)/);
+        if (damageMatch) {
+          const damage = parseInt(damageMatch[1]);
+          const targetName = damageMatch[2];
+          
+          // Find target combatant
+          const target = this.currentCombat?.combatants.find(c => c.name === targetName);
+          if (target) {
+            this.applyDamageWithEffects(target.id, damage, combatantId);
+          }
+        }
+      }
+    });
+    
+    // Set cooldown and mark action used
+    skill.currentCooldown = skill.cooldown;
+    if (combatantId === 'player' && this.currentCombat.turnState) {
+      this.currentCombat.turnState.skillActionUsed = true;
+      this.currentCombat.turnState.skillActionType = skill.skillType;
+    }
+    
+    // Update temporary player stats after using skill
+    this.updateTemporaryPlayerStats();
+    
+    return true;
+  }
+
   // End current turn (now requires manual call)
   public endTurn(): void {
     if (!this.currentCombat) return;
@@ -809,6 +899,15 @@ class CombatService {
       this.processCombatantStatusEffects(currentCombatantForEffects);
     }
     
+    // CHỈ giảm cooldown khi đến lượt player
+    if (isPlayerTurn && currentCombatantForEffects?.skills) {
+      currentCombatantForEffects.skills.forEach(skill => {
+        if (skill.currentCooldown > 0) {
+          skill.currentCooldown--;
+        }
+      });
+    }
+    
     // Reset turn tracking for NEXT combatant
     this.currentTurnActions = [];
     this.currentTurnCombatant = currentCombatantId;
@@ -830,6 +929,7 @@ class CombatService {
       canEndTurn: false,
       mainActionUsed: false,
       extraActionUsed: false,
+      skillActionUsed: false,
     };
     
     // Don't process status effects here - only at the end of complete turn cycle

@@ -11,6 +11,7 @@ import { skillTreeService } from '../services/skillTreeService';
 import { Sparkles, Download, RotateCcw, Check, Globe, Upload, Shuffle, Star } from 'lucide-react';
 import { HelpTooltip } from '../components/HelpTooltip';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
+import { translateEffectFormat } from '../utils/skillEffectTranslator';
 
 interface CharacterData {
   name: string;
@@ -41,7 +42,19 @@ interface CharacterData {
     max: number;
   };
   customStats: { name: string; value: number }[];
-  proficiencies: { name: string; level: number; description?: string }[];
+  proficiencies: { name: string; level: number; description?: string }[]; // Legacy
+  skills: {
+    id: string;
+    name: string;
+    description: string;
+    level: number;
+    skillType: 'damage' | 'healing' | 'social';
+    effects: string[];
+    cooldown: number;
+    currentCooldown: number;
+    icon: string;
+    requiresTarget?: boolean;
+  }[];
 }
 
 export function CharacterCreationPage() {
@@ -50,6 +63,7 @@ export function CharacterCreationPage() {
   const [currentStep, setCurrentStep] = useState<'description' | 'customize'>('description');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRerolling, setIsRerolling] = useState(false);
+  const [lockedSkills, setLockedSkills] = useState<Set<string>>(new Set());
   const [isGeneratingName, setIsGeneratingName] = useState(false);
   const [characterDescription, setCharacterDescription] = useState('');
   const [worldDescription, setWorldDescription] = useState('');
@@ -91,7 +105,8 @@ export function CharacterCreationPage() {
       max: 20
     },
     customStats: [],
-    proficiencies: []
+    proficiencies: [], // Legacy
+    skills: [] // New skill system
   });
 
   // Load world description from localStorage
@@ -246,38 +261,6 @@ export function CharacterCreationPage() {
   };
 
 
-  const handleAddProficiency = () => {
-    if (characterData.proficiencies.length >= 3) return;
-    
-    setCharacterData(prev => ({
-      ...prev,
-      proficiencies: [...prev.proficiencies, { 
-        name: '', 
-        level: 1, 
-        description: '' 
-      }]
-    }));
-  };
-
-  const handleRemoveProficiency = (index: number) => {
-    setCharacterData(prev => ({
-      ...prev,
-      proficiencies: prev.proficiencies.filter((_, i) => i !== index)
-    }));
-  };
-
-
-  const handleUpdateProficiency = (index: number, field: 'name' | 'level' | 'description', value: string | number) => {
-    setCharacterData(prev => ({
-      ...prev,
-      proficiencies: prev.proficiencies.map((prof, i) => {
-        if (i === index) {
-          return { ...prof, [field]: value };
-        }
-        return prof;
-      })
-    }));
-  };
 
   const handleResetForm = () => {
     const defaultCoreStats = {
@@ -313,7 +296,8 @@ export function CharacterCreationPage() {
         max: maxHealth
       },
       customStats: [],
-      proficiencies: []
+      proficiencies: [], // Legacy
+      skills: [] // New skill system
     });
     setCharacterDescription('');
     setCurrentStep('description');
@@ -338,7 +322,8 @@ export function CharacterCreationPage() {
       coreStats: finalCoreStats,
       health: characterData.health,
       customStats: [],
-      proficiencies: characterData.proficiencies
+      proficiencies: characterData.proficiencies, // Legacy
+      skills: characterData.skills || [] // New skill system
     };
 
     // Khởi tạo level và experience
@@ -449,15 +434,34 @@ export function CharacterCreationPage() {
         ...prev,
         coreStats: suggestions.coreStats || prev.coreStats,
         customStats: [],
-        proficiencies: suggestions.proficiencies?.map((prof: any) => ({
-          name: prof.name || '',
-          level: prof.level || 1,
-          description: prof.description || ''
-        })) || prev.proficiencies
+        skills: suggestions.skills?.map((skill: any) => ({
+          id: skill.id || `skill_${Date.now()}_${Math.random()}`,
+          name: skill.name || '',
+          description: skill.description || '',
+          level: skill.level || 1,
+          skillType: skill.skillType || 'damage',
+          effects: skill.effects || ['instant_damage:1d4', 'stat_buff:strength:+1:self:2turns'],
+          requiresTarget: skill.requiresTarget || true,
+          cooldown: skill.cooldown || 3,
+          currentCooldown: 0,
+          icon: skill.icon || '⚔️'
+        })) || prev.skills
       }));
     } catch (error) {
       console.error('Error getting AI suggestions:', error);
     }
+  };
+
+  const handleToggleLockSkill = (skillId: string) => {
+    setLockedSkills(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(skillId)) {
+        newSet.delete(skillId);
+      } else {
+        newSet.add(skillId);
+      }
+      return newSet;
+    });
   };
 
   const handleRerollSkills = async () => {
@@ -468,23 +472,45 @@ export function CharacterCreationPage() {
       const worldGenResult = localStorage.getItem('world_gen_result');
       const worldContext = worldGenResult ? JSON.parse(worldGenResult) : null;
       
-      
       const newSkills = await geminiService.rerollCharacterSkills(characterData, worldContext);
       
-      setCharacterData(prev => ({
-        ...prev,
-        proficiencies: newSkills.skills?.map((skill: any) => ({
+      setCharacterData(prev => {
+        const currentSkills = prev.skills || [];
+        const lockedSkillIds = Array.from(lockedSkills);
+        
+        // Giữ lại các skill đã lock
+        const lockedSkillsList = currentSkills.filter(skill => lockedSkillIds.includes(skill.id));
+        
+        // Lấy các skill mới (không lock) và đảm bảo ID unique
+        const newSkillsToAdd = newSkills.skills?.map((skill: any, index: number) => ({
+          id: skill.id || `skill_${skill.skillType || 'damage'}_${Date.now()}_${index}`,
           name: skill.name || '',
+          description: skill.description || '',
           level: skill.level || 1,
-          description: skill.description || ''
-        })) || []
-      }));
+          skillType: skill.skillType || 'damage',
+          effects: skill.effects || ['instant_damage:1d4', 'stat_buff:strength:+1:self:2turns'],
+          requiresTarget: skill.requiresTarget || true,
+          cooldown: skill.cooldown || 3,
+          currentCooldown: 0,
+          icon: skill.icon || '⚔️'
+        })) || [];
+        
+        // Kết hợp: locked skills + new skills (tối đa 3 skills)
+        const combinedSkills = [...lockedSkillsList, ...newSkillsToAdd].slice(0, 3);
+        
+        return {
+          ...prev,
+          skills: combinedSkills
+        };
+      });
     } catch (error) {
       console.error('Error rerolling skills:', error);
     } finally {
       setIsRerolling(false);
     }
   };
+
+
 
   if (currentStep === 'description') {
     return (
@@ -949,86 +975,89 @@ export function CharacterCreationPage() {
           </div>
 
 
-          {/* Proficiencies */}
+          {/* Skills */}
           <div className="glass-effect p-6 rounded-2xl">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-xl font-bold-vietnamese text-white uppercase">THÀNH THẠO (TỐI ĐA 3)</h3>
-                <p className="text-xs text-blue-400 mt-1">
-                  Reroll sẽ tạo kỹ năng ngẫu nhiên level 1
+                <h3 className="text-lg font-bold-vietnamese text-white uppercase">KỸ NĂNG NHÂN VẬT (3 SKILL)</h3>
+                <p className="text-xs text-blue-400 mt-0.5">
+                  Reroll tạo 3 kỹ năng ngẫu nhiên (có thể lock skill để giữ lại)
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
-                <button
-                  onClick={handleRerollSkills}
-                  disabled={isRerolling}
-                  className="px-3 py-1 bg-yellow-500/20 border-2 border-yellow-500/70 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-                  title="Tạo 3 kỹ năng ngẫu nhiên level 1"
-                >
-                  <span>{isRerolling ? 'Đang tạo...' : '🎲 Reroll'}</span>
-                </button>
-                {characterData.proficiencies.length < 3 && (
-                  <button
-                    onClick={handleAddProficiency}
-                    className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm"
-                  >
-                    + Thêm kỹ năng
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={handleRerollSkills}
+                disabled={isRerolling}
+                className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-500/70 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                title="Tạo 3 kỹ năng ngẫu nhiên"
+              >
+                <span>{isRerolling ? 'Đang tạo...' : '🎲 Reroll'}</span>
+              </button>
             </div>
             
             <div className="space-y-3">
-              {/* Header labels */}
-              {characterData.proficiencies.length > 0 && (
-                <div className="flex items-center space-x-2 text-xs text-gray-400 mb-2">
-                  <div className="flex-1">Tên kỹ năng</div>
-                  <div className="w-20 text-center">Cấp độ</div>
-                  <div className="w-16 text-center" title="Năng lượng tự động tính theo cấp độ">⚡ Năng lượng (Tự động)</div>
-                  <div className="w-8"></div>
-                </div>
-              )}
-              
-              {characterData.proficiencies.map((prof, index) => (
-                <div key={index} className="space-y-2 p-4 bg-white/5 rounded-lg border border-white/20">
-                  {/* Skill Header */}
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={prof.name}
-                      onChange={(e) => handleUpdateProficiency(index, 'name', e.target.value)}
-                      placeholder="Tên kỹ năng..."
-                      className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm"
-                    />
-                    <input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={prof.level}
-                      onChange={(e) => handleUpdateProficiency(index, 'level', parseInt(e.target.value) || 1)}
-                      className="w-20 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none text-sm"
-                      title="Cấp độ kỹ năng"
-                    />
+              {characterData.skills && characterData.skills.map((skill) => (
+                <div key={skill.id} className="p-3 bg-white/5 rounded-lg border border-white/20">
+                  {/* Skill Header - Compact */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl">{skill.icon}</span>
+                      <div>
+                        <h3 className="text-base font-medium text-white">{skill.name}</h3>
+                        <div className="flex items-center space-x-2 text-xs text-gray-400">
+                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                            skill.skillType === 'damage' 
+                              ? 'bg-red-500/20 text-red-300'
+                              : skill.skillType === 'healing'
+                                ? 'bg-green-500/20 text-green-300'
+                                : 'bg-purple-500/20 text-purple-300'
+                          }`}>
+                            {skill.skillType === 'damage' ? 'Tấn Công' : 
+                             skill.skillType === 'healing' ? 'Hồi Phục' : 'Xã Hội'}
+                          </span>
+                          <span>Lv.{skill.level}</span>
+                          <span>•</span>
+                          <span>{skill.cooldown === 0 ? 'Không CD' : `CD ${skill.cooldown}`}</span>
+                        </div>
+                      </div>
+                    </div>
                     <button
-                      onClick={() => handleRemoveProficiency(index)}
-                      className="p-2 text-red-400 hover:text-red-300 transition-colors duration-200"
+                      onClick={() => handleToggleLockSkill(skill.id)}
+                      className={`p-1.5 rounded-lg transition-colors duration-200 ${
+                        lockedSkills.has(skill.id)
+                          ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50'
+                          : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border border-gray-500/30'
+                      }`}
+                      title={lockedSkills.has(skill.id) ? 'Bỏ khóa skill' : 'Khóa skill khi reroll'}
                     >
-                      ×
+                      {lockedSkills.has(skill.id) ? '🔒' : '🔓'}
                     </button>
                   </div>
                   
-                  {/* Skill Description */}
-                  <div>
-                    <textarea
-                      value={prof.description || ''}
-                      onChange={(e) => handleUpdateProficiency(index, 'description', e.target.value)}
-                      placeholder="Mô tả kỹ năng (cách sử dụng, hiệu quả)..."
-                      className="w-full px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm resize-none"
-                      rows={2}
-                    />
+                  {/* Skill Description - Compact */}
+                  <div className="mb-2">
+                    <p className="text-xs text-gray-300 leading-tight">{skill.description}</p>
+                  </div>
+                  
+                  {/* Skill Effects - Compact */}
+                  <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded p-2">
+                    <div className="flex items-start space-x-1">
+                      <span className="text-blue-400 text-xs mt-0.5">⚡</span>
+                      <div className="flex-1">
+                        <span className="text-blue-300 font-medium text-xs">Hiệu quả:</span>
+                        <div className="mt-0.5 text-xs text-blue-200 leading-tight">
+                          {translateEffectFormat(skill.effects)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
+              
+              {(!characterData.skills || characterData.skills.length === 0) && (
+                <div className="text-center py-4 text-gray-400">
+                  <p className="text-sm">Chưa có kỹ năng nào. Nhấn "Reroll" để tạo 3 kỹ năng tự động.</p>
+                </div>
+              )}
             </div>
           </div>
         </MotionWrapper>

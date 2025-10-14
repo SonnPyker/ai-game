@@ -866,7 +866,23 @@ Tính cách: ${characterData.personality || 'Chưa có'}
 Tiểu sử: ${characterData.backstory || 'Chưa có'}
 Đặc điểm: ${characterData.personalityTraits?.join(', ') || 'Chưa có'}
 
-Hãy đề xuất chỉ số từ 1-20 cho 6 thuộc tính cơ bản (Strength, Agility, Intelligence, Constitution, Wisdom, Charisma) và một số kỹ năng thành thạo phù hợp với THẾ GIỚI và nhân vật.
+Hãy đề xuất chỉ số từ 1-20 cho 6 thuộc tính cơ bản (Strength, Agility, Intelligence, Constitution, Wisdom, Charisma) và 3 kỹ năng đặc biệt phù hợp với THẾ GIỚI và nhân vật.
+
+YÊU CẦU KỸ NĂNG:
+1. **SKILL 1 - DAMAGE**: Kỹ năng gây sát thương trong combat
+   - Effect format: "damage_buff:+1d6:3turns" hoặc "damage_buff:+2d4:2turns"
+   - Cooldown: 2-4 lượt
+   - Icon: emoji phù hợp (⚔️, 🔥, ⚡, etc.)
+
+2. **SKILL 2 - HEALING**: Kỹ năng hồi phục/buff trong combat
+   - Effect format: "heal:2d4:+2:instant" hoặc "stat_buff:ac:+2:3turns"
+   - Cooldown: 3-5 lượt
+   - Icon: emoji phù hợp (💚, ✨, 🛡️, etc.)
+
+3. **SKILL 3 - SOCIAL**: Kỹ năng giao tiếp/thuyết phục NPC
+   - Effect: "social_buff:persuasion:+3:1turns" hoặc "social_buff:charm:+2:2turns"
+   - Cooldown: 5-8 lượt
+   - Icon: emoji phù hợp (💬, 🎭, 🧠, etc.)
 
 Trả về JSON theo format:
 {
@@ -881,8 +897,40 @@ Trả về JSON theo format:
   "customStats": [
     {"name": "Tên chỉ số", "value": 10-20}
   ],
-  "proficiencies": [
-    {"name": "Tên kỹ năng", "level": 1, "description": "Mô tả kỹ năng"}
+  "skills": [
+    {
+      "id": "skill_damage_1",
+      "name": "Tên skill damage",
+      "description": "Mô tả ngắn gọn về cách sử dụng và hiệu quả",
+      "level": 1,
+      "skillType": "damage",
+      "effect": "damage_buff:+1d6:3turns",
+      "cooldown": 3,
+      "currentCooldown": 0,
+      "icon": "⚔️"
+    },
+    {
+      "id": "skill_healing_1", 
+      "name": "Tên skill healing",
+      "description": "Mô tả ngắn gọn về cách sử dụng và hiệu quả",
+      "level": 1,
+      "skillType": "healing",
+      "effect": "heal:2d4:+2:instant",
+      "cooldown": 4,
+      "currentCooldown": 0,
+      "icon": "💚"
+    },
+    {
+      "id": "skill_social_1",
+      "name": "Tên skill social", 
+      "description": "Mô tả ngắn gọn về cách sử dụng và hiệu quả",
+      "level": 1,
+      "skillType": "social",
+      "effect": "social_buff:persuasion:+3:1turns",
+      "cooldown": 6,
+      "currentCooldown": 0,
+      "icon": "💬"
+    }
   ]
 }
 
@@ -902,7 +950,41 @@ Chỉ trả về JSON, không có text khác.`;
           charisma: 12
         },
         customStats: [],
-        proficiencies: []
+        skills: [
+          { 
+            id: 'skill_damage_1',
+            name: 'Tấn Công Mạnh', 
+            level: 1, 
+            skillType: 'damage',
+            effect: 'damage_buff:+1d6:3turns',
+            cooldown: 3,
+            currentCooldown: 0,
+            icon: '⚔️',
+            description: 'Tăng sát thương tấn công trong 3 lượt' 
+          },
+          { 
+            id: 'skill_healing_1',
+            name: 'Hồi Sinh', 
+            level: 1, 
+            skillType: 'healing',
+            effect: 'heal:2d4:+2:instant',
+            cooldown: 4,
+            currentCooldown: 0,
+            icon: '💚',
+            description: 'Hồi phục máu ngay lập tức' 
+          },
+          { 
+            id: 'skill_social_1',
+            name: 'Thuyết Phục', 
+            level: 1, 
+            skillType: 'social',
+            effect: 'social_buff:persuasion:+3:1turns',
+            cooldown: 6,
+            currentCooldown: 0,
+            icon: '💬',
+            description: 'Tăng khả năng thuyết phục NPC' 
+          }
+        ]
       };
 
       return this.parseJsonResponse(responseText, fallbackData);
@@ -928,7 +1010,7 @@ THÔNG TIN THẾ GIỚI (để tham khảo khi tạo skills):
 - Xung đột chính: ${worldContext.dangerAndConflict?.join(', ') || 'Chưa có'}
 ` : '';
 
-    const prompt = `Tạo 3 kỹ năng mới cho nhân vật dựa trên thông tin:
+    const prompt = `Tạo 3 kỹ năng đặc biệt cho nhân vật dựa trên thông tin:
 
 ${worldInfo}
 
@@ -940,21 +1022,86 @@ Tính cách: ${characterData.personalitySummary || 'N/A'}
 Tiểu sử: ${characterData.backstory || 'N/A'}
 Đặc điểm: ${characterData.personalityTraits?.join(', ') || 'N/A'}
 
-JSON:
+YÊU CẦU TẠO KỸ NĂNG (RANDOM):
+Tạo 3 kỹ năng ngẫu nhiên từ các loại sau (KHÔNG bắt buộc phải có đủ cả 3 loại):
+
+**DAMAGE SKILLS**: Kỹ năng gây sát thương trong combat
+- BẮT BUỘC có ít nhất 2 effects trong array
+- Ví dụ: ["instant_damage:2d6", "stat_buff:strength:+1:self:2turns"]
+- Cooldown: 2-4 lượt (random quanh 3)
+- Icon: emoji phù hợp (⚔️, 🔥, ⚡, etc.)
+- requiresTarget: true
+
+**HEALING SKILLS**: Kỹ năng hồi phục/buff trong combat
+- BẮT BUỘC có ít nhất 2 effects trong array
+- Ví dụ: ["instant_heal:2d4:+2", "stat_buff:constitution:+2:self:3turns"] hoặc ["defend", "stat_buff:ac:+1:self:2turns"]
+- Cooldown: 2-4 lượt (random quanh 3)
+- Icon: emoji phù hợp (💚, ✨, 🛡️, etc.)
+- requiresTarget: false
+
+**SOCIAL SKILLS**: Kỹ năng giao tiếp/thuyết phục NPC
+- BẮT BUỘC có ít nhất 2 effects trong array
+- Ví dụ: ["stat_buff:charisma:+2:self:3turns", "stat_buff:wisdom:+1:self:3turns"]
+- Cooldown: 0 (không có cooldown)
+- Icon: emoji phù hợp (💬, 🎭, 🧠, etc.)
+- requiresTarget: false
+
+**QUAN TRỌNG**: Tạo 3 skills ngẫu nhiên, có thể có 2 damage + 1 healing, hoặc 1 damage + 2 social, hoặc bất kỳ combination nào. KHÔNG bắt buộc phải có đủ cả 3 loại.
+
+JSON FORMAT:
 {
   "skills": [
-    {"name": "", "level": 1, "description": ""},
-    {"name": "", "level": 1, "description": ""},
-    {"name": "", "level": 1, "description": ""}
+    {
+      "id": "skill_damage_random_1",
+      "name": "Tên skill damage",
+      "description": "Mô tả ngắn gọn về cách sử dụng và hiệu quả",
+      "level": 1,
+      "skillType": "damage",
+      "effects": ["instant_damage:2d6", "stat_buff:strength:+1:self:2turns"],
+      "cooldown": 3,
+      "currentCooldown": 0,
+      "icon": "⚔️",
+      "requiresTarget": true
+    },
+    {
+      "id": "skill_healing_random_1", 
+      "name": "Tên skill healing",
+      "description": "Mô tả ngắn gọn về cách sử dụng và hiệu quả",
+      "level": 1,
+      "skillType": "healing",
+      "effects": ["instant_heal:2d4:+2", "stat_buff:constitution:+2:self:3turns"],
+      "cooldown": 3,
+      "currentCooldown": 0,
+      "icon": "💚",
+      "requiresTarget": false
+    },
+    {
+      "id": "skill_social_random_1",
+      "name": "Tên skill social", 
+      "description": "Mô tả ngắn gọn về cách sử dụng và hiệu quả",
+      "level": 1,
+      "skillType": "social",
+      "effects": ["stat_buff:charisma:+2:self:3turns", "stat_buff:wisdom:+1:self:3turns"],
+      "cooldown": 0,
+      "currentCooldown": 0,
+      "icon": "💬",
+      "requiresTarget": false
+    }
   ]
 }
 
-Rules:
-- Chính xác 3 skills
+RULES QUAN TRỌNG:
+- Chính xác 3 skills (có thể random combination của damage, healing, social)
 - Tất cả skills đều level 1
-- Skills phù hợp với thế giới và nhân vật
-- Description: mô tả ngắn gọn 1-2 câu về cách sử dụng và hiệu quả
-- Chỉ xuất JSON.`;
+- MỖI SKILL PHẢI có ít nhất 2 effects trong array
+- Effects phải đúng format chuẩn (không được sai)
+- Cooldown phù hợp với loại skill (damage: 2-4, healing: 2-4, social: 0)
+- Social skills LUÔN có cooldown = 0 (không có cooldown)
+- Name và description phù hợp với thế giới và nhân vật
+- Icon phải là emoji phù hợp với loại skill
+- requiresTarget: true cho damage skills, false cho healing/social
+- KHÔNG bắt buộc phải có đủ cả 3 loại skill
+- Chỉ xuất JSON thuần túy, không thêm text khác.`;
 
     try {
       const responseText = await this.generateContent(prompt, undefined);
@@ -962,9 +1109,42 @@ Rules:
       // Parse JSON với fallback
       const fallbackData = {
         skills: [
-          { name: 'Kỹ năng cơ bản', level: 1, description: 'Kỹ năng cơ bản có thể sử dụng trong nhiều tình huống' },
-          { name: 'Kỹ năng trung bình', level: 1, description: 'Kỹ năng trung bình với hiệu quả tốt hơn' },
-          { name: 'Kỹ năng nâng cao', level: 1, description: 'Kỹ năng nâng cao với sức mạnh đáng kể' }
+          { 
+            id: `skill_damage_${Date.now()}_1`,
+            name: 'Tấn Công Mạnh', 
+            level: 1, 
+            skillType: 'damage',
+            effects: ['instant_damage:2d6', 'stat_buff:strength:+1:self:2turns'],
+            cooldown: 3,
+            currentCooldown: 0,
+            icon: '⚔️',
+            description: 'Tấn công mạnh và tăng sức mạnh',
+            requiresTarget: true
+          },
+          { 
+            id: `skill_healing_${Date.now()}_2`,
+            name: 'Hồi Sinh', 
+            level: 1, 
+            skillType: 'healing',
+            effects: ['instant_heal:2d4:+2', 'stat_buff:constitution:+2:self:3turns'],
+            cooldown: 3,
+            currentCooldown: 0,
+            icon: '💚',
+            description: 'Hồi phục máu và tăng thể chất',
+            requiresTarget: false
+          },
+          { 
+            id: `skill_social_${Date.now()}_3`,
+            name: 'Thuyết Phục', 
+            level: 1, 
+            skillType: 'social',
+            effects: ['stat_buff:charisma:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'],
+            cooldown: 0,
+            currentCooldown: 0,
+            icon: '💬',
+            description: 'Tăng khả năng giao tiếp và thuyết phục',
+            requiresTarget: false
+          }
         ]
       };
 

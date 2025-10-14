@@ -1,3 +1,17 @@
+// Character Skill System
+export interface CharacterSkill {
+  id: string;
+  name: string;
+  description: string;
+  level: number;
+  skillType: 'damage' | 'healing' | 'social';
+  effects: string[]; // Luôn có ít nhất 2 effects
+  cooldown: number; // Số lượt cooldown
+  currentCooldown: number; // Cooldown hiện tại
+  icon: string; // Emoji icon
+  requiresTarget?: boolean; // For damage skills that need target selection
+}
+
 export interface Character {
   id?: string;
   name: string;
@@ -37,7 +51,8 @@ export interface Character {
     max: number;
   };
   customStats?: { name: string; value: number }[];
-  proficiencies?: { name: string; level: number; description?: string }[];
+  proficiencies?: { name: string; level: number; description?: string }[]; // Legacy - sẽ được migrate sang skills
+  skills?: CharacterSkill[]; // New skill system
   hpMax?: number;
   energyMax?: number;
   // Inventory and Equipment system
@@ -88,6 +103,8 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   turn?: number;
+  imageUrl?: string;
+  imagePrompt?: string;
 }
 
 export interface GameState {
@@ -961,4 +978,13 @@ export interface SkillTreeService {
   resetSkillTree(character: Character, cost: number): boolean;
   getActiveBonuses(character: Character): SkillBonuses;
   calculateSkillPointsFromLevels(character: Character): { combat: number; social: number };
+}
+
+// ComfyUI Integration Types
+export type ComfyUIResolution = '640x360' | '854x480' | '1280x720' | '1920x1080';
+
+export interface ComfyUISettings {
+  enabled: boolean;
+  resolution: ComfyUIResolution;
+  serverUrl: string;
 }

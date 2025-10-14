@@ -175,8 +175,10 @@ export interface CombatTurnState {
   canEndTurn: boolean;
   mainActionUsed: boolean;
   extraActionUsed: boolean;
+  skillActionUsed: boolean;
   mainActionType?: 'attack' | 'defend' | 'ability';
   extraActionType?: 'consumable';
+  skillActionType?: string;
   actionTarget?: string;
 }
 

@@ -5,6 +5,36 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.0-beta] - 2025-01-12
+
+### 🎯 Character Skill System Overhaul
+- **New Skill System**: Replaced 3 proficiencies with 3 specialized skills (damage, healing, social)
+- **Multi-Effect Skills**: Skills now support multiple effects in a single use (e.g., damage + buff)
+- **Skill Lock Mechanism**: Players can lock skills during reroll to keep desired skills
+- **Random Skill Generation**: AI generates random skill combinations instead of fixed types
+- **Cooldown System**: Damage/healing skills have 2-4 turn cooldown, social skills have no cooldown
+
+### ⚔️ Combat Enhancements
+- **Skill Action Slot**: Added third action slot for skill usage in combat
+- **Skill Damage Effects**: Skills now have proper floating text and dice breakdown display
+- **Target Selection**: Damage skills require target selection, healing/social skills are self-targeted
+- **Visual Feedback**: Skill damage shows floating text with detailed dice roll breakdown
+- **Combat Integration**: Skills integrate seamlessly with existing combat system
+
+### 🎨 UI/UX Improvements
+- **Read-Only Skill UI**: Character creation skills are now read-only with lock/unlock functionality
+- **Compact Skill Display**: Optimized skill cards for better space utilization
+- **Skill Effect Translation**: Human-readable skill effect descriptions instead of raw JSON
+- **Lock/Unlock Buttons**: Visual indicators for locked skills with tooltips
+- **Improved Reroll**: Better reroll mechanism with skill preservation options
+
+### 🔧 Technical Improvements
+- **Skill Effect Service**: New service for handling complex skill effects and multi-targeting
+- **Migration System**: Automatic migration from old proficiencies to new skill system
+- **Type Safety**: Enhanced TypeScript interfaces for skill system
+- **Performance**: Optimized skill effect processing and combat integration
+- **Error Handling**: Improved error handling for skill generation and usage
+
 ## [5.1.0-beta] - 2025-01-12
 
 ### 🌟 Major Features
