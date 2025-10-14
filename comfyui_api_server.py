@@ -88,13 +88,20 @@ class ComfyUIAPI:
 comfyui = ComfyUIAPI()
 
 def create_text_to_image_workflow(
-    prompt: str, 
-    negative_prompt: str, 
-    width: int, 
-    height: int, 
-    steps: int = 20, 
-    cfg_scale: float = 7.0, 
-    seed: int = -1
+    prompt: str,
+    negative_prompt: str,
+    width: int,
+    height: int,
+    steps: int = 20,
+    cfg_scale: float = 7.0,
+    sampler: str = "euler",
+    seed: int = -1,
+    checkpoint: str = "novaAnimeXL_ilV120.safetensors",
+    loras: List[Dict[str, Any]] = None,
+    style: str = "digital_art",
+    custom_style: str = "",
+    quality_level: str = "high",
+    enable_character_consistency: bool = True
 ) -> Dict[str, Any]:
     """Create a ComfyUI workflow for text-to-image generation"""
     
@@ -104,24 +111,74 @@ def create_text_to_image_workflow(
     workflow = {
         "1": {
             "inputs": {
-                "ckpt_name": "novaAnimeXL_ilV120.safetensors"
+                "ckpt_name": checkpoint
             },
             "class_type": "CheckpointLoaderSimple"
+        }
+    }
+    
+    # Add LoRA node if LoRA is specified and not "None"
+    # Load LoRAs if specified
+    if loras and len(loras) > 0:
+        active_loras = [lora for lora in loras if lora.get('enabled', False) and lora.get('name', '') != 'None']
+        
+        if active_loras:
+            # Create LoRA loader nodes
+            current_model = ["1", 0]
+            current_clip = ["1", 1]
+            node_counter = 8
+            
+            for lora in active_loras:
+                lora_name = lora.get('name', '')
+                lora_strength = lora.get('strength', 1.0)
+                
+                if lora_name and lora_name != 'None':
+                    workflow[str(node_counter)] = {
+                        "inputs": {
+                            "lora_name": lora_name,
+                            "strength_model": lora_strength,
+                            "strength_clip": lora_strength,
+                            "model": current_model,
+                            "clip": current_clip
+                        },
+                        "class_type": "LoraLoader"
+                    }
+                    
+                    # Update outputs for next LoRA
+                    current_model = [str(node_counter), 0]
+                    current_clip = [str(node_counter), 1]
+                    node_counter += 1
+            
+            text_clip = current_clip
+            model_output = current_model
+        else:
+            # Use checkpoint outputs directly
+            text_clip = ["1", 1]
+            model_output = ["1", 0]
+    else:
+        # Use checkpoint outputs directly
+        text_clip = ["1", 1]
+        model_output = ["1", 0]
+    
+    # Add text encoding nodes
+    workflow["2"] = {
+        "inputs": {
+            "text": prompt,
+            "clip": text_clip
         },
-        "2": {
-            "inputs": {
-                "text": prompt,
-                "clip": ["1", 1]
-            },
-            "class_type": "CLIPTextEncode"
+        "class_type": "CLIPTextEncode"
+    }
+    
+    workflow["3"] = {
+        "inputs": {
+            "text": negative_prompt,
+            "clip": text_clip
         },
-        "3": {
-            "inputs": {
-                "text": negative_prompt,
-                "clip": ["1", 1]
-            },
-            "class_type": "CLIPTextEncode"
-        },
+        "class_type": "CLIPTextEncode"
+    }
+    
+    # Add remaining nodes
+    workflow.update({
         "4": {
             "inputs": {
                 "width": width,
@@ -135,10 +192,10 @@ def create_text_to_image_workflow(
                 "seed": seed,
                 "steps": steps,
                 "cfg": cfg_scale,
-                "sampler_name": "euler",
-                "scheduler": "normal",
+                "sampler_name": sampler,
+                "scheduler": "karras",
                 "denoise": 1.0,
-                "model": ["1", 0],
+                "model": model_output,
                 "positive": ["2", 0],
                 "negative": ["3", 0],
                 "latent_image": ["4", 0]
@@ -154,12 +211,12 @@ def create_text_to_image_workflow(
         },
         "7": {
             "inputs": {
-                "filename_prefix": "ComfyUI_Game",
+                "filename_prefix": "game",
                 "images": ["6", 0]
             },
             "class_type": "SaveImage"
         }
-    }
+    })
     
     return workflow
 
@@ -217,9 +274,16 @@ def generate_image():
         negative_prompt = data.get('negative_prompt', 'blurry, low quality, distorted, deformed, ugly, bad anatomy, text, watermark, signature')
         width = data.get('width', 1280)
         height = data.get('height', 720)
-        steps = data.get('steps', 20)
-        cfg_scale = data.get('cfg_scale', 7.0)
+        steps = data.get('steps', 30)
+        cfg_scale = data.get('cfg_scale', 8.0)
+        sampler = data.get('sampler', 'dpmpp_2m_sde')
         seed = data.get('seed', -1)
+        checkpoint = data.get('checkpoint', 'novaAnimeXL_ilV120.safetensors')
+        loras = data.get('loras', [])
+        style = data.get('style', 'digital_art')
+        custom_style = data.get('custom_style', '')
+        quality_level = data.get('quality_level', 'high')
+        enable_character_consistency = data.get('enable_character_consistency', True)
         
         if not prompt:
             return jsonify({"success": False, "error": "Prompt is required"}), 400
@@ -228,10 +292,49 @@ def generate_image():
         if not comfyui.is_connected():
             return jsonify({"success": False, "error": "ComfyUI server not available"}), 503
         
+        # Validate and auto-correct checkpoint
+        try:
+            checkpoints_response = requests.get(f"{COMFYUI_URL}/object_info/CheckpointLoaderSimple")
+            if checkpoints_response.status_code == 200:
+                checkpoints_data = checkpoints_response.json()
+                available_checkpoints = checkpoints_data.get('CheckpointLoaderSimple', {}).get('input', {}).get('required', {}).get('ckpt_name', [[]])[0]
+                
+                if checkpoint not in available_checkpoints:
+                    if available_checkpoints:
+                        checkpoint = available_checkpoints[0]
+                        print(f"Warning: Checkpoint not available, using: {checkpoint}")
+                    else:
+                        return jsonify({"success": False, "error": "No checkpoints available"}), 400
+        except Exception as e:
+            print(f"Warning: Could not validate checkpoint: {e}")
+        
+        # Validate and auto-correct LoRA
+        try:
+            loras_response = requests.get(f"{COMFYUI_URL}/object_info/LoraLoader")
+            if loras_response.status_code == 200:
+                loras_data = loras_response.json()
+                available_loras = loras_data.get('LoraLoader', {}).get('input', {}).get('required', {}).get('lora_name', [[]])[0]
+                available_loras = ['None'] + available_loras
+                
+                # Filter out unavailable LoRAs
+                valid_loras = []
+                for lora in loras:
+                    if lora.get('name', '') in available_loras:
+                        valid_loras.append(lora)
+                    else:
+                        print(f"Warning: LoRA '{lora.get('name', '')}' not available, skipping")
+                
+                loras = valid_loras
+        except Exception as e:
+            print(f"Warning: Could not validate LoRAs: {e}")
+            loras = []
+        
         # Create workflow
         workflow = create_text_to_image_workflow(
-            prompt, negative_prompt, width, height, steps, cfg_scale, seed
+            prompt, negative_prompt, width, height, steps, cfg_scale, sampler, seed, checkpoint, loras,
+            style, custom_style, quality_level, enable_character_consistency
         )
+        
         
         # Submit workflow
         prompt_id = comfyui.submit_workflow(workflow)
@@ -309,6 +412,44 @@ def get_queue():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/checkpoints', methods=['GET'])
+def get_checkpoints():
+    """Get available checkpoints from ComfyUI"""
+    try:
+        if not comfyui.is_connected():
+            return jsonify({"error": "ComfyUI not connected"}), 503
+        
+        # Get available checkpoints from ComfyUI
+        response = requests.get(f"{COMFYUI_URL}/object_info/CheckpointLoaderSimple")
+        if response.status_code == 200:
+            data = response.json()
+            checkpoints = data.get('CheckpointLoaderSimple', {}).get('input', {}).get('required', {}).get('ckpt_name', [[]])[0]
+            return jsonify({"checkpoints": checkpoints})
+        else:
+            return jsonify({"error": "Failed to get checkpoints from ComfyUI"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/loras', methods=['GET'])
+def get_loras():
+    """Get available LoRA models from ComfyUI"""
+    try:
+        if not comfyui.is_connected():
+            return jsonify({"error": "ComfyUI not connected"}), 503
+        
+        # Get available LoRAs from ComfyUI
+        response = requests.get(f"{COMFYUI_URL}/object_info/LoraLoader")
+        if response.status_code == 200:
+            data = response.json()
+            loras = data.get('LoraLoader', {}).get('input', {}).get('required', {}).get('lora_name', [[]])[0]
+            # Add "None" option at the beginning
+            loras = ['None'] + loras
+            return jsonify({"loras": loras})
+        else:
+            return jsonify({"error": "Failed to get LoRAs from ComfyUI"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     print("Starting ComfyUI API Server...")
     print(f"ComfyUI URL: {COMFYUI_URL}")
@@ -329,6 +470,8 @@ if __name__ == '__main__':
     print("   POST /generate   - Generate image")
     print("   GET  /status     - Server status")
     print("   GET  /queue      - Queue status")
+    print("   GET  /checkpoints - Get available checkpoints")
+    print("   GET  /loras      - Get available LoRA models")
     print()
     
     app.run(host='0.0.0.0', port=5001, debug=True)

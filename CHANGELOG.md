@@ -5,6 +5,34 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.5.0-beta] - 2025-01-12
+
+### 🎨 Multiple LoRA Support System
+- **Multiple LoRA Management**: Added support for using up to 3 LoRAs simultaneously
+- **LoRA Categories**: Organized LoRAs by type (quality, anatomy, style, detail, lighting, custom)
+- **Smart Recommendations**: AI automatically suggests appropriate LoRAs based on prompt content
+- **Individual Strength Control**: Each LoRA has its own strength slider (0.0-2.0)
+- **Enable/Disable Toggle**: Users can enable/disable individual LoRAs without removing them
+- **Add/Remove LoRAs**: Easy management with modal interface for adding new LoRAs
+
+### 🎚️ Enhanced UI Controls
+- **Purple Border Sliders**: All sliders now have visible purple borders for better visibility
+- **Improved Slider Styling**: Enhanced track and thumb styling with better contrast
+- **Category Color Tags**: LoRAs display with color-coded category tags
+- **Real-time Strength Display**: Live strength value display next to sliders
+
+### 🔧 ComfyUI Integration Improvements
+- **Sequential LoRA Loading**: Multiple LoRAs are loaded sequentially in ComfyUI workflow
+- **Dynamic Node Management**: Automatic node ID generation to prevent conflicts
+- **LoRA Validation**: Server-side validation of available LoRAs before generation
+- **Enhanced Error Handling**: Better error messages for LoRA-related issues
+
+### 📱 Settings UI Enhancements
+- **LoRA Management Panel**: Dedicated section for managing multiple LoRAs
+- **Max LoRA Counter**: Shows current LoRA count vs maximum allowed
+- **Category Selection**: Dropdown for selecting LoRA category when adding
+- **Strength Presets**: Recommended strength values based on LoRA category
+
 ## [5.2.0-beta] - 2025-01-12
 
 ### 🎯 Character Skill System Overhaul

@@ -29,6 +29,7 @@ import { DiscardItemModal } from '../components/DiscardItemModal';
 import { comfyUIService } from '../services/comfyUIService';
 import { imageStorageService } from '../services/imageStorageService';
 import { promptExtractionService } from '../services/promptExtractionService';
+import { ImageGenerationButton } from '../components/ImageGenerationButton';
 
 // ImageDisplay component for handling base64 images
 const ImageDisplay = ({ filepath, prompt }: { filepath: string; prompt?: string }) => {
@@ -158,6 +159,32 @@ export function GamePage() {
   const [chatHistory, setChatHistory] = useState<ChatMessageType[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingOpeningImage, setIsGeneratingOpeningImage] = useState(false);
+
+  // Handler for manual image generation
+  const handleImageGenerated = useCallback((messageId: string, imageUrl: string, imagePrompt: string) => {
+    setChatHistory(prev => prev.map(msg => 
+      msg.timestamp.toString() === messageId 
+        ? { ...msg, imageUrl, imagePrompt, isGeneratingImage: false, hasImageGenerationFailed: false }
+        : msg
+    ));
+  }, []);
+
+  const handleImageGenerationStart = useCallback((messageId: string) => {
+    setChatHistory(prev => prev.map(msg => 
+      msg.timestamp.toString() === messageId 
+        ? { ...msg, isGeneratingImage: true, hasImageGenerationFailed: false }
+        : msg
+    ));
+  }, []);
+
+  const handleImageGenerationError = useCallback((messageId: string) => {
+    setChatHistory(prev => prev.map(msg => 
+      msg.timestamp.toString() === messageId 
+        ? { ...msg, isGeneratingImage: false, hasImageGenerationFailed: true }
+        : msg
+    ));
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [turnCounter, setTurnCounter] = useState(0);
   const [showSaveManager, setShowSaveManager] = useState(false);
@@ -572,14 +599,8 @@ export function GamePage() {
         }));
         setChatHistory(chatWithTimestamps);
         
-        // Generate image for opening message if ComfyUI enabled
-        const settings = comfyUIService.getSettings();
-        if (settings.enabled && chatWithTimestamps.length > 0) {
-          const openingMessage = chatWithTimestamps[0];
-          if (openingMessage.role === 'ai' && !openingMessage.imageUrl) {
-            generateImageForOpening(openingMessage);
-          }
-        }
+        // Note: Opening image generation is now handled only in initializeGame
+        // to ensure it runs only once during scenario creation
       } catch (error) {
         console.error('Lỗi load chat history:', error);
       }
@@ -1333,6 +1354,55 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         timestamp: new Date()
       };
 
+      // Generate image for opening message if ComfyUI is enabled
+      // This runs synchronously and game waits for completion
+      const comfyUISettings = comfyUIService.loadSettings();
+      if (comfyUISettings.enabled && !openingMessage.imageUrl) {
+        try {
+          console.log('🎨 Generating opening image...');
+          setIsGeneratingOpeningImage(true);
+          openingMessage.isGeneratingImage = true;
+          
+          // Extract visual prompt from opening narrative
+          const { prompt, negativePrompt } = await promptExtractionService.extractVisualPrompt(
+            openingNarrative,
+            { 
+              location: { name: worldDataParsed.name, description: worldDataParsed.description },
+              npcs: [],
+              items: [],
+              atmosphere: scenarioSkeleton.tone?.join(', ') || 'mysterious'
+            },
+            comfyUISettings.style,
+            comfyUISettings.customStyle,
+            comfyUISettings.qualityLevel,
+            comfyUISettings.enableCharacterConsistency
+          );
+          
+          // Generate image - game waits for this to complete
+          const imageBase64 = await comfyUIService.generateImage(prompt, negativePrompt, comfyUISettings.resolution);
+          
+          // Save image to storage
+          const filename = `opening_${Date.now()}.png`;
+          const filepath = await imageStorageService.saveImage(imageBase64, filename);
+          
+          // Attach image to opening message
+          openingMessage.imageUrl = filepath;
+          openingMessage.imagePrompt = prompt;
+          openingMessage.isGeneratingImage = false;
+          openingMessage.hasImageGenerationFailed = false;
+          
+          console.log('✅ Opening image generated successfully');
+        } catch (error) {
+          console.error('❌ Failed to generate opening image:', error);
+          // Mark as failed
+          openingMessage.isGeneratingImage = false;
+          openingMessage.hasImageGenerationFailed = true;
+          // Continue without image if generation fails
+        } finally {
+          setIsGeneratingOpeningImage(false);
+        }
+      }
+
       // Load turn counter from localStorage
       const savedTurnCounter = parseInt(localStorage.getItem('game_turn_counter') || '0', 10);
       
@@ -1515,10 +1585,10 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     let aiResponseSuccess = false;
 
     try {
-      // Load data - prioritize currentWorldData for difficulty field
-      let worldData = localStorage.getItem('currentWorldData');
+      // Load data - prioritize world_gen_result (complete data) over currentWorldData
+      let worldData = localStorage.getItem('world_gen_result');
       if (!worldData) {
-        worldData = localStorage.getItem('world_gen_result');
+        worldData = localStorage.getItem('currentWorldData');
       }
       const characterData = localStorage.getItem('currentCharacter');
       const scenarioData = localStorage.getItem('rp_scenario');
@@ -1848,9 +1918,13 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
         // Save updated time to localStorage
         if (newTime) {
-          const worldDataParsed = JSON.parse(worldData);
-          worldDataParsed.currentTime = newTime;
-          localStorage.setItem('world_gen_result', JSON.stringify(worldDataParsed));
+          // Load complete world data first to preserve all fields including locations
+          const completeWorldData = localStorage.getItem('world_gen_result');
+          if (completeWorldData) {
+            const worldDataParsed = JSON.parse(completeWorldData);
+            worldDataParsed.currentTime = newTime;
+            localStorage.setItem('world_gen_result', JSON.stringify(worldDataParsed));
+          }
         }
 
         // Save sceneState to localStorage
@@ -2605,10 +2679,21 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       const settings = comfyUIService.getSettings();
       if (!settings.enabled) return;
       
+      // Check if this message already has an image or is already generating
+      if (aiMessage.imageUrl || aiMessage.isGeneratingImage || aiMessage.hasImageGenerationFailed) {
+        console.log('Image already exists or generation in progress/failed, skipping');
+        return;
+      }
+      
+      // Mark as generating
+      aiMessage.isGeneratingImage = true;
+      
       // Check if server is available
       const isHealthy = await comfyUIService.checkHealth();
       if (!isHealthy) {
         console.warn('ComfyUI server not available, skipping image generation');
+        aiMessage.isGeneratingImage = false;
+        aiMessage.hasImageGenerationFailed = true;
         return;
       }
       
@@ -2619,7 +2704,11 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           location: sceneState.location, 
           npcs: sceneState.npcs, 
           items: sceneState.availableItems 
-        }
+        },
+        settings.style,
+        settings.customStyle,
+        settings.qualityLevel,
+        settings.enableCharacterConsistency
       );
       
       // Generate image
@@ -2632,6 +2721,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       // Attach image to AI message
       aiMessage.imageUrl = filepath;
       aiMessage.imagePrompt = prompt;
+      aiMessage.isGeneratingImage = false;
+      aiMessage.hasImageGenerationFailed = false;
       
       // Update chat history with image
       setChatHistory(prev => {
@@ -2647,7 +2738,13 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       const currentChat = JSON.parse(localStorage.getItem('rp_chat') || '[]');
       const updatedChat = currentChat.map((msg: any, index: number) => {
         if (index === currentChat.length - 1 && msg.role === 'ai') {
-          return { ...msg, imageUrl: filepath, imagePrompt: prompt };
+          return { 
+            ...msg, 
+            imageUrl: filepath, 
+            imagePrompt: prompt,
+            isGeneratingImage: false,
+            hasImageGenerationFailed: false
+          };
         }
         return msg;
       });
@@ -2656,59 +2753,24 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       console.log('✅ Image generated and attached to AI response');
     } catch (error) {
       console.error('Error generating image for response:', error);
-      // Don't throw error - image generation is optional
-    }
-  };
-
-  // Generate image for opening message
-  const generateImageForOpening = async (openingMessage: ChatMessageType): Promise<void> => {
-    try {
-      const settings = comfyUIService.getSettings();
-      if (!settings.enabled) return;
+      // Mark as failed
+      aiMessage.isGeneratingImage = false;
+      aiMessage.hasImageGenerationFailed = true;
       
-      // Check if server is available
-      const isHealthy = await comfyUIService.checkHealth();
-      if (!isHealthy) {
-        console.warn('ComfyUI server not available, skipping opening image generation');
-        return;
-      }
-      
-      // Extract prompt from opening message
-      const { prompt, negativePrompt } = await comfyUIService.extractPromptFromOpening(openingMessage.content);
-      
-      // Generate image
-      const imageBase64 = await comfyUIService.generateImage(prompt, negativePrompt, settings.resolution);
-      
-      // Save image to local storage
-      const filename = `opening_${Date.now()}.png`;
-      const filepath = await imageStorageService.saveImage(imageBase64, filename);
-      
-      // Attach image to opening message
-      openingMessage.imageUrl = filepath;
-      openingMessage.imagePrompt = prompt;
-      
-      // Update chat history with image
+      // Update chat history with failed state
       setChatHistory(prev => {
         const updated = [...prev];
-        if (updated[0] && updated[0].role === 'ai') {
-          updated[0] = openingMessage;
+        const lastIndex = updated.length - 1;
+        if (updated[lastIndex].role === 'ai') {
+          updated[lastIndex] = aiMessage;
         }
         return updated;
       });
       
-      // Save to localStorage
-      const currentChat = JSON.parse(localStorage.getItem('rp_chat') || '[]');
-      if (currentChat[0] && currentChat[0].role === 'ai') {
-        currentChat[0] = { ...currentChat[0], imageUrl: filepath, imagePrompt: prompt };
-        localStorage.setItem('rp_chat', JSON.stringify(currentChat));
-      }
-      
-      console.log('✅ Image generated and attached to opening message');
-    } catch (error) {
-      console.error('Error generating image for opening message:', error);
       // Don't throw error - image generation is optional
     }
   };
+
 
   // Xử lý load game từ SaveManager
   const handleLoadGame = async (saveGame: SaveGame) => {
@@ -3264,7 +3326,9 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Đang tạo kịch bản...</span>
+                <span>
+                  {isGeneratingOpeningImage ? 'Đang tạo ảnh mở đầu...' : 'Đang tạo kịch bản...'}
+                </span>
               </>
             ) : (
               <>
@@ -3550,6 +3614,24 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                       filepath={message.imageUrl} 
                       prompt={message.imagePrompt} 
                     />
+                  )}
+
+                  {/* Manual image generation button for AI messages */}
+                  {message.role === 'ai' && (
+                    <div className="mt-3 flex justify-end">
+                      <ImageGenerationButton
+                        message={message}
+                        onImageGenerated={handleImageGenerated}
+                        onImageGenerationStart={handleImageGenerationStart}
+                        onImageGenerationError={handleImageGenerationError}
+                        sceneState={{
+                          location: gameState.sceneState?.location || null,
+                          npcs: gameState.sceneState?.npcs || [],
+                          items: availableItems || []
+                        }}
+                        className="text-xs"
+                      />
+                    </div>
                   )}
                 </div>
               </div>

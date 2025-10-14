@@ -24,7 +24,8 @@ export interface Character {
   createdAt?: Date;
   // New fields for enhanced character creation
   gender: 'male' | 'female' | 'other';
-  appearance?: string;
+  appearance?: string; // Legacy text description
+  appearanceDetails?: CharacterAppearance; // Detailed appearance for image generation
   personalityTraits?: string[];
   title?: string; // Danh hiệu đã được phân tích và lưu trữ
   coreStats?: {
@@ -79,16 +80,6 @@ export interface CharacterStats {
   experience: number;
 }
 
-export interface CharacterAppearance {
-  gender: 'male' | 'female' | 'other';
-  age: number;
-  height: number;
-  weight: number;
-  hairColor: string;
-  eyeColor: string;
-  skinColor: string;
-  description: string;
-}
 
 export interface GameMessage {
   id: string;
@@ -105,6 +96,8 @@ export interface ChatMessage {
   turn?: number;
   imageUrl?: string;
   imagePrompt?: string;
+  isGeneratingImage?: boolean; // Trạng thái đang tạo ảnh
+  hasImageGenerationFailed?: boolean; // Đánh dấu đã thử tạo ảnh nhưng thất bại
 }
 
 export interface GameState {
@@ -983,8 +976,100 @@ export interface SkillTreeService {
 // ComfyUI Integration Types
 export type ComfyUIResolution = '640x360' | '854x480' | '1280x720' | '1920x1080';
 
+export type ComfyUISampler = 
+  | 'euler'
+  | 'euler_ancestral'
+  | 'heun'
+  | 'dpm_2'
+  | 'dpm_2_ancestral'
+  | 'lms'
+  | 'dpm_fast'
+  | 'dpm_adaptive'
+  | 'dpmpp_2m'
+  | 'dpmpp_2s_ancestral'
+  | 'dpmpp_sde'
+  | 'dpmpp_sde_gpu'
+  | 'dpmpp_2m_sde'
+  | 'dpmpp_2m_sde_gpu'
+  | 'dpmpp_3m_sde'
+  | 'dpmpp_3m_sde_gpu'
+  | 'ddim'
+  | 'lcm'
+  | 'ipndm'
+  | 'deis'
+  | 'res_multistep'
+  | 'res_multistep_ancestral'
+  | 'gradient_estimation'
+  | 'er_sde'
+  | 'seeds_2'
+  | 'seeds_3';
+
+export interface LoRAConfig {
+  name: string; // LoRA filename
+  strength: number; // LoRA strength (0.0 - 2.0)
+  enabled: boolean; // Whether this LoRA is active
+  category: 'quality' | 'anatomy' | 'style' | 'detail' | 'lighting' | 'custom'; // LoRA category
+  description?: string; // Human-readable description
+}
+
 export interface ComfyUISettings {
   enabled: boolean;
   resolution: ComfyUIResolution;
   serverUrl: string;
+  checkpoint: string; // Selected checkpoint model
+  loras: LoRAConfig[]; // Multiple LoRA configurations
+  style: string; // Selected art style
+  customStyle: string; // Custom style prompt
+  qualityLevel: 'standard' | 'high' | 'ultra'; // Quality level
+  enableCharacterConsistency: boolean; // Enable character appearance consistency
+  sampler: ComfyUISampler; // Sampling method
+  steps: number; // Number of sampling steps (1-150)
+  cfgScale: number; // CFG Scale (1.0-30.0)
+  maxLoras: number; // Maximum number of LoRAs to use simultaneously (default: 3)
+}
+
+// Art styles for image generation
+export type ArtStyle = 
+  | 'realistic' 
+  | 'anime' 
+  | 'manga' 
+  | 'cartoon' 
+  | 'oil_painting' 
+  | 'watercolor' 
+  | 'digital_art' 
+  | 'concept_art' 
+  | 'fantasy_art' 
+  | 'sci_fi' 
+  | 'medieval' 
+  | 'steampunk' 
+  | 'cyberpunk' 
+  | 'custom';
+
+// Character appearance for consistency
+export interface CharacterAppearance {
+  gender: 'male' | 'female' | 'other';
+  age: 'child' | 'teen' | 'young_adult' | 'adult' | 'elderly';
+  hair: {
+    color: string;
+    length: string;
+    style: string;
+  };
+  eyes: {
+    color: string;
+    shape: string;
+  };
+  skin: {
+    tone: string;
+    texture: string;
+  };
+  body: {
+    build: string;
+    height: string;
+  };
+  clothing: {
+    style: string;
+    colors: string[];
+    accessories: string[];
+  };
+  distinctive_features: string[]; // Scars, tattoos, etc.
 }
