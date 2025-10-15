@@ -5,6 +5,40 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.5.0-releasebeta] - 2025-01-12
+
+### 📚 Comprehensive Documentation Update
+- **Complete README Overhaul**: Comprehensive rewrite of README.md with detailed feature documentation
+- **Feature Analysis**: Complete codebase analysis covering all 18+ major features and 50+ sub-features
+- **Technical Documentation**: Detailed technology stack and architecture documentation
+- **User Guide**: Complete installation, configuration, and gameplay guide
+- **Troubleshooting**: Comprehensive troubleshooting section for common issues
+- **Roadmap**: Updated development roadmap with completed and planned features
+
+### 🎮 Game Features Documentation
+- **World Builder**: Complete documentation of world creation system with AI integration
+- **Character Creation**: Detailed character creation process with AI analysis
+- **Combat System**: Comprehensive combat system documentation with D&D mechanics
+- **Quest System**: Complete quest system documentation with dynamic generation
+- **NPC Relationships**: Detailed NPC relationship and interaction system
+- **Inventory & Equipment**: Complete inventory and equipment management system
+- **Save System**: Advanced save/load system with cloud sync documentation
+- **Image Generation**: ComfyUI integration for AI-powered image generation
+
+### 🔧 Technical Documentation
+- **Architecture Overview**: Complete system architecture documentation
+- **Service Layer**: Detailed documentation of all services and their integrations
+- **Component Structure**: Complete component hierarchy and functionality
+- **Type System**: Comprehensive TypeScript type definitions documentation
+- **API Integration**: Multi-API key management and auto-switch system
+- **Performance**: Performance optimization and monitoring documentation
+
+### 📱 UI/UX Documentation
+- **Responsive Design**: Mobile and desktop optimization documentation
+- **Design System**: Complete design system with dark theme and glass effects
+- **User Experience**: Intuitive navigation and interaction patterns
+- **Accessibility**: User-friendly error handling and form validation
+
 ## [6.0.0-beta] - 2025-01-12
 
 ### ⚔️ Advanced Action System

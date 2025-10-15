@@ -47,6 +47,7 @@ export class SaveGameService {
     contentFlags?: any,
     playerLocation?: any,
     combatHistory?: any,
+    playerFledRandomCombat?: any,
     merchantShopsData?: any
   ): Promise<SaveResult> {
     try {
@@ -70,6 +71,7 @@ export class SaveGameService {
         contentFlags,
         playerLocation,
         combatHistory,
+        playerFledRandomCombat,
         merchantShopsData
       );
 

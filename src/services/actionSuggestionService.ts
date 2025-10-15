@@ -698,6 +698,7 @@ QUAN TRỌNG VỀ CẢNH 18+:
 
   /**
    * Ước tính thời lượng hành động từ message (hành động thủ công) với cache và tối ưu hóa
+   * @deprecated Sử dụng estimateActionDurationAsync thay thế cho parallel processing
    */
   async estimateActionDuration(message: string, context: ActionContext, _contentFlags: ContentFlags): Promise<number> {
     // Kiểm tra cache trước
@@ -767,6 +768,98 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
         return fallbackDuration;
       }
     );
+  }
+
+  /**
+   * Ước tính thời lượng hành động từ message (hành động thủ công) - Phiên bản parallel processing
+   * Được thiết kế để chạy song song với các task khác sau AI response
+   */
+  async estimateActionDurationAsync(
+    message: string, 
+    context: ActionContext, 
+    contentFlags: ContentFlags
+  ): Promise<{ duration: number; message: string }> {
+    try {
+      console.log(`🔄 [Parallel] Bắt đầu ước tính thời gian cho hành động: "${message}"`);
+      
+      // Kiểm tra cache trước
+      const cacheKey = this.generateCacheKey(message);
+      const cachedDuration = this.getCachedDuration(cacheKey);
+      if (cachedDuration) {
+        console.log(`💾 [Parallel] Cache hit: ${cachedDuration} phút cho hành động "${message}"`);
+        return { duration: cachedDuration, message };
+      }
+
+      // Trước tiên, thử phân loại hành động bằng từ khóa đơn giản
+      const simpleDuration = this.estimateDurationByKeywords(message);
+      if (simpleDuration) {
+        console.log(`🎯 [Parallel] Ước tính thời gian bằng từ khóa: ${simpleDuration} phút cho hành động "${message}"`);
+        this.cacheDuration(cacheKey, simpleDuration);
+        return { duration: simpleDuration, message };
+      }
+
+      // Thử phân tích nâng cao bằng pattern matching
+      const advancedDuration = this.estimateDurationByPatterns(message);
+      if (advancedDuration) {
+        console.log(`🔍 [Parallel] Ước tính thời gian bằng pattern: ${advancedDuration} phút cho hành động "${message}"`);
+        this.cacheDuration(cacheKey, advancedDuration);
+        return { duration: advancedDuration, message };
+      }
+
+      // Nếu không thể phân loại bằng từ khóa, sử dụng AI với prompt tối ưu
+      const geminiService = await this.getGeminiService();
+      
+      // Prompt ngắn gọn và hiệu quả hơn
+      const prompt = `Ước tính thời gian (phút) cho hành động: "${message}"
+
+Context: ${context.sceneState?.location || 'Unknown'} | Level: ${context.characterData?.level || 1}
+
+Trả về số từ 5-60. Chỉ số, không giải thích.`;
+
+      const response = await geminiService.generateContent(prompt, contentFlags);
+      const minutes = parseInt(response.trim());
+      
+      // Nếu AI trả về số hợp lệ, sử dụng nó
+      if (!isNaN(minutes) && minutes >= 5 && minutes <= 60) {
+        console.log(`🤖 [Parallel] AI ước tính thời gian: ${minutes} phút cho hành động "${message}"`);
+        this.cacheDuration(cacheKey, minutes);
+        return { duration: minutes, message };
+      }
+      
+      // Fallback thông minh hơn dựa trên độ dài message
+      const messageLength = message.length;
+      let fallbackDuration: number;
+      
+      if (messageLength <= 20) {
+        fallbackDuration = Math.floor(Math.random() * 11) + 5; // 5-15 phút
+      } else if (messageLength <= 50) {
+        fallbackDuration = Math.floor(Math.random() * 16) + 15; // 15-30 phút
+      } else {
+        fallbackDuration = Math.floor(Math.random() * 31) + 30; // 30-60 phút
+      }
+      
+      console.log(`🎲 [Parallel] Fallback thời gian: ${fallbackDuration} phút cho hành động "${message}"`);
+      this.cacheDuration(cacheKey, fallbackDuration);
+      return { duration: fallbackDuration, message };
+      
+    } catch (error) {
+      console.error(`❌ [Parallel] Lỗi ước tính thời gian cho "${message}":`, error);
+      
+      // Fallback cuối cùng
+      const messageLength = message.length;
+      let fallbackDuration: number;
+      
+      if (messageLength <= 20) {
+        fallbackDuration = Math.floor(Math.random() * 11) + 5; // 5-15 phút
+      } else if (messageLength <= 50) {
+        fallbackDuration = Math.floor(Math.random() * 16) + 15; // 15-30 phút
+      } else {
+        fallbackDuration = Math.floor(Math.random() * 31) + 30; // 30-60 phút
+      }
+      
+      console.log(`🆘 [Parallel] Emergency fallback: ${fallbackDuration} phút cho hành động "${message}"`);
+      return { duration: fallbackDuration, message };
+    }
   }
 
   /**

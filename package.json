@@ -1,7 +1,7 @@
 {
   "name": "ai-roleplay-game",
   "private": true,
-  "version": "6.0.0-beta",
+  "version": "6.5.0-releasebeta",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -6,6 +6,13 @@ export interface NPCRelationshipData {
   encounters: any[]; // NPC encounter history
 }
 
+// Player Fled Random Combat Data for save games
+export interface PlayerFledRandomCombatData {
+  timestamp: number; // Thời gian fled
+  turn: number; // Turn khi fled
+  enemyName: string; // Tên enemy đã fled
+}
+
 // SaveGame Schema - Versioned JSON chứa toàn bộ dữ liệu game
 export interface SaveGame {
   version: string; // Phiên bản schema để migration (2.6.0)
@@ -26,6 +33,7 @@ export interface SaveGame {
   actionLog?: any[]; // Lịch sử hành động đã thực hiện
   playerLocation?: PlayerLocation; // Vị trí hiện tại của người chơi
   combatHistory?: any; // Lịch sử combat và enemies đã đánh bại
+  playerFledRandomCombat?: PlayerFledRandomCombatData; // Dữ liệu player fled random combat
   comfyUISettings?: ComfyUISettings; // ComfyUI settings
   generatedImages?: string[]; // Danh sách file ảnh đã tạo
   merchantShops?: { [key: string]: MerchantShop }; // Merchant shops data

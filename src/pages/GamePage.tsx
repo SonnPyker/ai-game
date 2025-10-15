@@ -906,10 +906,25 @@ export function GamePage() {
     loadActionLog();
   }, []);
 
-  // Watch for combat initiation in sceneState
+  // Watch for combat initiation in sceneState - CHỈ hiển thị modal khi tất cả tiến trình xử lý hoàn tất
   useEffect(() => {
     if (gameState.sceneState?.combatInitiation) {
       console.log('🎯 Combat initiation detected:', gameState.sceneState.combatInitiation);
+      
+      // KIỂM TRA: Chỉ hiển thị modal khi KHÔNG có tiến trình xử lý nào đang chạy
+      const isAnyProcessing = isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions;
+      
+      if (isAnyProcessing) {
+        console.log('⏳ Combat initiation detected but processing still in progress, waiting...', {
+          isLoading,
+          isAIProcessing,
+          isNPCAnalysisProcessing,
+          isGeneratingSuggestions
+        });
+        return; // Chờ tất cả tiến trình xử lý hoàn tất
+      }
+      
+      console.log('✅ All processing completed, showing combat modal');
       
       const combatInitiation = gameState.sceneState.combatInitiation;
       
@@ -955,7 +970,7 @@ export function GamePage() {
         }));
       }
     }
-  }, [gameState.sceneState?.combatInitiation, navigate]);
+  }, [gameState.sceneState?.combatInitiation, navigate, isLoading, isAIProcessing, isNPCAnalysisProcessing, isGeneratingSuggestions]);
 
   // Apply combat results on mount
   useEffect(() => {
@@ -2080,9 +2095,10 @@ ${enhancedMessage}`;
           updatedSccContext = sccService.addTurn(updatedSccContext, aiMessage);
         }
 
-        // Determine action duration
+        // Determine action duration - Initialize with default values
         let durationMinutes = 5; // Default for manual actions
         let isTravelAction = false; // Flag to identify travel actions
+        let durationEstimationTask: Promise<{ duration: number; message: string }> | null = null;
         
         // Check if this is a travel action
         if (currentMessage.trim().startsWith('Bạn di chuyển đến')) {
@@ -2093,22 +2109,17 @@ ${enhancedMessage}`;
             durationMinutes = selectedSuggestion.durationMinutes;
           }
         } else {
-          // Estimate duration from message content
-          try {
-            const context = actionSuggestionService.buildContextFromStorage();
-            durationMinutes = await actionSuggestionService.estimateActionDuration(currentMessage.trim(), context, gameState.contentFlags || { adult_enabled: false, adult_intensity: 'fade' });
-          } catch (error) {
-            console.error('Error estimating action duration:', error);
-          }
+          // Prepare duration estimation task for parallel processing
+          const context = actionSuggestionService.buildContextFromStorage();
+          durationEstimationTask = actionSuggestionService.estimateActionDurationAsync(
+            currentMessage.trim(), 
+            context, 
+            gameState.contentFlags || { adult_enabled: false, adult_intensity: 'fade' }
+          );
         }
 
-        // Advance world time by minutes (skip for travel actions as time is already advanced in locationService.moveToLocation)
+        // Initialize world time - will be updated after parallel tasks complete
         let newTime = gameState.worldTime;
-        if (!isTravelAction) {
-          newTime = gameState.worldTime ? 
-            worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes) : 
-            null;
-        }
 
         // Increment turn counter after AI response
         setTurnCounter(prev => {
@@ -2457,7 +2468,22 @@ ${enhancedMessage}`;
             })
           );
 
-          // Task 6: ComfyUI Image Generation (parallel)
+          // Task 6: Duration Estimation (parallel) - Only for manual actions
+          if (durationEstimationTask) {
+            parallelTasks.push(
+              durationEstimationTask.then(result => {
+                durationMinutes = result.duration;
+                console.log(`✅ [Parallel] Duration estimation completed: ${durationMinutes} phút cho hành động "${result.message}"`);
+                return result;
+              }).catch(error => {
+                console.error('Error estimating action duration:', error);
+                // Keep default durationMinutes = 5
+                return { duration: 5, message: currentMessage };
+              })
+            );
+          }
+
+          // Task 7: ComfyUI Image Generation (parallel)
           const comfyUISettings = comfyUIService.getSettings();
           if (comfyUISettings.enabled) {
             parallelTasks.push(
@@ -2470,7 +2496,14 @@ ${enhancedMessage}`;
           // Run all tasks in parallel for maximum performance
           await Promise.all(parallelTasks);
 
-          // Task 7: Check and restock merchant shops
+          // Advance world time by minutes after parallel tasks complete (skip for travel actions as time is already advanced in locationService.moveToLocation)
+          if (!isTravelAction) {
+            newTime = gameState.worldTime ? 
+              worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes) : 
+              null;
+          }
+
+          // Task 8: Check and restock merchant shops
           if (newTime) {
             try {
               await locationService.checkAndRestockAllShops(newTime);
@@ -2814,6 +2847,17 @@ ${enhancedMessage}`;
       // Get combat history from localStorage
       const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
 
+      // Get player fled random combat data from localStorage
+      const playerFledRandomCombatData = (() => {
+        try {
+          const fledData = localStorage.getItem('player_fled_random_combat');
+          return fledData ? JSON.parse(fledData) : null;
+        } catch (error) {
+          console.error('Error parsing player_fled_random_combat data:', error);
+          return null;
+        }
+      })();
+
       const saveGame: SaveGame = {
         version: '2.6.1',
         meta: {
@@ -2845,6 +2889,7 @@ ${enhancedMessage}`;
         actionLog: actionLog,
         playerLocation: playerLocationData ? JSON.parse(playerLocationData) : undefined,
         combatHistory: combatHistory,
+        playerFledRandomCombat: playerFledRandomCombatData,
         merchantShops: merchantShopsData.shops
       };
 
@@ -3479,6 +3524,16 @@ ${enhancedMessage}`;
       // Restore ComfyUI settings
       if (saveGame.comfyUISettings) {
         comfyUIService.saveSettings(saveGame.comfyUISettings);
+      }
+
+      // Restore player fled random combat data
+      if (saveGame.playerFledRandomCombat) {
+        localStorage.setItem('player_fled_random_combat', JSON.stringify(saveGame.playerFledRandomCombat));
+        console.log('✅ Restored player_fled_random_combat data:', saveGame.playerFledRandomCombat);
+      } else {
+        // Clear if not present in save game
+        localStorage.removeItem('player_fled_random_combat');
+        console.log('🧹 Cleared player_fled_random_combat data (not in save game)');
       }
 
       // Cập nhật localStorage để tương thích với hệ thống cũ

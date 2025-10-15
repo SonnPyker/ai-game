@@ -184,6 +184,7 @@ export class MigrationService {
     contentFlags?: any,
     playerLocation?: any,
     combatHistory?: any,
+    playerFledRandomCombat?: any,
     merchantShopsData?: any
   ): SaveGame {
     // Debug logging
@@ -228,6 +229,7 @@ export class MigrationService {
       contentFlags: contentFlags,
       playerLocation: playerLocation,
       combatHistory: combatHistory,
+      playerFledRandomCombat: playerFledRandomCombat,
       comfyUISettings: comfyUISettings,
       generatedImages: generatedImages,
       merchantShops: merchantShopsData?.shops || {}
