@@ -523,6 +523,9 @@ export function WorldBuilder() {
        // Merge contentFlags vào world data
        worldJson.contentFlags = contentFlags;
        
+       // Add worldDifficulty field for consistency
+       worldJson.worldDifficulty = worldJson.difficulty || worldData.difficulty || 'Trung bình';
+       
        // Save to localStorage
        localStorage.setItem('world_gen_result', JSON.stringify(worldJson));
       

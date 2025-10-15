@@ -223,23 +223,11 @@ class QuestCombatService {
     let worldDifficulty = 'Trung bình';
     
     try {
-      // Try multiple sources for world data - prioritize currentWorldData
-      let world = null;
-      
-      // Try currentWorldData first (has difficulty field)
-      const currentWorldData = localStorage.getItem('currentWorldData');
-      if (currentWorldData) {
-        world = JSON.parse(currentWorldData);
-      } else {
-        // Fallback to world_gen_result
-        const worldData = localStorage.getItem('world_gen_result');
-        if (worldData) {
-          world = JSON.parse(worldData);
-        }
-      }
-      
-      if (world) {
-        const difficulty = world.difficulty?.toLowerCase() || 'trung bình';
+      // Read world difficulty from world_gen_result
+      const worldData = localStorage.getItem('world_gen_result');
+      if (worldData) {
+        const world = JSON.parse(worldData);
+        const difficulty = world.worldDifficulty?.toLowerCase() || world.difficulty?.toLowerCase() || 'trung bình';
         
         if (difficulty.includes('dễ') || difficulty.includes('easy')) {
           baseEncounterRate = 20; // 20% chance (dễ)
@@ -269,8 +257,10 @@ class QuestCombatService {
       
       if (combatHistoryData) {
         const combatHistory = JSON.parse(combatHistoryData);
+        
+        // Check if it's the old format (defeatedEnemies array)
         if (combatHistory.defeatedEnemies && Array.isArray(combatHistory.defeatedEnemies)) {
-          // Find the most recent combat (victory/defeat)
+          // Find the most recent combat (victory/defeat/flee)
           const recentCombat = combatHistory.defeatedEnemies
             .filter((enemy: any) => enemy.turn !== undefined)
             .sort((a: any, b: any) => (b.turn || 0) - (a.turn || 0))[0];
@@ -279,9 +269,19 @@ class QuestCombatService {
             lastCombatTurn = recentCombat.turn || 0;
           }
         }
+        // Check if it's the new format (CombatResultData array)
+        else if (Array.isArray(combatHistory)) {
+          const recentCombat = combatHistory
+            .filter((combat: any) => combat.metadata?.gameTurn !== undefined)
+            .sort((a: any, b: any) => (b.metadata?.gameTurn || 0) - (a.metadata?.gameTurn || 0))[0];
+          
+          if (recentCombat) {
+            lastCombatTurn = recentCombat.metadata.gameTurn || 0;
+          }
+        }
       }
       
-      // Check if player fled recently
+      // Check if player fled recently (for random encounter flee - keep as backup)
       const fledData = localStorage.getItem('player_fled_random_combat');
       if (fledData) {
         const fleeInfo = JSON.parse(fledData);
@@ -301,7 +301,12 @@ class QuestCombatService {
         worldDifficulty: worldDifficulty
       });
       
-      if (turnsSinceLastEncounter < 4) {
+      if (lastCombatTurn === -1) {
+        // No combat history yet - use base rate
+        currentEncounterRate = baseEncounterRate;
+        fleeStatus = `Active (${baseEncounterRate}% - no combat history)`;
+        console.log('🔍 Encounter rate: base rate (no combat history)');
+      } else if (turnsSinceLastEncounter < 4) {
         // First 4 turns after last encounter: 0% chance
         currentEncounterRate = 0;
         fleeStatus = `Building up (${4 - turnsSinceLastEncounter} turn(s) until ${baseEncounterRate}%)`;

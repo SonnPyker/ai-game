@@ -8,6 +8,8 @@ export interface SuggestedAction {
   durationMinutes: number; // >= 10
   impactTags: string[];    // ví dụ: ['story','risk','relationship']
   source: 'ai' | 'quest' | 'heuristic';
+  dcCheck?: { stat: 'strength'|'agility'|'constitution'|'intelligence'|'wisdom'|'charisma'; dc: number };
+  attackTarget?: { npcName: string; npcId?: string };
 }
 
 export interface ActionLogEntry {
@@ -21,6 +23,8 @@ export interface ActionLogEntry {
   turn: number;
   impactTags: string[];
   source: 'suggestion' | 'manual' | 'travel';
+  dcCheckResult?: { stat: string; roll: number; modifier: number; total: number; dc: number; success: boolean };
+  attackAction?: { targetNPC: string; accepted: boolean };
 }
 
 export interface ActionContext {
@@ -277,6 +281,43 @@ LƯU Ý VỀ NỘI DUNG TÌNH DỤC:
 - ƯU TIÊN gợi ý liên quan đến cốt truyện, nhiệm vụ, khám phá, tương tác xã hội
 - Tình dục chỉ là một phần nhỏ của trải nghiệm game, không phải trọng tâm
 
+TẤN CÔNG (ATTACK) ACTIONS:
+- CHỈ tạo attack action khi player muốn TẤN CÔNG VẬT LÝ trực tiếp (đánh, đấm, chém, bắn, etc.)
+- Các từ khóa: "tấn công", "đánh", "đấm", "chém", "bắn", "chiến đấu", "đối đầu vũ lực"
+- KHÔNG phải: đe dọa, thuyết phục, quyến rũ, lừa dối, quan sát, điều tra
+- Sử dụng impactTags: ['attack', 'strengthAttack', 'agilityAttack', etc.]
+- Thêm attackTarget: { npcName: "Tên NPC", npcId: "id" } nếu có
+- LƯU Ý: Đây là lựa chọn của player, không phải NPC tự động tấn công
+
+DC CHECK ACTIONS (CHỈ KHI CẦN THIẾT):
+- CHỈ tạo DC check khi hành động có RỦI RO THẤT BẠI rõ ràng
+- Ví dụ: Thuyết phục NPC khó tính, đe dọa kẻ thù mạnh, lừa dối người thông minh
+- KHÔNG tạo DC check cho: quan sát thường, nói chuyện bình thường, đi lại, mua bán
+- Sử dụng impactTags: ['charismaDCCheck', 'strengthDCCheck', etc.] CHỈ khi cần
+- Thêm dcCheck: { stat: 'charisma', dc: 15 } CHỈ khi cần
+- LƯU Ý: Hầu hết hành động bình thường KHÔNG cần DC check
+
+PHÂN BIỆT ATTACK VÀ DC CHECK:
+- ATTACK = Tấn công vật lý trực tiếp (đánh, đấm, chém, bắn, chiến đấu)
+- DC CHECK = Hành động có rủi ro thất bại cao (thuyết phục khó, đe dọa nguy hiểm)
+- MỘT ACTION CHỈ CÓ THỂ LÀ ATTACK HOẶC DC CHECK, KHÔNG BAO GIỜ CẢ HAI
+- HẦU HẾT HÀNH ĐỘNG BÌNH THƯỜNG KHÔNG CẦN DC CHECK
+
+HƯỚNG DẪN TẠO DC CHECK:
+✅ TẠO DC CHECK KHI:
+- Thuyết phục NPC có tính cách khó tính, đáng nghi
+- Đe dọa kẻ thù mạnh, nguy hiểm
+- Lừa dối người thông minh, có kinh nghiệm
+- Leo trèo, nhào lộn khó khăn
+- Điều tra bí mật, thông tin nhạy cảm
+
+❌ KHÔNG TẠO DC CHECK KHI:
+- Quan sát thường, nhìn xung quanh
+- Nói chuyện bình thường với NPC thân thiện
+- Đi lại, di chuyển bình thường
+- Mua bán, giao dịch thường
+- Hành động đơn giản, không có rủi ro
+
 QUAN TRỌNG VỀ QUEST ĐÃ TỪ CHỐI:
 - KHÔNG BAO GIỜ đề xuất lại quest đã bị từ chối (xem danh sách "QUESTS ĐÃ TỪ CHỐI")
 - KHÔNG BAO GIỜ tạo quest tương tự với quest đã bị từ chối
@@ -317,6 +358,12 @@ YÊU CẦU:
 7. Quest chỉ là tham khảo, không ép buộc - chỉ đề xuất nếu phù hợp với hướng đi hiện tại
 8. Thời gian phải đa dạng và thực tế (ví dụ: 8p, 12p, 18p, 25p, 35p, 45p, 65p, 80p)
 
+🚫 QUAN TRỌNG VỀ DI CHUYỂN:
+- TUYỆT ĐỐI KHÔNG tạo hành động di chuyển đến các địa điểm đã có trên bản đồ
+- Chỉ tạo hành động di chuyển đến địa điểm KHÔNG có trên bản đồ (địa điểm mới, chưa khám phá)
+- Ưu tiên hành động tại vị trí hiện tại và khu vực lân cận
+- Nếu cần di chuyển đến địa điểm có trên bản đồ, hãy gợi ý hành động khác thay thế
+
 QUAN TRỌNG VỀ NỘI DUNG:
 - CHỈ tạo gợi ý thân mật/18+ khi có CONTEXT 18+ HIỆN TẠI ở trên
 - KHÔNG được tạo gợi ý thân mật khi đang có tình huống nghiêm túc (lo lắng, nguy hiểm, bị bắt cóc)
@@ -336,7 +383,15 @@ TRẢ VỀ JSON:
       "summary": "Mô tả ngắn gọn 1 câu (10-15 từ)",
       "durationMinutes": 30,
       "impactTags": ["story", "risk", "relationship"],
-      "source": "ai"
+      "source": "ai",
+      "dcCheck": {
+        "stat": "charisma",
+        "dc": 15
+      },
+      "attackTarget": {
+        "npcName": "Elara",
+        "npcId": "elara_001"
+      }
     }
   ]
 }`;
@@ -387,6 +442,10 @@ TRẢ VỀ JSON:
 
       const nearbyLocations = locationService.getLocationsInRadius(playerLocation.currentLocationId, 2);
       
+      // Lấy danh sách TẤT CẢ địa điểm có trên bản đồ
+      const allMapLocations = locationService.getAllLocations();
+      const mapLocationNames = allMapLocations.map(loc => loc.name);
+      
       // Giảm mô tả để tiết kiệm token
       let locationInfo = `VỊ TRÍ: ${currentLocation.name} (${currentLocation.type === 'story' ? 'Cốt truyện' : 'Phụ'})`;
 
@@ -394,7 +453,10 @@ TRẢ VỀ JSON:
         locationInfo += `\n- Lân cận: ${nearbyLocations.slice(0, 3).map((loc: any) => loc.name).join(', ')}`; // Chỉ lấy 3 địa điểm gần nhất
       }
 
-      locationInfo += `\n- CHỈ gợi ý hành động tại vị trí hiện tại hoặc lân cận`;
+      // QUAN TRỌNG: Thêm thông tin về các địa điểm có trên bản đồ
+      locationInfo += `\n- ĐỊA ĐIỂM CÓ TRÊN BẢN ĐỒ (KHÔNG được tạo hành động di chuyển đến): ${mapLocationNames.join(', ')}`;
+      locationInfo += `\n- CHỈ gợi ý hành động tại vị trí hiện tại, lân cận, hoặc địa điểm KHÔNG có trên bản đồ`;
+      locationInfo += `\n- TUYỆT ĐỐI KHÔNG tạo hành động di chuyển đến các địa điểm đã có trên bản đồ`;
 
       return locationInfo;
     } catch (error) {
@@ -490,14 +552,52 @@ QUAN TRỌNG VỀ CẢNH 18+:
       const parsed = JSON.parse(jsonMatch[0]);
       const suggestions = parsed.suggestions || [];
       
-      return suggestions.map((s: any, index: number) => ({
-        id: `ai_${Date.now()}_${index}`,
-        text: s.text || '',
-        summary: s.summary || '',
-        durationMinutes: Math.max(5, Math.min(90, s.durationMinutes || 15)),
-        impactTags: Array.isArray(s.impactTags) ? s.impactTags : ['story'],
-        source: 'ai' as const
-      }));
+      // Lấy danh sách địa điểm có trên bản đồ để lọc
+      const allMapLocations = locationService.getAllLocations();
+      const mapLocationNames = allMapLocations.map(loc => loc.name.toLowerCase());
+      
+      return suggestions
+        .map((s: any, index: number) => ({
+          id: `ai_${Date.now()}_${index}`,
+          text: s.text || '',
+          summary: s.summary || '',
+          durationMinutes: Math.max(5, Math.min(90, s.durationMinutes || 15)),
+          impactTags: Array.isArray(s.impactTags) ? s.impactTags : ['story'],
+          source: 'ai' as const,
+          dcCheck: s.dcCheck ? {
+            stat: s.dcCheck.stat,
+            dc: s.dcCheck.dc
+          } : undefined,
+          attackTarget: s.attackTarget ? {
+            npcName: s.attackTarget.npcName,
+            npcId: s.attackTarget.npcId
+          } : undefined
+        }))
+        .filter((suggestion: SuggestedAction) => {
+          // Lọc bỏ các hành động di chuyển đến địa điểm có trên bản đồ
+          const text = suggestion.text.toLowerCase();
+          const summary = suggestion.summary.toLowerCase();
+          
+          // Kiểm tra các từ khóa di chuyển
+          const movementKeywords = ['đi đến', 'di chuyển đến', 'đến', 'tới', 'vào', 'ra'];
+          const hasMovement = movementKeywords.some(keyword => text.includes(keyword) || summary.includes(keyword));
+          
+          if (!hasMovement) {
+            return true; // Không phải hành động di chuyển, giữ lại
+          }
+          
+          // Nếu là hành động di chuyển, kiểm tra xem có phải đến địa điểm có trên bản đồ không
+          const isToMapLocation = mapLocationNames.some(locationName => 
+            text.includes(locationName) || summary.includes(locationName)
+          );
+          
+          if (isToMapLocation) {
+            console.warn(`🚫 Đã lọc bỏ action suggestion di chuyển đến địa điểm có trên bản đồ: "${suggestion.text}"`);
+            return false; // Lọc bỏ hành động di chuyển đến địa điểm có trên bản đồ
+          }
+          
+          return true; // Hành động di chuyển đến địa điểm không có trên bản đồ, giữ lại
+        });
     } catch (error) {
       console.error('Error parsing AI suggestions:', error);
       return [];
@@ -554,7 +654,7 @@ QUAN TRỌNG VỀ CẢNH 18+:
       }
     }
     
-    // Heuristic suggestions
+    // Heuristic suggestions - chỉ các hành động không liên quan đến di chuyển
     const heuristicSuggestions = [
       {
         text: 'Khám phá khu vực xung quanh',
@@ -573,6 +673,12 @@ QUAN TRỌNG VỀ CẢNH 18+:
         summary: 'Thu thập thông tin từ NPC',
         durationMinutes: this.generateSuggestionDuration(),
         impactTags: ['social', 'information']
+      },
+      {
+        text: 'Tìm kiếm manh mối và thông tin',
+        summary: 'Điều tra và thu thập thông tin',
+        durationMinutes: this.generateSuggestionDuration(),
+        impactTags: ['investigation', 'information']
       }
     ];
     

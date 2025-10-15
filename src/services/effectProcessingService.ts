@@ -2,6 +2,7 @@ import { StatusEffect, Combatant } from './combatService';
 import { InventoryItem } from '../types';
 import { consumableDatabase } from './consumableDatabase';
 import { DiceRoller } from '../utils/diceRoller';
+import { combatService } from './combatService';
 
 interface ParsedEffect {
   type: string; // stat_buff, damage_buff, heal, debuff
@@ -641,7 +642,12 @@ class EffectProcessingService {
     const healAmount = effect.effects.healthModifier || 0;
     const oldHP = combatant.health.current;
     combatant.health.current = Math.min(combatant.health.max, combatant.health.current + healAmount);
-    console.log(`Healing applied: ${combatant.name} ${oldHP} -> ${combatant.health.current} (+${healAmount})`);
+    const actualHeal = combatant.health.current - oldHP;
+    
+    // Trigger heal animation for floating text
+    combatService.triggerHealAnimation(combatant.id, actualHeal);
+    
+    console.log(`Healing applied: ${combatant.name} ${oldHP} -> ${combatant.health.current} (+${actualHeal})`);
   }
 
   /**

@@ -163,6 +163,20 @@ export function ActionSuggestions({
                         <span className={`text-xs ${getSourceColor(suggestion.source)}`}>
                           {suggestion.source === 'ai' ? 'AI' : suggestion.source === 'quest' ? 'Quest' : 'Heuristic'}
                         </span>
+                        {/* Attack Action Badge */}
+                        {(suggestion.attackTarget || suggestion.impactTags.some(tag => 
+                          tag === 'attack' || tag.endsWith('Attack')
+                        )) && (
+                          <span className="text-xs text-red-400 font-medium">
+                            ⚔️ Attack
+                          </span>
+                        )}
+                        {/* DC Check Action Badge */}
+                        {suggestion.dcCheck && (
+                          <span className="text-xs text-blue-400 font-medium">
+                            🎲 DC {suggestion.dcCheck.stat.charAt(0).toUpperCase() + suggestion.dcCheck.stat.slice(1)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -257,6 +271,20 @@ export function ActionSuggestions({
                   <span className={`text-xs ${getSourceColor(suggestion.source)}`}>
                     {suggestion.source === 'ai' ? 'AI' : suggestion.source === 'quest' ? 'Quest' : 'Heuristic'}
                   </span>
+                  {/* Attack Action Badge */}
+                  {(suggestion.attackTarget || suggestion.impactTags.some(tag => 
+                    tag === 'attack' || tag.endsWith('Attack')
+                  )) && (
+                    <span className="text-xs text-red-400 font-medium">
+                      ⚔️ Attack
+                    </span>
+                  )}
+                  {/* DC Check Action Badge */}
+                  {suggestion.dcCheck && (
+                    <span className="text-xs text-blue-400 font-medium">
+                      🎲 DC {suggestion.dcCheck.stat.charAt(0).toUpperCase() + suggestion.dcCheck.stat.slice(1)}
+                    </span>
+                  )}
                 </div>
               </div>
               

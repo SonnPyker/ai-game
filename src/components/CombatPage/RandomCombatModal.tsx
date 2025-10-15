@@ -26,7 +26,7 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
   const { isMinimized, minimize } = useModalMinimize({
     modalId: 'random-combat-modal',
     title: 'Chiến đấu ngẫu nhiên',
-    subtitle: location,
+    subtitle: typeof location === 'string' ? location : ((location as any)?.name || 'Unknown Location'),
     icon: <Sword className="w-5 h-5 text-red-400" />
   });
   

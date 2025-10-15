@@ -396,6 +396,7 @@ export interface WorldData {
   };
   startYear: number;
   difficulty: string;
+  worldDifficulty?: string; // Alias for difficulty for consistency
   useLevels: boolean;
   description: string;
   createdAt: string;

@@ -1,6 +1,7 @@
 import { Combatant, StatusEffect } from './combatService';
 import { CharacterSkill } from '../types';
 import { DiceRoller } from '../utils/diceRoller';
+import { combatService } from './combatService';
 
 interface ParsedSkillEffect {
   type: 'instant_damage' | 'instant_heal' | 'defend' | 'stat_buff' | 'stat_debuff';
@@ -137,21 +138,19 @@ class SkillEffectService {
     for (const target of targets) {
       if (!target.isAlive) continue;
       
-      // Apply damage
-      const actualDamage = Math.max(0, damage);
-      target.health.current = Math.max(0, target.health.current - actualDamage);
+      // Use combatService.applyDamageWithEffects for floating text and proper damage handling
+      combatService.applyDamageWithEffects(target.id, damage, caster.id);
       
-      // Check if target died
+      // Add detailed log with dice breakdown
       if (target.health.current <= 0) {
-        target.isAlive = false;
         results.push({
           logType: 'damage',
-          description: `${caster.name} gây ${actualDamage}(${damageResult.breakdown}) sát thương cho ${target.name} (${target.name} đã chết!)`
+          description: `${caster.name} gây ${damage}(${damageResult.breakdown}) sát thương cho ${target.name} (${target.name} đã chết!)`
         });
       } else {
         results.push({
           logType: 'damage',
-          description: `${caster.name} gây ${actualDamage}(${damageResult.breakdown}) sát thương cho ${target.name} (${target.health.current}/${target.health.max} HP)`
+          description: `${caster.name} gây ${damage}(${damageResult.breakdown}) sát thương cho ${target.name} (${target.health.current}/${target.health.max} HP)`
         });
       }
     }
@@ -184,6 +183,12 @@ class SkillEffectService {
       const oldHealth = target.health.current;
       target.health.current = Math.min(target.health.max, target.health.current + healAmount);
       const actualHeal = target.health.current - oldHealth;
+      
+      // Trigger heal animation for floating text
+      const position = combatService.getCombatantPosition(target.id);
+      if (position) {
+        combatService.triggerHealAnimation(target.id, actualHeal);
+      }
       
       results.push({
         logType: 'heal',
@@ -281,27 +286,43 @@ class SkillEffectService {
    * Calculate damage with dice breakdown for logging
    */
   private calculateDamageWithBreakdown(diceNotation: string): { total: number; breakdown: string } {
-    if (diceNotation.includes('d')) {
-      const result = DiceRoller.roll(diceNotation);
-      if (typeof result === 'number') {
-        return { total: result, breakdown: diceNotation };
-      } else {
-        return { total: result.total, breakdown: `${result.rolls.join('+')}` };
+    try {
+      if (diceNotation.includes('d')) {
+        const result = DiceRoller.roll(diceNotation);
+        if (typeof result === 'number') {
+          return { total: result, breakdown: diceNotation };
+        } else {
+          // Use the original dice notation for breakdown to preserve modifiers
+          return { total: result.total, breakdown: diceNotation };
+        }
       }
+      const value = parseInt(diceNotation) || 0;
+      return { total: value, breakdown: diceNotation };
+    } catch (error) {
+      console.error(`Invalid dice notation for damage: ${diceNotation}`, error);
+      // Fallback to simple number if dice notation is invalid
+      const numberMatch = diceNotation.match(/(\d+)/);
+      const fallbackValue = numberMatch ? parseInt(numberMatch[1]) : 1;
+      return { total: fallbackValue, breakdown: `${fallbackValue}` };
     }
-    const value = parseInt(diceNotation) || 0;
-    return { total: value, breakdown: diceNotation };
   }
 
   /**
    * Calculate heal amount from dice notation
    */
   private calculateHeal(diceNotation: string): number {
-    if (diceNotation.includes('d')) {
-      const result = DiceRoller.roll(diceNotation);
-      return typeof result === 'number' ? result : result.total;
+    try {
+      if (diceNotation.includes('d')) {
+        const result = DiceRoller.roll(diceNotation);
+        return typeof result === 'number' ? result : result.total;
+      }
+      return parseInt(diceNotation) || 0;
+    } catch (error) {
+      console.error(`Invalid dice notation for healing: ${diceNotation}`, error);
+      // Fallback to simple number if dice notation is invalid
+      const numberMatch = diceNotation.match(/(\d+)/);
+      return numberMatch ? parseInt(numberMatch[1]) : 1;
     }
-    return parseInt(diceNotation) || 0;
   }
 }
 

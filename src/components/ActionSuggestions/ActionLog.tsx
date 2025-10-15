@@ -12,7 +12,7 @@ interface ActionLogProps {
 }
 
 export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
-  const [filter, setFilter] = useState<'all' | 'story' | 'risk' | 'relationship' | 'trading'>('all');
+  const [filter, setFilter] = useState<'all' | 'story' | 'risk' | 'relationship' | 'trading' | 'attack' | 'dcCheck'>('all');
   const [collapsedEntries, setCollapsedEntries] = useState<Set<string>>(new Set());
   const [tradingHistory, setTradingHistory] = useState<TradingLogEntry[]>([]);
   const [tradingStats, setTradingStats] = useState<any>(null);
@@ -50,6 +50,12 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
     }
     
     if (filter === 'all') return true;
+    if (filter === 'attack') {
+      return entry.impactTags.some(tag => tag.includes('Attack') || tag === 'attack');
+    }
+    if (filter === 'dcCheck') {
+      return entry.impactTags.some(tag => tag.includes('DCCheck')) || entry.dcCheckResult;
+    }
     return entry.impactTags.includes(filter);
   });
 
@@ -68,8 +74,10 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
   }
 
   const getImpactIcon = (tags: string[]) => {
-    if (tags.includes('risk')) return <AlertTriangle className="w-4 h-4 text-red-400" />;
-    if (tags.includes('story')) return <CheckCircle className="w-4 h-4 text-blue-400" />;
+    if (tags.some(tag => tag.includes('Attack') || tag === 'attack')) return <AlertTriangle className="w-4 h-4 text-red-400" />;
+    if (tags.some(tag => tag.includes('DCCheck'))) return <CheckCircle className="w-4 h-4 text-blue-400" />;
+    if (tags.includes('risk')) return <AlertTriangle className="w-4 h-4 text-orange-400" />;
+    if (tags.includes('story')) return <CheckCircle className="w-4 h-4 text-green-400" />;
     if (tags.includes('relationship')) return <Zap className="w-4 h-4 text-purple-400" />;
     return <Clock className="w-4 h-4 text-gray-400" />;
   };
@@ -77,6 +85,12 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
   const getFilterCount = (filterType: string) => {
     if (filterType === 'all') return entries.length;
     if (filterType === 'trading') return tradingHistory.length;
+    if (filterType === 'attack') {
+      return entries.filter(entry => entry.impactTags.some(tag => tag.includes('Attack') || tag === 'attack')).length;
+    }
+    if (filterType === 'dcCheck') {
+      return entries.filter(entry => entry.impactTags.some(tag => tag.includes('DCCheck')) || entry.dcCheckResult).length;
+    }
     return entries.filter(entry => entry.impactTags.includes(filterType)).length;
   };
 
@@ -165,6 +179,8 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                 { key: 'story', label: 'Cốt truyện', count: getFilterCount('story') },
                 { key: 'risk', label: 'Rủi ro', count: getFilterCount('risk') },
                 { key: 'relationship', label: 'Mối quan hệ', count: getFilterCount('relationship') },
+                { key: 'attack', label: 'Tấn công', count: getFilterCount('attack') },
+                { key: 'dcCheck', label: 'DC Check', count: getFilterCount('dcCheck') },
                 { key: 'trading', label: 'Mua bán', count: getFilterCount('trading') }
               ].map(({ key, label, count }) => (
                 <button
@@ -400,6 +416,44 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                           <div className="text-sm text-gray-300">
                             <span className="text-gray-500">Hành động:</span> "{entry.text}"
                           </div>
+
+                          {/* DC Check Result */}
+                          {entry.dcCheckResult && (
+                            <div className="text-sm text-gray-300">
+                              <span className="text-gray-500">DC Check:</span>
+                              <div className="ml-2 mt-1 p-2 bg-blue-900/20 border border-blue-700/30 rounded">
+                                <div className="flex items-center space-x-4 text-xs">
+                                  <span className="text-blue-300">
+                                    <strong>{entry.dcCheckResult.stat.charAt(0).toUpperCase() + entry.dcCheckResult.stat.slice(1)}</strong>
+                                  </span>
+                                  <span className="text-gray-400">
+                                    {entry.dcCheckResult.roll} + {entry.dcCheckResult.modifier} = {entry.dcCheckResult.total}
+                                  </span>
+                                  <span className="text-gray-400">vs DC {entry.dcCheckResult.dc}</span>
+                                  <span className={`font-medium ${entry.dcCheckResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                                    {entry.dcCheckResult.success ? 'SUCCESS' : 'FAILURE'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Attack Action Result */}
+                          {entry.attackAction && (
+                            <div className="text-sm text-gray-300">
+                              <span className="text-gray-500">Attack Action:</span>
+                              <div className="ml-2 mt-1 p-2 bg-red-900/20 border border-red-700/30 rounded">
+                                <div className="text-xs">
+                                  <span className="text-red-300">
+                                    Target: <strong>{entry.attackAction.targetNPC}</strong>
+                                  </span>
+                                  <span className="ml-2 text-gray-400">
+                                    Status: {entry.attackAction.accepted ? 'Accepted' : 'Declined'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Impact Tags */}
                           <div className="flex flex-wrap gap-1">

@@ -191,7 +191,7 @@ export function DraggableMinimizedModal({
             </div>
             {modalData.subtitle && (
               <div className={`text-gray-400 truncate ${isMobile ? 'text-xs' : 'text-xs'}`}>
-                {modalData.subtitle}
+                {typeof modalData.subtitle === 'string' ? modalData.subtitle : JSON.stringify(modalData.subtitle)}
               </div>
             )}
           </div>

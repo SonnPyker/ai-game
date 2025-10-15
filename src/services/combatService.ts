@@ -831,8 +831,7 @@ class CombatService {
       // Trigger floating text for damage results
       if (result.logType === 'damage') {
         // Extract damage amount and target from description
-        // Updated regex to match format: "gây 14(3d6) sát thương cho Enemy"
-        const damageMatch = result.description.match(/gây (\d+)\([^)]+\) sát thương cho (.+?)(?:\s|$)/);
+        const damageMatch = result.description.match(/gây (\d+) sát thương cho (.+?)(?:\s|$)/);
         if (damageMatch) {
           const damage = parseInt(damageMatch[1]);
           const targetName = damageMatch[2];
@@ -1391,6 +1390,22 @@ class CombatService {
     }
   }
 
+  public triggerHealAnimation(combatantId: string, healAmount: number): void {
+    const combatant = this.getCombatant(combatantId);
+    if (!combatant) return;
+
+    // Get combatant position for floating text
+    const position = this.getCombatantPosition(combatantId);
+    
+    // Trigger floating heal text
+    combatAnimationService.triggerDamageText(
+      combatantId,
+      healAmount,
+      CombatAnimationType.HEAL,
+      position
+    );
+  }
+
   private triggerDefendAnimation(combatantId: string): void {
     combatAnimationService.triggerCombatantEffect(
       combatantId,
@@ -1408,7 +1423,7 @@ class CombatService {
   }
 
   // Get combatant position for floating text with multi-combatant support
-  private getCombatantPosition(combatantId: string): { x: number; y: number } {
+  public getCombatantPosition(combatantId: string): { x: number; y: number } {
     // Try to find the combatant card DOM element
     const combatantCard = document.querySelector(`[data-combatant-id="${combatantId}"]`);
     

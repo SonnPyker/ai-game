@@ -5,6 +5,50 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0-beta] - 2025-01-12
+
+### ⚔️ Advanced Action System
+- **Attack Actions**: New attack action system with NPC challenge modal integration
+- **DC Check System**: D&D-style difficulty class checks for all 6 core stats (Strength, Agility, Constitution, Intelligence, Wisdom, Charisma)
+- **Real-time Dice Rolling**: Automatic dice rolling with stat modifiers for DC checks
+- **AI Integration**: DC check results are injected into AI prompts for accurate responses
+- **Action Log Enhancement**: Attack and DC check actions are properly logged with detailed results
+
+### 🎲 DC Check Mechanics
+- **Stat-based Checks**: Different DC checks for different core stats with appropriate difficulty levels
+- **Success/Failure Tracking**: Detailed logging of roll results, modifiers, and outcomes
+- **AI Response Integration**: AI receives DC check results before generating responses
+- **Visual Indicators**: Clear UI indicators for DC check actions (blue text, no background boxes)
+- **Action Filtering**: New filter tabs for Attack and DC Check actions in Action Log
+
+### ⚔️ Attack Action System
+- **NPC Challenge Integration**: Attack actions trigger NPC challenge modal for combat confirmation
+- **Relationship-based Triggers**: NPCs with relationship < -80 can initiate attacks
+- **Player-initiated Attacks**: Direct attack actions bypass relationship checks
+- **Combat Preparation**: Automatic combat setup with proper enemy data
+- **Action Logging**: Attack actions logged with target NPC and acceptance status
+
+### 🎯 UI/UX Improvements
+- **Simplified Action Badges**: Removed colored background boxes, using text-only indicators
+- **Attack Actions**: Red "Attack" text without background
+- **DC Check Actions**: Blue "DC [Stat]" text without background
+- **Action Log Filters**: Added dedicated filters for Attack and DC Check actions
+- **Real-time Counts**: Filter buttons show accurate counts for each action type
+
+### 🔧 Technical Enhancements
+- **State Management**: Improved state handling for DC check results and attack actions
+- **Service Integration**: Better integration between action suggestion, combat, and NPC relationship services
+- **Error Handling**: Enhanced error handling for DC check calculations and attack processing
+- **Debug Logging**: Comprehensive logging for debugging action system issues
+- **Type Safety**: Enhanced TypeScript interfaces for new action types
+
+### 🐛 Bug Fixes
+- **DC Check State Issues**: Fixed asynchronous state updates causing null DC check results
+- **Action Log Filtering**: Fixed filter logic to properly recognize Attack and DC Check actions
+- **AI Prompt Injection**: Fixed DC check result injection into AI prompts
+- **Action Log Persistence**: Fixed action log saving for Attack and DC Check actions
+- **Time Calculation**: Fixed time progression for Attack and DC Check actions
+
 ## [5.6.0-beta] - 2025-01-12
 
 ### 🛒 Trading System Overhaul

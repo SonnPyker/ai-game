@@ -715,11 +715,18 @@ export function CombatPage({}: CombatPageProps) {
       const combatResultData = combatService.generateCombatResultData();
       
       if (combatResultData) {
+        // ADDED: Add turn number to metadata for encounter chance reset
+        if (!combatResultData.metadata) {
+          combatResultData.metadata = {};
+        }
+        const currentTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
+        combatResultData.metadata.gameTurn = currentTurn;
+        
         // Save combat result data
         combatDataService.addToCombatHistory(combatResultData);
         localStorage.setItem('combat_result', JSON.stringify(combatResultData));
         
-        console.log('🏃 Player fled from combat - combat history saved');
+        console.log('🏃 Player fled from combat - combat history saved with turn:', currentTurn);
       }
       
       // Run away (end combat)
@@ -890,29 +897,9 @@ export function CombatPage({}: CombatPageProps) {
         // Save to localStorage
         localStorage.setItem('combat_result', JSON.stringify(combatResultData));
         
-        // Also save to combat_history for encounter chance reset
-        try {
-          const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
-          if (!Array.isArray(combatHistory.defeatedEnemies)) {
-            combatHistory.defeatedEnemies = [];
-          }
-          
-          // Add defeated enemies with gameTurn
-          combatResultData.enemiesDefeated.forEach(enemy => {
-            combatHistory.defeatedEnemies.push({
-              name: enemy.name,
-              type: enemy.type,
-              enemyId: enemy.npcId,
-              defeatedAt: new Date(),
-              turn: currentTurn // Use current game turn
-            });
-          });
-          
-          localStorage.setItem('combat_history', JSON.stringify(combatHistory));
-          console.log('📝 Updated combat_history with gameTurn:', currentTurn);
-        } catch (error) {
-          console.error('Error updating combat_history:', error);
-        }
+        // Save to combat_history for encounter chance reset
+        combatDataService.addToCombatHistory(combatResultData);
+        console.log('📝 Updated combat_history with gameTurn:', currentTurn);
       }
       
       // Update character data with current HP and experience

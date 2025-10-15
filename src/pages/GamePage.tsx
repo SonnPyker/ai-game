@@ -16,6 +16,8 @@ import { actionSuggestionService, SuggestedAction, ActionLogEntry } from '../ser
 import { tradingHistoryService } from '../services/tradingHistoryService';
 import { locationService } from '../services/locationService';
 import { inventoryService } from '../services/inventoryService';
+import { DiceRoller } from '../utils/diceRoller';
+import { combatPreparationService } from '../services/combatPreparationService';
 import { ItemSelectionModal } from '../components/ItemSelectionModal/ItemSelectionModal';
 import { MotionWrapper } from '../components/MotionWrapper';
 import { questCompletionService } from '../services/questCompletionService';
@@ -239,6 +241,16 @@ export function GamePage() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [lastRetryError, setLastRetryError] = useState<string | null>(null);
+  
+  // DC Check result state
+  const [, setDcCheckResult] = useState<{
+    stat: string;
+    roll: number;
+    modifier: number;
+    total: number;
+    dc: number;
+    success: boolean;
+  } | null>(null);
   
   // Combat result auto-paste state
   const [combatResultText, setCombatResultText] = useState<string>('');
@@ -577,6 +589,47 @@ export function GamePage() {
           // Player lost (defeated)
           const enemyList = combatResultData.enemyNames?.join(', ') || 'kẻ thù';
           message = `Bạn đã bị đánh bại bởi ${enemyList}. `;
+          
+          // ADDED: Save defeat information to combat_history for encounter rate reset
+          try {
+            const currentTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
+            
+            // Create a CombatResultData for defeat
+            const defeatCombatData = {
+              combatId: `defeat_${Date.now()}`,
+              duration: 0,
+              victory: false,
+              playerFled: false,
+              enemyNames: combatResultData.enemyNames || ['Unknown Enemy'],
+              enemiesDefeated: [],
+              characterUpdates: {
+                healthBefore: 0,
+                healthAfter: 0,
+                healthLost: 0,
+                experienceGained: 0,
+                combatLevelBefore: 0,
+                combatLevelAfter: 0,
+                leveledUp: false,
+                totalDamageDealt: 0,
+                totalDamageTaken: 0,
+                turnsPlayed: 0,
+                attacksLanded: 0,
+                attacksMissed: 0
+              },
+              rewards: {
+                experience: 0,
+                items: []
+              },
+              metadata: {
+                gameTurn: currentTurn
+              }
+            };
+            
+            combatDataService.addToCombatHistory(defeatCombatData);
+            console.log('📝 Updated combat_history with defeat turn:', currentTurn);
+          } catch (error) {
+            console.error('Error updating combat_history with defeat:', error);
+          }
         }
         
         // Set combat result text and flag
@@ -866,7 +919,9 @@ export function GamePage() {
         // Show random combat modal
         setRandomCombatData({
           enemy: combatInitiation.enemies[0],
-          location: combatInitiation.location || 'Unknown',
+          location: typeof combatInitiation.location === 'string' 
+            ? combatInitiation.location 
+            : (combatInitiation.location?.name || 'Unknown Location'),
           reason: combatInitiation.reason || 'Cuộc đối đầu bất ngờ'
         });
         setShowRandomCombatModal(true);
@@ -1073,15 +1128,21 @@ export function GamePage() {
   };
 
   // Handle suggestion pick
-  const handleSuggestionPick = (suggestion: SuggestedAction) => {
+  const handleSuggestionPick = async (suggestion: SuggestedAction) => {
     setUserInteractedWithSuggestions(true);
     
     // Nếu đã chọn suggestion này rồi thì hủy chọn
     if (selectedSuggestionId === suggestion.id) {
       setSelectedSuggestionId(null);
       setCurrentMessage('');
+      setDcCheckResult(null);
     } else {
-      // Chọn suggestion mới
+      // Clear previous DC check result
+      setDcCheckResult(null);
+      
+      // DC Check Actions - just paste text, will be processed on send
+      
+      // Regular suggestion handling (including attack actions)
       setCurrentMessage(suggestion.text);
       setSelectedSuggestionId(suggestion.id);
       
@@ -1090,6 +1151,143 @@ export function GamePage() {
         setIsTravelActionSelected(false);
         setSelectedTravelLocationId(null);
       }
+    }
+  };
+
+  // Handle DC Check Action
+  const handleDCCheckAction = async (suggestion: SuggestedAction) => {
+    if (!suggestion.dcCheck) return null;
+    
+    try {
+      // Get character data
+      const characterData = localStorage.getItem('currentCharacter');
+      if (!characterData) {
+        console.error('No character data found');
+        return null;
+      }
+      
+      const character = JSON.parse(characterData);
+      const stat = suggestion.dcCheck.stat;
+      const dc = suggestion.dcCheck.dc;
+      
+      // Get stat modifier
+      const modifier = character.coreStats?.modifiers?.[stat] || 0;
+      
+      // Roll d20 + modifier
+      const roll = DiceRoller.roll(`d20+${modifier}`, `${stat} Check`);
+      const total = roll.total;
+      const success = total >= dc;
+      
+      // Save DC check result
+      const dcResult = {
+        stat: stat,
+        roll: roll.rolls[0], // The actual d20 roll
+        modifier: modifier,
+        total: total,
+        dc: dc,
+        success: success
+      };
+      
+      setDcCheckResult(dcResult);
+      
+      // Show result to user
+      // Don't show DC check result to player - only send to AI
+      // const resultText = `🎲 ${stat.charAt(0).toUpperCase() + stat.slice(1)} Check: ${roll.rolls[0]}+${modifier}=${total} vs DC ${dc} → ${success ? 'SUCCESS' : 'FAILURE'}`;
+      // setSaveMessage(resultText);
+      // setTimeout(() => setSaveMessage(null), 5000);
+      
+      // Set the message with DC check result
+      setCurrentMessage(suggestion.text);
+      setSelectedSuggestionId(suggestion.id);
+      
+      return dcResult;
+      
+    } catch (error) {
+      console.error('Error handling DC check action:', error);
+      setSaveMessage('Lỗi khi thực hiện DC check');
+      setTimeout(() => setSaveMessage(null), 3000);
+      return null;
+    }
+  };
+  
+  // Handle Attack Action
+  const handleAttackAction = async (suggestion: SuggestedAction) => {
+    try {
+      // Load services first
+      await loadServices();
+      
+      // Get NPC name from attackTarget or try to find from scene
+      let npcName = suggestion.attackTarget?.npcName;
+      
+      if (!npcName) {
+        // Try to find NPC from scene state
+        const sceneState = gameState.sceneState;
+        if (sceneState?.npcs && sceneState.npcs.length > 0) {
+          npcName = sceneState.npcs[0].name;
+        } else {
+          console.error('No NPC found for attack action');
+          setSaveMessage('Không tìm thấy NPC để tấn công');
+          setTimeout(() => setSaveMessage(null), 3000);
+          return;
+        }
+      }
+      
+      // Get NPC relationship data using the loaded service
+      let npc = npcRelationshipService.getRelationship(npcName);
+      if (!npc) {
+        // Try fuzzy matching if exact match fails
+        const allRelationships = npcRelationshipService.getAllRelationships();
+        const fuzzyMatch = allRelationships.find((n: any) => 
+          n.name.includes(npcName || '') || (npcName || '').includes(n.name)
+        );
+        
+        if (fuzzyMatch) {
+          console.log(`Using fuzzy match: ${fuzzyMatch.name} for ${npcName}`);
+          npc = fuzzyMatch;
+        } else {
+          console.error(`NPC ${npcName} not found in relationships`);
+          console.log('Available NPCs:', allRelationships.map((n: any) => n.name));
+          setSaveMessage(`Không tìm thấy thông tin về ${npcName}`);
+          setTimeout(() => setSaveMessage(null), 3000);
+          return;
+        }
+      }
+      
+      // Player chọn attack action - không cần kiểm tra relationship level
+      // Chỉ cần có NPC là có thể tấn công
+      
+      // Prepare NPC for combat
+      const preparation = await combatPreparationService.prepareNPCForCombat(npc.id);
+      if (!preparation.status.hasCombatStats) {
+        setSaveMessage(`Không thể chuẩn bị ${npcName} cho chiến đấu`);
+        setTimeout(() => setSaveMessage(null), 3000);
+        return;
+      }
+      
+      // Create challenge data for player-initiated attack
+      const challengeReasons = [
+        `Bạn quyết định tấn công ${npc.name}!`,
+        `Bạn thách đấu ${npc.name}!`,
+        `Bạn sẵn sàng chiến đấu với ${npc.name}!`,
+        `Bạn chọn đối đầu trực tiếp với ${npc.name}!`
+      ];
+      
+      const challengeData = {
+        npcId: npc.id,
+        npcName: npc.name,
+        challengeReason: challengeReasons[Math.floor(Math.random() * challengeReasons.length)],
+        combatStats: preparation.npc.combatStats,
+        difficulty: npc.relationshipLevel < -70 ? 'hard' : npc.relationshipLevel < -50 ? 'medium' : 'easy'
+      };
+      
+      // Show NPC Challenge Modal
+      setNpcChallengeData(challengeData);
+      setShowNPCChallengeModal(true);
+      
+    } catch (error) {
+      console.error('Error handling attack action:', error);
+      setSaveMessage('Lỗi khi xử lý hành động tấn công');
+      setTimeout(() => setSaveMessage(null), 3000);
     }
   };
 
@@ -1574,6 +1772,46 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         gameContext: gameState.sccContext?.summary?.recap || ''
       });
     }
+    
+    // Check if this is an attack action from suggestion - mark for later processing
+    let isAttackAction = false;
+    let isDCCheckAction = false;
+    let currentDcCheckResult = null;
+    if (selectedSuggestionId) {
+      const selectedSuggestion = actionSuggestions.find(s => s.id === selectedSuggestionId);
+      if (selectedSuggestion) {
+        if (selectedSuggestion.attackTarget || selectedSuggestion.impactTags.some(tag => 
+          tag === 'attack' || tag.includes('Attack')
+        )) {
+          isAttackAction = true;
+          // Store attack suggestion for later processing after AI response
+          localStorage.setItem('pending_attack_action', JSON.stringify(selectedSuggestion));
+        } else if (selectedSuggestion.dcCheck) {
+          console.log('🎲 DC Check action detected:', selectedSuggestion);
+          isDCCheckAction = true;
+          // Process DC check now, before AI response
+          const dcResult = await handleDCCheckAction(selectedSuggestion);
+          console.log('🎲 DC Check result after processing:', dcResult);
+          if (dcResult) {
+            currentDcCheckResult = dcResult;
+            setDcCheckResult(dcResult);
+          }
+        }
+      }
+    }
+
+    // Inject DC check result if available
+    if (currentDcCheckResult) {
+      const dcCheckText = `[DC CHECK RESULT]
+- Stat: ${currentDcCheckResult.stat.charAt(0).toUpperCase() + currentDcCheckResult.stat.slice(1)}
+- Roll: ${currentDcCheckResult.roll} + ${currentDcCheckResult.modifier} = ${currentDcCheckResult.total}
+- DC: ${currentDcCheckResult.dc}
+- Result: ${currentDcCheckResult.success ? 'SUCCESS' : 'FAILURE'}
+
+${enhancedMessage}`;
+      enhancedMessage = dcCheckText;
+      console.log('🎲 DC Check result injected into AI prompt:', currentDcCheckResult);
+    }
 
     const playerMessage: ChatMessageType = {
       role: 'player',
@@ -1589,10 +1827,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     setIsAIProcessing(true);
     setError(null);
     
+    // Store selectedSuggestionId before clearing for later use
+    const currentSelectedSuggestionId = selectedSuggestionId;
+    
     // Clear selection states
     setIsTravelActionSelected(false);
     setSelectedTravelLocationId(null);
     setSelectedSuggestionId(null);
+    setDcCheckResult(null);
 
     // Clear combat result after sending
     if (hasCombatResult) {
@@ -1957,7 +2199,8 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         localStorage.setItem('rp_scene_state', JSON.stringify(newSceneState));
 
         // Log action (both from suggestions and manual input)
-        if (gameState.worldTime && newTime) {
+        // Skip action log for attack actions and DC check actions - will be created after AI response
+        if (gameState.worldTime && newTime && !isAttackAction && !isDCCheckAction) {
           let actionLogEntry: ActionLogEntry | null = null;
           
           if (selectedSuggestionId) {
@@ -1974,7 +2217,14 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
                 endedAt: newTime,
                 turn: turnCounter + 1,
                 impactTags: selectedSuggestion.impactTags,
-                source: 'suggestion'
+                source: 'suggestion',
+                dcCheckResult: currentDcCheckResult || undefined,
+                attackAction: (selectedSuggestion.attackTarget || selectedSuggestion.impactTags.some(tag => 
+                  tag === 'attack' || tag.endsWith('Attack')
+                )) ? {
+                  targetNPC: selectedSuggestion.attackTarget?.npcName || 'Unknown NPC',
+                  accepted: false // Will be updated when user accepts/declines
+                } : undefined
               };
             }
           } else {
@@ -2247,6 +2497,79 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         
         // Clear backup suggestions sau khi AI response thành công
         setBackupSuggestions([]);
+        
+        // Process pending attack action after AI response
+        if (isAttackAction) {
+          try {
+            const pendingAttackAction = localStorage.getItem('pending_attack_action');
+            if (pendingAttackAction) {
+              const attackSuggestion = JSON.parse(pendingAttackAction);
+              // Clear the pending attack action
+              localStorage.removeItem('pending_attack_action');
+              
+              // Create action log entry for attack action
+              if (gameState.worldTime && newTime) {
+                const actionLogEntry: ActionLogEntry = {
+                  id: `action_${Date.now()}`,
+                  actionId: currentSelectedSuggestionId || undefined,
+                  text: currentMessage.trim(),
+                  summary: attackSuggestion.summary,
+                  durationMinutes: durationMinutes,
+                  startedAt: gameState.worldTime,
+                  endedAt: newTime,
+                  turn: turnCounter + 1,
+                  impactTags: attackSuggestion.impactTags,
+                  source: 'suggestion',
+                  attackAction: {
+                    targetNPC: attackSuggestion.attackTarget?.npcName || 'Unknown NPC',
+                    accepted: false // Will be updated when user accepts/declines
+                  }
+                };
+                
+                // Save action log
+                actionSuggestionService.saveActionLog(actionLogEntry);
+                setActionLog(prev => [actionLogEntry, ...prev]);
+              }
+              
+              // Show NPCChallengeModal
+              await handleAttackAction(attackSuggestion);
+            }
+          } catch (error) {
+            console.error('Error processing pending attack action:', error);
+          }
+        }
+        
+        // Process DC check action after AI response
+        console.log('🎲 Checking DC check action after AI response:', { isDCCheckAction, currentDcCheckResult, currentSelectedSuggestionId });
+        if (isDCCheckAction && currentDcCheckResult) {
+          try {
+            const selectedSuggestion = actionSuggestions.find(s => s.id === currentSelectedSuggestionId);
+            console.log('🎲 Selected suggestion for DC check:', selectedSuggestion);
+            if (selectedSuggestion && gameState.worldTime && newTime) {
+              const actionLogEntry: ActionLogEntry = {
+                id: `action_${Date.now()}`,
+                actionId: currentSelectedSuggestionId || undefined,
+                text: currentMessage.trim(),
+                summary: selectedSuggestion.summary,
+                durationMinutes: durationMinutes,
+                startedAt: gameState.worldTime,
+                endedAt: newTime,
+                turn: turnCounter + 1,
+                impactTags: selectedSuggestion.impactTags,
+                source: 'suggestion',
+                dcCheckResult: currentDcCheckResult
+              };
+              
+              // Save action log
+              console.log('🎲 Saving DC check action log:', actionLogEntry);
+              actionSuggestionService.saveActionLog(actionLogEntry);
+              setActionLog(prev => [actionLogEntry, ...prev]);
+              console.log('🎲 DC check action log saved successfully');
+            }
+          } catch (error) {
+            console.error('Error processing DC check action:', error);
+          }
+        }
       } else {
         // BẢO VỆ KÉP: Đảm bảo không có gì được update khi AI response không thành công
         console.error('🚫 AI response failed - skipping ALL game updates to prevent corruption');
@@ -2268,11 +2591,15 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         turnCounter: turnCounter
       });
       
-      // Kiểm tra nếu đây là lỗi từ thông báo lỗi cụ thể
+      // Hiển thị thông báo lỗi cụ thể từ Google SDK thay vì thông báo chung chung
       const errorMessage = error instanceof Error ? error.message : 'Có lỗi xảy ra';
+      
+      // Kiểm tra nếu đây là lỗi từ thông báo lỗi cụ thể (legacy check)
       if (errorMessage.includes('PHÁT HIỆN THÔNG BÁO LỖI CỤ THỂ')) {
+        // Nếu là lỗi legacy, vẫn hiển thị thông báo chung chung để tránh break
         setError('Xin lỗi, có lỗi xảy ra khi xử lý phản hồi từ AI. Vui lòng thử lại.');
       } else {
+        // Hiển thị thông báo lỗi cụ thể từ Google SDK
         setError(errorMessage);
       }
       
@@ -2887,10 +3214,70 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
     if (!npcChallengeData) return;
     
     try {
+      // Add player message to chat
+      const playerMessage: ChatMessageType = {
+        role: 'player',
+        content: currentMessage.trim(),
+        timestamp: new Date(),
+        turn: turnCounter + 1
+      };
+      setChatHistory(prev => [...prev, playerMessage]);
+      
+      // Update attack action in action log
+      if (selectedSuggestionId) {
+        const actionLog = actionSuggestionService.getActionLog();
+        const updatedLog = actionLog.map(entry => {
+          if (entry.actionId === selectedSuggestionId && entry.attackAction) {
+            return {
+              ...entry,
+              attackAction: {
+                ...entry.attackAction,
+                accepted: true
+              }
+            };
+          }
+          return entry;
+        });
+        actionSuggestionService.saveActionLog(updatedLog[0]); // Save the updated entry
+        setActionLog(updatedLog);
+      }
+      
       // Navigate to combat with NPC challenge data
+      const enemy = {
+        id: npcChallengeData.npcId,
+        name: npcChallengeData.npcName,
+        description: `Một ${npcChallengeData.npcName} đang tức giận vì bị tấn công.`,
+        type: 'humanoid',
+        level: npcChallengeData.combatStats.level || npcChallengeData.combatStats.combatLevel || 1,
+        combatLevel: npcChallengeData.combatStats.combatLevel || npcChallengeData.combatStats.level || 1,
+        characterLevel: npcChallengeData.combatStats.characterLevel,
+        stats: npcChallengeData.combatStats.stats || {
+          strength: 10,
+          agility: 10,
+          constitution: 10,
+          intelligence: 10,
+          wisdom: 10,
+          charisma: 10,
+          modifiers: {
+            strength: 0,
+            agility: 0,
+            constitution: 0,
+            intelligence: 0,
+            wisdom: 0,
+            charisma: 0
+          }
+        },
+        health: npcChallengeData.combatStats.health || { current: 20, max: 20 },
+        armorClass: npcChallengeData.combatStats.armorClass || 10,
+        attacks: npcChallengeData.combatStats.attacks || [],
+        abilities: npcChallengeData.combatStats.abilities,
+        experienceReward: (npcChallengeData.combatStats.combatLevel || npcChallengeData.combatStats.level || 1) * 10,
+        npcId: npcChallengeData.npcId
+      };
+      
       const combatData = {
         type: 'npc_challenge',
-        enemies: [npcChallengeData.combatStats],
+        enemies: [enemy],
         worldDifficulty: 'medium'
       };
       
@@ -2909,19 +3296,32 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
   };
 
   const handleDeclineChallenge = () => {
+    // Update attack action in action log
+    if (selectedSuggestionId) {
+      const actionLog = actionSuggestionService.getActionLog();
+      const updatedLog = actionLog.map(entry => {
+        if (entry.actionId === selectedSuggestionId && entry.attackAction) {
+          return {
+            ...entry,
+            attackAction: {
+              ...entry.attackAction,
+              accepted: false
+            }
+          };
+        }
+        return entry;
+      });
+      actionSuggestionService.saveActionLog(updatedLog[0]); // Save the updated entry
+      setActionLog(updatedLog);
+    }
+    
     // Close modal
     setShowNPCChallengeModal(false);
     setNpcChallengeData(null);
     
-    // Add message to chat about declining
-    const declineMessage: ChatMessageType = {
-      role: 'player',
-      content: `Tôi từ chối thách đấu từ ${npcChallengeData?.npcName || 'NPC'}.`,
-      timestamp: new Date(),
-      turn: turnCounter + 1
-    };
-    
-    setChatHistory(prev => [...prev, declineMessage]);
+    // Clear current message and selection
+    setCurrentMessage('');
+    setSelectedSuggestionId(null);
   };
 
   // Generate image for AI response
@@ -3506,6 +3906,47 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       turn: turnCounter || 0,
       enemyName: enemyName
     }));
+    
+    // ADDED: Save flee information to combat_history for encounter rate reset
+    try {
+      const currentTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
+      
+      // Create a CombatResultData for random encounter flee
+      const fleeCombatData = {
+        combatId: `flee_random_${Date.now()}`,
+        duration: 0,
+        victory: false,
+        playerFled: true,
+        enemyNames: [enemyName],
+        enemiesDefeated: [],
+        characterUpdates: {
+          healthBefore: 0,
+          healthAfter: 0,
+          healthLost: 0,
+          experienceGained: 0,
+          combatLevelBefore: 0,
+          combatLevelAfter: 0,
+          leveledUp: false,
+          totalDamageDealt: 0,
+          totalDamageTaken: 0,
+          turnsPlayed: 0,
+          attacksLanded: 0,
+          attacksMissed: 0
+        },
+        rewards: {
+          experience: 0,
+          items: []
+        },
+        metadata: {
+          gameTurn: currentTurn
+        }
+      };
+      
+      combatDataService.addToCombatHistory(fleeCombatData);
+      console.log('📝 Updated combat_history with random encounter flee turn:', currentTurn);
+    } catch (error) {
+      console.error('Error updating combat_history with random encounter flee:', error);
+    }
     
     // Clear random combat data
     setRandomCombatData(null);

@@ -35,9 +35,9 @@ class GeminiService {
           if (arrayMatch) {
             return JSON.parse(arrayMatch[0]);
           }
-        } catch {
-          // Nếu tất cả đều fail, log và return fallback
-          console.warn('⚠️ JSON parse failed, using fallback data');
+        } catch (parseError) {
+          // Nếu tất cả đều fail, log và return fallback với thông báo lỗi cụ thể
+          console.warn('⚠️ JSON parse failed, using fallback data:', parseError);
           return fallbackData;
         }
       }
@@ -175,31 +175,90 @@ class GeminiService {
   }
 
   private getDetailedErrorMessage(error: any): string {
-    if (error.message?.includes('timeout')) {
+    // Xử lý lỗi từ Google Generative AI SDK
+    if (error.message?.includes('timeout') || error.message?.includes('TIMEOUT')) {
       return 'Kết nối timeout - API key có thể không hợp lệ hoặc mạng chậm';
     }
     
-    if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('invalid')) {
+    if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('invalid') || error.message?.includes('INVALID_API_KEY')) {
       return 'API key không hợp lệ - vui lòng kiểm tra lại key';
     }
     
-    if (error.message?.includes('QUOTA_EXCEEDED') || error.message?.includes('quota')) {
+    if (error.message?.includes('QUOTA_EXCEEDED') || error.message?.includes('quota') || error.message?.includes('RESOURCE_EXHAUSTED')) {
       return 'Đã vượt quá quota API - vui lòng kiểm tra billing';
     }
     
-    if (error.message?.includes('PERMISSION_DENIED') || error.message?.includes('permission')) {
+    if (error.message?.includes('PERMISSION_DENIED') || error.message?.includes('permission') || error.message?.includes('PERMISSION_DENIED')) {
       return 'Không có quyền truy cập - API key có thể bị hạn chế';
     }
     
-    if (error.message?.includes('UNAVAILABLE') || error.message?.includes('unavailable')) {
+    if (error.message?.includes('UNAVAILABLE') || error.message?.includes('unavailable') || error.message?.includes('SERVICE_UNAVAILABLE')) {
       return 'Dịch vụ Gemini API tạm thời không khả dụng';
     }
     
-    if (error.message?.includes('network') || error.message?.includes('fetch')) {
+    if (error.message?.includes('network') || error.message?.includes('fetch') || error.message?.includes('NETWORK_ERROR')) {
       return 'Lỗi kết nối mạng - vui lòng kiểm tra internet';
     }
     
-    return `Lỗi không xác định: ${error.message || 'Unknown error'}`;
+    // Xử lý lỗi JSON parsing
+    if (error.message?.includes('JSON') || error.message?.includes('parse') || error.message?.includes('syntax')) {
+      return 'Lỗi phân tích phản hồi từ AI - dữ liệu không hợp lệ';
+    }
+    
+    // Xử lý lỗi PROHIBITED_CONTENT
+    if (error.message?.includes('PROHIBITED_CONTENT') || error.message?.includes('SAFETY') || error.message?.includes('BLOCKED_REASON')) {
+      return 'Nội dung bị chặn bởi bộ lọc an toàn - vui lòng thử hành động khác';
+    }
+    
+    // Xử lý lỗi RATE_LIMIT
+    if (error.message?.includes('RATE_LIMIT') || error.message?.includes('rate limit') || error.message?.includes('TOO_MANY_REQUESTS')) {
+      return 'Quá nhiều yêu cầu - vui lòng chờ một chút rồi thử lại';
+    }
+    
+    // Xử lý lỗi INTERNAL
+    if (error.message?.includes('INTERNAL') || error.message?.includes('internal error')) {
+      return 'Lỗi nội bộ của Google AI - vui lòng thử lại sau';
+    }
+    
+    // Xử lý lỗi BAD_REQUEST
+    if (error.message?.includes('BAD_REQUEST') || error.message?.includes('bad request')) {
+      return 'Yêu cầu không hợp lệ - vui lòng thử lại';
+    }
+    
+    // Xử lý lỗi NOT_FOUND
+    if (error.message?.includes('NOT_FOUND') || error.message?.includes('not found')) {
+      return 'Tài nguyên không tìm thấy - vui lòng kiểm tra cấu hình';
+    }
+    
+    // Xử lý lỗi từ response body nếu có
+    if (error.response?.data?.error?.message) {
+      return this.getDetailedErrorMessage({ message: error.response.data.error.message });
+    }
+    
+    // Xử lý lỗi từ status code
+    if (error.status) {
+      switch (error.status) {
+        case 400:
+          return 'Yêu cầu không hợp lệ (400)';
+        case 401:
+          return 'Không có quyền truy cập (401) - kiểm tra API key';
+        case 403:
+          return 'Bị từ chối truy cập (403) - kiểm tra quyền hạn';
+        case 404:
+          return 'Không tìm thấy tài nguyên (404)';
+        case 429:
+          return 'Quá nhiều yêu cầu (429) - vui lòng chờ';
+        case 500:
+          return 'Lỗi máy chủ (500) - thử lại sau';
+        case 503:
+          return 'Dịch vụ tạm thời không khả dụng (503)';
+        default:
+          return `Lỗi HTTP ${error.status}: ${error.message || 'Unknown error'}`;
+      }
+    }
+    
+    // Trả về thông báo lỗi gốc nếu có, hoặc thông báo mặc định
+    return error.message || 'Lỗi không xác định từ Google AI SDK';
   }
 
   // Multi API Key methods
@@ -519,7 +578,10 @@ HƯỚNG DẪN MÔ TẢ Y HỌC:
     } catch (error) {
       console.error('Error generating content:', error);
       this.handleProhibitedContentError(error, 'generateContent');
-      throw new Error('Không thể tạo nội dung. Vui lòng thử lại.');
+      
+      // Sử dụng thông báo lỗi cụ thể từ Google SDK
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -544,7 +606,8 @@ QUAN TRỌNG:
       return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo ý tưởng cốt lõi:', error);
-      throw new Error('Không thể tạo ý tưởng cốt lõi. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -585,7 +648,8 @@ Xuất ra JSON đúng SCHEMA, không thêm văn bản ngoài JSON:
       return this.parseJsonResponse(response, fallbackData);
     } catch (error) {
       console.error('Lỗi khi tạo thể loại và bối cảnh:', error);
-      throw new Error('Không thể tạo thể loại và bối cảnh. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -622,7 +686,8 @@ Xuất ra JSON đúng schema sau, không thêm văn bản ngoài JSON:
       return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo nguyên tắc cốt lõi:', error);
-      throw new Error('Không thể tạo nguyên tắc cốt lõi. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -679,7 +744,8 @@ Xuất ra JSON đúng schema sau, không thêm văn bản ngoài JSON:
       return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo thực thể nền tảng:', error);
-      throw new Error('Không thể tạo thực thể nền tảng. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -833,7 +899,8 @@ Yêu cầu bổ sung:
       return result;
     } catch (error) {
       console.error('Lỗi khi phân tích nhân vật:', error);
-      throw new Error('Không thể phân tích nhân vật. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -990,7 +1057,8 @@ Chỉ trả về JSON, không có text khác.`;
       return this.parseJsonResponse(responseText, fallbackData);
     } catch (error) {
       console.error('Lỗi khi đề xuất chỉ số:', error);
-      throw new Error('Không thể đề xuất chỉ số. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -1028,7 +1096,7 @@ Tạo 3 kỹ năng ngẫu nhiên từ các loại sau (KHÔNG bắt buộc phả
 **DAMAGE SKILLS**: Kỹ năng gây sát thương trong combat
 - BẮT BUỘC có ít nhất 2 effects trong array
 - Ví dụ: ["instant_damage:1d6+2", "stat_buff:strength:+1:self:2turns"]
-- Damage phải cân bằng: 1d6+2, 1d8+1, 1d4+1d4 (tổng 3-10 damage)
+- Damage phải cân bằng: 1d6+2, 1d8+1, 2d4+1 (tổng 3-10 damage)
 - Cooldown: 2-4 lượt (random quanh 3)
 - Icon: emoji phù hợp (⚔️, 🔥, ⚡, etc.)
 - requiresTarget: true
@@ -1036,7 +1104,7 @@ Tạo 3 kỹ năng ngẫu nhiên từ các loại sau (KHÔNG bắt buộc phả
 **HEALING SKILLS**: Kỹ năng hồi phục/buff trong combat
 - BẮT BUỘC có ít nhất 2 effects trong array
 - Ví dụ: ["instant_heal:1d6+2", "stat_buff:constitution:+1:self:2turns"] hoặc ["defend", "stat_buff:ac:+1:self:2turns"]
-- Healing phải cân bằng: 1d6+2, 1d4+1+1d4+1d4, 1d4+1d4 (tổng 3-10 healing)
+- Healing phải cân bằng: 1d6+2, 2d4+2, 3d4+1 (tổng 3-10 healing)
 - Cooldown: 2-4 lượt (random quanh 3)
 - Icon: emoji phù hợp (💚, ✨, 🛡️, etc.)
 - requiresTarget: false
@@ -1153,7 +1221,8 @@ RULES QUAN TRỌNG:
       return this.parseJsonResponse(responseText, fallbackData);
     } catch (error) {
       console.error('Lỗi khi reroll skills:', error);
-      throw new Error('Không thể tạo skills mới. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -1279,6 +1348,7 @@ SCHEMA JSON (bắt buộc):
     "caps": "string",
     "effects": ["string"]
   },
+  "difficulty": "${difficulty}",
   "narrativeOpening": "string"
 }`;
 
@@ -1286,7 +1356,8 @@ SCHEMA JSON (bắt buộc):
       return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Lỗi khi tạo thế giới hoàn chỉnh:', error);
-      throw new Error('Không thể tạo thế giới. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -2092,7 +2163,8 @@ SCHEMA:
       return result;
     } catch (error) {
       console.error('Lỗi khi tạo scenario skeleton:', error);
-      throw new Error('Không thể tạo kịch bản. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -2134,7 +2206,8 @@ Chỉ xuất văn xuôi, không thêm lời dẫn.`;
       return response.trim();
     } catch (error) {
       console.error('Lỗi khi tạo opening narrative:', error);
-      throw new Error('Không thể tạo lời mở đầu. Vui lòng thử lại.');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -3143,38 +3216,12 @@ MỤC ĐÍCH:
       console.error('Error checking flee data:', error);
     }
     
-    // Check if player just finished combat (victory/defeat) - reset encounter chance for 1 turn
-    let playerJustFinishedCombat = false;
-    try {
-      const combatHistoryData = localStorage.getItem('combat_history');
-      if (combatHistoryData) {
-        const combatHistory = JSON.parse(combatHistoryData);
-        if (combatHistory.defeatedEnemies && Array.isArray(combatHistory.defeatedEnemies)) {
-          // Check if any enemy was defeated in the last 1 turn
-          const recentDefeats = combatHistory.defeatedEnemies.filter((enemy: any) => {
-            const turnsSinceDefeat = (turnCounter || 0) - (enemy.turn || 0);
-            return turnsSinceDefeat <= 1;
-          });
-          
-          if (recentDefeats.length > 0) {
-            playerJustFinishedCombat = true;
-            console.log('🔍 Recent combat detected:', {
-              currentTurn: turnCounter,
-              recentDefeats: recentDefeats.length,
-              lastDefeatTurn: recentDefeats[recentDefeats.length - 1]?.turn
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error checking combat history data:', error);
-    }
     
     // NEW ENCOUNTER RATE SYSTEM: 0% → tăng dần sau 4 turn → reset về 0% sau combat
     let baseEncounterRate = 0.33; // Default 33% (trung bình)
     try {
       const worldData = JSON.parse(worldJson);
-      const difficulty = worldData.difficulty?.toLowerCase() || 'trung bình';
+      const difficulty = worldData.worldDifficulty?.toLowerCase() || worldData.difficulty?.toLowerCase() || 'trung bình';
       
       if (difficulty.includes('dễ') || difficulty.includes('easy')) {
         baseEncounterRate = 0.20; // 20% chance (dễ)
@@ -3192,11 +3239,13 @@ MỤC ĐÍCH:
     // Check for last combat encounter (victory/defeat/flee)
     let lastCombatTurn = -1;
     
-    // Check combat history for last defeat
+    // Check combat history for last combat (victory/defeat/flee)
     try {
       const combatHistoryData = localStorage.getItem('combat_history');
       if (combatHistoryData) {
         const combatHistory = JSON.parse(combatHistoryData);
+        
+        // Check if it's the old format (defeatedEnemies array)
         if (combatHistory.defeatedEnemies && Array.isArray(combatHistory.defeatedEnemies)) {
           const recentCombat = combatHistory.defeatedEnemies
             .filter((enemy: any) => enemy.turn !== undefined)
@@ -3206,12 +3255,22 @@ MỤC ĐÍCH:
             lastCombatTurn = recentCombat.turn || 0;
           }
         }
+        // Check if it's the new format (CombatResultData array)
+        else if (Array.isArray(combatHistory)) {
+          const recentCombat = combatHistory
+            .filter((combat: any) => combat.metadata?.gameTurn !== undefined)
+            .sort((a: any, b: any) => (b.metadata?.gameTurn || 0) - (a.metadata?.gameTurn || 0))[0];
+          
+          if (recentCombat) {
+            lastCombatTurn = recentCombat.metadata.gameTurn || 0;
+          }
+        }
       }
     } catch (error) {
       console.error('Error checking combat history:', error);
     }
     
-    // Check flee data
+    // Check flee data (for random encounter flee - keep as backup)
     try {
       const fledData = localStorage.getItem('player_fled_random_combat');
       if (fledData) {
@@ -3232,11 +3291,16 @@ MỤC ĐÍCH:
       lastCombatTurn,
       turnsSinceLastEncounter,
       baseEncounterRate,
-      playerFledRecently,
-      playerJustFinishedCombat
+      playerFledRecently
     });
     
-    if (turnsSinceLastEncounter >= 4) {
+    if (lastCombatTurn === -1) {
+      // No combat history yet - use base rate
+      encounterRate = baseEncounterRate;
+      console.log('🔍 Encounter rate: base rate (no combat history)', {
+        targetRate: baseEncounterRate
+      });
+    } else if (turnsSinceLastEncounter >= 4) {
       // After 4 turns: reach target rate and maintain
       encounterRate = baseEncounterRate;
       console.log('🔍 Encounter rate: reached target rate', {
@@ -3265,6 +3329,16 @@ Hãy kể tiếp câu chuyện dựa trên:
 - CHAT_DELTA: chỉ các lượt chat kể từ snapshot tới trước hành động hiện tại,
 - PLAYER_ACTION: hành động người chơi vừa nêu.
 - GAME_TIME: thời gian trong game (ảnh hưởng đến phản ứng của thế giới và NPC).
+
+🎲 DC CHECK RESULTS (nếu có):
+- Nếu PLAYER_ACTION chứa "[DC CHECK RESULT]", đây là kết quả của một skill check
+- Format: [DC CHECK RESULT]
+  - Stat: [Tên stat] (Strength, Agility, Constitution, Intelligence, Wisdom, Charisma)
+  - Roll: [Số xúc xắc] + [Modifier] = [Tổng]
+  - DC: [Difficulty Class]
+  - Result: SUCCESS/FAILURE
+- Phản ứng dựa trên kết quả: SUCCESS = hành động thành công, FAILURE = hành động thất bại
+- Tích hợp kết quả vào narrative một cách tự nhiên
 ${shouldTriggerCombat ? `
 ⚠️ RANDOM COMBAT ENCOUNTER TRIGGERED (Turn ${turnCounter}):
 - Tích hợp một cuộc đối đầu bất ngờ phù hợp với sceneState và tình huống hiện tại
@@ -3760,7 +3834,10 @@ QUAN TRỌNG VỀ OUTPUT:
     } catch (error) {
       console.error('Lỗi khi tạo turn response với delta context streaming:', error);
       this.handleProhibitedContentError(error, 'generateTurnResponseWithDeltaStreaming');
-      throw new Error('Không thể tạo phản hồi. Vui lòng thử lại.');
+      
+      // Sử dụng thông báo lỗi cụ thể từ Google SDK thay vì thông báo chung chung
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
@@ -4053,7 +4130,8 @@ Trả về JSON format:
       return await this.generateContent(prompt, undefined);
     } catch (error) {
       console.error('Error generating world details:', error);
-      throw new Error('Có lỗi xảy ra khi tạo chi tiết thế giới');
+      const detailedError = this.getDetailedErrorMessage(error);
+      throw new Error(detailedError);
     }
   }
 
