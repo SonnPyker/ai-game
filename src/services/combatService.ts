@@ -831,7 +831,8 @@ class CombatService {
       // Trigger floating text for damage results
       if (result.logType === 'damage') {
         // Extract damage amount and target from description
-        const damageMatch = result.description.match(/gây (\d+) sát thương cho (.+?)(?:\s|$)/);
+        // Updated regex to match format: "gây 14(3d6) sát thương cho Enemy"
+        const damageMatch = result.description.match(/gây (\d+)\([^)]+\) sát thương cho (.+?)(?:\s|$)/);
         if (damageMatch) {
           const damage = parseInt(damageMatch[1]);
           const targetName = damageMatch[2];
@@ -959,12 +960,13 @@ class CombatService {
     const items: InventoryItem[] = [];
     
     // Track defeated enemies for quest system
+    const gameTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
     const defeatedEnemiesInfo = defeatedEnemies.map(enemy => ({
       name: enemy.name,
       type: enemy.enemyData?.type || 'other',
       enemyId: enemy.enemyData?.npcId, // if enemy is NPC
       defeatedAt: new Date(),
-      turn: this.currentCombat!.currentTurn
+      turn: gameTurn // Use game turn counter, not combat turn
     }));
 
     // Save to combat history
