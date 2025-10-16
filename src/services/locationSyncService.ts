@@ -78,13 +78,20 @@ class LocationSyncService {
     // Kiểm tra locationType trực tiếp
     if (location.locationType === 'shop') return true;
 
+    // Kiểm tra type trực tiếp
+    if (location.type === 'shop') return true;
+
     // Kiểm tra ID pattern
     if (location.id && location.id.startsWith('loc_shop')) return true;
 
-    // Kiểm tra tên
+    // Kiểm tra tên - mở rộng danh sách từ khóa
     if (location.name) {
       const name = location.name.toLowerCase();
-      const shopKeywords = ['chợ', 'cửa hàng', 'tiệm', 'shop', 'market', 'store'];
+      const shopKeywords = [
+        'chợ', 'cửa hàng', 'tiệm', 'shop', 'market', 'store', 
+        'bazaar', 'boutique', 'emporium', 'outlet', 'mart',
+        'trading post', 'merchant', 'vendor', 'trader'
+      ];
       if (shopKeywords.some(keyword => name.includes(keyword))) return true;
     }
 
@@ -112,14 +119,20 @@ class LocationSyncService {
     }
 
     const syncedWorldData = { ...worldData };
+    let fixedCount = 0;
+    
     syncedWorldData.locations = worldData.locations.map((location: any) => {
       // Đảm bảo mỗi location có đầy đủ thuộc tính cần thiết
       const syncedLocation = { ...location };
+
+      // Kiểm tra xem location có phải là shop dựa trên tên và mô tả
+      const isShopByName = this.isShopLocation(location);
 
       // Nếu location có ID bắt đầu bằng 'loc_shop' nhưng không có locationType
       if (location.id && location.id.startsWith('loc_shop') && !location.locationType) {
         console.log(`🔄 [LocationSync] Adding missing locationType for shop: ${location.name}`);
         syncedLocation.locationType = 'shop';
+        fixedCount++;
       }
 
       // 🚨 CRITICAL: Đảm bảo shop locations có type: "shop" thay vì "secondary"
@@ -127,17 +140,69 @@ class LocationSyncService {
         if (syncedLocation.type !== 'shop') {
           console.log(`🔄 [LocationSync] Fixing shop type for ${location.name}: ${syncedLocation.type} → shop`);
           syncedLocation.type = 'shop';
+          fixedCount++;
         }
         if (syncedLocation.locationType !== 'shop') {
           console.log(`🔄 [LocationSync] Fixing shop locationType for ${location.name}: ${syncedLocation.locationType} → shop`);
           syncedLocation.locationType = 'shop';
+          fixedCount++;
         }
+      }
+
+      // 🚨 NEW: Tự động sửa các địa điểm có tên shop nhưng type sai
+      if (isShopByName && syncedLocation.type !== 'shop') {
+        console.log(`🔄 [LocationSync] Auto-fixing shop type for ${location.name}: ${syncedLocation.type} → shop`);
+        syncedLocation.type = 'shop';
+        syncedLocation.locationType = 'shop';
+        fixedCount++;
       }
 
       return syncedLocation;
     });
 
+    if (fixedCount > 0) {
+      console.log(`✅ [LocationSync] Fixed ${fixedCount} location(s) to ensure proper shop classification`);
+    }
+
     return syncedWorldData;
+  }
+
+  /**
+   * Kiểm tra và báo cáo tình trạng phân loại địa điểm
+   */
+  public validateLocationClassification(worldData: any): {
+    totalLocations: number;
+    shopLocations: number;
+    misclassifiedShops: any[];
+    validShops: any[];
+  } {
+    if (!worldData || !worldData.locations) {
+      return { totalLocations: 0, shopLocations: 0, misclassifiedShops: [], validShops: [] };
+    }
+
+    const locations = worldData.locations;
+    const misclassifiedShops: any[] = [];
+    const validShops: any[] = [];
+
+    locations.forEach((location: any) => {
+      const isShopByName = this.isShopLocation(location);
+      const isShopByType = location.type === 'shop' || location.locationType === 'shop';
+
+      if (isShopByName) {
+        if (isShopByType) {
+          validShops.push(location);
+        } else {
+          misclassifiedShops.push(location);
+        }
+      }
+    });
+
+    return {
+      totalLocations: locations.length,
+      shopLocations: validShops.length + misclassifiedShops.length,
+      misclassifiedShops,
+      validShops
+    };
   }
 }
 

@@ -10,11 +10,15 @@ import { effectProcessingService } from './effectProcessingService';
 import { skillEffectService } from './skillEffectService';
 import { skillTreeService } from './skillTreeService';
 import { combatLevelService } from './combatLevelService';
+import { enemyDatabaseService } from './enemyDatabaseService';
+import { allyManagementService } from './allyManagementService';
+import { npcRelationshipService } from './npcRelationshipService';
+import { combatPreparationService } from './combatPreparationService';
 
 export interface Combatant {
   id: string;
   name: string;
-  type: 'player' | 'enemy' | 'npc';
+  type: 'player' | 'enemy' | 'npc' | 'ally';
   level?: number; // Legacy level field (for backward compatibility)
   combatLevel?: number; // Combat Level (chỉ cho chiến đấu)
   characterLevel?: number; // Character Level (tổng thể)
@@ -34,6 +38,8 @@ export interface Combatant {
   enemyData?: Enemy;
   // For player
   characterData?: Character;
+  // For allies
+  allyNPCId?: string; // ID của NPC gốc nếu type === 'ally'
 }
 
 export interface StatusEffect {
@@ -134,7 +140,7 @@ class CombatService {
   }
 
   // Initialize combat with player and enemies
-  public initiateCombat(player: Character, enemies: Enemy[], worldDifficulty?: string): CombatState {
+  public async initiateCombat(player: Character, enemies: Enemy[], worldDifficulty?: string): Promise<CombatState> {
     const combatants: Combatant[] = [];
 
     // Migrate character skills if needed
@@ -170,6 +176,45 @@ class CombatService {
     };
 
     combatants.push(playerCombatant);
+
+    // Add allies
+    const activeAllies = allyManagementService.getActiveAllies();
+    for (const allyNPC of activeAllies) {
+      // Prepare NPC for combat nếu chưa có stats
+      if (!allyNPC.combatStats || !allyNPC.canBeCombatant) {
+        try {
+          const { npc: preparedNPC } = await combatPreparationService.prepareNPCForCombat(allyNPC.id);
+          Object.assign(allyNPC, preparedNPC);
+        } catch (error) {
+          console.warn('Không thể prepare combat stats cho ally:', error);
+          continue; // Skip this ally if preparation fails
+        }
+      }
+      
+      // Ensure combat stats exist before creating combatant
+      if (allyNPC.combatStats) {
+        const allyCombatant: Combatant = {
+          id: `ally_${allyNPC.id}`,
+          name: allyNPC.name,
+          type: 'ally',
+          allyNPCId: allyNPC.id,
+          level: allyNPC.combatStats.characterLevel,
+          combatLevel: allyNPC.combatStats.combatLevel,
+          characterLevel: allyNPC.combatStats.characterLevel,
+          stats: allyNPC.combatStats.stats,
+          health: { ...allyNPC.combatStats.health },
+          armorClass: allyNPC.combatStats.armorClass,
+          attacks: allyNPC.combatStats.attacks,
+          abilities: allyNPC.combatStats.abilities,
+          initiative: 0,
+          isAlive: true,
+          statusEffects: [],
+          isDefending: false
+        };
+        
+        combatants.push(allyCombatant);
+      }
+    }
 
     // Add enemies
     enemies.forEach((enemy, index) => {
@@ -933,6 +978,7 @@ class CombatService {
     
     const player = this.getCombatant('player');
     const enemies = this.currentCombat.combatants.filter(c => c.type === 'enemy' && c.isAlive);
+    const allies = this.currentCombat.combatants.filter(c => c.type === 'ally' && c.isAlive);
     
     if (!player || !player.isAlive) {
       // Player defeated
@@ -946,7 +992,37 @@ class CombatService {
       this.currentCombat.winner = 'player';
       this.calculateRewards();
       this.addTurnAction('victory', 'Bạn đã chiến thắng!');
+      
+      // Handle ally injuries and healing
+      this.handleAllyCombatEnd(allies);
     }
+  }
+
+  // Handle ally status after combat ends
+  private handleAllyCombatEnd(_survivingAllies: Combatant[]): void {
+    if (!this.currentCombat) return;
+
+    const currentGameTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
+    const allAllies = this.currentCombat.combatants.filter(c => c.type === 'ally');
+    
+    allAllies.forEach(ally => {
+      if (ally.isAlive) {
+        // Restore ally health to max
+        if (ally.allyNPCId) {
+          const npc = npcRelationshipService.getRelationship(ally.allyNPCId);
+          if (npc && npc.combatStats) {
+            npc.combatStats.health.current = npc.combatStats.health.max;
+            npcRelationshipService.addOrUpdateRelationship(npc);
+          }
+        }
+      } else {
+        // Ally died - mark as injured
+        if (ally.allyNPCId) {
+          allyManagementService.injureAlly(ally.allyNPCId, currentGameTurn);
+          this.addTurnAction('info', `${ally.name} bị thương nặng và cần thời gian hồi phục!`);
+        }
+      }
+    });
   }
 
   // Calculate combat rewards
@@ -989,16 +1065,43 @@ class CombatService {
     
     defeatedEnemies.forEach(enemy => {
       if (enemy.enemyData) {
-        totalExperience += enemy.enemyData.experienceReward;
+        // Calculate enhanced experience based on difficulty
+        const difficultyData = enemyDatabaseService.calculateEnemyDifficulty(enemy.enemyData);
+        const baseExp = enemy.enemyData.experienceReward || (enemy.combatLevel || 1) * 25;
         
-        // Use enhanced loot system ONLY
-        const enhancedLoot = enhancedLootService.generateLootForEnemy(enemy.enemyData);
-        if (Array.isArray(enhancedLoot)) {
-          items.push(...enhancedLoot);
+        // Apply difficulty multipliers
+        const difficultyMultipliers = {
+          'easy': 1.0,
+          'medium': 1.5,
+          'hard': 2.2,
+          'extreme': 3.5
+        };
+        
+        const enhancedExp = Math.floor(baseExp * difficultyMultipliers[difficultyData.rating]);
+        totalExperience += enhancedExp;
+        
+        // Log difficulty-based XP bonus
+        if (difficultyData.rating !== 'easy') {
+          this.addTurnAction('info', 
+            `🎯 ${difficultyData.rating.toUpperCase()} Enemy Bonus: +${enhancedExp - baseExp} XP (${difficultyData.score}/100 difficulty)`
+          );
         }
         
-        // REMOVED: Original loot system to prevent invalid items
-        // Only use enhancedLootService for consistent item format
+        // Use enhanced loot system with difficulty scaling
+        const enhancedLoot = enhancedLootService.generateLootForEnemy(enemy.enemyData);
+        if (Array.isArray(enhancedLoot)) {
+          // Apply difficulty-based loot scaling
+          const lootMultiplier = {
+            'easy': 1.0,
+            'medium': 1.3,
+            'hard': 1.8,
+            'extreme': 2.5
+          };
+          
+          // Scale loot quantity and quality based on difficulty
+          const scaledLoot = this.scaleLootByDifficulty(enhancedLoot, difficultyData.rating, lootMultiplier[difficultyData.rating]);
+          items.push(...scaledLoot);
+        }
       }
     });
     
@@ -1268,28 +1371,28 @@ class CombatService {
     return [...this.currentTurnActions];
   }
 
-  // Execute enemy AI turn
-  public async executeEnemyTurn(): Promise<void> {
+  // Execute non-player turn (enemy or ally)
+  public async executeNonPlayerTurn(): Promise<void> {
     if (!this.currentCombat || this.currentCombat.isPlayerTurn) return;
     
     const currentCombatant = this.getCurrentCombatant();
-    if (!currentCombatant || currentCombatant.type !== 'enemy' || !currentCombatant.isAlive) return;
+    if (!currentCombatant || (currentCombatant.type !== 'enemy' && currentCombatant.type !== 'ally') || !currentCombatant.isAlive) return;
     
     try {
       // Get AI difficulty based on world difficulty or default to medium
       const difficulty = this.getAIDifficulty();
       
       // Decide action using AI service
-      const action = await this.decideEnemyAction(currentCombatant, difficulty);
+      const action = await this.decideNonPlayerAction(currentCombatant, difficulty);
       
       // Execute the action
-      await this.executeEnemyAction(currentCombatant, action);
+      await this.executeNonPlayerAction(currentCombatant, action);
       
-      // End enemy turn after action
+      // End turn after action
       this.endTurn();
       
     } catch (error) {
-      console.error('Error executing enemy turn:', error);
+      console.error('Error executing non-player turn:', error);
       // Fallback to defend action
       this.addTurnAction('status', `${currentCombatant.name} phòng thủ do lỗi AI`);
       // End turn even on error
@@ -1307,17 +1410,23 @@ class CombatService {
     return 'medium';
   }
 
-  // Decide enemy action using AI service
-  private async decideEnemyAction(
-    enemy: Combatant,
+  // Decide non-player action using AI service
+  private async decideNonPlayerAction(
+    combatant: Combatant,
     difficulty: 'easy' | 'medium' | 'hard'
   ): Promise<CombatAction> {
     const allCombatants = this.currentCombat?.combatants || [];
     
+    // Handle ally AI differently
+    if (combatant.type === 'ally') {
+      return enemyAIService.decideAllyAction(combatant, allCombatants, 'hard', this.currentCombat?.worldDifficulty);
+    }
+    
+    // Handle enemy AI
     // Check if should use AI service for complex decisions
-    if (enemyAIService.shouldUseAIService(enemy, difficulty)) {
+    if (enemyAIService.shouldUseAIService(combatant, difficulty)) {
       try {
-        return await enemyAIService.generateAICombatDecision(enemy, allCombatants, {
+        return await enemyAIService.generateAICombatDecision(combatant, allCombatants, {
           turn: this.currentCombat?.currentTurn || 1,
           difficulty: this.currentCombat?.worldDifficulty
         });
@@ -1327,11 +1436,11 @@ class CombatService {
     }
     
     // Use logic-based AI
-    return enemyAIService.decideAction(enemy, allCombatants, difficulty, this.currentCombat?.worldDifficulty);
+    return enemyAIService.decideAction(combatant, allCombatants, difficulty, this.currentCombat?.worldDifficulty);
   }
 
-  // Execute enemy action
-  private async executeEnemyAction(enemy: Combatant, action: CombatAction): Promise<void> {
+  // Execute non-player action
+  private async executeNonPlayerAction(combatant: Combatant, action: CombatAction): Promise<void> {
     // Add delay before enemy action for better visibility
     await new Promise(resolve => setTimeout(resolve, 400));
     
@@ -1341,22 +1450,22 @@ class CombatService {
           const target = this.getCombatant(action.targetId);
           if (target && target.isAlive) {
             this.addTurnAction('attack', action.description);
-            await this.performAttack(enemy.id, target.id, action.attackIndex);
+            await this.performAttack(combatant.id, target.id, action.attackIndex);
           }
         }
         break;
         
       case 'defend':
         this.addTurnAction('status', action.description);
-        this.defend(enemy.id);
+        this.defend(combatant.id);
         break;
         
       case 'use_item':
         if (action.itemId && action.targetId) {
-          const item = enemy.inventory?.find(i => i.id === action.itemId);
+          const item = combatant.inventory?.find(i => i.id === action.itemId);
           if (item) {
             this.addTurnAction('heal', action.description);
-            this.useItem(enemy.id, item, action.targetId);
+            this.useItem(combatant.id, item, action.targetId);
           }
         }
         break;
@@ -1383,7 +1492,7 @@ class CombatService {
     // Add delay for better UX - enemy turns should be visible
     await new Promise(resolve => setTimeout(resolve, 800));
     
-    await this.executeEnemyTurn();
+    await this.executeNonPlayerTurn();
     
     // Add delay after enemy action for better visibility
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -1652,6 +1761,43 @@ class CombatService {
   public canEndTurn(): boolean {
     if (!this.currentCombat?.turnState) return false;
     return this.currentCombat.turnState.mainActionUsed;
+  }
+
+  // Scale loot by difficulty rating
+  private scaleLootByDifficulty(
+    loot: InventoryItem[], 
+    difficulty: 'easy' | 'medium' | 'hard' | 'extreme',
+    multiplier: number
+  ): InventoryItem[] {
+    if (difficulty === 'easy' || multiplier <= 1.0) {
+      return loot;
+    }
+
+    const scaledLoot: InventoryItem[] = [];
+    
+    // Add original loot
+    scaledLoot.push(...loot);
+    
+    // Add bonus loot based on difficulty
+    const bonusChance = Math.min((multiplier - 1) * 0.3, 0.6); // Max 60% chance for bonus loot
+    
+    loot.forEach(item => {
+      if (Math.random() < bonusChance) {
+        // Create enhanced version of the item
+        const enhancedItem: InventoryItem = {
+          ...item,
+          id: `${item.id}_enhanced_${Date.now()}`,
+          name: `Enhanced ${item.name}`,
+          description: `${item.description} (Enhanced by ${difficulty.toUpperCase()} difficulty)`,
+          // Scale item stats based on difficulty
+          attackBonus: item.attackBonus ? Math.floor(item.attackBonus * (1 + (multiplier - 1) * 0.3)) : undefined,
+          armorClass: item.armorClass ? Math.floor(item.armorClass * (1 + (multiplier - 1) * 0.2)) : undefined
+        };
+        scaledLoot.push(enhancedItem);
+      }
+    });
+    
+    return scaledLoot;
   }
 
 

@@ -66,6 +66,8 @@ export interface Character {
   // Skill Tree system
   skillPoints?: { combat: number; social: number }; // Điểm kỹ năng chưa dùng
   skillTree?: SkillTree; // Skill tree đã học
+  // Ally system
+  allies?: string[]; // Mảng NPC IDs của đồng minh
 }
 
 
@@ -793,6 +795,10 @@ export interface NPCRelationship {
     strategy: 'aggressive' | 'defensive' | 'balanced' | 'tactical';
     preferredRange: 'melee' | 'ranged' | 'mixed';
   };
+  // Ally system
+  isAlly?: boolean; // true nếu NPC này là đồng minh của player
+  isInjured?: boolean; // true nếu NPC bị thương (không thể combat)
+  injuredUntilTurn?: number; // Turn game khi NPC hồi phục từ chấn thương
 }
 
 // Arousal system types
@@ -895,13 +901,14 @@ export interface CombatState {
 export interface Combatant {
   id: string;
   name: string;
-  type: 'player' | 'enemy' | 'npc';
+  type: 'player' | 'enemy' | 'npc' | 'ally';
   characterData?: Character; // For player and NPC combatants
   stats: CombatStats;
   statusEffects: StatusEffect[];
   equippedArmor?: InventoryItem;
   isAlive: boolean;
   initiative: number;
+  allyNPCId?: string; // ID của NPC gốc nếu type === 'ally'
 }
 
 // Turn Log for combat history

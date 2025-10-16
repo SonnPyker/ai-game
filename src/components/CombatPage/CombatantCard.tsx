@@ -25,6 +25,8 @@ export function CombatantCard({
   onSelect,
   temporaryPlayerStats
 }: CombatantCardProps) {
+  // Determine if this is an ally
+  const isAlly = combatant.type === 'ally';
   const hpPercentage = (combatant.health.current / combatant.health.max) * 100;
   const isAlive = combatant.isAlive;
   // isCurrentTurn is now passed as prop
@@ -68,7 +70,11 @@ export function CombatantCard({
           relative bg-gray-800/50 rounded-lg border-2 p-4 transition-all duration-200
           ${isSelected ? 'border-yellow-400 shadow-lg shadow-yellow-400/20' : 'border-gray-600'}
           ${!isAlive ? 'opacity-50' : ''}
-          ${isCurrentTurn ? (isEnemy ? 'ring-2 ring-orange-400 border-orange-400 shadow-lg shadow-orange-400/30' : 'ring-2 ring-blue-400 border-blue-400 shadow-lg shadow-blue-400/30') : ''}
+          ${isCurrentTurn ? (
+            isEnemy ? 'ring-2 ring-orange-400 border-orange-400 shadow-lg shadow-orange-400/30' : 
+            isAlly ? 'ring-2 ring-green-400 border-green-400 shadow-lg shadow-green-400/30' :
+            'ring-2 ring-blue-400 border-blue-400 shadow-lg shadow-blue-400/30'
+          ) : ''}
           ${onSelect ? 'cursor-pointer hover:border-gray-500' : ''}
           ${animationState.className}
         `}
@@ -81,9 +87,17 @@ export function CombatantCard({
         <div className="flex items-center space-x-2">
           {/* Current Turn Arrow Indicator */}
           {isCurrentTurn && (
-            <ArrowRight className={`w-5 h-5 ${isEnemy ? 'text-orange-400' : 'text-blue-400'}`} />
+            <ArrowRight className={`w-5 h-5 ${
+              isEnemy ? 'text-orange-400' : 
+              isAlly ? 'text-green-400' : 
+              'text-blue-400'
+            }`} />
           )}
-          <h3 className={`font-bold text-lg ${isEnemy ? 'text-red-400' : 'text-blue-400'}`}>
+          <h3 className={`font-bold text-lg ${
+            isEnemy ? 'text-red-400' : 
+            isAlly ? 'text-green-400' : 
+            'text-blue-400'
+          }`}>
             {combatant.name}
           </h3>
           {isEnemy && (
@@ -91,11 +105,20 @@ export function CombatantCard({
               Kẻ thù
             </span>
           )}
+          {isAlly && (
+            <span className="text-xs bg-green-600/20 text-green-400 px-2 py-1 rounded">
+              Đồng minh
+            </span>
+          )}
         </div>
         
         <div className="flex items-center space-x-2">
           {isCurrentTurn && (
-            <div className={`text-xs font-bold px-2 py-1 rounded ${isEnemy ? 'bg-orange-400/20 text-orange-400' : 'bg-blue-400/20 text-blue-400'}`}>
+            <div className={`text-xs font-bold px-2 py-1 rounded ${
+              isEnemy ? 'bg-orange-400/20 text-orange-400' : 
+              isAlly ? 'bg-green-400/20 text-green-400' :
+              'bg-blue-400/20 text-blue-400'
+            }`}>
               ĐANG LƯỢT
             </div>
           )}

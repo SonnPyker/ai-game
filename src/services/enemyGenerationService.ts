@@ -95,6 +95,11 @@ class EnemyGenerationService {
       experienceReward: level * 25
     };
 
+    // Calculate and store difficulty rating
+    const difficultyData = enemyDatabaseService.calculateEnemyDifficulty(enemy);
+    (enemy as any).difficultyRating = difficultyData.rating;
+    (enemy as any).difficultyScore = difficultyData.score;
+
     return enemy;
   }
 

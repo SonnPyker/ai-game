@@ -82,7 +82,10 @@ export class EnemyAIService {
     }
 
     const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
-    if (alivePlayers.length === 0) {
+    const aliveAllies = allCombatants.filter(c => c.type === 'ally' && c.isAlive);
+    const aliveTargets = [...alivePlayers, ...aliveAllies];
+    
+    if (aliveTargets.length === 0) {
       return null;
     }
 
@@ -91,11 +94,11 @@ export class EnemyAIService {
 
     switch (aiDifficulty) {
       case 'easy':
-        return this.easyConsumableAI(enemy, consumables, alivePlayers, hpPercentage);
+        return this.easyConsumableAI(enemy, consumables, aliveTargets, hpPercentage);
       case 'medium':
-        return this.mediumConsumableAI(enemy, consumables, alivePlayers, hpPercentage);
+        return this.mediumConsumableAI(enemy, consumables, aliveTargets, hpPercentage);
       case 'hard':
-        return this.hardConsumableAI(enemy, consumables, alivePlayers, hpPercentage);
+        return this.hardConsumableAI(enemy, consumables, aliveTargets, hpPercentage);
       default:
         return null;
     }
@@ -107,7 +110,7 @@ export class EnemyAIService {
   private easyConsumableAI(
     enemy: Combatant,
     consumables: any[],
-    _alivePlayers: Combatant[],
+    _aliveTargets: Combatant[],
     hpPercentage: number
   ): CombatAction | null {
     // Only use healing when HP < 30%
@@ -138,7 +141,7 @@ export class EnemyAIService {
   private mediumConsumableAI(
     enemy: Combatant,
     consumables: any[],
-    _alivePlayers: Combatant[],
+    _aliveTargets: Combatant[],
     hpPercentage: number
   ): CombatAction | null {
     // Use healing when HP < 50%
@@ -188,7 +191,7 @@ export class EnemyAIService {
   private hardConsumableAI(
     enemy: Combatant,
     consumables: any[],
-    alivePlayers: Combatant[],
+    aliveTargets: Combatant[],
     hpPercentage: number
   ): CombatAction | null {
     // Use healing when HP < 60%
@@ -259,7 +262,7 @@ export class EnemyAIService {
       );
       
       if (debuffItem) {
-        const target = this.selectRandomTarget(alivePlayers);
+        const target = this.selectRandomTarget(aliveTargets);
         return {
           type: 'use_item',
           targetId: target.id,
@@ -278,14 +281,16 @@ export class EnemyAIService {
    */
   private easyAI(enemy: Combatant, allCombatants: Combatant[]): CombatAction {
     const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
+    const aliveAllies = allCombatants.filter(c => c.type === 'ally' && c.isAlive);
+    const aliveTargets = [...alivePlayers, ...aliveAllies];
     
-    if (alivePlayers.length === 0) {
+    if (aliveTargets.length === 0) {
       return this.createDefendAction();
     }
 
     // 80% chance to attack, 20% to defend
     if (Math.random() < 0.8) {
-      const target = this.selectRandomTarget(alivePlayers);
+      const target = this.selectRandomTarget(aliveTargets);
       const attackIndex = this.selectRandomAttack(enemy);
       
       return {
@@ -305,8 +310,10 @@ export class EnemyAIService {
    */
   private mediumAI(enemy: Combatant, allCombatants: Combatant[]): CombatAction {
     const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
+    const aliveAllies = allCombatants.filter(c => c.type === 'ally' && c.isAlive);
+    const aliveTargets = [...alivePlayers, ...aliveAllies];
     
-    if (alivePlayers.length === 0) {
+    if (aliveTargets.length === 0) {
       return this.createDefendAction();
     }
 
@@ -317,7 +324,7 @@ export class EnemyAIService {
 
     // 90% chance to attack, 10% to defend
     if (Math.random() < 0.9) {
-      const target = this.selectOptimalTarget(enemy, alivePlayers);
+      const target = this.selectOptimalTarget(enemy, aliveTargets);
       const attackIndex = this.selectBestAttack(enemy, target);
       
       return {
@@ -337,15 +344,19 @@ export class EnemyAIService {
    */
   private hardAI(enemy: Combatant, allCombatants: Combatant[]): CombatAction {
     const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
+    const aliveAllies = allCombatants.filter(c => c.type === 'ally' && c.isAlive);
     const aliveEnemies = allCombatants.filter(c => c.type === 'enemy' && c.isAlive && c.id !== enemy.id);
     
-    if (alivePlayers.length === 0) {
+    // Enemies tấn công cả player và allies
+    const aliveTargets = [...alivePlayers, ...aliveAllies];
+    
+    if (aliveTargets.length === 0) {
       return this.createDefendAction();
     }
 
     // NEW: Enemy Coordination for multiple enemies (hard difficulty only)
     if (aliveEnemies.length > 0) {
-            const coordinationAction = this.decideCoordinatedAction(enemy, aliveEnemies, alivePlayers);
+            const coordinationAction = this.decideCoordinatedAction(enemy, aliveEnemies, aliveTargets);
       if (coordinationAction) {
         return coordinationAction;
       }
@@ -358,7 +369,7 @@ export class EnemyAIService {
 
     // Check if should use special ability
     if (enemy.abilities && enemy.abilities.length > 0 && Math.random() < 0.3) {
-      const ability = this.selectBestAbility(enemy, alivePlayers);
+      const ability = this.selectBestAbility(enemy, aliveTargets);
       if (ability) {
         return {
           type: 'ability',
@@ -371,7 +382,7 @@ export class EnemyAIService {
     }
 
     // Focus fire on weakest target
-    const target = this.selectWeakestTarget(enemy, alivePlayers);
+    const target = this.selectWeakestTarget(enemy, aliveTargets);
     const attackIndex = this.selectBestAttack(enemy, target);
     
     return {
@@ -530,6 +541,77 @@ export class EnemyAIService {
   }
 
   /**
+   * Decide action for ally (always uses hard AI targeting enemies)
+   */
+  public decideAllyAction(
+    ally: Combatant,
+    allCombatants: Combatant[],
+    _difficulty: 'easy' | 'medium' | 'hard',
+    _worldDifficulty?: string
+  ): CombatAction {
+    // Allies chỉ tấn công enemies, bảo vệ player và allies khác
+    const aliveEnemies = allCombatants.filter(c => c.type === 'enemy' && c.isAlive);
+    
+    if (aliveEnemies.length === 0) {
+      return this.createDefendAction();
+    }
+    
+    // Logic tấn công enemies cho allies
+    const hpPercentage = (ally.health.current / ally.health.max) * 100;
+    
+    // Nếu HP thấp (< 30%), ưu tiên heal hoặc defend
+    if (hpPercentage < 30) {
+      // Tìm healing item
+      if (ally.inventory) {
+        const healingItem = ally.inventory.find(item => 
+          item.name.toLowerCase().includes('potion') ||
+          item.name.toLowerCase().includes('heal') ||
+          item.name.toLowerCase().includes('health')
+        );
+        
+        if (healingItem) {
+          return {
+            type: 'use_item',
+            targetId: ally.id, // Heal chính mình
+            itemId: healingItem.id,
+            description: `${ally.name} sử dụng ${healingItem.name} để hồi máu`,
+            priority: 2
+          };
+        }
+      }
+      
+      // Nếu không có healing item, defend
+      if (Math.random() < 0.7) {
+        return this.createDefendAction();
+      }
+    }
+    
+    // Chọn enemy target (ưu tiên enemy có HP thấp nhất)
+    const targetEnemy = aliveEnemies.reduce((weakest, enemy) => 
+      (enemy.health.current / enemy.health.max) < (weakest.health.current / weakest.health.max) 
+        ? enemy : weakest
+    );
+    
+    // Chọn attack tốt nhất (dựa trên attack bonus)
+    if (ally.attacks && ally.attacks.length > 0) {
+      const bestAttack = ally.attacks.reduce((best, attack) => 
+        attack.attackBonus > best.attackBonus ? attack : best
+      );
+      
+      return {
+        type: 'attack',
+        targetId: targetEnemy.id,
+        attackIndex: ally.attacks.indexOf(bestAttack),
+        description: `${ally.name} tấn công ${targetEnemy.name} với ${bestAttack.name}`,
+        priority: 1
+      };
+    }
+    
+    // Fallback: defend nếu không có attack
+    return this.createDefendAction();
+  }
+
+  /**
    * Generate AI decision using Gemini API (for complex enemies)
    */
   public async generateAICombatDecision(
@@ -559,6 +641,7 @@ export class EnemyAIService {
    */
   private buildAIPrompt(enemy: Combatant, allCombatants: Combatant[], context: any): string {
     const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
+    const aliveAllies = allCombatants.filter(c => c.type === 'ally' && c.isAlive);
     const aliveEnemies = allCombatants.filter(c => c.type === 'enemy' && c.isAlive);
     
     return `Bạn là AI điều khiển ${enemy.name} trong combat turn-based.
@@ -571,9 +654,10 @@ THÔNG TIN ENEMY:
 - Abilities: ${enemy.abilities?.map(a => a.name).join(', ') || 'Không có'}
 
 MỤC TIÊU CÓ THỂ TẤN CÔNG:
-${alivePlayers.map(p => `- ${p.name}: HP ${p.health.current}/${p.health.max}, AC ${p.armorClass}`).join('\n')}
+${alivePlayers.map(p => `- ${p.name} (Player): HP ${p.health.current}/${p.health.max}, AC ${p.armorClass}`).join('\n')}
+${aliveAllies.map(a => `- ${a.name} (Ally): HP ${a.health.current}/${a.health.max}, AC ${a.armorClass}`).join('\n')}
 
-ĐỒNG MINH:
+ĐỒNG MINH ENEMY:
 ${aliveEnemies.map(e => `- ${e.name}: HP ${e.health.current}/${e.health.max}`).join('\n')}
 
 CONTEXT: ${JSON.stringify(context)}
@@ -620,19 +704,19 @@ Hãy quyết định hành động tối ưu cho ${enemy.name}. Trả về JSON:
   private decideCoordinatedAction(
     enemy: Combatant,
     aliveEnemies: Combatant[],
-    alivePlayers: Combatant[]
+    aliveTargets: Combatant[]
   ): CombatAction | null {
-    // Strategy 1: Focus Fire on weakest player
+    // Strategy 1: Focus Fire on weakest target (player or ally)
     // Tất cả enemies tấn công cùng target
     const focusFireChance = 0.4; // 40% chance
     if (Math.random() < focusFireChance) {
-      const weakestPlayer = this.selectWeakestTarget(enemy, alivePlayers);
-      const attackIndex = this.selectBestAttack(enemy, weakestPlayer);
+      const weakestTarget = this.selectWeakestTarget(enemy, aliveTargets);
+      const attackIndex = this.selectBestAttack(enemy, weakestTarget);
       return {
         type: 'attack',
-        targetId: weakestPlayer.id,
+        targetId: weakestTarget.id,
         attackIndex,
-        description: `${enemy.name} phối hợp với đồng đội, tập trung tấn công ${weakestPlayer.name}`,
+        description: `${enemy.name} phối hợp với đồng đội, tập trung tấn công ${weakestTarget.name}`,
         priority: 4
       };
     }

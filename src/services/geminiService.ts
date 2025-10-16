@@ -1311,7 +1311,8 @@ YÊU CẦU NỘI DUNG:
 6) Tạo TỐI THIỂU 5 địa điểm cốt truyện chính (type: "story") + 2-3 địa điểm phụ (type: "secondary") + TỐI THIỂU 2 địa điểm mua bán (type: "shop", locationType: "shop").
 7) Địa điểm shop phải có tên và mô tả phù hợp với thế giới (VD: "Cửa hàng rèn", "Chợ trời", "Hội quán thương nhân").
 8) QUAN TRỌNG: Shop locations PHẢI có cả type: "shop" VÀ locationType: "shop" để hệ thống nhận diện đúng.
-9) Đặt gridPosition cho mỗi location trên grid 15x15 (x: 0-14, y: 0-14), đảm bảo khoảng cách hợp lý giữa các địa điểm.
+9) TUYỆT ĐỐI KHÔNG được tạo địa điểm có tên chứa từ "chợ", "cửa hàng", "tiệm", "shop", "market", "store" với type: "secondary". Tất cả địa điểm có chức năng mua bán PHẢI có type: "shop".
+10) Đặt gridPosition cho mỗi location trên grid 15x15 (x: 0-14, y: 0-14), đảm bảo khoảng cách hợp lý giữa các địa điểm.
 
 GIỚI HẠN ĐỘ DÀI:
 - narrativeOpening: 150-200 từ

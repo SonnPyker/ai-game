@@ -127,7 +127,7 @@ export function CombatPage({}: CombatPageProps) {
               const worldDifficulty = worldData ? JSON.parse(worldData).difficulty || 'medium' : 'medium';
               
               // Start combat (NPC challenge or random encounter)
-              const newCombatState = combatService.initiateCombat(player, combatData.enemies, worldDifficulty);
+              const newCombatState = await combatService.initiateCombat(player, combatData.enemies, worldDifficulty);
               setCombatState(newCombatState);
               
               // Check if enemy goes first and process their turn
@@ -170,7 +170,7 @@ export function CombatPage({}: CombatPageProps) {
           }
           
           // Start combat with updated player data
-          const newCombatState = combatService.initiateCombat(player, combatData.enemies, worldDifficulty);
+          const newCombatState = await combatService.initiateCombat(player, combatData.enemies, worldDifficulty);
           setCombatState(newCombatState);
           
           // Check if enemy goes first and process their turn
@@ -330,7 +330,7 @@ export function CombatPage({}: CombatPageProps) {
       const worldData = localStorage.getItem('world_gen_result');
       const worldDifficulty = worldData ? JSON.parse(worldData).difficulty : undefined;
       
-      const newCombatState = combatService.initiateCombat(characterData, [enemy], worldDifficulty);
+      const newCombatState = await combatService.initiateCombat(characterData, [enemy], worldDifficulty);
       setCombatState(newCombatState);
       
       // Check if enemy goes first and process their turn
@@ -428,7 +428,7 @@ export function CombatPage({}: CombatPageProps) {
       const worldData = localStorage.getItem('world_gen_result');
       const worldDifficulty = worldData ? JSON.parse(worldData).difficulty : undefined;
       
-      const newCombatState = combatService.initiateCombat(player, testEnemies, worldDifficulty);
+      const newCombatState = await combatService.initiateCombat(player, testEnemies, worldDifficulty);
       setCombatState(newCombatState);
       
       // Check if enemy goes first and process their turn
@@ -1017,6 +1017,7 @@ export function CombatPage({}: CombatPageProps) {
   // Get player combatants
   const playerCombatants = combatState ? combatService.getAlivePlayers() : [];
   const aliveEnemies = combatState ? combatService.getAliveEnemies() : [];
+  const allyCombatants = combatState ? combatState.combatants.filter(c => c.type === 'ally' && c.isAlive) : [];
   
   // Get next combatant name for turn indicator
   const nextCombatantName = useMemo(() => {
@@ -1158,6 +1159,24 @@ export function CombatPage({}: CombatPageProps) {
             </div>
           </div>
         </div>
+
+        {/* Ally Cards - Between Enemy and Player */}
+        {allyCombatants.length > 0 && (
+          <div className="p-2 sm:p-4 border-t border-green-700/30">
+            <div className="flex gap-2 sm:gap-4 flex-wrap justify-center">
+              {allyCombatants.map((ally) => (
+                <div key={ally.id} className="w-[280px] sm:w-auto sm:min-w-[300px] sm:max-w-[400px]">
+                  <CombatantCard
+                    combatant={ally}
+                    isEnemy={false}
+                    isPlayerTurn={combatState?.isPlayerTurn || false}
+                    isCurrentTurn={currentCombatantId === ally.id}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Player Card and Actions */}
         <div className="bg-gray-900/50 border-t border-gray-700 p-2 sm:p-4 flex-shrink-0">

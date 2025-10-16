@@ -206,6 +206,22 @@ export function GamePage() {
   // Removed saveLoading state as it's handled in SavePopup
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [characterDataUpdate, setCharacterDataUpdate] = useState(0);
+
+  // Check and heal allies every turn
+  useEffect(() => {
+    const checkAndHealAllies = async (currentTurn: number) => {
+      try {
+        const { allyManagementService } = await import('../services/allyManagementService');
+        allyManagementService.checkAndHealAllies(currentTurn);
+      } catch (error) {
+        console.error('Error checking ally injuries:', error);
+      }
+    };
+    
+    if (turnCounter > 0) {
+      checkAndHealAllies(turnCounter);
+    }
+  }, [turnCounter]);
   
   
   // Quest offer modal state
@@ -1539,10 +1555,22 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
       // Parse world data and get current time
       const worldDataParsed = JSON.parse(worldData);
-      const currentTime = worldDataParsed.currentTime || worldTimeService.initializeWorldTime(worldDataParsed.startYear || 1);
+      
+      // Validate and sync location classifications
+      const validatedWorldData = locationSyncService.validateAndSyncAllLocations(worldDataParsed);
+      
+      // Log validation results
+      const validationReport = locationSyncService.validateLocationClassification(validatedWorldData);
+      if (validationReport.misclassifiedShops.length > 0) {
+        console.warn(`⚠️ [LocationSync] Found ${validationReport.misclassifiedShops.length} misclassified shop locations:`, 
+          validationReport.misclassifiedShops.map(loc => `${loc.name} (${loc.type})`));
+      }
+      console.log(`✅ [LocationSync] Location validation complete: ${validationReport.validShops.length} valid shops, ${validationReport.misclassifiedShops.length} misclassified`);
+      
+      const currentTime = validatedWorldData.currentTime || worldTimeService.initializeWorldTime(validatedWorldData.startYear || 1);
 
       // Generate scenario skeleton
-      const scenarioSkeleton = await geminiService.generateScenarioSkeleton(worldData, characterData);
+      const scenarioSkeleton = await geminiService.generateScenarioSkeleton(JSON.stringify(validatedWorldData), characterData);
       
       // Tạo quest system hoàn toàn mới từ scenario skeleton
       if (scenarioSkeleton.questSystem) {
@@ -1585,7 +1613,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       
       // Generate opening narrative với thông tin quest
       const openingNarrative = await geminiService.generateOpeningNarrative(
-        worldData, 
+        JSON.stringify(validatedWorldData), 
         characterData, 
         JSON.stringify(scenarioSkeleton),
         questInfo
@@ -1616,7 +1644,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           const { prompt, negativePrompt } = await promptExtractionService.extractVisualPrompt(
             openingNarrative,
             { 
-              location: { name: worldDataParsed.name, description: worldDataParsed.description },
+              location: { name: validatedWorldData.name, description: validatedWorldData.description },
               npcs: [],
               items: [],
               atmosphere: scenarioSkeleton.tone?.join(', ') || 'mysterious'
@@ -1662,7 +1690,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       
       // Initialize player location
       const initialLocationId = locationService.initializePlayerLocation(
-        worldDataParsed,
+        validatedWorldData,
         scenarioSkeleton,
         openingNarrative
       );
@@ -3773,6 +3801,26 @@ ${enhancedMessage}`;
   const handleResendMessage = (messageContent: string, messageIndex: number) => {
     if (isLoading) return; // Không cho resend khi đang loading
     
+    // Kiểm tra loại hành động của tin nhắn này
+    const messageTurn = chatHistory[messageIndex]?.turn;
+    if (messageTurn) {
+      // Tìm action log entry tương ứng với turn này
+      const actionEntry = actionLog.find(entry => entry.turn === messageTurn);
+      
+      if (actionEntry) {
+        // Nếu là hành động từ gợi ý hoặc di chuyển, không cho phép resend
+        if (actionEntry.source === 'suggestion' || actionEntry.source === 'travel') {
+          // Hiển thị thông báo yêu cầu chọn lại từ UI
+          if (actionEntry.source === 'suggestion') {
+            alert('Hành động này từ gợi ý. Vui lòng chọn lại từ danh sách gợi ý hành động bên trái.');
+          } else if (actionEntry.source === 'travel') {
+            alert('Hành động di chuyển này. Vui lòng chọn lại địa điểm trên bản đồ để di chuyển.');
+          }
+          return;
+        }
+      }
+    }
+    
     // Haptic feedback for mobile (if supported)
     if ('vibrate' in navigator) {
       navigator.vibrate(50); // Short vibration
@@ -3793,6 +3841,27 @@ ${enhancedMessage}`;
         textareaRef.current.setSelectionRange(length, length);
       }
     }, 100);
+  };
+
+  // Kiểm tra xem có nên hiển thị nút gửi lại cho tin nhắn này không
+  const shouldShowResendButton = (messageIndex: number): boolean => {
+    const message = chatHistory[messageIndex];
+    if (!message || message.role !== 'player') return false;
+    
+    // Kiểm tra loại hành động của tin nhắn này
+    const messageTurn = message.turn;
+    if (messageTurn) {
+      // Tìm action log entry tương ứng với turn này
+      const actionEntry = actionLog.find(entry => entry.turn === messageTurn);
+      
+      if (actionEntry) {
+        // Chỉ hiển thị nút gửi lại cho hành động manual (thủ công/chat)
+        return actionEntry.source === 'manual';
+      }
+    }
+    
+    // Mặc định hiển thị nút gửi lại cho tin nhắn player (backward compatibility)
+    return true;
   };
 
   // Toggle resend button visibility on mobile
@@ -4338,8 +4407,8 @@ ${enhancedMessage}`;
               className={`flex ${message.role === 'player' ? 'justify-end' : 'justify-start'} gpu-accelerated`}
             >
               <div className={`relative group ${message.role === 'player' ? 'flex items-start space-x-2' : ''}`}>
-                {/* Resend button for player messages */}
-                {message.role === 'player' && (
+                {/* Resend button for player messages - chỉ hiển thị cho hành động manual */}
+                {message.role === 'player' && shouldShowResendButton(index) && (
                   <button
                     onClick={() => handleResendMessage(message.content, index)}
                     disabled={isLoading}

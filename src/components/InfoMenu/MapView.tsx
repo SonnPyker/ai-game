@@ -87,12 +87,12 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
     // Use locationSyncService for enhanced shop detection with fallback
     const isShop = locationSyncService.isShopLocation(cell.location);
     
-    
     if (cell.isCurrentLocation) {
       return 'bg-green-500 text-white border-2 border-green-300 shadow-lg';
     } else if (cell.isNearby) {
       return 'bg-blue-400 text-white border-2 border-blue-200 shadow-md';
     } else if (isShop) {
+      // Ưu tiên hiển thị màu vàng cho tất cả địa điểm được nhận diện là shop
       return 'bg-yellow-500 text-white border-2 border-yellow-300 shadow-md';
     } else if (cell.location.type === 'story') {
       return 'bg-red-500 text-white border-2 border-red-300 shadow-md';

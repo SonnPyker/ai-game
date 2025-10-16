@@ -34,6 +34,7 @@ import { combatLevelService } from '../../services/combatLevelService';
 import { currencyService } from '../../services/currencyService';
 import { locationSyncService } from '../../services/locationSyncService';
 import { locationService } from '../../services/locationService';
+import { allyManagementService } from '../../services/allyManagementService';
 // Combat services removed - now handled in CombatPage
 import { QuestTracker } from '../QuestTracker/QuestTracker';
 import { SCCJournal } from './SCCJournal';
@@ -177,6 +178,31 @@ export function InfoMenu({
     localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
     // Force re-render
     setForceUpdate(prev => prev + 1);
+  }, []);
+
+  // Function to handle ally recruitment
+  const handleRecruitAlly = useCallback(async (npc: any) => {
+    try {
+      const result = await allyManagementService.recruitAlly(npc.id);
+      if (result.success) {
+        alert(result.message);
+        setForceUpdate(prev => prev + 1); // Force re-render
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Error recruiting ally:', error);
+      alert('Lỗi khi chiêu mộ đồng minh');
+    }
+  }, []);
+
+  // Function to handle ally removal
+  const handleRemoveAlly = useCallback((npc: any) => {
+    if (confirm(`Bạn có chắc chắn muốn hủy đồng minh với "${npc.name}"?`)) {
+      allyManagementService.removeAlly(npc.id);
+      setForceUpdate(prev => prev + 1); // Force re-render
+      alert(`${npc.name} không còn là đồng minh`);
+    }
   }, []);
 
   // Combat functions removed - now handled in CombatPage
@@ -1420,6 +1446,64 @@ export function InfoMenu({
                           <Sword className="w-4 h-4" />
                         </button>
                       )}
+                      
+                      {/* Ally Management Buttons */}
+                      {(() => {
+                        const recruitStatus = allyManagementService.canRecruitAlly(relationship.id);
+                        
+                        if (relationship.isAlly) {
+                          // NPC is already an ally
+                          return (
+                            <div className="flex items-center space-x-1">
+                              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
+                                Đồng minh
+                              </span>
+                              {relationship.isInjured && (
+                                <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">
+                                  Bị thương
+                                </span>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveAlly(relationship);
+                                }}
+                                className={getTransitionClass("p-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded transition-colors")}
+                                title="Hủy đồng minh"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          );
+                        } else if (recruitStatus.canRecruit) {
+                          // NPC can be recruited
+                          return (
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRecruitAlly(relationship);
+                                }}
+                                className={getTransitionClass("p-1 text-green-400 hover:text-green-300 hover:bg-green-500/20 rounded transition-colors")}
+                                title={`Mời ${relationship.name} làm đồng minh`}
+                              >
+                                <Users className="w-4 h-4" />
+                              </button>
+                            </div>
+                          );
+                        } else {
+                          // NPC cannot be recruited
+                          return (
+                            <button
+                              disabled
+                              className={getTransitionClass("p-1 text-gray-500 cursor-not-allowed rounded")}
+                              title={recruitStatus.reason}
+                            >
+                              <Users className="w-4 h-4" />
+                            </button>
+                          );
+                        }
+                      })()}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1506,6 +1590,76 @@ export function InfoMenu({
                           className="mt-3"
                         />
                       )}
+
+                      {/* Debug Tools for NPC Relationship */}
+                      <div className="mt-3 p-2 bg-orange-900/20 border border-orange-700/50 rounded-lg">
+                        <h5 className="text-xs font-semibold text-orange-400 mb-2 flex items-center">
+                          <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                          Debug Tools
+                        </h5>
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => {
+                              const newLevel = Math.min(100, relationship.relationshipLevel + 10);
+                              const updatedNPC = { ...relationship, relationshipLevel: newLevel };
+                              npcRelationshipService.addOrUpdateRelationship(updatedNPC);
+                              setForceUpdate(prev => prev + 1);
+                            }}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors duration-200"
+                            title="Cộng 10 điểm quan hệ"
+                          >
+                            +10 QH
+                          </button>
+                          <button
+                            onClick={() => {
+                              const newLevel = Math.min(100, relationship.relationshipLevel + 25);
+                              const updatedNPC = { ...relationship, relationshipLevel: newLevel };
+                              npcRelationshipService.addOrUpdateRelationship(updatedNPC);
+                              setForceUpdate(prev => prev + 1);
+                            }}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors duration-200"
+                            title="Cộng 25 điểm quan hệ"
+                          >
+                            +25 QH
+                          </button>
+                          <button
+                            onClick={() => {
+                              const newLevel = Math.min(100, relationship.relationshipLevel + 50);
+                              const updatedNPC = { ...relationship, relationshipLevel: newLevel };
+                              npcRelationshipService.addOrUpdateRelationship(updatedNPC);
+                              setForceUpdate(prev => prev + 1);
+                            }}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors duration-200"
+                            title="Cộng 50 điểm quan hệ"
+                          >
+                            +50 QH
+                          </button>
+                          <button
+                            onClick={() => {
+                              const newReputation = Math.min(100, relationship.reputation + 10);
+                              const updatedNPC = { ...relationship, reputation: newReputation };
+                              npcRelationshipService.addOrUpdateRelationship(updatedNPC);
+                              setForceUpdate(prev => prev + 1);
+                            }}
+                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors duration-200"
+                            title="Cộng 10 điểm danh tiếng"
+                          >
+                            +10 DT
+                          </button>
+                          <button
+                            onClick={() => {
+                              const newLevel = 80; // Set to ally level
+                              const updatedNPC = { ...relationship, relationshipLevel: newLevel };
+                              npcRelationshipService.addOrUpdateRelationship(updatedNPC);
+                              setForceUpdate(prev => prev + 1);
+                            }}
+                            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors duration-200"
+                            title="Set quan hệ = 80 (có thể chiêu mộ 100%)"
+                          >
+                            Set 80
+                          </button>
+                        </div>
+                      </div>
 
                       {/* Combat Stats - chỉ hiển thị khi NPC có thể combat */}
                       {relationship.canBeCombatant && relationship.combatStats && (

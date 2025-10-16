@@ -381,7 +381,149 @@ class EnemyDatabaseService {
     return false;
   }
 
-  // Generate random enemy stats based on combat level
+  // Get enemy type multipliers for enhanced difficulty calculation
+  private getEnemyTypeMultipliers(enemyType?: Enemy['type']): {
+    strength: number;
+    agility: number;
+    constitution: number;
+    intelligence: number;
+    wisdom: number;
+    charisma: number;
+  } {
+    const multipliers = {
+      strength: 0,
+      agility: 0,
+      constitution: 0,
+      intelligence: 0,
+      wisdom: 0,
+      charisma: 0
+    };
+
+    if (!enemyType) return multipliers;
+
+    switch (enemyType) {
+      case 'beast':
+        multipliers.strength = 2;
+        multipliers.constitution = 2;
+        multipliers.agility = 1;
+        break;
+      case 'undead':
+        multipliers.constitution = 3;
+        multipliers.strength = 1;
+        multipliers.wisdom = -1;
+        multipliers.charisma = -2;
+        break;
+      case 'demon':
+        multipliers.strength = 2;
+        multipliers.constitution = 2;
+        multipliers.intelligence = 1;
+        multipliers.charisma = 1;
+        break;
+      case 'elemental':
+        multipliers.constitution = 2;
+        multipliers.intelligence = 2;
+        multipliers.wisdom = 1;
+        break;
+      case 'construct':
+        multipliers.constitution = 3;
+        multipliers.strength = 1;
+        multipliers.intelligence = -1;
+        multipliers.charisma = -2;
+        break;
+      case 'humanoid':
+        // Balanced stats
+        break;
+      default:
+        // Slight random variation for 'other' types
+        multipliers.strength = Math.floor(Math.random() * 3) - 1;
+        multipliers.constitution = Math.floor(Math.random() * 3) - 1;
+        multipliers.agility = Math.floor(Math.random() * 3) - 1;
+    }
+
+    return multipliers;
+  }
+
+  // Calculate level scaling factors for better progression
+  private calculateLevelScaling(level: number): {
+    physical: number;
+    mental: number;
+  } {
+    // Exponential scaling for higher levels
+    if (level <= 5) {
+      return { physical: 1.5, mental: 0.8 };
+    } else if (level <= 10) {
+      return { physical: 1.8, mental: 1.0 };
+    } else if (level <= 15) {
+      return { physical: 2.2, mental: 1.2 };
+    } else {
+      return { physical: 2.8, mental: 1.5 };
+    }
+  }
+
+  // Calculate comprehensive difficulty rating for enemy
+  public calculateEnemyDifficulty(enemy: Enemy): {
+    rating: 'easy' | 'medium' | 'hard' | 'extreme';
+    score: number;
+    factors: {
+      level: number;
+      hp: number;
+      ac: number;
+      damage: number;
+      abilities: number;
+    };
+  } {
+    const level = enemy.combatLevel || enemy.level || 1;
+    const hp = enemy.health?.max || 1;
+    const ac = enemy.armorClass || 10;
+    
+    // Calculate average damage per attack
+    let avgDamage = 0;
+    if (enemy.attacks && enemy.attacks.length > 0) {
+      enemy.attacks.forEach(attack => {
+        const damageMatch = attack.damage.match(/(\d+)d(\d+)\+?(\d+)?/);
+        if (damageMatch) {
+          const dice = parseInt(damageMatch[1]);
+          const sides = parseInt(damageMatch[2]);
+          const bonus = parseInt(damageMatch[3]) || 0;
+          avgDamage += (dice * (sides + 1) / 2) + bonus;
+        }
+      });
+      avgDamage /= enemy.attacks.length;
+    }
+    
+    // Count abilities
+    const abilityCount = enemy.abilities?.length || 0;
+    
+    // Calculate difficulty score (0-100)
+    const levelScore = Math.min(level * 2, 40); // Max 40 points for level
+    const hpScore = Math.min(hp / 2, 20); // Max 20 points for HP
+    const acScore = Math.min((ac - 10) * 2, 15); // Max 15 points for AC
+    const damageScore = Math.min(avgDamage, 15); // Max 15 points for damage
+    const abilityScore = Math.min(abilityCount * 2, 10); // Max 10 points for abilities
+    
+    const totalScore = levelScore + hpScore + acScore + damageScore + abilityScore;
+    
+    // Determine difficulty rating
+    let rating: 'easy' | 'medium' | 'hard' | 'extreme';
+    if (totalScore < 30) rating = 'easy';
+    else if (totalScore < 50) rating = 'medium';
+    else if (totalScore < 75) rating = 'hard';
+    else rating = 'extreme';
+    
+    return {
+      rating,
+      score: Math.round(totalScore),
+      factors: {
+        level: Math.round(levelScore),
+        hp: Math.round(hpScore),
+        ac: Math.round(acScore),
+        damage: Math.round(damageScore),
+        abilities: Math.round(abilityScore)
+      }
+    };
+  }
+
+  // Generate random enemy stats based on combat level with improved difficulty calculation
   public generateRandomEnemyStats(level: number, enemyType?: Enemy['type']): CombatStats {
     // Use level as seed for consistent stats
     const seed = level * 9301 + 49297;
@@ -394,17 +536,21 @@ class EnemyDatabaseService {
     const wisdomSeed = (seed * 5673 + 8901) % 233280 / 233280;
     const charismaSeed = (seed * 6785 + 9012) % 233280 / 233280;
     
-    // Base stats scale with combat level
-    const basePhysicalStats = 10 + Math.floor(level * 1.5); // Physical stats scale better
-    const baseMentalStats = 8 + Math.floor(level * 0.8); // Mental stats scale slower
+    // Enhanced scaling based on enemy type and level
+    const typeMultipliers = this.getEnemyTypeMultipliers(enemyType);
+    const levelScaling = this.calculateLevelScaling(level);
+    
+    // Base stats with improved scaling
+    const basePhysicalStats = 10 + Math.floor(level * levelScaling.physical);
+    const baseMentalStats = 8 + Math.floor(level * levelScaling.mental);
     
     const baseStats = {
-      strength: Math.max(8, Math.min(20, basePhysicalStats + Math.floor(strengthSeed * 7) - 3)),
-      agility: Math.max(8, Math.min(20, basePhysicalStats + Math.floor(agilitySeed * 7) - 3)),
-      constitution: Math.max(8, Math.min(20, basePhysicalStats + Math.floor(constitutionSeed * 7) - 3)),
-      intelligence: Math.max(8, Math.min(20, baseMentalStats + Math.floor(intelligenceSeed * 5) - 2)),
-      wisdom: Math.max(8, Math.min(20, baseMentalStats + Math.floor(wisdomSeed * 5) - 2)),
-      charisma: Math.max(8, Math.min(20, baseMentalStats + Math.floor(charismaSeed * 5) - 2))
+      strength: Math.max(8, Math.min(22, basePhysicalStats + Math.floor(strengthSeed * 7) - 3 + typeMultipliers.strength)),
+      agility: Math.max(8, Math.min(22, basePhysicalStats + Math.floor(agilitySeed * 7) - 3 + typeMultipliers.agility)),
+      constitution: Math.max(8, Math.min(22, basePhysicalStats + Math.floor(constitutionSeed * 7) - 3 + typeMultipliers.constitution)),
+      intelligence: Math.max(8, Math.min(22, baseMentalStats + Math.floor(intelligenceSeed * 5) - 2 + typeMultipliers.intelligence)),
+      wisdom: Math.max(8, Math.min(22, baseMentalStats + Math.floor(wisdomSeed * 5) - 2 + typeMultipliers.wisdom)),
+      charisma: Math.max(8, Math.min(22, baseMentalStats + Math.floor(charismaSeed * 5) - 2 + typeMultipliers.charisma))
     };
 
     // Calculate modifiers
@@ -417,7 +563,7 @@ class EnemyDatabaseService {
       charisma: Math.floor((baseStats.charisma - 10) / 2)
     };
 
-    // Calculate HP based on constitution and level
+    // Calculate HP based on constitution and level with enhanced scaling
     const baseHP = 8 + modifiers.constitution + (level - 1) * (4 + modifiers.constitution);
     const health = {
       current: baseHP,

@@ -7,6 +7,7 @@ interface ChatMessageProps {
   isResending: boolean;
   onResend: (content: string, index: number) => void;
   isLoading: boolean;
+  shouldShowResendButton?: boolean;
 }
 
 const ChatMessage = memo<ChatMessageProps>(({ 
@@ -14,7 +15,8 @@ const ChatMessage = memo<ChatMessageProps>(({
   index, 
   isResending, 
   onResend, 
-  isLoading 
+  isLoading,
+  shouldShowResendButton = true
 }) => {
   return (
     <div className={`mb-4 ${message.role === 'player' ? 'text-right' : 'text-left'}`}>
@@ -27,8 +29,8 @@ const ChatMessage = memo<ChatMessageProps>(({
           {message.content}
         </div>
         
-        {/* Resend button for player messages */}
-        {message.role === 'player' && (
+        {/* Resend button for player messages - chỉ hiển thị khi được phép */}
+        {message.role === 'player' && shouldShowResendButton && (
           <button
             onClick={() => onResend(message.content, index)}
             disabled={isLoading}

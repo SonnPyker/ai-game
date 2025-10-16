@@ -148,20 +148,54 @@ class NPCChallengeService {
   }
 
   /**
-   * Determine challenge difficulty
+   * Determine challenge difficulty using enhanced calculation
    */
   private determineDifficulty(npc: NPCRelationship): 'easy' | 'medium' | 'hard' {
     const relationshipLevel = npc.relationshipLevel;
     const npcLevel = npc.level || 1;
 
-    // More negative relationship = harder difficulty
-    if (relationshipLevel < -70 || npcLevel > 8) {
-      return 'hard';
-    } else if (relationshipLevel < -40 || npcLevel > 5) {
-      return 'medium';
-    } else {
-      return 'easy';
-    }
+    // Calculate difficulty score based on multiple factors
+    let difficultyScore = 0;
+    
+    // Relationship factor (0-40 points)
+    if (relationshipLevel < -70) difficultyScore += 40;
+    else if (relationshipLevel < -50) difficultyScore += 30;
+    else if (relationshipLevel < -30) difficultyScore += 20;
+    else if (relationshipLevel < -10) difficultyScore += 10;
+    
+    // Level factor (0-30 points)
+    if (npcLevel > 10) difficultyScore += 30;
+    else if (npcLevel > 7) difficultyScore += 20;
+    else if (npcLevel > 4) difficultyScore += 10;
+    
+    // Interaction history factor (0-20 points)
+    if (npc.totalInteractions > 20) difficultyScore += 20;
+    else if (npc.totalInteractions > 10) difficultyScore += 10;
+    else if (npc.totalInteractions > 5) difficultyScore += 5;
+    
+    // Status factor (0-10 points)
+    const statusBonuses: Record<string, number> = {
+      'enemy': 10,
+      'hostile': 8,
+      'rival': 6,
+      'suspicious': 3,
+      'disappointed': 1,
+      'neutral': 0,
+      'friendly': -2,
+      'acquaintance': 0,
+      'ally': -3,
+      'admiring': -1,
+      'respectful': 0,
+      'cautious': 2,
+      'trusting': -1,
+      'competitive': 4
+    };
+    difficultyScore += statusBonuses[npc.status] || 0;
+    
+    // Determine difficulty based on total score
+    if (difficultyScore >= 60) return 'hard';
+    else if (difficultyScore >= 30) return 'medium';
+    else return 'easy';
   }
 
   /**
@@ -197,7 +231,7 @@ class NPCChallengeService {
         damage: `${Math.floor(baseDamage * multiplier.damage / 2)}d4+${Math.floor(baseDamage * multiplier.damage / 4)}`,
         damageType: 'physical'
       }],
-      experienceReward: Math.floor(baseLevel * 10 * (difficulty === 'hard' ? 1.5 : difficulty === 'medium' ? 1.2 : 1)),
+      experienceReward: Math.floor(baseLevel * 15 * (difficulty === 'hard' ? 2.5 : difficulty === 'medium' ? 1.8 : 1.2)),
       type: 'npc_challenger',
       npcId: npc.id,
       npcName: npc.name

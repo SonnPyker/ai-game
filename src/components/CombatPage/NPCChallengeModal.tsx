@@ -52,6 +52,7 @@ export function NPCChallengeModal({
       case 'easy': return 'text-green-400';
       case 'medium': return 'text-yellow-400';
       case 'hard': return 'text-red-400';
+      case 'extreme': return 'text-purple-400';
       default: return 'text-gray-400';
     }
   };
@@ -61,6 +62,7 @@ export function NPCChallengeModal({
       case 'easy': return 'Dễ';
       case 'medium': return 'Trung bình';
       case 'hard': return 'Khó';
+      case 'extreme': return 'Cực Khó';
       default: return 'Không xác định';
     }
   };
