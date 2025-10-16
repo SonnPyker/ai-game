@@ -38,6 +38,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
   const [successMessage, setSuccessMessage] = useState('');
   const [testingKeys, setTestingKeys] = useState<{ [keyId: string]: boolean }>({});
   const [testResults, setTestResults] = useState<{ [keyId: string]: { success: boolean; error?: string; details?: any } }>({});
+  const [validationErrors, setValidationErrors] = useState<{ [field: string]: string }>({});
 
   useEffect(() => {
     loadApiKeys();
@@ -55,9 +56,65 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
     setStats(currentStats);
   };
 
+  // Real-time validation
+  const validateApiKey = (key: string) => {
+    if (!key.trim()) {
+      setValidationErrors(prev => ({ ...prev, apiKey: '' }));
+      return;
+    }
+
+    const duplicateKey = geminiService.findDuplicateKey(key);
+    if (duplicateKey) {
+      setValidationErrors(prev => ({ 
+        ...prev, 
+        apiKey: `API key đã tồn tại với tên "${duplicateKey.name}" trong account "${duplicateKey.accountName}"` 
+      }));
+    } else {
+      setValidationErrors(prev => ({ ...prev, apiKey: '' }));
+    }
+  };
+
+  const validateNameInAccount = (name: string, accountName: string) => {
+    const trimmedName = name.trim() || `API Key ${geminiService.getApiKeys().length + 1}`;
+    const trimmedAccount = accountName.trim() || `Account ${geminiService.getApiKeys().length + 1}`;
+    
+    if (!trimmedName || !trimmedAccount) {
+      setValidationErrors(prev => ({ ...prev, name: '' }));
+      return;
+    }
+
+    const duplicateName = geminiService.findDuplicateNameInAccount(trimmedName, trimmedAccount);
+    if (duplicateName) {
+      setValidationErrors(prev => ({ 
+        ...prev, 
+        name: `Tên "${trimmedName}" đã tồn tại trong account "${trimmedAccount}"` 
+      }));
+    } else {
+      setValidationErrors(prev => ({ ...prev, name: '' }));
+    }
+  };
+
   const handleAddApiKey = async () => {
     if (!newApiKey.trim()) {
       setErrorMessage('Vui lòng nhập API key');
+      setStatus('error');
+      return;
+    }
+
+    // Check trùng key trước khi thêm
+    const duplicateKey = geminiService.findDuplicateKey(newApiKey);
+    if (duplicateKey) {
+      setErrorMessage(`API key đã tồn tại với tên "${duplicateKey.name}" trong account "${duplicateKey.accountName}"`);
+      setStatus('error');
+      return;
+    }
+
+    // Check trùng tên trong cùng account
+    const trimmedName = newApiKeyName.trim() || `API Key ${geminiService.getApiKeys().length + 1}`;
+    const trimmedAccount = newAccountName.trim() || `Account ${geminiService.getApiKeys().length + 1}`;
+    const duplicateName = geminiService.findDuplicateNameInAccount(trimmedName, trimmedAccount);
+    if (duplicateName) {
+      setErrorMessage(`Tên "${trimmedName}" đã tồn tại trong account "${trimmedAccount}"`);
       setStatus('error');
       return;
     }
@@ -81,6 +138,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
       setNewApiKeyName('');
       setNewAccountName('');
       setShowAddForm(false);
+      setValidationErrors({});
       
       loadApiKeys();
       loadStats();
@@ -409,36 +467,62 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                 <input
                   type="text"
                   value={newAccountName}
-                  onChange={(e) => setNewAccountName(e.target.value)}
+                  onChange={(e) => {
+                    setNewAccountName(e.target.value);
+                    validateNameInAccount(newApiKeyName, e.target.value);
+                  }}
                   placeholder="Ví dụ: Account 1, Account 2..."
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
+                  className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none ${
+                    validationErrors.name ? 'border-red-500' : 'border-white/20 focus:border-primary-400'
+                  }`}
                 />
+                {validationErrors.name && (
+                  <p className="text-red-400 text-xs mt-1">{validationErrors.name}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Tên API Key (tùy chọn)</label>
                 <input
                   type="text"
                   value={newApiKeyName}
-                  onChange={(e) => setNewApiKeyName(e.target.value)}
+                  onChange={(e) => {
+                    setNewApiKeyName(e.target.value);
+                    validateNameInAccount(e.target.value, newAccountName);
+                  }}
                   placeholder="Ví dụ: Key chính, Key backup..."
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
+                  className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none ${
+                    validationErrors.name ? 'border-red-500' : 'border-white/20 focus:border-primary-400'
+                  }`}
                 />
+                {validationErrors.name && (
+                  <p className="text-red-400 text-xs mt-1">{validationErrors.name}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Google Gemini API Key</label>
                 <input
                   type="password"
                   value={newApiKey}
-                  onChange={(e) => setNewApiKey(e.target.value)}
+                  onChange={(e) => {
+                    setNewApiKey(e.target.value);
+                    validateApiKey(e.target.value);
+                  }}
                   placeholder="Nhập API key của bạn..."
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none"
+                  className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none ${
+                    validationErrors.apiKey ? 'border-red-500' : 'border-white/20 focus:border-primary-400'
+                  }`}
                 />
+                {validationErrors.apiKey && (
+                  <p className="text-red-400 text-xs mt-1">{validationErrors.apiKey}</p>
+                )}
               </div>
               <div className="flex space-x-3">
                 <button
                   onClick={handleAddApiKey}
-                  disabled={status === 'loading'}
-                  className="btn-primary flex items-center space-x-2"
+                  disabled={status === 'loading' || !!validationErrors.apiKey || !!validationErrors.name}
+                  className={`btn-primary flex items-center space-x-2 ${
+                    validationErrors.apiKey || validationErrors.name ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   {status === 'loading' ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -448,7 +532,13 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                   <span>Thêm & Test</span>
                 </button>
                 <button
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setValidationErrors({});
+                    setNewApiKey('');
+                    setNewApiKeyName('');
+                    setNewAccountName('');
+                  }}
                   className="btn-outline flex items-center space-x-2"
                 >
                   <X className="w-4 h-4" />

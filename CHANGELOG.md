@@ -5,6 +5,35 @@ Tất cả các thay đổi đáng chú ý của dự án AI Roleplay Game sẽ 
 Format dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.5.1-releasebeta] - 2025-01-12
+
+### 🎯 Narrative Enemy Extraction System
+- **Narrative Enemy Extraction Service**: New service to extract enemy names from narrative text using AI
+- **SceneState Integration**: Priority extraction from sceneState.dangers.monsters array
+- **AI-Powered Extraction**: Fallback to AI-based extraction from narrative text when sceneState data unavailable
+- **Enemy Type Inference**: Smart enemy type detection based on name patterns (beast, undead, humanoid, elemental, construct)
+- **Confidence Scoring**: Quality assessment for extracted enemy names with threshold filtering
+- **Random Encounter Enhancement**: Random encounters now use enemy names from narrative instead of generating random names
+
+### ⚔️ Combat System Improvements
+- **Narrative Consistency**: Enemy names in combat modal now match narrative text
+- **Context-Aware Generation**: Enemy stats, attacks, and damage types generated based on narrative context
+- **Fallback System**: Graceful fallback to random enemy generation when no narrative enemies found
+- **Attack Name Generation**: Context-appropriate attack names based on enemy type and name
+- **Damage Type Assignment**: Proper damage type assignment based on enemy type (physical, necrotic, fire, etc.)
+
+### 🔧 Technical Enhancements
+- **Service Architecture**: Modular design with NarrativeEnemyExtractionService
+- **Type Safety**: Enhanced TypeScript interfaces for enemy extraction and generation
+- **Performance Optimization**: Efficient enemy extraction with confidence-based filtering
+- **Error Handling**: Robust error handling with fallback mechanisms
+- **AI Integration**: Seamless integration with existing AI services
+
+### 🐛 Bug Fixes
+- **Enemy Name Mismatch**: Fixed discrepancy between narrative enemy names and combat modal names
+- **AI Response Accuracy**: Improved AI response accuracy by using consistent enemy names
+- **Combat Context**: Enhanced combat context for better storytelling continuity
+
 ## [6.5.0-releasebeta] - 2025-01-12
 
 ### 📚 Comprehensive Documentation Update

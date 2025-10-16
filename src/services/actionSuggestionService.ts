@@ -285,8 +285,10 @@ TẤN CÔNG (ATTACK) ACTIONS:
 - CHỈ tạo attack action khi player muốn TẤN CÔNG VẬT LÝ trực tiếp (đánh, đấm, chém, bắn, etc.)
 - Các từ khóa: "tấn công", "đánh", "đấm", "chém", "bắn", "chiến đấu", "đối đầu vũ lực"
 - KHÔNG phải: đe dọa, thuyết phục, quyến rũ, lừa dối, quan sát, điều tra
+- Có thể tấn công: NPC trong scene, enemies xuất hiện trong narrative, monsters, quái vật
 - Sử dụng impactTags: ['attack', 'strengthAttack', 'agilityAttack', etc.]
-- Thêm attackTarget: { npcName: "Tên NPC", npcId: "id" } nếu có
+- Thêm attackTarget: { npcName: "Tên NPC/Enemy" } nếu có
+- LƯU Ý: Không cần npcId, hệ thống sẽ tự động xử lý và tạo combat stats nếu cần
 - LƯU Ý: Đây là lựa chọn của player, không phải NPC tự động tấn công
 
 DC CHECK ACTIONS (CHỈ KHI CẦN THIẾT):

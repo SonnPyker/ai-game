@@ -190,7 +190,7 @@ class LocationService {
 
 
   /**
-   * Thuật toán A* để tìm đường ngắn nhất và trả về đường đi
+   * Tính toán đường đi đơn giản sử dụng khoảng cách Manhattan
    */
   private findShortestPathWithRoute(start: { x: number; y: number }, end: { x: number; y: number }): { distance: number; path: { x: number; y: number }[] } {
     // Nếu cùng vị trí
@@ -198,143 +198,37 @@ class LocationService {
       return { distance: 0, path: [start] };
     }
 
-    // Tạo grid 15x15
-    const gridSize = 15;
-    const grid: boolean[][] = Array(gridSize).fill(null).map(() => Array(gridSize).fill(true));
+    // Sử dụng khoảng cách Manhattan đơn giản
+    const dx = Math.abs(end.x - start.x);
+    const dy = Math.abs(end.y - start.y);
+    const distance = dx + dy; // Manhattan distance
+
+    // Tạo đường đi đơn giản (di chuyển theo trục X trước, sau đó theo trục Y)
+    const path: { x: number; y: number }[] = [];
     
-    // Đánh dấu các vị trí có location là obstacles (không thể đi qua)
-    const locations = this.getAllLocations();
-    locations.forEach(location => {
-      if (location.gridPosition && 
-          location.gridPosition.x >= 0 && location.gridPosition.x < gridSize &&
-          location.gridPosition.y >= 0 && location.gridPosition.y < gridSize) {
-        grid[location.gridPosition.y][location.gridPosition.x] = false;
-      }
-    });
-
-    // Cho phép đi qua start và end positions
-    grid[start.y][start.x] = true;
-    grid[end.y][end.x] = true;
-
-    // A* algorithm
-    interface Node {
-      x: number;
-      y: number;
-      g: number; // Cost from start
-      h: number; // Heuristic cost to end
-      f: number; // Total cost
-      parent?: Node;
+    // Thêm điểm bắt đầu
+    path.push({ x: start.x, y: start.y });
+    
+    // Di chuyển theo trục X
+    let currentX = start.x;
+    while (currentX !== end.x) {
+      currentX += currentX < end.x ? 1 : -1;
+      path.push({ x: currentX, y: start.y });
+    }
+    
+    // Di chuyển theo trục Y
+    let currentY = start.y;
+    while (currentY !== end.y) {
+      currentY += currentY < end.y ? 1 : -1;
+      path.push({ x: end.x, y: currentY });
     }
 
-    const openSet: Node[] = [];
-    const closedSet: Set<string> = new Set();
-
-    // Thêm start node
-    const startNode: Node = {
-      x: start.x,
-      y: start.y,
-      g: 0,
-      h: this.heuristic(start, end),
-      f: this.heuristic(start, end)
-    };
-    openSet.push(startNode);
-
-    while (openSet.length > 0) {
-      // Tìm node có f cost thấp nhất
-      let currentIndex = 0;
-      for (let i = 1; i < openSet.length; i++) {
-        if (openSet[i].f < openSet[currentIndex].f) {
-          currentIndex = i;
-        }
-      }
-
-      const current = openSet.splice(currentIndex, 1)[0];
-      const currentKey = `${current.x},${current.y}`;
-      closedSet.add(currentKey);
-
-      // Kiểm tra nếu đã đến đích
-      if (current.x === end.x && current.y === end.y) {
-        // Tạo path từ end về start
-        const path: { x: number; y: number }[] = [];
-        let node: Node | undefined = current;
-        while (node) {
-          path.unshift({ x: node.x, y: node.y });
-          node = node.parent;
-        }
-        return { distance: current.g, path };
-      }
-
-      // Kiểm tra các neighbors (8 hướng: 4 hướng chính + 4 hướng chéo)
-      const neighbors = [
-        { x: -1, y: -1, cost: Math.sqrt(2) }, // Chéo
-        { x: -1, y: 0, cost: 1 },             // Trái
-        { x: -1, y: 1, cost: Math.sqrt(2) },  // Chéo
-        { x: 0, y: -1, cost: 1 },             // Lên
-        { x: 0, y: 1, cost: 1 },              // Xuống
-        { x: 1, y: -1, cost: Math.sqrt(2) },  // Chéo
-        { x: 1, y: 0, cost: 1 },              // Phải
-        { x: 1, y: 1, cost: Math.sqrt(2) }    // Chéo
-      ];
-
-      for (const neighbor of neighbors) {
-        const newX = current.x + neighbor.x;
-        const newY = current.y + neighbor.y;
-
-        // Kiểm tra bounds
-        if (newX < 0 || newX >= gridSize || newY < 0 || newY >= gridSize) {
-          continue;
-        }
-
-        // Kiểm tra obstacle
-        if (!grid[newY][newX]) {
-          continue;
-        }
-
-        const neighborKey = `${newX},${newY}`;
-        if (closedSet.has(neighborKey)) {
-          continue;
-        }
-
-        const tentativeG = current.g + neighbor.cost;
-
-        // Kiểm tra xem neighbor đã có trong openSet chưa
-        let existingNode = openSet.find(node => node.x === newX && node.y === newY);
-        
-        if (!existingNode) {
-          // Tạo node mới
-          const newNode: Node = {
-            x: newX,
-            y: newY,
-            g: tentativeG,
-            h: this.heuristic({ x: newX, y: newY }, end),
-            f: tentativeG + this.heuristic({ x: newX, y: newY }, end),
-            parent: current
-          };
-          openSet.push(newNode);
-        } else if (tentativeG < existingNode.g) {
-          // Cập nhật node hiện có nếu đường đi mới tốt hơn
-          existingNode.g = tentativeG;
-          existingNode.f = existingNode.g + existingNode.h;
-          existingNode.parent = current;
-        }
-      }
-    }
-
-    // Không tìm thấy đường đi, fallback về Euclidean distance
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const fallbackDistance = Math.sqrt(dx * dx + dy * dy);
-    return { distance: fallbackDistance, path: [start, end] };
+    return { distance, path };
   }
 
-  /**
-   * Heuristic function (Euclidean distance)
-   */
-  private heuristic(pos1: { x: number; y: number }, pos2: { x: number; y: number }): number {
-    const dx = pos1.x - pos2.x;
-    const dy = pos1.y - pos2.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
+
+
+
 
   /**
    * Lấy location theo ID
@@ -514,7 +408,6 @@ class LocationService {
       const existingShop = merchantService.getMerchantShopByLocation(location.id);
       if (!existingShop) {
         // Shop sẽ được tạo bằng AI khi player mở shop
-        console.log(`Shop will be created by AI when player opens shop for location: ${location.name}`);
       }
     }
   }

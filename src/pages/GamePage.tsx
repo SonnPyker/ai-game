@@ -15,6 +15,7 @@ import { useResponsiveContext } from '../contexts/ResponsiveContext';
 import { actionSuggestionService, SuggestedAction, ActionLogEntry } from '../services/actionSuggestionService';
 import { tradingHistoryService } from '../services/tradingHistoryService';
 import { locationService } from '../services/locationService';
+import { locationSyncService } from '../services/locationSyncService';
 import { inventoryService } from '../services/inventoryService';
 import { DiceRoller } from '../utils/diceRoller';
 import { combatPreparationService } from '../services/combatPreparationService';
@@ -40,6 +41,7 @@ import { MerchantShopModal } from '../components/Shop/MerchantShopModal';
 import { SkillBookPreview } from '../components/Shop/SkillBookPreview';
 import { NegotiationPanel } from '../components/Shop/NegotiationPanel';
 import { MerchantShop, SkillBook } from '../types';
+import { enemyFromContextService } from '../services/enemyFromContextService';
 
 // ImageDisplay component for handling base64 images
 const ImageDisplay = ({ filepath, prompt }: { filepath: string; prompt?: string }) => {
@@ -403,7 +405,6 @@ export function GamePage() {
         
         // ƯU TIÊN: Xử lý sceneState.npcs ngay lập tức nếu có
         if (enhancedContext.sceneState && enhancedContext.sceneState.npcs && Array.isArray(enhancedContext.sceneState.npcs)) {
-          console.log('🚀 PRIORITY: Processing sceneState.npcs immediately:', enhancedContext.sceneState.npcs);
           npcRelationshipService.parseNPCsFromAIResponse({ sceneState: enhancedContext.sceneState }, location);
         }
         
@@ -566,7 +567,6 @@ export function GamePage() {
     const combatHistory = localStorage.getItem('combat_history');
     if (!combatHistory) {
       localStorage.setItem('combat_history', JSON.stringify({ defeatedEnemies: [] }));
-      console.log('🎯 Initialized combat_history in localStorage');
     }
   }, []); // Empty dependency array - only run once on mount
 
@@ -626,7 +626,6 @@ export function GamePage() {
             };
             
             combatDataService.addToCombatHistory(defeatCombatData);
-            console.log('📝 Updated combat_history with defeat turn:', currentTurn);
           } catch (error) {
             console.error('Error updating combat_history with defeat:', error);
           }
@@ -640,7 +639,6 @@ export function GamePage() {
         // Clear combat result after processing to prevent continuous reset
         combatDataService.clearPendingCombatResult();
         
-        console.log('✅ Combat result auto-pasted:', message);
       } catch (error) {
         console.error('Error parsing combat result:', error);
         // Clear invalid data
@@ -711,12 +709,10 @@ export function GamePage() {
   // Listen for NPC auto-selection events
   useEffect(() => {
     const handleNPCAutoSelected = (event: CustomEvent) => {
-      const { npcId, npcName } = event.detail;
-      console.log('🎯 Received npcAutoSelected event:', { npcId, npcName });
+      const { npcId } = event.detail;
       
       // Update selected NPC for dialogue
       setSelectedNPCForDialogue(npcId);
-      console.log('✅ Updated selectedNPCForDialogue to:', npcId);
       
       // Show notification
     };
@@ -740,6 +736,12 @@ export function GamePage() {
           try {
             const world = JSON.parse(worldData);
             const scenario = JSON.parse(scenarioData);
+            
+            // 🚨 CRITICAL: Validate and sync world data to ensure locationType consistency
+            const syncedWorld = locationSyncService.validateAndSyncAllLocations(world);
+            if (JSON.stringify(syncedWorld) !== JSON.stringify(world)) {
+              localStorage.setItem('world_gen_result', JSON.stringify(syncedWorld));
+            }
             
             // Clear selected NPC when loading game to avoid conflicts
             setSelectedNPCForDialogue(null);
@@ -909,28 +911,19 @@ export function GamePage() {
   // Watch for combat initiation in sceneState - CHỈ hiển thị modal khi tất cả tiến trình xử lý hoàn tất
   useEffect(() => {
     if (gameState.sceneState?.combatInitiation) {
-      console.log('🎯 Combat initiation detected:', gameState.sceneState.combatInitiation);
       
       // KIỂM TRA: Chỉ hiển thị modal khi KHÔNG có tiến trình xử lý nào đang chạy
       const isAnyProcessing = isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions;
       
       if (isAnyProcessing) {
-        console.log('⏳ Combat initiation detected but processing still in progress, waiting...', {
-          isLoading,
-          isAIProcessing,
-          isNPCAnalysisProcessing,
-          isGeneratingSuggestions
-        });
         return; // Chờ tất cả tiến trình xử lý hoàn tất
       }
       
-      console.log('✅ All processing completed, showing combat modal');
       
       const combatInitiation = gameState.sceneState.combatInitiation;
       
       // Check if it's a random encounter
       if (combatInitiation.type === 'random_encounter' && combatInitiation.enemies && combatInitiation.enemies.length > 0) {
-        console.log('🎯 Showing random combat modal for:', combatInitiation.enemies[0]);
         // Show random combat modal
         setRandomCombatData({
           enemy: combatInitiation.enemies[0],
@@ -940,7 +933,6 @@ export function GamePage() {
           reason: combatInitiation.reason || 'Cuộc đối đầu bất ngờ'
         });
         setShowRandomCombatModal(true);
-        console.log('🎯 Modal state set to true');
       } else {
         // For other types (like NPC challenge), navigate directly
         const combatData = {
@@ -1006,7 +998,6 @@ export function GamePage() {
               combatResult.enemiesDefeated.forEach(enemy => {
                 const questUpdated = questCombatService.updateCombatObjectiveProgress(enemy.name);
                 if (questUpdated) {
-                  console.log(`🎯 Quest progress updated for defeating: ${enemy.name}`);
                 }
               });
             }
@@ -1241,7 +1232,7 @@ export function GamePage() {
           npcName = sceneState.npcs[0].name;
         } else {
           console.error('No NPC found for attack action');
-          setSaveMessage('Không tìm thấy NPC để tấn công');
+          setSaveMessage('Không tìm thấy mục tiêu để tấn công');
           setTimeout(() => setSaveMessage(null), 3000);
           return;
         }
@@ -1249,6 +1240,7 @@ export function GamePage() {
       
       // Get NPC relationship data using the loaded service
       let npc = npcRelationshipService.getRelationship(npcName);
+      
       if (!npc) {
         // Try fuzzy matching if exact match fails
         const allRelationships = npcRelationshipService.getAllRelationships();
@@ -1257,14 +1249,33 @@ export function GamePage() {
         );
         
         if (fuzzyMatch) {
-          console.log(`Using fuzzy match: ${fuzzyMatch.name} for ${npcName}`);
           npc = fuzzyMatch;
         } else {
-          console.error(`NPC ${npcName} not found in relationships`);
-          console.log('Available NPCs:', allRelationships.map((n: any) => n.name));
-          setSaveMessage(`Không tìm thấy thông tin về ${npcName}`);
-          setTimeout(() => setSaveMessage(null), 3000);
-          return;
+          // ✨ MỚI: Tạo enemy từ context
+          
+          // Get character data for level
+          const characterData = localStorage.getItem('currentCharacter');
+          const character = characterData ? JSON.parse(characterData) : { level: 1 };
+          
+          const { enemy, shouldSaveToRelationships } = await enemyFromContextService.createEnemyFromContext(
+            npcName || 'Unknown Enemy',
+            gameState.sceneState,
+            character.level || 1
+          );
+          
+          if (!enemy) {
+            setSaveMessage(`Không thể tạo thông tin cho ${npcName}`);
+            setTimeout(() => setSaveMessage(null), 3000);
+            return;
+          }
+          
+          // Lưu vào relationships nếu cần
+          if (shouldSaveToRelationships) {
+            npcRelationshipService.addOrUpdateRelationship(enemy);
+          } else {
+          }
+          
+          npc = enemy;
         }
       }
       
@@ -1598,7 +1609,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       const comfyUISettings = comfyUIService.loadSettings();
       if (comfyUISettings.enabled && !openingMessage.imageUrl) {
         try {
-          console.log('🎨 Generating opening image...');
           setIsGeneratingOpeningImage(true);
           openingMessage.isGeneratingImage = true;
           
@@ -1630,7 +1640,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           openingMessage.isGeneratingImage = false;
           openingMessage.hasImageGenerationFailed = false;
           
-          console.log('✅ Opening image generated successfully');
         } catch (error) {
           console.error('❌ Failed to generate opening image:', error);
           // Mark as failed
@@ -1802,11 +1811,9 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           // Store attack suggestion for later processing after AI response
           localStorage.setItem('pending_attack_action', JSON.stringify(selectedSuggestion));
         } else if (selectedSuggestion.dcCheck) {
-          console.log('🎲 DC Check action detected:', selectedSuggestion);
           isDCCheckAction = true;
           // Process DC check now, before AI response
           const dcResult = await handleDCCheckAction(selectedSuggestion);
-          console.log('🎲 DC Check result after processing:', dcResult);
           if (dcResult) {
             currentDcCheckResult = dcResult;
             setDcCheckResult(dcResult);
@@ -1825,7 +1832,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
 ${enhancedMessage}`;
       enhancedMessage = dcCheckText;
-      console.log('🎲 DC Check result injected into AI prompt:', currentDcCheckResult);
     }
 
     const playerMessage: ChatMessageType = {
@@ -2120,6 +2126,7 @@ ${enhancedMessage}`;
 
         // Initialize world time - will be updated after parallel tasks complete
         let newTime = gameState.worldTime;
+        const originalWorldTime = gameState.worldTime; // Store original time for Action Log
 
         // Increment turn counter after AI response
         setTurnCounter(prev => {
@@ -2163,20 +2170,12 @@ ${enhancedMessage}`;
         // This ensures items don't persist across turns unless explicitly added by AI
         const shouldResetAvailableItems = !aiSceneState.availableItems || aiSceneState.availableItems.length === 0;
         
-        console.log('🔄 Turn Reset Debug:', {
-          turnCounter: turnCounter + 1,
-          hasAISceneState: !!aiSceneState,
-          hasAvailableItems: !!aiSceneState.availableItems,
-          availableItemsCount: aiSceneState.availableItems?.length || 0,
-          shouldReset: shouldResetAvailableItems,
-          previousAvailableItems: gameState.sceneState?.availableItems?.length || 0
-        });
         
         // Update game state - đảm bảo availableItems chỉ chứa items có thể lấy được
         const newSceneState = { 
           ...gameState.sceneState, 
           ...aiSceneState, 
-          worldTime: newTime,
+          worldTime: newTime, // This will be updated after time calculation
           // Reset availableItems nếu AI không cung cấp items mới, hoặc sử dụng filtered items từ AI
           availableItems: shouldResetAvailableItems ? [] : filteredAvailableItems
         };
@@ -2186,107 +2185,7 @@ ${enhancedMessage}`;
           delete newSceneState.mainQuests;
         }
         
-        
-        setGameState(prev => ({
-          ...prev,
-          sceneState: newSceneState,
-          storyProgress: response.storyProgress,
-          worldTime: newTime,
-          sccContext: updatedSccContext
-        }));
-
-        // Save updated time to localStorage
-        if (newTime) {
-          // Load complete world data first to preserve all fields including locations
-          const completeWorldData = localStorage.getItem('world_gen_result');
-          if (completeWorldData) {
-            const worldDataParsed = JSON.parse(completeWorldData);
-            worldDataParsed.currentTime = newTime;
-            localStorage.setItem('world_gen_result', JSON.stringify(worldDataParsed));
-          }
-        }
-
-        // Save sceneState to localStorage
-        localStorage.setItem('rp_scene_state', JSON.stringify(newSceneState));
-
-        // Log action (both from suggestions and manual input)
-        // Skip action log for attack actions and DC check actions - will be created after AI response
-        if (gameState.worldTime && newTime && !isAttackAction && !isDCCheckAction) {
-          let actionLogEntry: ActionLogEntry | null = null;
-          
-          if (selectedSuggestionId) {
-            // Action from suggestion
-            const selectedSuggestion = actionSuggestions.find(s => s.id === selectedSuggestionId);
-            if (selectedSuggestion) {
-              actionLogEntry = {
-                id: `action_${Date.now()}`,
-                actionId: selectedSuggestionId,
-                text: currentMessage.trim(),
-                summary: selectedSuggestion.summary,
-                durationMinutes: durationMinutes,
-                startedAt: gameState.worldTime,
-                endedAt: newTime,
-                turn: turnCounter + 1,
-                impactTags: selectedSuggestion.impactTags,
-                source: 'suggestion',
-                dcCheckResult: currentDcCheckResult || undefined,
-                attackAction: (selectedSuggestion.attackTarget || selectedSuggestion.impactTags.some(tag => 
-                  tag === 'attack' || tag.endsWith('Attack')
-                )) ? {
-                  targetNPC: selectedSuggestion.attackTarget?.npcName || 'Unknown NPC',
-                  accepted: false // Will be updated when user accepts/declines
-                } : undefined
-              };
-            }
-          } else {
-            // Manual action - generate summary and estimate impact
-            const actionSummary = await generateActionSummary(currentMessage.trim(), gameState);
-            const impactTags = estimateImpactTags(currentMessage.trim());
-            
-            // For travel actions, use travel time instead of manual action time
-            let finalDurationMinutes = durationMinutes;
-            let finalEndedAt = newTime;
-            
-            if (isTravelAction) {
-              // Get travel time from locationService
-              const currentPlayerLocation = locationService.getCurrentLocation();
-              if (currentPlayerLocation) {
-                const locationName = currentMessage.trim().replace('Bạn di chuyển đến ', '').trim();
-                const worldDataParsed = JSON.parse(worldData);
-                const targetLocation = worldDataParsed.locations?.find((loc: any) => 
-                  loc.name === locationName
-                );
-                
-                if (targetLocation) {
-                  const travelInfo = locationService.getTravelInfo(currentPlayerLocation.currentLocationId, targetLocation.id);
-                  finalDurationMinutes = travelInfo.travelMinutes;
-                  finalEndedAt = gameState.worldTime ? 
-                    worldTimeService.advanceMinutes(gameState.worldTime, finalDurationMinutes) : 
-                    gameState.worldTime!;
-                  
-                }
-              }
-            }
-            
-            actionLogEntry = {
-              id: `action_${Date.now()}`,
-              actionId: undefined,
-              text: currentMessage.trim(),
-              summary: actionSummary,
-              durationMinutes: finalDurationMinutes,
-              startedAt: gameState.worldTime,
-              endedAt: finalEndedAt,
-              turn: turnCounter + 1,
-              impactTags: impactTags,
-              source: isTravelAction ? 'travel' : 'manual'
-            };
-          }
-          
-          if (actionLogEntry) {
-            actionSuggestionService.saveActionLog(actionLogEntry);
-            setActionLog(prev => [actionLogEntry!, ...prev.slice(0, 99)]); // Keep last 100 entries
-          }
-        }
+        // Note: setGameState moved to after time calculation to ensure correct worldTime
 
         // Clear selected suggestion
         setSelectedSuggestionId(null);
@@ -2309,34 +2208,15 @@ ${enhancedMessage}`;
             const currentPlayerLocation = locationService.getCurrentLocation();
             
             if (targetLocation && currentPlayerLocation) {
-              // Calculate travel time and update location
-              const { newTime } = locationService.moveToLocation(
-                targetLocation.id,
-                gameState.worldTime!,
-                turnCounter + 1
-              );
+              // ❌ REMOVED: Don't update location here - it will be updated after travel time calculation
+              // This was causing the bug where currentPlayerLocation was already updated to target location
+              // when calculating travel time, resulting in 0 distance and 0 travel time
               
               // Clear selected NPC when traveling to new location
               setSelectedNPCForDialogue(null);
               localStorage.removeItem('selectedNPCForDialogue');
-              
-              // Update game state with new location and time
-              setGameState(prev => ({
-                ...prev,
-                worldTime: newTime,
-                playerLocation: locationService.getCurrentLocation()
-              }));
 
-              // Lưu thời gian mới vào localStorage ngay lập tức
-              if (newTime) {
-                const completeWorldData = localStorage.getItem('world_gen_result');
-                if (completeWorldData) {
-                  const worldDataParsed = JSON.parse(completeWorldData);
-                  worldDataParsed.currentTime = newTime;
-                  localStorage.setItem('world_gen_result', JSON.stringify(worldDataParsed));
-                  console.log('🕐 Travel time saved to localStorage:', newTime);
-                }
-              }
+              // Note: Location and time will be saved later in the main flow after travel time calculation
             }
           }
         } catch (travelError) {
@@ -2350,6 +2230,22 @@ ${enhancedMessage}`;
           
           // Parse items from AI response
           inventoryService.parseItemsFromAIResponse(response);
+          
+          // 🚨 CRITICAL: Validate and restore locationType consistency using LocationSyncService
+          if (newSceneState.location) {
+            // Sync location object if it exists
+            if (typeof newSceneState.location === 'object') {
+              newSceneState.location = locationSyncService.syncLocationFromWorldData(newSceneState.location.id || newSceneState.location, newSceneState.location);
+            }
+            
+            // Also sync locationType at sceneState level
+            const originalLocation = locationService.getLocationById(newSceneState.location);
+            if (originalLocation && originalLocation.locationType) {
+              if (!newSceneState.locationType || newSceneState.locationType !== originalLocation.locationType) {
+                newSceneState.locationType = originalLocation.locationType;
+              }
+            }
+          }
           
           // Process all independent tasks in parallel for better performance
           const parallelTasks = [];
@@ -2468,19 +2364,16 @@ ${enhancedMessage}`;
             })
           );
 
-          // Task 6: Duration Estimation (parallel) - Only for manual actions
+          // Task 6: Duration Estimation - PRIORITY: Must complete before time update
           if (durationEstimationTask) {
-            parallelTasks.push(
-              durationEstimationTask.then(result => {
-                durationMinutes = result.duration;
-                console.log(`✅ [Parallel] Duration estimation completed: ${durationMinutes} phút cho hành động "${result.message}"`);
-                return result;
-              }).catch(error => {
-                console.error('Error estimating action duration:', error);
-                // Keep default durationMinutes = 5
-                return { duration: 5, message: currentMessage };
-              })
-            );
+            try {
+              const durationResult = await durationEstimationTask;
+              durationMinutes = durationResult.duration;
+            } catch (error) {
+              console.error('Error estimating action duration:', error);
+              // Keep default durationMinutes = 5
+              durationMinutes = 5;
+            }
           }
 
           // Task 7: ComfyUI Image Generation (parallel)
@@ -2493,15 +2386,96 @@ ${enhancedMessage}`;
             );
           }
 
-          // Run all tasks in parallel for maximum performance
+          // Run remaining tasks in parallel for maximum performance
           await Promise.all(parallelTasks);
 
-          // Advance world time by minutes after parallel tasks complete (skip for travel actions as time is already advanced in locationService.moveToLocation)
-          if (!isTravelAction) {
-            newTime = gameState.worldTime ? 
-              worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes) : 
-              null;
+          // Advance world time by minutes after duration estimation is complete
+          if (isTravelAction) {
+            // Handle travel actions - get travel time from locationService
+            const currentPlayerLocation = locationService.getCurrentLocation();
+            
+            if (currentPlayerLocation) {
+              const locationName = currentMessage.trim().replace('Bạn di chuyển đến ', '').trim();
+              
+              const worldDataParsed = JSON.parse(worldData);
+              const targetLocation = worldDataParsed.locations?.find((loc: any) => 
+                loc.name === locationName
+              );
+              
+              if (targetLocation) {
+                const travelInfo = locationService.getTravelInfo(currentPlayerLocation.currentLocationId, targetLocation.id);
+                durationMinutes = travelInfo.travelMinutes;
+                
+                if (gameState.worldTime) {
+                  newTime = worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes);
+                  
+                  // ✅ Update player location AFTER travel time calculation
+                  const newPlayerLocation = {
+                    currentLocationId: targetLocation.id,
+                    locationHistory: [
+                      ...(currentPlayerLocation.locationHistory || []),
+                      {
+                        locationId: targetLocation.id,
+                        arrivedAt: newTime,
+                        turn: turnCounter + 1
+                      }
+                    ]
+                  };
+                  locationService.savePlayerLocation(newPlayerLocation);
+                  
+                  // ✅ Update sceneState.location from player_location after travel
+                  newSceneState.location = targetLocation.id;
+                  newSceneState.worldTime = newTime; // ✅ Also update sceneState.worldTime
+                } else {
+                  console.error(`❌ [Travel Time] gameState.worldTime is null! Cannot advance time.`);
+                  newTime = gameState.worldTime;
+                }
+              } else {
+                console.error(`❌ [Travel Time] Target location "${locationName}" not found! Available locations:`, worldDataParsed.locations?.map((loc: any) => loc.name));
+                newTime = gameState.worldTime;
+              }
+            } else {
+              console.error(`❌ [Travel Time] Current player location not found!`);
+              newTime = gameState.worldTime;
+            }
+          } else {
+            // Handle non-travel actions
+            if (gameState.worldTime) {
+              newTime = worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes);
+            } else {
+              console.error(`❌ [Time Update] gameState.worldTime is null! Cannot advance time.`);
+              newTime = gameState.worldTime; // Keep original time
+            }
           }
+
+          // Update game state with correct worldTime after time calculation
+          
+          // ✅ Update sceneState.worldTime for all cases (not just travel)
+          newSceneState.worldTime = newTime;
+          
+          setGameState(prev => ({
+            ...prev,
+            sceneState: newSceneState, // This now includes updated location and worldTime
+            storyProgress: response.storyProgress,
+            worldTime: newTime,
+            sccContext: updatedSccContext,
+            playerLocation: locationService.getCurrentLocation() // Update player location after travel
+          }));
+
+          // Save updated time to localStorage
+          if (newTime) {
+            // Load complete world data first to preserve all fields including locations
+            const completeWorldData = localStorage.getItem('world_gen_result');
+            if (completeWorldData) {
+              const worldDataParsed = JSON.parse(completeWorldData);
+              worldDataParsed.currentTime = newTime;
+              worldDataParsed.worldTime = newTime; // ✅ Also update worldTime field
+              localStorage.setItem('world_gen_result', JSON.stringify(worldDataParsed));
+            }
+          }
+
+          // Save sceneState to localStorage
+          localStorage.setItem('rp_scene_state', JSON.stringify(newSceneState));
 
           // Task 8: Check and restock merchant shops
           if (newTime) {
@@ -2509,6 +2483,64 @@ ${enhancedMessage}`;
               await locationService.checkAndRestockAllShops(newTime);
             } catch (error) {
               console.error('Error checking merchant shops:', error);
+            }
+          }
+
+          // Task 9: Create Action Log Entry (after time calculation is complete)
+          // Skip action log for attack actions and DC check actions - will be created after AI response
+          if (newTime && !isAttackAction && !isDCCheckAction) {
+            let actionLogEntry: ActionLogEntry | null = null;
+            
+            if (selectedSuggestionId) {
+              // Action from suggestion
+              const selectedSuggestion = actionSuggestions.find(s => s.id === selectedSuggestionId);
+              if (selectedSuggestion) {
+                actionLogEntry = {
+                  id: `action_${Date.now()}`,
+                  actionId: selectedSuggestionId,
+                  text: currentMessage.trim(),
+                  summary: selectedSuggestion.summary,
+                  durationMinutes: durationMinutes,
+                  startedAt: originalWorldTime!,
+                  endedAt: newTime,
+                  turn: turnCounter + 1,
+                  impactTags: selectedSuggestion.impactTags,
+                  source: 'suggestion',
+                  dcCheckResult: currentDcCheckResult || undefined,
+                  attackAction: (selectedSuggestion.attackTarget || selectedSuggestion.impactTags.some(tag => 
+                    tag === 'attack' || tag.endsWith('Attack')
+                  )) ? {
+                    targetNPC: selectedSuggestion.attackTarget?.npcName || 'Unknown NPC',
+                    accepted: false // Will be updated when user accepts/declines
+                  } : undefined
+                };
+              }
+            } else {
+              // Manual action - generate summary and estimate impact
+              const actionSummary = await generateActionSummary(currentMessage.trim(), gameState);
+              const impactTags = estimateImpactTags(currentMessage.trim());
+              
+              // For travel actions, durationMinutes is already set correctly above
+              let finalDurationMinutes = durationMinutes;
+              let finalEndedAt = newTime;
+              
+              actionLogEntry = {
+                id: `action_${Date.now()}`,
+                actionId: undefined,
+                text: currentMessage.trim(),
+                summary: actionSummary,
+                durationMinutes: finalDurationMinutes,
+                startedAt: originalWorldTime!,
+                endedAt: finalEndedAt,
+                turn: turnCounter + 1,
+                impactTags: impactTags,
+                source: isTravelAction ? 'travel' : 'manual'
+              };
+            }
+            
+            if (actionLogEntry) {
+              actionSuggestionService.saveActionLog(actionLogEntry);
+              setActionLog(prev => [actionLogEntry!, ...prev.slice(0, 99)]); // Keep last 100 entries
             }
           }
 
@@ -2573,11 +2605,9 @@ ${enhancedMessage}`;
         }
         
         // Process DC check action after AI response
-        console.log('🎲 Checking DC check action after AI response:', { isDCCheckAction, currentDcCheckResult, currentSelectedSuggestionId });
         if (isDCCheckAction && currentDcCheckResult) {
           try {
             const selectedSuggestion = actionSuggestions.find(s => s.id === currentSelectedSuggestionId);
-            console.log('🎲 Selected suggestion for DC check:', selectedSuggestion);
             if (selectedSuggestion && gameState.worldTime && newTime) {
               const actionLogEntry: ActionLogEntry = {
                 id: `action_${Date.now()}`,
@@ -2594,10 +2624,8 @@ ${enhancedMessage}`;
               };
               
               // Save action log
-              console.log('🎲 Saving DC check action log:', actionLogEntry);
               actionSuggestionService.saveActionLog(actionLogEntry);
               setActionLog(prev => [actionLogEntry, ...prev]);
-              console.log('🎲 DC check action log saved successfully');
             }
           } catch (error) {
             console.error('Error processing DC check action:', error);
@@ -2672,7 +2700,6 @@ ${enhancedMessage}`;
   const throttledSendMessage = useCallback(async () => {
     // Check if there are any minimized modals
     if (hasMinimizedModals) {
-      console.log('🚫 Cannot send action - there are minimized modals that need to be handled first');
       return;
     }
 
@@ -2681,7 +2708,6 @@ ${enhancedMessage}`;
     const minInterval = 2000; // Minimum 2 seconds between requests
     
     if (timeSinceLastRequest < minInterval) {
-      console.log(`⏳ Throttling request - please wait ${Math.ceil((minInterval - timeSinceLastRequest) / 1000)}s`);
       return;
     }
     
@@ -3010,7 +3036,6 @@ ${enhancedMessage}`;
 
   // Merchant Shop handlers
   const handleOpenShop = async (locationId: string) => {
-    console.log('handleOpenShop called with locationId:', locationId);
     
     try {
       // Import merchantService dynamically
@@ -3019,12 +3044,10 @@ ${enhancedMessage}`;
       // Get or create shop for this location
       let shop = merchantService.getMerchantShopByLocation(locationId);
       if (!shop) {
-        console.log('Shop not found, creating new one for location:', locationId);
         shop = await merchantService.ensureMerchantShopExists(locationId);
       }
       
       if (shop) {
-        console.log('Opening shop modal for shop:', shop);
         setCurrentShop(shop);
         setShowMerchantShop(true);
       } else {
@@ -3226,7 +3249,6 @@ ${enhancedMessage}`;
               character: character
             }));
             
-            console.log(`💚 Health recovery: +${newHealth - currentHealth} HP (${Math.round(healthRecoveryPercent * 100)}% of max health)`);
           }
         }
       } catch (error) {
@@ -3381,7 +3403,6 @@ ${enhancedMessage}`;
       
       // Check if this message already has an image or is already generating
       if (aiMessage.imageUrl || aiMessage.isGeneratingImage || aiMessage.hasImageGenerationFailed) {
-        console.log('Image already exists or generation in progress/failed, skipping');
         return;
       }
       
@@ -3450,7 +3471,6 @@ ${enhancedMessage}`;
       });
       localStorage.setItem('rp_chat', JSON.stringify(updatedChat));
       
-      console.log('✅ Image generated and attached to AI response');
     } catch (error) {
       console.error('Error generating image for response:', error);
       // Mark as failed
@@ -3529,11 +3549,9 @@ ${enhancedMessage}`;
       // Restore player fled random combat data
       if (saveGame.playerFledRandomCombat) {
         localStorage.setItem('player_fled_random_combat', JSON.stringify(saveGame.playerFledRandomCombat));
-        console.log('✅ Restored player_fled_random_combat data:', saveGame.playerFledRandomCombat);
       } else {
         // Clear if not present in save game
         localStorage.removeItem('player_fled_random_combat');
-        console.log('🧹 Cleared player_fled_random_combat data (not in save game)');
       }
 
       // Cập nhật localStorage để tương thích với hệ thống cũ
@@ -3883,7 +3901,6 @@ ${enhancedMessage}`;
     const success = inventoryService.removeItem(itemToDiscard.id, quantity);
     if (success) {
       updateCharacterDataAfterInventoryChange();
-      console.log(`🗑️ Đã vứt bỏ ${quantity} cái "${itemToDiscard.name}"`);
     }
   };
 
@@ -3998,7 +4015,6 @@ ${enhancedMessage}`;
       };
       
       combatDataService.addToCombatHistory(fleeCombatData);
-      console.log('📝 Updated combat_history with random encounter flee turn:', currentTurn);
     } catch (error) {
       console.error('Error updating combat_history with random encounter flee:', error);
     }
@@ -4015,7 +4031,6 @@ ${enhancedMessage}`;
       }
     }));
     
-    console.log('Player chose to flee from random combat:', fleeMessage);
   };
 
   const handleCloseRandomCombatModal = () => {

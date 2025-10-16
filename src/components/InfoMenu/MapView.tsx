@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { MapPin, Info, Navigation, Clock } from 'lucide-react';
 import { WorldData, Location, WorldTime } from '../../types';
 import { locationService } from '../../services/locationService';
+import { locationSyncService } from '../../services/locationSyncService';
 
 interface MapViewProps {
   worldData: WorldData;
@@ -83,35 +84,15 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
   const getLocationColor = (cell: GridCell) => {
     if (!cell.location) return '';
     
-    // Check if location is a shop by ID pattern or name patterns
-    const isShopById = cell.location.id && cell.location.id.startsWith('loc_shop');
-    const isShopByName = cell.location.name && (
-      cell.location.name.toLowerCase().includes('chợ') ||
-      cell.location.name.toLowerCase().includes('cửa hàng') ||
-      cell.location.name.toLowerCase().includes('tiệm') ||
-      cell.location.name.toLowerCase().includes('shop') ||
-      cell.location.name.toLowerCase().includes('market') ||
-      cell.location.name.toLowerCase().includes('store')
-    );
+    // Use locationSyncService for enhanced shop detection with fallback
+    const isShop = locationSyncService.isShopLocation(cell.location);
     
-    // Debug logging
-    if (isShopById || isShopByName) {
-      console.log('Shop location detected:', {
-        id: cell.location.id,
-        name: cell.location.name,
-        type: cell.location.type,
-        locationType: cell.location.locationType,
-        isCurrentLocation: cell.isCurrentLocation,
-        isNearby: cell.isNearby,
-        detectedBy: isShopById ? 'ID pattern' : 'name pattern'
-      });
-    }
     
     if (cell.isCurrentLocation) {
       return 'bg-green-500 text-white border-2 border-green-300 shadow-lg';
     } else if (cell.isNearby) {
       return 'bg-blue-400 text-white border-2 border-blue-200 shadow-md';
-    } else if (cell.location.locationType === 'shop' || isShopById || isShopByName) {
+    } else if (isShop) {
       return 'bg-yellow-500 text-white border-2 border-yellow-300 shadow-md';
     } else if (cell.location.type === 'story') {
       return 'bg-red-500 text-white border-2 border-red-300 shadow-md';

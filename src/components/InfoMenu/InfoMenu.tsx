@@ -32,6 +32,7 @@ import { inventoryService } from '../../services/inventoryService';
 import { levelSystemService } from '../../services/levelSystemService';
 import { combatLevelService } from '../../services/combatLevelService';
 import { currencyService } from '../../services/currencyService';
+import { locationSyncService } from '../../services/locationSyncService';
 // Combat services removed - now handled in CombatPage
 import { QuestTracker } from '../QuestTracker/QuestTracker';
 import { SCCJournal } from './SCCJournal';
@@ -1013,7 +1014,7 @@ export function InfoMenu({
                 <div key={index} className="text-sm">
                   <div className="flex items-center justify-between">
                     <div className="text-white font-medium">{typeof location.name === 'string' ? location.name : JSON.stringify(location.name)}</div>
-                    {(location.locationType === 'shop' || location.id.startsWith('loc_shop')) && (
+                    {locationSyncService.isShopLocation(location) && (
                       <button
                         onClick={async () => {
                           if (onOpenShop && !shopLoadingStates[location.id]) {

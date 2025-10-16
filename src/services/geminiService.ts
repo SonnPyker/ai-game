@@ -269,6 +269,35 @@ class GeminiService {
     return [];
   }
 
+  // Helper methods for duplicate checking
+  isKeyExists(key: string): boolean {
+    if (this.useMultiKeyService) {
+      return multiApiKeyService.isKeyExists(key);
+    }
+    return false;
+  }
+
+  isNameExistsInAccount(name: string, accountName: string): boolean {
+    if (this.useMultiKeyService) {
+      return multiApiKeyService.isNameExistsInAccount(name, accountName);
+    }
+    return false;
+  }
+
+  findDuplicateKey(key: string): ApiKeyInfo | null {
+    if (this.useMultiKeyService) {
+      return multiApiKeyService.findDuplicateKey(key);
+    }
+    return null;
+  }
+
+  findDuplicateNameInAccount(name: string, accountName: string): ApiKeyInfo | null {
+    if (this.useMultiKeyService) {
+      return multiApiKeyService.findDuplicateNameInAccount(name, accountName);
+    }
+    return null;
+  }
+
   getApiKeyStats(): ApiKeyStats {
     if (this.useMultiKeyService) {
       return multiApiKeyService.getApiKeyStats();
@@ -3489,6 +3518,8 @@ ${narrativeRules}
   * Giữ nguyên các thông tin không thay đổi
   * Cập nhật real-time dựa trên player actions
   * Đảm bảo sceneState phản ánh chính xác tình huống hiện tại
+  * 🚨 QUAN TRỌNG: Khi cập nhật sceneState.location, PHẢI đồng bộ locationType với world data gốc
+  * 🚨 KHÔNG BAO GIỜ thay đổi locationType từ 'shop' sang loại khác
 
 📝 HƯỚNG DẪN CHI TIẾT CẬP NHẬT TỪNG TRƯỜNG SCENE_STATE:
 
@@ -3496,6 +3527,14 @@ ${narrativeRules}
 - Player di chuyển đến địa điểm mới
 - Môi trường thay đổi đáng kể (từ sáng sang tối, từ yên tĩnh sang ồn ào)
 - Có sự kiện lớn ảnh hưởng đến địa điểm
+
+🚨 QUAN TRỌNG VỀ LOCATION TYPE CONSISTENCY:
+- KHI CẬP NHẬT sceneState.location, PHẢI GIỮ NGUYÊN locationType từ world data gốc
+- KHÔNG BAO GIỜ thay đổi locationType từ 'shop' sang 'secondary' hoặc 'story'
+- Nếu location có locationType: 'shop', PHẢI giữ nguyên trong sceneState
+- Nếu location có ID bắt đầu bằng 'loc_shop', PHẢI giữ nguyên locationType: 'shop'
+- Chỉ cập nhật các trường: name, description, type, atmosphere, features
+- KHÔNG cập nhật: locationType, id, gridPosition (giữ nguyên từ world data)
 
 **2. npcs** - Cập nhật khi:
 - Player tương tác với NPC (thay đổi mood, dialogue, position)
@@ -3806,8 +3845,34 @@ QUAN TRỌNG VỀ OUTPUT:
       // Handle random combat encounter if triggered
       if (shouldTriggerCombat && result.sceneState) {
         try {
-          // Generate random enemy based on sceneState and context
-          const enemy = await this.generateRandomCombatEnemy(sceneState, worldJson, characterJson);
+          // Try to extract enemy names from narrative first
+          const { narrativeEnemyExtractionService } = await import('./narrativeEnemyExtractionService');
+          const extractedEnemies = await narrativeEnemyExtractionService.extractEnemiesFromNarrative(
+            result.narrative || '', 
+            result.sceneState
+          );
+          
+          let enemy = null;
+          
+          // If we found enemies in narrative, use the best one
+          if (extractedEnemies.length > 0) {
+            const bestEnemy = narrativeEnemyExtractionService.getBestEnemyForEncounter(extractedEnemies);
+            if (bestEnemy) {
+              console.log('🎯 Using enemy from narrative:', bestEnemy.name);
+              enemy = await this.generateEnemyFromNarrativeContext(
+                bestEnemy, 
+                sceneState, 
+                worldJson, 
+                characterJson
+              );
+            }
+          }
+          
+          // Fallback to random enemy generation if no narrative enemies found
+          if (!enemy) {
+            console.log('🔄 No narrative enemies found, generating random enemy');
+            enemy = await this.generateRandomCombatEnemy(sceneState, worldJson, characterJson);
+          }
           
           if (enemy) {
             // Add combatInitiation to sceneState
@@ -3972,6 +4037,163 @@ QUAN TRỌNG VỀ OUTPUT:
     } catch (error) {
       console.error('Error generating random combat enemy:', error);
       return null;
+    }
+  }
+
+  /**
+   * Generate enemy from narrative context using extracted enemy name
+   */
+  private async generateEnemyFromNarrativeContext(
+    extractedEnemy: any,
+    _sceneState: any,
+    _worldJson: string,
+    characterJson: string
+  ): Promise<any> {
+    try {
+      console.log('🎯 Generating enemy from narrative context:', extractedEnemy.name);
+      
+      // Parse character data
+      const characterData = JSON.parse(characterJson);
+      
+      // Generate enemy stats based on character level
+      const enemyLevel = Math.max(1, characterData.level + Math.floor(Math.random() * 3) - 1);
+      
+      // Use enemy level as seed for consistent stats
+      const seed = enemyLevel * 9301 + 49297;
+      
+      // Create different random seeds for each stat to ensure variation
+      const strengthSeed = (seed * 1237 + 4567) % 233280 / 233280;
+      const agilitySeed = (seed * 2341 + 5678) % 233280 / 233280;
+      const constitutionSeed = (seed * 3457 + 6789) % 233280 / 233280;
+      const intelligenceSeed = (seed * 4561 + 7890) % 233280 / 233280;
+      const wisdomSeed = (seed * 5673 + 8901) % 233280 / 233280;
+      const charismaSeed = (seed * 6785 + 9012) % 233280 / 233280;
+      
+      // Base stats scale with combat level
+      const basePhysicalStats = 10 + Math.floor(enemyLevel * 1.5);
+      const baseMentalStats = 8 + Math.floor(enemyLevel * 0.8);
+      
+      const strength = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(strengthSeed * 7) - 3));
+      const agility = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(agilitySeed * 7) - 3));
+      const constitution = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(constitutionSeed * 7) - 3));
+      const intelligence = Math.max(8, Math.min(20, baseMentalStats + Math.floor(intelligenceSeed * 5) - 2));
+      const wisdom = Math.max(8, Math.min(20, baseMentalStats + Math.floor(wisdomSeed * 5) - 2));
+      const charisma = Math.max(8, Math.min(20, baseMentalStats + Math.floor(charismaSeed * 5) - 2));
+      
+      // Calculate modifiers
+      const modifiers = {
+        strength: Math.floor((strength - 10) / 2),
+        agility: Math.floor((agility - 10) / 2),
+        constitution: Math.floor((constitution - 10) / 2),
+        intelligence: Math.floor((intelligence - 10) / 2),
+        wisdom: Math.floor((wisdom - 10) / 2),
+        charisma: Math.floor((charisma - 10) / 2)
+      };
+      
+      // Calculate stats based on actual values
+      const baseHealth = 8 + modifiers.constitution + (enemyLevel - 1) * (4 + modifiers.constitution);
+      const baseAC = 10 + modifiers.agility;
+      const attackBonus = 2 + modifiers.strength;
+      const damage = `1d6+${modifiers.strength}`;
+      
+      // Generate attack name based on enemy type and name
+      const attackName = this.generateAttackNameFromEnemyName(extractedEnemy.name, extractedEnemy.type);
+      
+      // Generate damage type based on enemy type
+      const damageType = this.generateDamageTypeFromEnemyType(extractedEnemy.type);
+      
+      // Generate chest armor for the enemy
+      const equippedArmor = armorGenerationService.generateChestArmor({
+        level: enemyLevel,
+        enemyType: extractedEnemy.type || 'beast',
+        rarity: this.determineRarityByLevel(enemyLevel)
+      });
+      
+      // Use armor's AC + agility modifier
+      const finalAC = equippedArmor ? (equippedArmor.armorClass || 0) + modifiers.agility : baseAC;
+      
+      return {
+        name: extractedEnemy.name, // Use the extracted name from narrative
+        type: extractedEnemy.type || 'beast',
+        level: enemyLevel,
+        combatLevel: enemyLevel,
+        characterLevel: enemyLevel,
+        health: {
+          current: baseHealth,
+          max: baseHealth
+        },
+        armorClass: finalAC,
+        attacks: [{
+          name: attackName,
+          attackBonus: attackBonus,
+          damage: damage,
+          damageType: damageType
+        }],
+        stats: {
+          strength,
+          agility,
+          constitution,
+          intelligence,
+          wisdom,
+          charisma,
+          modifiers
+        },
+        experienceReward: 50 + (enemyLevel * 25),
+        description: extractedEnemy.context || `Một ${extractedEnemy.name} xuất hiện từ narrative.`,
+        equippedArmor,
+        loot: []
+      };
+    } catch (error) {
+      console.error('Error generating enemy from narrative context:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate attack name based on enemy name and type
+   */
+  private generateAttackNameFromEnemyName(enemyName: string, enemyType?: string): string {
+    const lowerName = enemyName.toLowerCase();
+    
+    // Beast attacks
+    if (enemyType === 'beast' || lowerName.includes('hổ') || lowerName.includes('sói') || lowerName.includes('lang')) {
+      return 'Tấn công hung dữ';
+    }
+    
+    // Undead attacks
+    if (enemyType === 'undead' || lowerName.includes('ma') || lowerName.includes('skeleton')) {
+      return 'Tấn công ma quái';
+    }
+    
+    // Humanoid attacks
+    if (enemyType === 'humanoid' || lowerName.includes('warrior') || lowerName.includes('chiến binh')) {
+      return 'Tấn công vũ trang';
+    }
+    
+    // Elemental attacks
+    if (enemyType === 'elemental' || lowerName.includes('fire') || lowerName.includes('lửa')) {
+      return 'Tấn công nguyên tố';
+    }
+    
+    // Default attack
+    return 'Tấn công cơ bản';
+  }
+
+  /**
+   * Generate damage type based on enemy type
+   */
+  private generateDamageTypeFromEnemyType(enemyType?: string): string {
+    switch (enemyType) {
+      case 'undead':
+        return 'necrotic';
+      case 'elemental':
+        return 'fire';
+      case 'construct':
+        return 'bludgeoning';
+      case 'beast':
+      case 'humanoid':
+      default:
+        return 'physical';
     }
   }
 

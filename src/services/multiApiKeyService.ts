@@ -60,12 +60,30 @@ class MultiApiKeyService {
 
   // API Key Management
   addApiKey(key: string, name: string = '', accountName: string = ''): string {
+    const trimmedKey = key.trim();
+    const trimmedName = name.trim() || `API Key ${this.apiKeys.length + 1}`;
+    const trimmedAccount = accountName.trim() || `Account ${this.apiKeys.length + 1}`;
+    
+    // Check trùng key
+    const existingKey = this.apiKeys.find(k => k.key === trimmedKey);
+    if (existingKey) {
+      throw new Error(`API key đã tồn tại với tên "${existingKey.name}" trong account "${existingKey.accountName}"`);
+    }
+    
+    // Check trùng tên trong cùng account
+    const duplicateName = this.apiKeys.find(k => 
+      k.name === trimmedName && k.accountName === trimmedAccount
+    );
+    if (duplicateName) {
+      throw new Error(`Tên "${trimmedName}" đã tồn tại trong account "${trimmedAccount}"`);
+    }
+    
     const id = Date.now().toString();
     const apiKeyInfo: ApiKeyInfo = {
       id,
-      key: key.trim(),
-      name: name.trim() || `API Key ${this.apiKeys.length + 1}`,
-      accountName: accountName.trim() || `Account ${this.apiKeys.length + 1}`,
+      key: trimmedKey,
+      name: trimmedName,
+      accountName: trimmedAccount,
       isActive: true,
       lastUsed: new Date().toISOString(),
       usageCount: 0,
@@ -111,6 +129,27 @@ class MultiApiKeyService {
 
   getApiKeys(): ApiKeyInfo[] {
     return [...this.apiKeys];
+  }
+
+  // Helper methods for duplicate checking
+  isKeyExists(key: string): boolean {
+    return this.apiKeys.some(k => k.key === key.trim());
+  }
+
+  isNameExistsInAccount(name: string, accountName: string): boolean {
+    return this.apiKeys.some(k => 
+      k.name === name.trim() && k.accountName === accountName.trim()
+    );
+  }
+
+  findDuplicateKey(key: string): ApiKeyInfo | null {
+    return this.apiKeys.find(k => k.key === key.trim()) || null;
+  }
+
+  findDuplicateNameInAccount(name: string, accountName: string): ApiKeyInfo | null {
+    return this.apiKeys.find(k => 
+      k.name === name.trim() && k.accountName === accountName.trim()
+    ) || null;
   }
 
   getCurrentApiKey(): ApiKeyInfo | null {
