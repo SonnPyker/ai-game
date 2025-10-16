@@ -389,6 +389,92 @@ export function useQuestSystem() {
     };
   }, []);
 
+  // Listen for quest system updates
+  useEffect(() => {
+    const handleQuestSystemUpdate = (event: CustomEvent) => {
+      console.log('🔄 Quest system update event received:', event.detail);
+      
+      // Reload quest system từ localStorage để cập nhật UI
+      const savedQuestSystem = localStorage.getItem(QUEST_SYSTEM_KEY);
+      if (savedQuestSystem) {
+        try {
+          const parsed = JSON.parse(savedQuestSystem);
+          const questSystemWithDates = {
+            ...parsed,
+            factionReputations: parsed.factionReputations || [],
+            mainQuests: parsed.mainQuests.map((quest: any) => ({
+              ...quest,
+              createdAt: new Date(quest.createdAt),
+              completedAt: quest.completedAt ? new Date(quest.completedAt) : undefined,
+              objectives: quest.objectives.map((obj: any) => ({
+                ...obj,
+                completedAt: obj.completedAt ? new Date(obj.completedAt) : undefined,
+                unlocked: quest.status === 'locked' ? false : (obj.unlocked !== undefined ? obj.unlocked : true)
+              })),
+              rewards: quest.rewards.map((reward: any) => ({
+                ...reward,
+                claimedAt: reward.claimedAt ? new Date(reward.claimedAt) : undefined
+              }))
+            })),
+            sideQuests: parsed.sideQuests.map((quest: any) => ({
+              ...quest,
+              createdAt: new Date(quest.createdAt),
+              completedAt: quest.completedAt ? new Date(quest.completedAt) : undefined,
+              objectives: quest.objectives.map((obj: any) => ({
+                ...obj,
+                completedAt: obj.completedAt ? new Date(obj.completedAt) : undefined,
+                unlocked: quest.status === 'locked' ? false : (obj.unlocked !== undefined ? obj.unlocked : true)
+              })),
+              rewards: quest.rewards.map((reward: any) => ({
+                ...reward,
+                claimedAt: reward.claimedAt ? new Date(reward.claimedAt) : undefined
+              }))
+            })),
+            factionQuests: parsed.factionQuests.map((quest: any) => ({
+              ...quest,
+              createdAt: new Date(quest.createdAt),
+              completedAt: quest.completedAt ? new Date(quest.completedAt) : undefined,
+              objectives: quest.objectives.map((obj: any) => ({
+                ...obj,
+                completedAt: obj.completedAt ? new Date(obj.completedAt) : undefined,
+                unlocked: quest.status === 'locked' ? false : (obj.unlocked !== undefined ? obj.unlocked : true)
+              })),
+              rewards: quest.rewards.map((reward: any) => ({
+                ...reward,
+                claimedAt: reward.claimedAt ? new Date(reward.claimedAt) : undefined
+              }))
+            })),
+            starterQuest: parsed.starterQuest ? {
+              ...parsed.starterQuest,
+              createdAt: new Date(parsed.starterQuest.createdAt),
+              completedAt: parsed.starterQuest.completedAt ? new Date(parsed.starterQuest.completedAt) : undefined,
+              objectives: parsed.starterQuest.objectives.map((obj: any) => ({
+                ...obj,
+                completedAt: obj.completedAt ? new Date(obj.completedAt) : undefined,
+                unlocked: parsed.starterQuest.status === 'locked' ? false : (obj.unlocked !== undefined ? obj.unlocked : true)
+              })),
+              rewards: parsed.starterQuest.rewards.map((reward: any) => ({
+                ...reward,
+                claimedAt: reward.claimedAt ? new Date(reward.claimedAt) : undefined
+              }))
+            } : undefined
+          };
+          
+          setQuestSystem(questSystemWithDates);
+          console.log('🔄 Quest system UI updated from localStorage');
+        } catch (error) {
+          console.error('Error reloading quest system from localStorage:', error);
+        }
+      }
+    };
+
+    window.addEventListener('questSystemUpdated', handleQuestSystemUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('questSystemUpdated', handleQuestSystemUpdate as EventListener);
+    };
+  }, []);
+
   // Load quest system từ localStorage và world data
   useEffect(() => {
     const savedQuestSystem = localStorage.getItem(QUEST_SYSTEM_KEY);

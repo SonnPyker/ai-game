@@ -249,14 +249,34 @@ class QuestCompletionService {
       
       if (combatHistoryData) {
         const combatHistory = JSON.parse(combatHistoryData);
-        if (combatHistory && Array.isArray(combatHistory.defeatedEnemies)) {
+        // Kiểm tra cấu trúc mới: combat_history là array của CombatResultData
+        if (Array.isArray(combatHistory)) {
+          // Cấu trúc mới: lấy enemiesDefeated từ tất cả combat results
+          combatHistory.forEach((combatResult: any) => {
+            if (combatResult.enemiesDefeated && Array.isArray(combatResult.enemiesDefeated)) {
+              defeatedEnemies.push(...combatResult.enemiesDefeated);
+            }
+          });
+        }
+        // Kiểm tra cấu trúc cũ: combat_history có defeatedEnemies array
+        else if (combatHistory && Array.isArray(combatHistory.defeatedEnemies)) {
           defeatedEnemies = combatHistory.defeatedEnemies;
         }
       }
       
       // Fallback: sử dụng context.combatHistory nếu localStorage không có dữ liệu
-      if (defeatedEnemies.length === 0 && context.combatHistory && Array.isArray(context.combatHistory.defeatedEnemies)) {
-        defeatedEnemies = context.combatHistory.defeatedEnemies;
+      if (defeatedEnemies.length === 0 && context.combatHistory) {
+        if (Array.isArray(context.combatHistory)) {
+          // Cấu trúc mới trong context
+          context.combatHistory.forEach((combatResult: any) => {
+            if (combatResult.enemiesDefeated && Array.isArray(combatResult.enemiesDefeated)) {
+              defeatedEnemies.push(...combatResult.enemiesDefeated);
+            }
+          });
+        } else if (Array.isArray(context.combatHistory.defeatedEnemies)) {
+          // Cấu trúc cũ trong context
+          defeatedEnemies = context.combatHistory.defeatedEnemies;
+        }
       }
       
       console.log(`🔍 checkCombatObjective - Objective: ${objective.targetEnemyName}, Required: ${requiredKills}`);
@@ -265,25 +285,146 @@ class QuestCompletionService {
       for (const defeatedEnemy of defeatedEnemies) {
         const enemyName = defeatedEnemy.name?.toLowerCase().trim() || '';
         
+        console.log(`🔍 Comparing enemy names:`, {
+          defeatedEnemyName: defeatedEnemy.name,
+          enemyNameLower: enemyName,
+          targetEnemyName: objective.targetEnemyName,
+          targetNameLower: targetName,
+          enemyType: defeatedEnemy.type,
+          targetEnemyType: objective.targetEnemyType
+        });
+        
         // Check if enemy name matches with improved algorithm
         const nameMatches = this.fuzzyMatch(enemyName, targetName);
         
         // Check if enemy type matches (if specified)
-        const typeMatches = !objective.targetEnemyType || 
-          (defeatedEnemy.type?.toLowerCase().trim() === objective.targetEnemyType.toLowerCase().trim());
+        // Tạm thời bỏ qua type matching để chỉ focus vào tên enemy
+        const typeMatches = true; // !objective.targetEnemyType || 
+          // (defeatedEnemy.type?.toLowerCase().trim() === objective.targetEnemyType.toLowerCase().trim());
         
         // Check if specific enemy ID matches (for NPC enemies)
         const idMatches = !objective.targetEnemyId || 
           defeatedEnemy.enemyId === objective.targetEnemyId;
 
+        console.log(`🔍 Match results:`, {
+          nameMatches,
+          typeMatches,
+          idMatches,
+          finalMatch: nameMatches && typeMatches && idMatches
+        });
+
         if (nameMatches && typeMatches && idMatches) {
           currentKills++;
           matchedEnemies.push(defeatedEnemy.name);
           console.log(`✅ Combat objective match found: ${defeatedEnemy.name} (${defeatedEnemy.type})`);
+        } else {
+          console.log(`❌ No match for: ${defeatedEnemy.name}`);
         }
       }
       
       console.log(`🎯 checkCombatObjective - Current kills: ${currentKills}/${requiredKills}`);
+      
+      // Cập nhật currentKills vào quest system trong localStorage
+      if (currentKills > 0) {
+        try {
+          const questSystemData = localStorage.getItem('quest_system');
+          if (questSystemData) {
+            const questSystem = JSON.parse(questSystemData);
+            let questSystemUpdated = false;
+            
+            // Cập nhật starterQuest
+            if (questSystem.starterQuest && questSystem.starterQuest.objectives) {
+              Object.values(questSystem.starterQuest.objectives).forEach((obj: any) => {
+                if (obj && obj.id === objective.id && obj.type === 'combat') {
+                  obj.currentKills = currentKills;
+                  if (currentKills >= obj.requiredKills) {
+                    obj.completed = true;
+                    obj.status = 'completed';
+                  }
+                  questSystemUpdated = true;
+                  console.log(`🔄 Updated starterQuest objective ${obj.id}: ${obj.currentKills}/${obj.requiredKills}`);
+                }
+              });
+            }
+            
+            // Cập nhật mainQuests
+            if (questSystem.mainQuests && Array.isArray(questSystem.mainQuests)) {
+              questSystem.mainQuests.forEach((quest: any) => {
+                if (quest && quest.objectives) {
+                  Object.values(quest.objectives).forEach((obj: any) => {
+                    if (obj && obj.id === objective.id && obj.type === 'combat') {
+                      obj.currentKills = currentKills;
+                      if (currentKills >= obj.requiredKills) {
+                        obj.completed = true;
+                        obj.status = 'completed';
+                      }
+                      questSystemUpdated = true;
+                      console.log(`🔄 Updated mainQuest objective ${obj.id}: ${obj.currentKills}/${obj.requiredKills}`);
+                    }
+                  });
+                }
+              });
+            }
+            
+            // Cập nhật sideQuests
+            if (questSystem.sideQuests && Array.isArray(questSystem.sideQuests)) {
+              questSystem.sideQuests.forEach((quest: any) => {
+                if (quest && quest.objectives) {
+                  Object.values(quest.objectives).forEach((obj: any) => {
+                    if (obj && obj.id === objective.id && obj.type === 'combat') {
+                      obj.currentKills = currentKills;
+                      if (currentKills >= obj.requiredKills) {
+                        obj.completed = true;
+                        obj.status = 'completed';
+                      }
+                      questSystemUpdated = true;
+                      console.log(`🔄 Updated sideQuest objective ${obj.id}: ${obj.currentKills}/${obj.requiredKills}`);
+                    }
+                  });
+                }
+              });
+            }
+            
+            // Cập nhật factionQuests
+            if (questSystem.factionQuests && Array.isArray(questSystem.factionQuests)) {
+              questSystem.factionQuests.forEach((quest: any) => {
+                if (quest && quest.objectives) {
+                  Object.values(quest.objectives).forEach((obj: any) => {
+                    if (obj && obj.id === objective.id && obj.type === 'combat') {
+                      obj.currentKills = currentKills;
+                      if (currentKills >= obj.requiredKills) {
+                        obj.completed = true;
+                        obj.status = 'completed';
+                      }
+                      questSystemUpdated = true;
+                      console.log(`🔄 Updated factionQuest objective ${obj.id}: ${obj.currentKills}/${obj.requiredKills}`);
+                    }
+                  });
+                }
+              });
+            }
+            
+            if (questSystemUpdated) {
+              localStorage.setItem('quest_system', JSON.stringify(questSystem));
+              console.log(`💾 Quest system updated in localStorage with currentKills: ${currentKills}`);
+              
+              // Dispatch event để trigger UI update
+              const questUpdateEvent = new CustomEvent('questSystemUpdated', {
+                detail: { 
+                  objectiveId: objective.id,
+                  currentKills: currentKills,
+                  requiredKills: objective.requiredKills,
+                  completed: currentKills >= objective.requiredKills
+                }
+              });
+              window.dispatchEvent(questUpdateEvent);
+              console.log(`📡 Dispatched questSystemUpdated event for objective ${objective.id}`);
+            }
+          }
+        } catch (error) {
+          console.error('Error updating quest system in localStorage:', error);
+        }
+      }
       
     } catch (error) {
       console.error('Error reading combat history from localStorage in checkCombatObjective:', error);
@@ -441,14 +582,34 @@ class QuestCompletionService {
       
       if (combatHistoryData) {
         const combatHistory = JSON.parse(combatHistoryData);
-        if (combatHistory && Array.isArray(combatHistory.defeatedEnemies)) {
+        // Kiểm tra cấu trúc mới: combat_history là array của CombatResultData
+        if (Array.isArray(combatHistory)) {
+          // Cấu trúc mới: lấy enemiesDefeated từ tất cả combat results
+          combatHistory.forEach((combatResult: any) => {
+            if (combatResult.enemiesDefeated && Array.isArray(combatResult.enemiesDefeated)) {
+              defeatedEnemies.push(...combatResult.enemiesDefeated);
+            }
+          });
+        }
+        // Kiểm tra cấu trúc cũ: combat_history có defeatedEnemies array
+        else if (combatHistory && Array.isArray(combatHistory.defeatedEnemies)) {
           defeatedEnemies = combatHistory.defeatedEnemies;
         }
       }
       
       // Fallback: sử dụng context.combatHistory nếu localStorage không có dữ liệu
-      if (defeatedEnemies.length === 0 && context.combatHistory && Array.isArray(context.combatHistory.defeatedEnemies)) {
-        defeatedEnemies = context.combatHistory.defeatedEnemies;
+      if (defeatedEnemies.length === 0 && context.combatHistory) {
+        if (Array.isArray(context.combatHistory)) {
+          // Cấu trúc mới trong context
+          context.combatHistory.forEach((combatResult: any) => {
+            if (combatResult.enemiesDefeated && Array.isArray(combatResult.enemiesDefeated)) {
+              defeatedEnemies.push(...combatResult.enemiesDefeated);
+            }
+          });
+        } else if (Array.isArray(context.combatHistory.defeatedEnemies)) {
+          // Cấu trúc cũ trong context
+          defeatedEnemies = context.combatHistory.defeatedEnemies;
+        }
       }
       
       console.log(`🔍 getCombatProgress - Objective: ${objective.targetEnemyName}, Required: ${requiredKills}`);

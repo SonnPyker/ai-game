@@ -33,6 +33,7 @@ import { levelSystemService } from '../../services/levelSystemService';
 import { combatLevelService } from '../../services/combatLevelService';
 import { currencyService } from '../../services/currencyService';
 import { locationSyncService } from '../../services/locationSyncService';
+import { locationService } from '../../services/locationService';
 // Combat services removed - now handled in CombatPage
 import { QuestTracker } from '../QuestTracker/QuestTracker';
 import { SCCJournal } from './SCCJournal';
@@ -1014,41 +1015,52 @@ export function InfoMenu({
                 <div key={index} className="text-sm">
                   <div className="flex items-center justify-between">
                     <div className="text-white font-medium">{typeof location.name === 'string' ? location.name : JSON.stringify(location.name)}</div>
-                    {locationSyncService.isShopLocation(location) && (
-                      <button
-                        onClick={async () => {
-                          if (onOpenShop && !shopLoadingStates[location.id]) {
-                            setShopLoadingStates(prev => ({ ...prev, [location.id]: true }));
-                            try {
-                              onOpenShop(location.id);
-                            } finally {
-                              // Reset loading state after a short delay
-                              setTimeout(() => {
-                                setShopLoadingStates(prev => ({ ...prev, [location.id]: false }));
-                              }, 2000);
+                    {locationSyncService.isShopLocation(location) && (() => {
+                      const currentPlayerLocation = locationService.getCurrentLocation();
+                      const isPlayerAtLocation = currentPlayerLocation && currentPlayerLocation.currentLocationId === location.id;
+                      const isDisabled = shopLoadingStates[location.id] || !isPlayerAtLocation;
+                      
+                      return (
+                        <button
+                          onClick={async () => {
+                            if (onOpenShop && !shopLoadingStates[location.id] && isPlayerAtLocation) {
+                              setShopLoadingStates(prev => ({ ...prev, [location.id]: true }));
+                              try {
+                                onOpenShop(location.id);
+                              } finally {
+                                // Reset loading state after a short delay
+                                setTimeout(() => {
+                                  setShopLoadingStates(prev => ({ ...prev, [location.id]: false }));
+                                }, 2000);
+                              }
                             }
-                          }
-                        }}
-                        disabled={shopLoadingStates[location.id]}
-                        className={`px-3 py-1 border rounded text-xs transition-colors flex items-center space-x-1 ${
-                          shopLoadingStates[location.id]
-                            ? 'bg-gray-600/20 border-gray-500/50 text-gray-400 cursor-not-allowed'
-                            : 'bg-yellow-600/20 border-yellow-500/50 text-yellow-300 hover:bg-yellow-600/30'
-                        }`}
-                      >
-                        {shopLoadingStates[location.id] ? (
-                          <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            <span>Đang tạo...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Coins className="w-3 h-3" />
-                            <span>Mở Shop</span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                          }}
+                          disabled={isDisabled}
+                          className={`px-3 py-1 border rounded text-xs transition-colors flex items-center space-x-1 ${
+                            isDisabled
+                              ? 'bg-gray-600/20 border-gray-500/50 text-gray-400 cursor-not-allowed'
+                              : 'bg-yellow-600/20 border-yellow-500/50 text-yellow-300 hover:bg-yellow-600/30'
+                          }`}
+                        >
+                          {shopLoadingStates[location.id] ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <span>Đang tạo...</span>
+                            </>
+                          ) : !isPlayerAtLocation ? (
+                            <>
+                              <Coins className="w-3 h-3" />
+                              <span>Không ở đây</span>
+                            </>
+                          ) : (
+                            <>
+                              <Coins className="w-3 h-3" />
+                              <span>Mở Shop</span>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })()}
                   </div>
                   <div className="text-gray-400">
                     {(() => {

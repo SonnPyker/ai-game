@@ -24,6 +24,48 @@ class EnemyGenerationService {
     return enemyDatabaseService.createEnemyFromNPC(npcId, npcName, combatStats);
   }
 
+  // Generate multiple random enemies with variety
+  public generateMultipleEnemies(count: number, level: number = 1): Enemy[] {
+    const enemies: Enemy[] = [];
+    const usedNames = new Set<string>();
+    
+    // Determine enemy types based on scene context or random
+    const availableTypes: Enemy['type'][] = ['humanoid', 'beast', 'undead', 'demon', 'elemental', 'construct', 'other'];
+    
+    for (let i = 0; i < count; i++) {
+      // Vary level slightly for each enemy
+      const enemyLevel = Math.max(1, level + Math.floor(Math.random() * 3) - 1);
+      
+      // Select enemy type (prefer variety)
+      let selectedType: Enemy['type'];
+      if (i === 0 || Math.random() < 0.7) {
+        // First enemy or 70% chance: random type
+        selectedType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+      } else {
+        // 30% chance: same type as previous (pack/group logic)
+        selectedType = enemies[enemies.length - 1].type;
+      }
+      
+      // Generate enemy with unique name
+      let enemy = this.generateRandomEnemy(enemyLevel, selectedType);
+      let attempts = 0;
+      while (usedNames.has(enemy.name) && attempts < 10) {
+        enemy = this.generateRandomEnemy(enemyLevel, selectedType);
+        attempts++;
+      }
+      
+      // If still duplicate after 10 attempts, add number suffix
+      if (usedNames.has(enemy.name)) {
+        enemy.name = `${enemy.name} ${i + 1}`;
+      }
+      
+      usedNames.add(enemy.name);
+      enemies.push(enemy);
+    }
+    
+    return enemies;
+  }
+
   // Generate random enemy for testing
   public generateRandomEnemy(level: number = 1, type?: Enemy['type']): Enemy {
     const combatStats = enemyDatabaseService.generateRandomEnemyStats(level, type);

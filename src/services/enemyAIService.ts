@@ -337,10 +337,18 @@ export class EnemyAIService {
    */
   private hardAI(enemy: Combatant, allCombatants: Combatant[]): CombatAction {
     const alivePlayers = allCombatants.filter(c => c.type === 'player' && c.isAlive);
-    // const aliveEnemies = allCombatants.filter(c => c.type === 'enemy' && c.isAlive);
+    const aliveEnemies = allCombatants.filter(c => c.type === 'enemy' && c.isAlive && c.id !== enemy.id);
     
     if (alivePlayers.length === 0) {
       return this.createDefendAction();
+    }
+
+    // NEW: Enemy Coordination for multiple enemies (hard difficulty only)
+    if (aliveEnemies.length > 0) {
+            const coordinationAction = this.decideCoordinatedAction(enemy, aliveEnemies, alivePlayers);
+      if (coordinationAction) {
+        return coordinationAction;
+      }
     }
 
     // Check if should use healing item (more aggressive healing)
@@ -604,6 +612,95 @@ Hãy quyết định hành động tối ưu cho ${enemy.name}. Trả về JSON:
       console.error('Error parsing AI response:', error);
       return this.createDefendAction();
     }
+  }
+
+  /**
+   * NEW: Decide coordinated action for multiple enemies (hard difficulty only)
+   */
+  private decideCoordinatedAction(
+    enemy: Combatant,
+    aliveEnemies: Combatant[],
+    alivePlayers: Combatant[]
+  ): CombatAction | null {
+    // Strategy 1: Focus Fire on weakest player
+    // Tất cả enemies tấn công cùng target
+    const focusFireChance = 0.4; // 40% chance
+    if (Math.random() < focusFireChance) {
+      const weakestPlayer = this.selectWeakestTarget(enemy, alivePlayers);
+      const attackIndex = this.selectBestAttack(enemy, weakestPlayer);
+      return {
+        type: 'attack',
+        targetId: weakestPlayer.id,
+        attackIndex,
+        description: `${enemy.name} phối hợp với đồng đội, tập trung tấn công ${weakestPlayer.name}`,
+        priority: 4
+      };
+    }
+
+    // Strategy 2: Protect Healer/Support
+    // Nếu có ally có healing items, defend để bảo vệ
+    const protectHealerChance = 0.25; // 25% chance
+    if (Math.random() < protectHealerChance) {
+      const healerAlly = aliveEnemies.find(e => this.hasHealingItem(e));
+      if (healerAlly && healerAlly.health.current / healerAlly.health.max < 0.6) {
+        // This enemy defends to protect healer
+        return {
+          type: 'defend',
+          description: `${enemy.name} phòng thủ để bảo vệ đồng đội`,
+          priority: 3
+        };
+      }
+    }
+
+    // Strategy 3: Smart Item Usage
+    // Ưu tiên heal ally có HP thấp nhất
+    const smartItemChance = 0.20; // 20% chance
+    if (Math.random() < smartItemChance) {
+      const weakestAlly = [...aliveEnemies].sort((a, b) => 
+        (a.health.current / a.health.max) - (b.health.current / b.health.max)
+      )[0];
+      
+      if (weakestAlly && weakestAlly.health.current / weakestAlly.health.max < 0.3) {
+        // Check if this enemy has healing item
+        if (this.hasHealingItem(enemy)) {
+          const healingItem = enemy.inventory?.find(item => 
+            item.type === 'consumable' && 
+            item.quantity > 0 &&
+            (item.consumableType === 'healing' || item.effect?.includes('heal'))
+          );
+          
+          if (healingItem) {
+            return {
+              type: 'use_item',
+              itemId: healingItem.id,
+              targetId: weakestAlly.id,
+              description: `${enemy.name} hỗ trợ đồng đội bằng ${healingItem.name}`,
+              priority: 5
+            };
+          }
+        }
+      }
+    }
+
+    // Strategy 4: Flanking
+    // Một enemy defend, others attack
+    const flankingChance = 0.15; // 15% chance
+    if (Math.random() < flankingChance) {
+      // Check if any ally is already defending
+      const defendingAlly = aliveEnemies.some(e => e.isDefending);
+      
+      if (!defendingAlly && aliveEnemies.length >= 1) {
+        // This enemy defends while others attack
+        return {
+          type: 'defend',
+          description: `${enemy.name} phòng thủ trong khi đồng đội tấn công`,
+          priority: 3
+        };
+      }
+    }
+
+    // No coordination strategy applied, return null to use default AI
+    return null;
   }
 }
 

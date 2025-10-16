@@ -1,5 +1,5 @@
 // import React from 'react';
-import { Heart, Shield, Sword, Target } from 'lucide-react';
+import { Heart, Shield, Sword, Target, ArrowRight } from 'lucide-react';
 import { Combatant, combatService } from '../../services/combatService';
 import { MotionWrapper } from '../MotionWrapper';
 import { useCombatVisualEffects } from '../../hooks/useCombatVisualEffects';
@@ -11,6 +11,7 @@ interface CombatantCardProps {
   isEnemy: boolean;
   isSelected?: boolean;
   isPlayerTurn?: boolean;
+  isCurrentTurn?: boolean; // NEW: Whether this combatant is currently taking their turn
   onSelect?: () => void;
   temporaryPlayerStats?: any; // TemporaryPlayerStats
 }
@@ -20,12 +21,13 @@ export function CombatantCard({
   isEnemy, 
   isSelected = false, 
   isPlayerTurn = false, 
+  isCurrentTurn = false,
   onSelect,
   temporaryPlayerStats
 }: CombatantCardProps) {
   const hpPercentage = (combatant.health.current / combatant.health.max) * 100;
   const isAlive = combatant.isAlive;
-  const isCurrentTurn = isPlayerTurn && !isEnemy;
+  // isCurrentTurn is now passed as prop
 
   // Use visual effects hook
   const { animationState, floatingTexts, elementRef, handleTextComplete } = useCombatVisualEffects(combatant.id);
@@ -40,7 +42,9 @@ export function CombatantCard({
   // Get status text
   const getStatusText = () => {
     if (!isAlive) return 'Bị đánh bại';
-    if (isCurrentTurn) return 'Lượt của bạn';
+    if (isCurrentTurn) {
+      return isEnemy ? 'Đang lượt' : 'Lượt của bạn';
+    }
     if (isEnemy && isPlayerTurn) return 'Mục tiêu';
     return 'Chờ lượt';
   };
@@ -48,7 +52,7 @@ export function CombatantCard({
   // Get status color
   const getStatusColor = () => {
     if (!isAlive) return 'text-red-400';
-    if (isCurrentTurn) return 'text-blue-400';
+    if (isCurrentTurn) return isEnemy ? 'text-orange-400' : 'text-blue-400';
     if (isEnemy && isPlayerTurn) return 'text-yellow-400';
     return 'text-gray-400';
   };
@@ -64,7 +68,7 @@ export function CombatantCard({
           relative bg-gray-800/50 rounded-lg border-2 p-4 transition-all duration-200
           ${isSelected ? 'border-yellow-400 shadow-lg shadow-yellow-400/20' : 'border-gray-600'}
           ${!isAlive ? 'opacity-50' : ''}
-          ${isCurrentTurn ? 'ring-2 ring-blue-400' : ''}
+          ${isCurrentTurn ? (isEnemy ? 'ring-2 ring-orange-400 border-orange-400 shadow-lg shadow-orange-400/30' : 'ring-2 ring-blue-400 border-blue-400 shadow-lg shadow-blue-400/30') : ''}
           ${onSelect ? 'cursor-pointer hover:border-gray-500' : ''}
           ${animationState.className}
         `}
@@ -75,6 +79,10 @@ export function CombatantCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
+          {/* Current Turn Arrow Indicator */}
+          {isCurrentTurn && (
+            <ArrowRight className={`w-5 h-5 ${isEnemy ? 'text-orange-400' : 'text-blue-400'}`} />
+          )}
           <h3 className={`font-bold text-lg ${isEnemy ? 'text-red-400' : 'text-blue-400'}`}>
             {combatant.name}
           </h3>
@@ -85,14 +93,21 @@ export function CombatantCard({
           )}
         </div>
         
-        {isSelected && (
-          <Target className="w-5 h-5 text-yellow-400" />
-        )}
+        <div className="flex items-center space-x-2">
+          {isCurrentTurn && (
+            <div className={`text-xs font-bold px-2 py-1 rounded ${isEnemy ? 'bg-orange-400/20 text-orange-400' : 'bg-blue-400/20 text-blue-400'}`}>
+              ĐANG LƯỢT
+            </div>
+          )}
+          {isSelected && (
+            <Target className="w-5 h-5 text-yellow-400" />
+          )}
+        </div>
       </div>
 
       {/* Status */}
-      <div className={`text-sm font-medium mb-2 ${getStatusColor()}`}>
-        {getStatusText()}
+      <div className={`text-sm font-medium mb-2 ${getStatusColor()} flex items-center space-x-2`}>
+        <span>{getStatusText()}</span>
       </div>
 
       {/* HP Bar */}

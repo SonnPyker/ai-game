@@ -135,44 +135,157 @@ class QuestCombatService {
       let updated = false;
       let foundObjectives = 0;
 
-      console.log('🔍 Searching for enemy:', enemyName);
+      console.log('🔍 questCombatService.updateCombatObjectiveProgress called with enemy:', enemyName);
       console.log('🔍 Quest system data:', questSystem);
 
       // Duyệt qua tất cả quests để tìm objective phù hợp
-      Object.values(questSystem).forEach((quest: any) => {
-        if (quest && quest.objectives) {
-          Object.values(quest.objectives).forEach((objective: any) => {
-            foundObjectives++;
-            console.log('🔍 Checking objective:', {
-              targetEnemyName: objective.targetEnemyName,
-              type: objective.type,
-              status: objective.status,
-              completed: objective.completed,
-              matches: objective.targetEnemyName === enemyName
-            });
-            
-            if (objective && 
-                objective.type === 'combat' && 
-                objective.status === 'active' && 
-                !objective.completed &&
-                objective.targetEnemyName === enemyName) {
-              
-              // Tăng currentKills
-              objective.currentKills = (objective.currentKills || 0) + 1;
-              
-              // Kiểm tra xem đã hoàn thành chưa
-              if (objective.currentKills >= objective.requiredKills) {
-                objective.completed = true;
-                objective.status = 'completed';
-                console.log(`🎯 Quest objective completed: ${objective.description}`);
-              }
-              
-              updated = true;
-              console.log(`⚔️ Quest progress updated: ${objective.targetEnemyName} (${objective.currentKills}/${objective.requiredKills})`);
-            }
+      // Xử lý starterQuest
+      if (questSystem.starterQuest && questSystem.starterQuest.objectives) {
+        Object.values(questSystem.starterQuest.objectives).forEach((objective: any) => {
+          foundObjectives++;
+          console.log('🔍 Checking starterQuest objective:', {
+            targetEnemyName: objective.targetEnemyName,
+            type: objective.type,
+            status: objective.status,
+            completed: objective.completed,
+            matches: objective.targetEnemyName === enemyName
           });
-        }
-      });
+          
+          if (objective && 
+              objective.type === 'combat' && 
+              objective.status === 'active' && 
+              !objective.completed &&
+              objective.targetEnemyName === enemyName) {
+            
+            // Tăng currentKills
+            objective.currentKills = (objective.currentKills || 0) + 1;
+            
+            // Kiểm tra xem đã hoàn thành chưa
+            if (objective.currentKills >= objective.requiredKills) {
+              objective.completed = true;
+              objective.status = 'completed';
+              console.log(`🎯 Quest objective completed: ${objective.description}`);
+            }
+            
+            updated = true;
+            console.log(`⚔️ Quest progress updated: ${objective.targetEnemyName} (${objective.currentKills}/${objective.requiredKills})`);
+          }
+        });
+      }
+
+      // Xử lý mainQuests
+      if (questSystem.mainQuests && Array.isArray(questSystem.mainQuests)) {
+        questSystem.mainQuests.forEach((quest: any) => {
+          if (quest && quest.objectives) {
+            Object.values(quest.objectives).forEach((objective: any) => {
+              foundObjectives++;
+              console.log('🔍 Checking mainQuest objective:', {
+                targetEnemyName: objective.targetEnemyName,
+                type: objective.type,
+                status: objective.status,
+                completed: objective.completed,
+                matches: objective.targetEnemyName === enemyName
+              });
+              
+              if (objective && 
+                  objective.type === 'combat' && 
+                  objective.status === 'active' && 
+                  !objective.completed &&
+                  objective.targetEnemyName === enemyName) {
+                
+                // Tăng currentKills
+                objective.currentKills = (objective.currentKills || 0) + 1;
+                
+                // Kiểm tra xem đã hoàn thành chưa
+                if (objective.currentKills >= objective.requiredKills) {
+                  objective.completed = true;
+                  objective.status = 'completed';
+                  console.log(`🎯 Quest objective completed: ${objective.description}`);
+                }
+                
+                updated = true;
+                console.log(`⚔️ Quest progress updated: ${objective.targetEnemyName} (${objective.currentKills}/${objective.requiredKills})`);
+              }
+            });
+          }
+        });
+      }
+
+      // Xử lý sideQuests
+      if (questSystem.sideQuests && Array.isArray(questSystem.sideQuests)) {
+        questSystem.sideQuests.forEach((quest: any) => {
+          if (quest && quest.objectives) {
+            Object.values(quest.objectives).forEach((objective: any) => {
+              foundObjectives++;
+              console.log('🔍 Checking sideQuest objective:', {
+                targetEnemyName: objective.targetEnemyName,
+                type: objective.type,
+                status: objective.status,
+                completed: objective.completed,
+                matches: objective.targetEnemyName === enemyName
+              });
+              
+              if (objective && 
+                  objective.type === 'combat' && 
+                  objective.status === 'active' && 
+                  !objective.completed &&
+                  objective.targetEnemyName === enemyName) {
+                
+                // Tăng currentKills
+                objective.currentKills = (objective.currentKills || 0) + 1;
+                
+                // Kiểm tra xem đã hoàn thành chưa
+                if (objective.currentKills >= objective.requiredKills) {
+                  objective.completed = true;
+                  objective.status = 'completed';
+                  console.log(`🎯 Quest objective completed: ${objective.description}`);
+                }
+                
+                updated = true;
+                console.log(`⚔️ Quest progress updated: ${objective.targetEnemyName} (${objective.currentKills}/${objective.requiredKills})`);
+              }
+            });
+          }
+        });
+      }
+
+      // Xử lý factionQuests
+      if (questSystem.factionQuests && Array.isArray(questSystem.factionQuests)) {
+        questSystem.factionQuests.forEach((quest: any) => {
+          if (quest && quest.objectives) {
+            Object.values(quest.objectives).forEach((objective: any) => {
+              foundObjectives++;
+              console.log('🔍 Checking factionQuest objective:', {
+                targetEnemyName: objective.targetEnemyName,
+                type: objective.type,
+                status: objective.status,
+                completed: objective.completed,
+                matches: objective.targetEnemyName === enemyName
+              });
+              
+              if (objective && 
+                  objective.type === 'combat' && 
+                  objective.status === 'active' && 
+                  !objective.completed &&
+                  objective.targetEnemyName === enemyName) {
+                
+                // Tăng currentKills
+                objective.currentKills = (objective.currentKills || 0) + 1;
+                
+                // Kiểm tra xem đã hoàn thành chưa
+                if (objective.currentKills >= objective.requiredKills) {
+                  objective.completed = true;
+                  objective.status = 'completed';
+                  console.log(`🎯 Quest objective completed: ${objective.description}`);
+                }
+                
+                updated = true;
+                console.log(`⚔️ Quest progress updated: ${objective.targetEnemyName} (${objective.currentKills}/${objective.requiredKills})`);
+              }
+            });
+          }
+        });
+      }
 
       console.log('🔍 Search results:', { foundObjectives, updated });
 
@@ -244,7 +357,7 @@ class QuestCombatService {
       console.error('Error parsing world data for encounter rate:', error);
     }
     
-    // NEW ENCOUNTER RATE SYSTEM: 0% → tăng dần sau 4 turn → reset về 0% sau combat
+    // NEW ENCOUNTER RATE SYSTEM: 0% → tăng dần sau 5 turn → reset về 0% sau combat
     let currentEncounterRate = 0;
     let fleeStatus = 'Normal';
     
@@ -302,17 +415,17 @@ class QuestCombatService {
       });
       
       if (lastCombatTurn === -1) {
-        // No combat history yet - use base rate
-        currentEncounterRate = baseEncounterRate;
-        fleeStatus = `Active (${baseEncounterRate}% - no combat history)`;
-        console.log('🔍 Encounter rate: base rate (no combat history)');
-      } else if (turnsSinceLastEncounter < 4) {
-        // First 4 turns after last encounter: 0% chance
+        // No combat history yet - start with 0% and build up
         currentEncounterRate = 0;
-        fleeStatus = `Building up (${4 - turnsSinceLastEncounter} turn(s) until ${baseEncounterRate}%)`;
+        fleeStatus = `Building up (${5 - Math.min(turnsSinceLastEncounter, 5)} turn(s) until ${baseEncounterRate}%)`;
+        console.log('🔍 Encounter rate: 0% (building up phase - no combat history)');
+      } else if (turnsSinceLastEncounter < 5) {
+        // First 5 turns after last encounter: 0% chance
+        currentEncounterRate = 0;
+        fleeStatus = `Building up (${5 - turnsSinceLastEncounter} turn(s) until ${baseEncounterRate}%)`;
         console.log('🔍 Encounter rate: 0% (building up phase)');
       } else {
-        // After 4 turns: reach target rate and maintain
+        // After 5 turns: reach target rate and maintain
         currentEncounterRate = baseEncounterRate;
         fleeStatus = `Active (${baseEncounterRate}% after ${turnsSinceLastEncounter} turns)`;
         console.log('🔍 Encounter rate: reached target rate', {

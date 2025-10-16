@@ -1308,9 +1308,10 @@ YÊU CẦU NỘI DUNG:
 3) Ẩn hoạ & xung đột chủ đạo.
 4) Tạo main quest cho tất cả 5 Acts - mỗi Act phải có main quest riêng với độ khó tăng dần.
 5) Quest phải mang tính tổng quát, phù hợp với nhiều loại nhân vật khác nhau.
-6) Tạo TỐI THIỂU 5 địa điểm cốt truyện chính (type: "story") + 2-3 địa điểm phụ (type: "secondary") + TỐI THIỂU 2 địa điểm mua bán (locationType: "shop").
+6) Tạo TỐI THIỂU 5 địa điểm cốt truyện chính (type: "story") + 2-3 địa điểm phụ (type: "secondary") + TỐI THIỂU 2 địa điểm mua bán (type: "shop", locationType: "shop").
 7) Địa điểm shop phải có tên và mô tả phù hợp với thế giới (VD: "Cửa hàng rèn", "Chợ trời", "Hội quán thương nhân").
-8) Đặt gridPosition cho mỗi location trên grid 15x15 (x: 0-14, y: 0-14), đảm bảo khoảng cách hợp lý giữa các địa điểm.
+8) QUAN TRỌNG: Shop locations PHẢI có cả type: "shop" VÀ locationType: "shop" để hệ thống nhận diện đúng.
+9) Đặt gridPosition cho mỗi location trên grid 15x15 (x: 0-14, y: 0-14), đảm bảo khoảng cách hợp lý giữa các địa điểm.
 
 GIỚI HẠN ĐỘ DÀI:
 - narrativeOpening: 150-200 từ
@@ -1357,7 +1358,7 @@ SCHEMA JSON (bắt buộc):
       "name": "Cửa hàng phù hợp cốt truyện",
       "description": "Mô tả shop",
       "role": "Mua bán vũ khí, giáp, consumable, skill books",
-      "type": "secondary",
+      "type": "shop",
       "locationType": "shop",
       "gridPosition": { "x": 5, "y": 8 }
     }
@@ -2958,11 +2959,13 @@ QUAN TRỌNG VỀ WEAPON GENERATION:
 - KHÔNG tạo weapon nào thiếu damage hoặc attackBonus
 
 QUAN TRỌNG VỀ ARMOR GENERATION:
-- TẤT CẢ armor với slot armor PHẢI có đầy đủ: armorClass
+- CHỈ CÓ slot "armor" mới được có armorClass
+- TẤT CẢ armor với slot "armor" PHẢI có đầy đủ: armorClass
 - armorClass: 10-20 (dựa trên rarity và loại armor)
 - Common armor: AC 11-12, Uncommon: AC 12-13, Rare: AC 13-14, Epic: AC 14-15, Legendary: AC 15-16
 - Cloaks/robes: AC thấp hơn (10-12), Plate armor: AC cao hơn (13-16)
 - KHÔNG tạo armor nào thiếu armorClass
+- CẤM: accessory1, accessory2, accessory3 KHÔNG ĐƯỢC có armorClass
 
 QUAN TRỌNG - TÍNH HỢP LÝ CỦA VẬT PHẨM:
 - Items PHẢI phù hợp với bối cảnh thời đại và thế giới game:
@@ -3017,7 +3020,7 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
         "slot": "weapon", // Vị trí trang bị
         // CHO ARMOR - BẮT BUỘC:
         "armorClass": 14, // AC từ 10-20
-        "slot": "armor|accessory1|accessory2|accessory3", // Vị trí trang bị
+        "slot": "armor", // Vị trí trang bị (CHỈ armor mới có armorClass)
         // CHO CONSUMABLE - BẮT BUỘC:
         "effect": "heal:1d4:+1:instant|damage_buff:+1d4:3turns|stat_buff:ac:+2:3turns|debuff:poison:1d4:3turns|heal:full:instant"
       }
@@ -3087,9 +3090,10 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
   * slot: "weapon"
 
 - ÁO GIÁP (armor): BẮT BUỘC có armorClass, slot
-  * armorClass: 10-20 (dựa trên rarity và loại armor)
+  * armorClass: 10-20 (dựa trên rarity và loại armor) - CHỈ slot "armor" mới có armorClass
   * Common: AC 11-12, Uncommon: AC 12-13, Rare: AC 13-14, Epic: AC 14-15, Legendary: AC 15-16
-  * slot: "armor", "accessory1", "accessory2", "accessory3"
+  * slot: "armor" (CHỈ slot armor mới có armorClass)
+  * CẤM: accessory1, accessory2, accessory3 KHÔNG ĐƯỢC có armorClass
 
 - CONSUMABLE: BẮT BUỘC có effect
   * effect: "heal:1d4:+1:instant", "heal:2d4:+2:instant", "stat_buff:strength:+2:5turns", "heal:cure_poison:instant", "heal:full:instant"
@@ -3226,8 +3230,8 @@ MỤC ĐÍCH:
 [STORYTELLING MODE - EDUCATIONAL CASE STUDY]
 ` : '';
 
-    // Check for random combat encounter (every 3-4 turns)
-    const shouldCheckCombat = turnCounter && turnCounter > 0 && (turnCounter % 3 === 0 || turnCounter % 4 === 0);
+    // Check for random combat encounter (every 5 turns)
+    const shouldCheckCombat = turnCounter && turnCounter > 0 && (turnCounter % 5 === 0);
     
     // Check if player fled from random combat recently (within last 2 turns)
     let playerFledRecently = false;
@@ -3246,7 +3250,7 @@ MỤC ĐÍCH:
     }
     
     
-    // NEW ENCOUNTER RATE SYSTEM: 0% → tăng dần sau 4 turn → reset về 0% sau combat
+    // NEW ENCOUNTER RATE SYSTEM: 0% → tăng dần sau 5 turn → reset về 0% sau combat
     let baseEncounterRate = 0.33; // Default 33% (trung bình)
     try {
       const worldData = JSON.parse(worldJson);
@@ -3324,24 +3328,24 @@ MỤC ĐÍCH:
     });
     
     if (lastCombatTurn === -1) {
-      // No combat history yet - use base rate
-      encounterRate = baseEncounterRate;
-      console.log('🔍 Encounter rate: base rate (no combat history)', {
+      // No combat history yet - start with 0% and build up
+      encounterRate = 0;
+      console.log('🔍 Encounter rate: 0% (building up phase - no combat history)', {
         targetRate: baseEncounterRate
       });
-    } else if (turnsSinceLastEncounter >= 4) {
-      // After 4 turns: reach target rate and maintain
+    } else if (turnsSinceLastEncounter >= 5) {
+      // After 5 turns: reach target rate and maintain
       encounterRate = baseEncounterRate;
       console.log('🔍 Encounter rate: reached target rate', {
         targetRate: baseEncounterRate,
         turnsSinceLastEncounter
       });
     } else {
-      // First 4 turns after last encounter: 0% chance
+      // First 5 turns after last encounter: 0% chance
       encounterRate = 0;
       console.log('🔍 Encounter rate: 0% (building up phase)', {
         turnsSinceLastEncounter,
-        turnsUntilActive: 4 - turnsSinceLastEncounter
+        turnsUntilActive: 5 - turnsSinceLastEncounter
       });
     }
     
@@ -3374,6 +3378,16 @@ ${shouldTriggerCombat ? `
 - Enemy phải phù hợp với location, thời gian, và context của câu chuyện
 - Tạo narrative dẫn đến combat một cách tự nhiên
 - Sử dụng combatInitiation format trong sceneState để trigger combat
+
+MULTI-ENEMY LOGIC:
+- Xem xét context để quyết định số lượng enemies (1-4)
+- Factors: danger level, location type (dungeon/forest/city), time (day/night), narrative tension
+- Examples:
+  * Solo enemy: Lone wolf, single bandit, boss encounter
+  * 2 enemies: Bandit pair, wolf pack duo, patrol team
+  * 3 enemies: Small bandit group, wolf pack, guard patrol
+  * 4 enemies: Ambush scenario, large patrol, pack hunting
+- KHÔNG lạm dụng: Ưu tiên 1-2 enemies, chỉ dùng 3-4 khi context thực sự phù hợp
 ` : ''}
 
 ${coreInstructions}
@@ -3630,8 +3644,7 @@ QUAN TRỌNG VỀ OUTPUT:
     "worldTime": { "hour": "number", "minute": "number", "day": "number", "month": "number", "year": "number", "season": "spring|summer|autumn|winter", "weather": "string" },
     "environment": { "lighting": "string", "temperature": "string", "humidity": "string", "wind": "string", "sounds": "string", "smells": "string" },
     "interactions": { "examine": "array", "search": "array", "talk": "array", "use": "array", "move": "array", "rest": "array", "craft": "array", "trade": "array" },
-    "dangers": { "traps": "array", "monsters": "array", "environmental": "array", "social": "array" },
-    "secrets": { "hidden_passages": "array", "secret_items": "array", "hidden_rooms": "array", "coded_messages": "array", "ancient_knowledge": "array" }
+    "dangers": { "traps": "array", "enemies": "array", "environmental": "array", "social": "array" },
   },
   "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện" },
   "sideQuestOffer": {
@@ -3870,12 +3883,20 @@ QUAN TRỌNG VỀ OUTPUT:
           
           // Fallback to random enemy generation if no narrative enemies found
           if (!enemy) {
-            console.log('🔄 No narrative enemies found, generating random enemy');
-            enemy = await this.generateRandomCombatEnemy(sceneState, worldJson, characterJson);
-          }
-          
-          if (enemy) {
-            // Add combatInitiation to sceneState
+            console.log('🔄 No narrative enemies found, generating random enemies');
+            const enemies = await this.generateRandomCombatEnemies(sceneState, worldJson, characterJson);
+            if (enemies && enemies.length > 0) {
+              // Add combatInitiation to sceneState with all enemies
+              result.sceneState.combatInitiation = {
+                type: 'random_encounter',
+                enemies: enemies,
+                location: sceneState.location || 'Unknown',
+                reason: 'Cuộc đối đầu bất ngờ trong hành trình',
+                turn: turnCounter || 0
+              };
+            }
+          } else {
+            // Add combatInitiation to sceneState with single enemy from narrative
             result.sceneState.combatInitiation = {
               type: 'random_encounter',
               enemies: [enemy],
@@ -3907,10 +3928,41 @@ QUAN TRỌNG VỀ OUTPUT:
   }
 
   /**
-   * Generate random combat enemy based on sceneState and context using AI
-   * Now integrates with quest combat objectives
+   * Determine enemy count based on world difficulty
    */
-  private async generateRandomCombatEnemy(sceneState: any, worldJson: string, characterJson: string): Promise<any> {
+  private determineEnemyCount(worldDifficulty: string): number {
+    // Tỷ lệ xuất hiện theo độ khó (3 độ khó: dễ, trung bình, khó)
+    const spawnRates: Record<string, Record<number, number>> = {
+      'dễ': { 2: 10, 3: 5, 4: 2.5 },
+      'easy': { 2: 10, 3: 5, 4: 2.5 },
+      'trung bình': { 2: 15, 3: 7.5, 4: 4 },
+      'medium': { 2: 15, 3: 7.5, 4: 4 },
+      'khó': { 2: 20, 3: 10, 4: 7 },
+      'hard': { 2: 20, 3: 10, 4: 7 }
+    };
+    
+    const rates = spawnRates[worldDifficulty] || spawnRates['medium'];
+    const roll = Math.random() * 100;
+    let enemyCount = 1;
+    
+    // Tính tỷ lệ tích lũy
+    const rate4 = rates[4];
+    const rate3 = rates[3] + rate4;
+    const rate2 = rates[2] + rate3;
+    
+    if (roll < rate4) enemyCount = 4;
+    else if (roll < rate3) enemyCount = 3;
+    else if (roll < rate2) enemyCount = 2;
+    // else enemyCount = 1 (default)
+    
+    return enemyCount;
+  }
+
+  /**
+   * Generate random combat enemies based on sceneState and context using AI
+   * Now supports multiple enemies with difficulty-based spawn rates
+   */
+  private async generateRandomCombatEnemies(sceneState: any, worldJson: string, characterJson: string): Promise<any[]> {
     try {
       // Parse world and character data
       const worldData = JSON.parse(worldJson);
@@ -3921,13 +3973,16 @@ QUAN TRỌNG VỀ OUTPUT:
       const worldTime = sceneState.worldTime || { hour: 12, minute: 0, day: 1 };
       const isNight = worldTime.hour < 6 || worldTime.hour > 18;
       
+      // Determine enemy count based on world difficulty
+      const enemyCount = this.determineEnemyCount(worldData.difficulty || 'medium');
+      
       // Check for active quest combat objectives
       const questObjective = questCombatService.getBestCombatObjectiveForEncounter();
-      let enemyData: any = null;
+      let enemiesData: any[] = [];
       
-      if (questObjective) {
-        // Generate enemy based on quest objective
-        enemyData = await this.generateEnemyWithAI(
+      if (questObjective && enemyCount === 1) {
+        // Generate single enemy based on quest objective
+        const enemyData = await this.generateEnemyWithAI(
           location, 
           isNight, 
           worldData, 
@@ -3940,103 +3995,120 @@ QUAN TRỌNG VỀ OUTPUT:
           // Override enemy name to match quest objective
           enemyData.name = questObjective.targetEnemyName;
           enemyData.type = questObjective.targetEnemyType;
+          enemiesData = [enemyData];
         }
       }
       
-      // Fallback to random enemy if no quest objective or AI failed
-      if (!enemyData) {
-        enemyData = await this.generateEnemyWithAI(location, isNight, worldData, characterData);
+      // Fallback to random enemies if no quest objective or AI failed
+      if (enemiesData.length === 0) {
+        enemiesData = await this.generateMultipleEnemiesWithAI(
+          location, 
+          isNight, 
+          worldData, 
+          characterData,
+          enemyCount
+        );
       }
       
-      if (!enemyData) {
-        return null; // AI failed to generate enemy
+      if (enemiesData.length === 0) {
+        return []; // AI failed to generate enemies
       }
       
-      // Generate enemy stats based on character level
-      const enemyLevel = Math.max(1, characterData.level + Math.floor(Math.random() * 3) - 1); // ±1 level variation
+      // Generate enemy stats for each enemy
+      const enemies = [];
       
-      // Use enemy level as seed for consistent stats
-      const seed = enemyLevel * 9301 + 49297;
+      for (let i = 0; i < enemiesData.length; i++) {
+        const enemyData = enemiesData[i];
+        
+        // Generate enemy stats based on character level with variation
+        const baseEnemyLevel = Math.max(1, characterData.level + Math.floor(Math.random() * 3) - 1); // ±1 level variation
+        const enemyLevel = Math.max(1, baseEnemyLevel + Math.floor(Math.random() * 3) - 1); // Additional variation for multiple enemies
+        
+        // Use enemy level + index as seed for consistent but varied stats
+        const seed = (enemyLevel * 9301 + 49297) + (i * 1000);
+        
+        // Create different random seeds for each stat to ensure variation
+        const strengthSeed = (seed * 1237 + 4567) % 233280 / 233280;
+        const agilitySeed = (seed * 2341 + 5678) % 233280 / 233280;
+        const constitutionSeed = (seed * 3457 + 6789) % 233280 / 233280;
+        const intelligenceSeed = (seed * 4561 + 7890) % 233280 / 233280;
+        const wisdomSeed = (seed * 5673 + 8901) % 233280 / 233280;
+        const charismaSeed = (seed * 6785 + 9012) % 233280 / 233280;
+        
+        // Base stats scale with combat level
+        const basePhysicalStats = 10 + Math.floor(enemyLevel * 1.5); // Physical stats scale better
+        const baseMentalStats = 8 + Math.floor(enemyLevel * 0.8); // Mental stats scale slower
+        
+        const strength = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(strengthSeed * 7) - 3));
+        const agility = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(agilitySeed * 7) - 3));
+        const constitution = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(constitutionSeed * 7) - 3));
+        const intelligence = Math.max(8, Math.min(20, baseMentalStats + Math.floor(intelligenceSeed * 5) - 2));
+        const wisdom = Math.max(8, Math.min(20, baseMentalStats + Math.floor(wisdomSeed * 5) - 2));
+        const charisma = Math.max(8, Math.min(20, baseMentalStats + Math.floor(charismaSeed * 5) - 2));
+        
+        // Calculate modifiers
+        const modifiers = {
+          strength: Math.floor((strength - 10) / 2),
+          agility: Math.floor((agility - 10) / 2),
+          constitution: Math.floor((constitution - 10) / 2),
+          intelligence: Math.floor((intelligence - 10) / 2),
+          wisdom: Math.floor((wisdom - 10) / 2),
+          charisma: Math.floor((charisma - 10) / 2)
+        };
+        
+        // Calculate stats based on actual values
+        const baseHealth = 8 + modifiers.constitution + (enemyLevel - 1) * (4 + modifiers.constitution);
+        const baseAC = 10 + modifiers.agility;
+        const attackBonus = 2 + modifiers.strength;
+        const damage = `1d6+${modifiers.strength}`;
+        
+        // Generate chest armor for the enemy
+        const equippedArmor = armorGenerationService.generateChestArmor({
+          level: enemyLevel,
+          enemyType: enemyData.type,
+          rarity: this.determineRarityByLevel(enemyLevel)
+        });
+        
+        // Use armor's AC + agility modifier (replace base AC, don't add to it)
+        const finalAC = equippedArmor ? (equippedArmor.armorClass || 0) + modifiers.agility : baseAC;
+        
+        enemies.push({
+          name: enemyData.name,
+          type: enemyData.type,
+          level: enemyLevel,
+          combatLevel: enemyLevel,
+          characterLevel: enemyLevel,
+          health: {
+            current: baseHealth,
+            max: baseHealth
+          },
+          armorClass: finalAC,
+          attacks: [{
+            name: enemyData.attackName,
+            attackBonus: attackBonus,
+            damage: damage,
+            damageType: enemyData.damageType || 'physical'
+          }],
+          stats: {
+            strength,
+            agility,
+            constitution,
+            intelligence,
+            wisdom,
+            charisma,
+            modifiers
+          },
+          experienceReward: 50 + (enemyLevel * 25),
+          description: enemyData.description,
+          equippedArmor, // Include generated armor
+          loot: [] // REMOVED: AI-generated loot to prevent invalid items
+        });
+      }
       
-      // Create different random seeds for each stat to ensure variation
-      const strengthSeed = (seed * 1237 + 4567) % 233280 / 233280;
-      const agilitySeed = (seed * 2341 + 5678) % 233280 / 233280;
-      const constitutionSeed = (seed * 3457 + 6789) % 233280 / 233280;
-      const intelligenceSeed = (seed * 4561 + 7890) % 233280 / 233280;
-      const wisdomSeed = (seed * 5673 + 8901) % 233280 / 233280;
-      const charismaSeed = (seed * 6785 + 9012) % 233280 / 233280;
-      
-      // Base stats scale with combat level
-      const basePhysicalStats = 10 + Math.floor(enemyLevel * 1.5); // Physical stats scale better
-      const baseMentalStats = 8 + Math.floor(enemyLevel * 0.8); // Mental stats scale slower
-      
-      const strength = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(strengthSeed * 7) - 3));
-      const agility = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(agilitySeed * 7) - 3));
-      const constitution = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(constitutionSeed * 7) - 3));
-      const intelligence = Math.max(8, Math.min(20, baseMentalStats + Math.floor(intelligenceSeed * 5) - 2));
-      const wisdom = Math.max(8, Math.min(20, baseMentalStats + Math.floor(wisdomSeed * 5) - 2));
-      const charisma = Math.max(8, Math.min(20, baseMentalStats + Math.floor(charismaSeed * 5) - 2));
-      
-      // Calculate modifiers
-      const modifiers = {
-        strength: Math.floor((strength - 10) / 2),
-        agility: Math.floor((agility - 10) / 2),
-        constitution: Math.floor((constitution - 10) / 2),
-        intelligence: Math.floor((intelligence - 10) / 2),
-        wisdom: Math.floor((wisdom - 10) / 2),
-        charisma: Math.floor((charisma - 10) / 2)
-      };
-      
-      // Calculate stats based on actual values
-      const baseHealth = 8 + modifiers.constitution + (enemyLevel - 1) * (4 + modifiers.constitution);
-      const baseAC = 10 + modifiers.agility;
-      const attackBonus = 2 + modifiers.strength;
-      const damage = `1d6+${modifiers.strength}`;
-      
-      // Generate chest armor for the enemy
-      const equippedArmor = armorGenerationService.generateChestArmor({
-        level: enemyLevel,
-        enemyType: enemyData.type,
-        rarity: this.determineRarityByLevel(enemyLevel)
-      });
-      
-      // Use armor's AC + agility modifier (replace base AC, don't add to it)
-      const finalAC = equippedArmor ? (equippedArmor.armorClass || 0) + modifiers.agility : baseAC;
-      
-      return {
-        name: enemyData.name,
-        type: enemyData.type,
-        level: enemyLevel,
-        combatLevel: enemyLevel,
-        characterLevel: enemyLevel,
-        health: {
-          current: baseHealth,
-          max: baseHealth
-        },
-        armorClass: finalAC,
-        attacks: [{
-          name: enemyData.attackName,
-          attackBonus: attackBonus,
-          damage: damage,
-          damageType: enemyData.damageType || 'physical'
-        }],
-        stats: {
-          strength,
-          agility,
-          constitution,
-          intelligence,
-          wisdom,
-          charisma,
-          modifiers
-        },
-        experienceReward: 50 + (enemyLevel * 25),
-        description: enemyData.description,
-        equippedArmor, // Include generated armor
-        loot: [] // REMOVED: AI-generated loot to prevent invalid items
-      };
+      return enemies;
     } catch (error) {
-      console.error('Error generating random combat enemy:', error);
-      return null;
+      console.error('Error generating random combat enemies:', error);
+      return [];
     }
   }
 
@@ -4206,6 +4278,116 @@ QUAN TRỌNG VỀ OUTPUT:
     if (level <= 8) return Math.random() < 0.4 ? 'rare' : Math.random() < 0.6 ? 'uncommon' : 'common';
     if (level <= 12) return Math.random() < 0.3 ? 'epic' : Math.random() < 0.5 ? 'rare' : 'uncommon';
     return Math.random() < 0.2 ? 'legendary' : Math.random() < 0.4 ? 'epic' : 'rare';
+  }
+
+  /**
+   * Generate multiple enemies using AI based on context
+   */
+  private async generateMultipleEnemiesWithAI(
+    location: string, 
+    isNight: boolean, 
+    worldData: any, 
+    characterData: any,
+    enemyCount: number
+  ): Promise<any[]> {
+    try {
+      if (!this.isConfigured()) {
+        throw new Error('Gemini API chưa được cấu hình');
+      }
+
+      const worldGenres = worldData.genres || [];
+      const isFantasy = worldGenres.some((g: string) => g.toLowerCase().includes('fantasy') || g.toLowerCase().includes('magic'));
+      const timeOfDay = isNight ? 'đêm' : 'ngày';
+      
+      const prompt = `Bạn là AI tạo enemies cho game RPG. Hãy tạo ${enemyCount} enemies phù hợp với context sau:
+
+THÔNG TIN THẾ GIỚI:
+- Thể loại: ${worldGenres.join(', ')}
+- Địa điểm: ${location}
+- Thời gian: ${timeOfDay}
+- Có phép thuật: ${isFantasy ? 'Có' : 'Không'}
+
+THÔNG TIN NHÂN VẬT:
+- Tên: ${characterData.name || 'Unknown'}
+- Level: ${characterData.level || 1}
+
+YÊU CẦU:
+1. Tạo ${enemyCount} enemies phù hợp với địa điểm và thời gian
+2. Tên enemies phải phù hợp với thể loại thế giới
+3. Mô tả ngắn gọn về từng enemy
+4. Đảm bảo enemies có sự đa dạng (không giống hệt nhau)
+5. Chỉ trả về JSON, không có text khác
+
+ĐỊNH DẠNG JSON:
+{
+  "enemies": [
+    {
+      "name": "Tên enemy 1 (tiếng Việt)",
+      "type": "humanoid|beast|undead|elemental|construct",
+      "attackName": "Tên kỹ năng tấn công",
+      "damageType": "physical|fire|cold|lightning|poison|psychic",
+      "description": "Mô tả ngắn về enemy (1-2 câu)"
+    },
+    {
+      "name": "Tên enemy 2 (tiếng Việt)",
+      "type": "humanoid|beast|undead|elemental|construct",
+      "attackName": "Tên kỹ năng tấn công",
+      "damageType": "physical|fire|cold|lightning|poison|psychic",
+      "description": "Mô tả ngắn về enemy (1-2 câu)"
+    }
+  ]
+}
+
+VÍ DỤ:
+- Forest + Day + Fantasy: ["Goblin Scout", "Orc Warrior"], ["Wild Wolf", "Forest Sprite"]
+- City + Night + Modern: ["Thug", "Pickpocket"], ["Street Gang Member", "Mugger"]
+- Dungeon + Any + Fantasy: ["Skeleton", "Zombie"], ["Wraith", "Bone Golem"]
+- Mountain + Day + Any: ["Bandit", "Wild Bear"], ["Mountain Lion", "Eagle"]
+
+Chỉ trả về JSON:`;
+
+      let response: string;
+      
+      if (this.useMultiKeyService) {
+        // Use multi-key service
+        response = await multiApiKeyService.generateContent(prompt, undefined);
+      } else {
+        // Use single key
+        const model = this.getModelForContentFlags(undefined);
+        const result = await model.generateContent(prompt);
+        response = result.response.text();
+      }
+      
+      // Parse JSON response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('No JSON found in AI response:', response);
+        return [];
+      }
+      
+      const responseData = JSON.parse(jsonMatch[0]);
+      
+      // Validate required fields
+      if (!responseData.enemies || !Array.isArray(responseData.enemies)) {
+        console.error('Invalid enemies data from AI:', responseData);
+        return [];
+      }
+      
+      // Validate each enemy
+      const validEnemies = responseData.enemies.filter((enemy: any) => 
+        enemy.name && enemy.type && enemy.attackName
+      );
+      
+      if (validEnemies.length === 0) {
+        console.error('No valid enemies found in AI response');
+        return [];
+      }
+      
+      return validEnemies;
+    } catch (error) {
+      console.error('Error generating multiple enemies with AI:', error);
+      return [];
+    }
   }
 
   /**

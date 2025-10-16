@@ -401,7 +401,7 @@ class LocationService {
    * Khởi tạo merchant shops cho tất cả shop locations
    */
   public initializeMerchantShops(locations: Location[]): void {
-    const shopLocations = locations.filter(loc => loc.locationType === 'shop');
+    const shopLocations = locations.filter(loc => loc.type === 'shop' || loc.locationType === 'shop');
     
     for (const location of shopLocations) {
       // Kiểm tra xem shop đã tồn tại chưa
@@ -424,7 +424,7 @@ class LocationService {
    */
   public isShopLocation(locationId: string): boolean {
     const location = this.getLocationById(locationId);
-    return location?.locationType === 'shop';
+    return location?.type === 'shop' || location?.locationType === 'shop';
   }
 
   /**
@@ -433,7 +433,7 @@ class LocationService {
   public getShopLocations(): Location[] {
     const worldData = this.getWorldData();
     const locations = worldData.locations || [];
-    return locations.filter((loc: Location) => loc.locationType === 'shop');
+    return locations.filter((loc: Location) => loc.type === 'shop' || loc.locationType === 'shop');
   }
 
   /**

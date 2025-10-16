@@ -121,7 +121,7 @@ class MerchantService {
   }
 
   /**
-   * Reroll shop items (giữ nguyên skill books, chỉ reroll weapons/armor/consumables)
+   * Reroll shop items (giữ nguyên skill books, chỉ reroll weapons/armor/accessories/consumables)
    */
   private async rerollShopItems(shop: MerchantShop, currentTime: WorldTime): Promise<void> {
     try {
@@ -153,6 +153,7 @@ class MerchantService {
         if (newInventory) {
           shop.inventory.weapons = newInventory.weapons || shop.inventory.weapons;
           shop.inventory.armor = newInventory.armor || shop.inventory.armor;
+          shop.inventory.accessories = newInventory.accessories || shop.inventory.accessories;
           shop.inventory.consumables = newInventory.consumables || shop.inventory.consumables;
           // Giữ nguyên skill books
         }
@@ -197,13 +198,13 @@ THÔNG TIN THẾ GIỚI:
 
 ${currentShop ? `CỬA HÀNG HIỆN TẠI:
 - Skill book chance: ${currentShop.skillBookChance}%
-- Đã có ${currentShop.inventory.weapons.length} vũ khí, ${currentShop.inventory.armor.length} áo giáp, ${currentShop.inventory.consumables.length} consumables` : `CỬA HÀNG MỚI:
+- Đã có ${currentShop.inventory.weapons.length} vũ khí, ${currentShop.inventory.armor.length} áo giáp, ${currentShop.inventory.accessories.length} phụ kiện, ${currentShop.inventory.consumables.length} consumables` : `CỬA HÀNG MỚI:
 - Skill book chance: 0% (bắt đầu từ 0%)
 - Tạo shop mới với inventory đa dạng`}
 
 YÊU CẦU ${currentShop ? 'REROLL' : 'TẠO CỬA HÀNG'}:
-- Tạo ${currentShop ? 'lại' : ''} inventory ${currentShop ? 'mới' : ''} (weapons, armor, consumables)
-- TỔNG CỘNG: Tối đa 9 items (3-4 weapons, 2-3 armor, 3-4 consumables)
+- Tạo ${currentShop ? 'lại' : ''} inventory ${currentShop ? 'mới' : ''} (weapons, armor, accessories, consumables)
+- TỔNG CỘNG: Tối đa 9 items (2-3 weapons, 1-2 armor, 2-3 accessories, 2-3 consumables)
 - Skill books: Tối đa 2 items (nếu có, dựa trên skillBookChance)
 - Cân bằng giá cả theo level thế giới
 
@@ -249,6 +250,21 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
            "value": 40,
            "buyPrice": 80,
            "tags": ["armor", "protection"]
+         }
+       ],
+       "accessories": [
+         {
+           "id": "accessory_1",
+           "name": "Tên phụ kiện",
+           "description": "Mô tả chi tiết",
+           "type": "accessory",
+           "rarity": "common",
+           "quantity": 1,
+           "icon": "💍",
+           "slot": "accessory1",
+           "value": 30,
+           "buyPrice": 60,
+           "tags": ["accessory", "magical"]
          }
        ],
        "consumables": [
@@ -311,9 +327,16 @@ WEAPONS (VŨ KHÍ):
 ARMOR (ÁO GIÁP):
 - BẮT BUỘC: armorClass, slot, quantity
 - armorClass: 10-20 (common=11-12, uncommon=12-13, rare=13-14, epic=14-15, legendary=15-16)
-- slot: "armor", "accessory1", "accessory2", "accessory3"
+- slot: "armor" (CHỈ slot armor mới có armorClass)
 - quantity: 1 (áo giáp chỉ có 1 cái)
 - icon: "🛡️", "⛑️", "🧥", "👕", "👖", "👟"
+
+ACCESSORIES (PHỤ KIỆN):
+- BẮT BUỘC: slot, quantity
+- slot: "accessory1", "accessory2", "accessory3" (KHÔNG có armorClass)
+- quantity: 1 (phụ kiện chỉ có 1 cái)
+- icon: "💍", "⌚", "📿", "🎭", "🔮", "💎", "🌟", "✨"
+- KHÔNG có: damage, damageType, attackBonus, armorClass
 
 CONSUMABLES (VẬT PHẨM TIÊU DÙNG):
 - BẮT BUỘC: effect (format chuẩn theo consumableDatabase.ts), quantity
@@ -448,6 +471,7 @@ MÔ TẢ VÀ TÊN:
           const newInventory = aiResponse.merchantShop.inventory;
           shop.inventory.weapons = newInventory.weapons || shop.inventory.weapons;
           shop.inventory.armor = newInventory.armor || shop.inventory.armor;
+          shop.inventory.accessories = newInventory.accessories || shop.inventory.accessories;
           shop.inventory.consumables = newInventory.consumables || shop.inventory.consumables;
           // Giữ nguyên skill books
           
@@ -594,6 +618,14 @@ MÔ TẢ VÀ TÊN:
     const armorIndex = shop.inventory.armor.findIndex(item => item.id === itemId);
     if (armorIndex !== -1) {
       shop.inventory.armor[armorIndex].quantity = Math.max(0, shop.inventory.armor[armorIndex].quantity - 1);
+      this.saveMerchantShops();
+      return;
+    }
+
+    // Find and decrease quantity in accessories
+    const accessoryIndex = shop.inventory.accessories.findIndex(item => item.id === itemId);
+    if (accessoryIndex !== -1) {
+      shop.inventory.accessories[accessoryIndex].quantity = Math.max(0, shop.inventory.accessories[accessoryIndex].quantity - 1);
       this.saveMerchantShops();
       return;
     }

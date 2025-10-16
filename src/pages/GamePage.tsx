@@ -1967,12 +1967,12 @@ ${enhancedMessage}`;
         // Quest detection và generation
         try {
 
-          // Kiểm tra quest completion với questCompletionService - TẠM THỜI TẮT
-          // const activeQuests = [
-          //   ...questSystem.mainQuests.filter(q => q.status === 'active'),
-          //   ...questSystem.sideQuests.filter(q => q.status === 'active'),
-          //   ...questSystem.factionQuests.filter(q => q.status === 'active')
-          // ];
+          // Kiểm tra quest completion với questCompletionService
+          const activeQuests = [
+            ...questSystem.mainQuests.filter(q => q.status === 'active'),
+            ...questSystem.sideQuests.filter(q => q.status === 'active'),
+            ...questSystem.factionQuests.filter(q => q.status === 'active')
+          ];
 
           // Parse combat history with validation
           let combatHistory;
@@ -1989,15 +1989,15 @@ ${enhancedMessage}`;
             combatHistory = { defeatedEnemies: [] };
           }
 
-          // const questCompletionContext = {
-          //   inventory: inventoryService.getInventory(),
-          //   npcRelationships: npcRelationshipService.getAllRelationships(),
-          //   combatHistory: combatHistory,
-          //   playerLocation: response.sceneState?.locationId,
-          //   playerPosition: response.sceneState?.gridPosition
-          // };
+          const questCompletionContext = {
+            inventory: inventoryService.getInventory(),
+            npcRelationships: npcRelationshipService.getAllRelationships(),
+            combatHistory: combatHistory,
+            playerLocation: response.sceneState?.locationId,
+            playerPosition: response.sceneState?.gridPosition
+          };
 
-          // const questAnalysis = await questCompletionService.checkAllActiveQuests(questCompletionContext, activeQuests);
+          await questCompletionService.checkAllActiveQuests(questCompletionContext, activeQuests);
           
           // Xử lý side quest offer từ AI response
           if (response.sideQuestOffer && response.sideQuestOffer.title) {
@@ -2257,7 +2257,7 @@ ${enhancedMessage}`;
                 try {
                   const currentLocation = locationService.getLocationById(newSceneState.location);
                   if (currentLocation) {
-                    // Process location signature NPC for secondary locations
+                    // Process location signature NPC for secondary locations (not shop locations)
                     if (currentLocation.type === 'secondary') {
                       if (!npcRelationshipService.hasSignatureNPCForLocation(currentLocation.id)) {
                         // Could create signature NPC here if needed
@@ -2275,7 +2275,7 @@ ${enhancedMessage}`;
                     }
                     
                     // Process merchant signature NPC for shop locations
-                    if (currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop')) {
+                    if (currentLocation.type === 'shop' || currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop')) {
                       // Auto-update existing merchant NPCs to merchant signature NPCs
                       npcRelationshipService.autoUpdateMerchantSignatureNPCs(currentLocation.id);
                       

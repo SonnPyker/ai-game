@@ -304,13 +304,13 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
                 
                 <div className="flex items-center space-x-2 text-sm">
                 <span className={`px-2 py-1 rounded text-xs ${
-                  location.locationType === 'shop' || location.id.startsWith('loc_shop')
+                  location.type === 'shop' || location.locationType === 'shop' || location.id.startsWith('loc_shop')
                     ? 'bg-yellow-500/20 text-yellow-300' 
                     : location.type === 'story' 
                     ? 'bg-red-500/20 text-red-300'
                     : 'bg-blue-500/20 text-blue-300'
                 }`}>
-                  {location.locationType === 'shop' || location.id.startsWith('loc_shop') ? 'Cửa hàng' :
+                  {location.type === 'shop' || location.locationType === 'shop' || location.id.startsWith('loc_shop') ? 'Cửa hàng' :
                    location.type === 'story' ? 'Cốt truyện chính' : 
                    'Địa điểm phụ'}
                   </span>
@@ -396,13 +396,13 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
               
               <div className="flex items-center space-x-2 text-sm">
                 <span className={`px-2 py-1 rounded text-xs ${
-                  currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop')
+                  currentLocation.type === 'shop' || currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop')
                     ? 'bg-yellow-500/20 text-yellow-300' 
                     : currentLocation.type === 'story' 
                     ? 'bg-red-500/20 text-red-300'
                     : 'bg-blue-500/20 text-blue-300'
                 }`}>
-                  {currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop') ? 'Cửa hàng' :
+                  {currentLocation.type === 'shop' || currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop') ? 'Cửa hàng' :
                    currentLocation.type === 'story' ? 'Cốt truyện chính' : 
                    'Địa điểm phụ'}
                 </span>

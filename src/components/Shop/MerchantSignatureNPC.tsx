@@ -1,6 +1,7 @@
 import { ShoppingBag, TrendingUp, Loader2 } from 'lucide-react';
 import { NPCRelationship, MerchantShop } from '../../types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { locationService } from '../../services/locationService';
 
 interface MerchantSignatureNPCProps {
   npc: NPCRelationship;
@@ -10,9 +11,33 @@ interface MerchantSignatureNPCProps {
 
 export function MerchantSignatureNPC({ npc, merchantShop, onOpenShop }: MerchantSignatureNPCProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isPlayerAtMerchantLocation, setIsPlayerAtMerchantLocation] = useState(false);
+
+  // Kiểm tra xem player có đang ở cùng location với merchant không
+  useEffect(() => {
+    const checkPlayerLocation = () => {
+      const currentPlayerLocation = locationService.getCurrentLocation();
+      const merchantLocationId = npc.merchantSignatureLocationId;
+      
+      if (currentPlayerLocation && merchantLocationId) {
+        const isAtLocation = currentPlayerLocation.currentLocationId === merchantLocationId;
+        setIsPlayerAtMerchantLocation(isAtLocation);
+      } else {
+        setIsPlayerAtMerchantLocation(false);
+      }
+    };
+
+    // Kiểm tra ngay lập tức
+    checkPlayerLocation();
+
+    // Lắng nghe thay đổi location (có thể cần cập nhật khi player di chuyển)
+    const interval = setInterval(checkPlayerLocation, 1000); // Kiểm tra mỗi giây
+
+    return () => clearInterval(interval);
+  }, [npc.merchantSignatureLocationId]);
 
   const handleOpenShop = async () => {
-    if (isLoading) return; // Prevent multiple clicks
+    if (isLoading || !isPlayerAtMerchantLocation) return; // Prevent multiple clicks and check location
     
     setIsLoading(true);
     if (merchantShop) {
@@ -67,9 +92,9 @@ export function MerchantSignatureNPC({ npc, merchantShop, onOpenShop }: Merchant
       <div className="flex space-x-2">
         <button
           onClick={handleOpenShop}
-          disabled={isLoading}
+          disabled={isLoading || !isPlayerAtMerchantLocation}
           className={`flex-1 py-2 px-3 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 text-sm ${
-            isLoading 
+            isLoading || !isPlayerAtMerchantLocation
               ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
               : 'bg-yellow-600 hover:bg-yellow-700 text-white'
           }`}
@@ -78,6 +103,11 @@ export function MerchantSignatureNPC({ npc, merchantShop, onOpenShop }: Merchant
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Đang tạo...</span>
+            </>
+          ) : !isPlayerAtMerchantLocation ? (
+            <>
+              <ShoppingBag className="w-4 h-4" />
+              <span>Không ở đây</span>
             </>
           ) : (
             <>
@@ -91,10 +121,15 @@ export function MerchantSignatureNPC({ npc, merchantShop, onOpenShop }: Merchant
           onClick={() => {
             // TODO: Implement negotiation functionality
           }}
-          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm"
+          disabled={!isPlayerAtMerchantLocation}
+          className={`px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm ${
+            !isPlayerAtMerchantLocation
+              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
         >
           <TrendingUp className="w-4 h-4" />
-          <span>Thương Lượng</span>
+          <span>{!isPlayerAtMerchantLocation ? 'Không ở đây' : 'Thương Lượng'}</span>
         </button>
       </div>
     </div>

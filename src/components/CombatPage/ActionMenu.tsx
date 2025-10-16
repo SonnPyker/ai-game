@@ -168,7 +168,7 @@ export function ActionMenu({
 
   // Get action button class based on state
   const getActionButtonClass = (disabled: boolean, isMainAction: boolean) => {
-    const baseClass = "flex items-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium";
+    const baseClass = "flex items-center space-x-2 p-2 lg:p-3 rounded-lg transition-all duration-200 font-medium";
     
     if (disabled) {
       return `${baseClass} bg-gray-700 text-gray-500 cursor-not-allowed opacity-50`;
@@ -188,7 +188,7 @@ export function ActionMenu({
   // Get consumable items from inventory
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1 lg:space-y-2">
       {/* Action Menu Header with Toggle (only on mobile) */}
       {isMobileMode && (
         <div className="flex items-center justify-between">
@@ -229,8 +229,8 @@ export function ActionMenu({
             <div className="space-y-4">
               {/* Main Actions Section */}
               <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Hành động chính:</h4>
-                <div className="grid grid-cols-1 gap-2">
+                <h4 className="text-sm font-medium text-gray-300 mb-1 lg:mb-2">Hành động chính:</h4>
+                <div className="grid grid-cols-1 gap-1">
                   {/* Attack Actions */}
                   {combatant.attacks.map((attack, index) => (
                     <MotionButton
@@ -276,7 +276,7 @@ export function ActionMenu({
 
               {/* Extra Actions Section */}
               <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Hành động phụ (tùy chọn):</h4>
+                <h4 className="text-sm font-medium text-gray-300 mb-1 lg:mb-2">Hành động phụ (tùy chọn):</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {/* Inventory Action */}
                   <MotionButton
@@ -344,11 +344,11 @@ export function ActionMenu({
         ) : null
       ) : (
         /* Desktop Layout - Always visible */
-        <div className="space-y-4">
+        <div className="space-y-1 lg:space-y-2">
           {/* Main Actions Section */}
           <div>
-            <h4 className="text-sm font-medium text-gray-300 mb-2">Hành động chính:</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <h4 className="text-sm font-medium text-gray-300 mb-1 lg:mb-2">Hành động chính:</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
               {/* Attack Actions */}
               {combatant.attacks.map((attack, index) => (
                 <MotionButton
@@ -395,8 +395,8 @@ export function ActionMenu({
 
           {/* Extra Actions Section */}
           <div>
-            <h4 className="text-sm font-medium text-gray-300 mb-2">Hành động phụ (tùy chọn):</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <h4 className="text-sm font-medium text-gray-300 mb-1 lg:mb-2">Hành động phụ (tùy chọn):</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
               {/* Inventory Action */}
               <MotionButton
                 onClick={onInventory}

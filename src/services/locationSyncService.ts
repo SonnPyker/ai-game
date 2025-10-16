@@ -36,6 +36,7 @@ class LocationSyncService {
 
       // Đồng bộ các thuộc tính quan trọng từ world data gốc
       const criticalProperties = [
+        'type', // 🚨 CRITICAL: Đồng bộ type để đảm bảo shop locations có type: "shop"
         'locationType',
         'id',
         'gridPosition',
@@ -103,7 +104,7 @@ class LocationSyncService {
 
   /**
    * Đồng bộ tất cả locations trong world data
-   * Đảm bảo không có location nào bị mất locationType
+   * Đảm bảo không có location nào bị mất locationType và type đúng
    */
   public validateAndSyncAllLocations(worldData: any): any {
     if (!worldData || !worldData.locations) {
@@ -119,6 +120,18 @@ class LocationSyncService {
       if (location.id && location.id.startsWith('loc_shop') && !location.locationType) {
         console.log(`🔄 [LocationSync] Adding missing locationType for shop: ${location.name}`);
         syncedLocation.locationType = 'shop';
+      }
+
+      // 🚨 CRITICAL: Đảm bảo shop locations có type: "shop" thay vì "secondary"
+      if (location.id && location.id.startsWith('loc_shop')) {
+        if (syncedLocation.type !== 'shop') {
+          console.log(`🔄 [LocationSync] Fixing shop type for ${location.name}: ${syncedLocation.type} → shop`);
+          syncedLocation.type = 'shop';
+        }
+        if (syncedLocation.locationType !== 'shop') {
+          console.log(`🔄 [LocationSync] Fixing shop locationType for ${location.name}: ${syncedLocation.locationType} → shop`);
+          syncedLocation.locationType = 'shop';
+        }
       }
 
       return syncedLocation;

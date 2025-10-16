@@ -113,7 +113,7 @@ export interface InventoryItem {
   id: string;
   name: string;
   description: string;
-  type: 'weapon' | 'armor' | 'consumable' | 'misc';
+  type: 'weapon' | 'armor' | 'accessory' | 'consumable' | 'misc';
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'unique';
   quantity: number;
   icon: string;
@@ -346,7 +346,7 @@ export interface Location {
   name: string;
   description: string;
   role: string;
-  type: 'story' | 'secondary'; // story = cốt truyện chính, secondary = ít liên quan nhưng có ảnh hưởng
+  type: 'story' | 'secondary' | 'shop'; // story = cốt truyện chính, secondary = ít liên quan nhưng có ảnh hưởng, shop = cửa hàng
   gridPosition: { x: number; y: number }; // vị trí trên grid
   nearbyLocations?: string[]; // IDs của locations lân cận
   // Location signature system
@@ -1094,6 +1094,7 @@ export interface MerchantShop {
 export interface MerchantInventory {
   weapons: InventoryItem[];
   armor: InventoryItem[];
+  accessories: InventoryItem[];
   consumables: InventoryItem[];
   skillBooks: SkillBook[];
 }

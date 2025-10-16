@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MotionWrapper } from '../MotionWrapper';
 import { ModalHeader } from '../ModalHeader';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
-import { ShoppingBag, Sword, Shield, BookOpen, Coins, Beaker, Minus, Plus, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, Sword, Shield, BookOpen, Coins, Beaker, Minus, Plus, AlertTriangle, Gem } from 'lucide-react';
 import { MerchantShop, InventoryItem, Character, SkillBook, NPCRelationship } from '../../types';
 import { tradingService } from '../../services/tradingService';
 import { skillBookService } from '../../services/skillBookService';
@@ -19,7 +19,7 @@ interface MerchantShopModalProps {
 }
 
 type TabType = 'buy' | 'sell';
-type ItemType = 'all' | 'weapon' | 'armor' | 'consumable' | 'skillbook';
+type ItemType = 'all' | 'weapon' | 'armor' | 'accessory' | 'consumable' | 'skillbook';
 
 export function MerchantShopModal({
   isOpen,
@@ -92,6 +92,7 @@ export function MerchantShopModal({
     const allItems = [
       ...currentShop.inventory.weapons,
       ...currentShop.inventory.armor,
+      ...currentShop.inventory.accessories,
       ...currentShop.inventory.consumables,
       ...currentShop.inventory.skillBooks
     ];
@@ -99,6 +100,7 @@ export function MerchantShopModal({
     if (activeFilter === 'all') return allItems;
     if (activeFilter === 'weapon') return currentShop.inventory.weapons;
     if (activeFilter === 'armor') return currentShop.inventory.armor;
+    if (activeFilter === 'accessory') return currentShop.inventory.accessories;
     if (activeFilter === 'consumable') return currentShop.inventory.consumables;
     if (activeFilter === 'skillbook') return currentShop.inventory.skillBooks;
     } else {
@@ -106,6 +108,7 @@ export function MerchantShopModal({
       if (!character.inventory) return [];
       
       if (activeFilter === 'all') return character.inventory;
+      if (activeFilter === 'accessory') return character.inventory.filter(item => item.slot && ['accessory1', 'accessory2', 'accessory3'].includes(item.slot));
       return character.inventory.filter(item => item.type === activeFilter);
     }
     
@@ -195,6 +198,7 @@ export function MerchantShopModal({
     switch (item.type) {
       case 'weapon': return <Sword className="w-5 h-5" />;
       case 'armor': return <Shield className="w-5 h-5" />;
+      case 'accessory': return <Gem className="w-5 h-5" />;
       case 'consumable': return <Beaker className="w-5 h-5" />;
       default: return <Coins className="w-5 h-5" />;
     }
@@ -363,7 +367,7 @@ export function MerchantShopModal({
 
           {/* Filters */}
           <div className="flex flex-wrap gap-2">
-            {['all', 'weapon', 'armor', 'consumable', 'skillbook'].map((filter) => (
+            {['all', 'weapon', 'armor', 'accessory', 'consumable', 'skillbook'].map((filter) => (
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter as ItemType)}
@@ -376,6 +380,7 @@ export function MerchantShopModal({
                 {filter === 'all' ? 'Tất cả' :
                  filter === 'weapon' ? 'Vũ khí' :
                  filter === 'armor' ? 'Áo giáp' :
+                 filter === 'accessory' ? 'Phụ kiện' :
                  filter === 'consumable' ? 'Consumable' :
                  'Skill Books'}
               </button>
@@ -452,6 +457,21 @@ export function MerchantShopModal({
                         <div>
                           <span className="text-blue-300">Slot:</span>
                           <span className="text-white ml-1">{item.slot}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isSkillBook && item.type === 'accessory' && (
+                    <div className="bg-purple-900/20 rounded p-2 mb-3">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-purple-300">Slot:</span>
+                          <span className="text-white ml-1">{item.slot}</span>
+                        </div>
+                        <div>
+                          <span className="text-purple-300">Loại:</span>
+                          <span className="text-white ml-1">Phụ kiện</span>
                         </div>
                       </div>
                     </div>

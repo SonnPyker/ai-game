@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { 
@@ -7,7 +7,6 @@ import {
   Pause,
   MessageSquare,
   Pin,
-  PinOff,
   Plus,
   TestTube
 } from 'lucide-react';
@@ -48,8 +47,7 @@ export function CombatPage({}: CombatPageProps) {
   const processingRef = useRef(false);
   const lastActionTimeRef = useRef(0);
   const currentActionIdRef = useRef<string | null>(null);
-  const [showCombatLog, setShowCombatLog] = useState(false);
-  const [isCombatLogPinned, setIsCombatLogPinned] = useState(false);
+  // Combat log is always visible and pinned
   
   // Combat confirmation modal states
   const [showCombatConfirmation, setShowCombatConfirmation] = useState(false);
@@ -1020,6 +1018,29 @@ export function CombatPage({}: CombatPageProps) {
   const playerCombatants = combatState ? combatService.getAlivePlayers() : [];
   const aliveEnemies = combatState ? combatService.getAliveEnemies() : [];
   
+  // Get next combatant name for turn indicator
+  const nextCombatantName = useMemo(() => {
+    if (!combatState || !combatState.turnOrder || combatState.turnOrder.length <= 1) {
+      return undefined;
+    }
+    
+    const nextIndex = (combatState.currentCombatantIndex + 1) % combatState.turnOrder.length;
+    const nextCombatantId = combatState.turnOrder[nextIndex];
+    
+    if (nextCombatantId === 'player') {
+      return 'Player';
+    }
+    
+    const nextCombatant = combatState.combatants.find(c => c.id === nextCombatantId);
+    return nextCombatant?.name || `Enemy ${nextCombatantId}`;
+  }, [combatState]);
+
+  // Get current combatant ID for turn indicator
+  const currentCombatantId = useMemo(() => {
+    if (!combatState || !combatState.turnOrder) return null;
+    return combatState.turnOrder[combatState.currentCombatantIndex];
+  }, [combatState]);
+  
   // Get skills from combat state (already migrated)
   const playerSkills = playerCombatants[0]?.skills || [];
   
@@ -1059,30 +1080,21 @@ export function CombatPage({}: CombatPageProps) {
             turnNumber={combatState?.currentTurn || 0}
             isPlayerTurn={combatState?.isPlayerTurn || false}
             currentCombatantName={combatState?.isPlayerTurn ? 'Player' : aliveEnemies[0]?.name}
+            nextCombatantName={nextCombatantName}
             isProcessing={isProcessing}
+            turnOrder={combatState?.turnOrder || []}
+            currentCombatantIndex={combatState?.currentCombatantIndex || 0}
           />
           
           {/* Control Buttons */}
           <div className="flex items-center space-x-2">
-            {/* Combat Log Button */}
-            <button
-              onClick={() => {
-                if (isCombatLogPinned) {
-                  setIsCombatLogPinned(false);
-                  setShowCombatLog(false);
-                } else {
-                  setShowCombatLog(true);
-                }
-              }}
-              className={`p-2 border rounded-lg transition-colors duration-200 ${
-                isCombatLogPinned 
-                  ? 'bg-blue-600/30 border-blue-500/50 text-blue-200' 
-                  : 'bg-blue-600/20 border-blue-500/30 text-blue-300 hover:bg-blue-600/30'
-              }`}
-              title={isCombatLogPinned ? "Bỏ ghim combat log" : "Combat Log"}
+            {/* Combat Log Button - Always Pinned */}
+            <div
+              className="p-2 border rounded-lg bg-blue-600/30 border-blue-500/50 text-blue-200"
+              title="Combat Log (Luôn hiển thị)"
             >
               <MessageSquare className="w-4 h-4" />
-            </button>
+            </div>
             
             {/* Pause/Play Button */}
             <button
@@ -1119,28 +1131,36 @@ export function CombatPage({}: CombatPageProps) {
         </div>
       </div>
 
-      <div className={`flex flex-col h-[calc(100vh-80px)] transition-all duration-300 ${
-        isCombatLogPinned ? 'lg:mr-96' : ''
-      }`}>
-        {/* Enemy Cards - Compact Layout */}
-        <div className="flex-1 p-2 sm:p-4">
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
-            {aliveEnemies.map((enemy) => (
-              <div key={enemy.id} className="w-full sm:w-auto sm:min-w-[300px] sm:max-w-[400px]">
-                <CombatantCard
-                  combatant={enemy}
-                  isEnemy={true}
-                  isSelected={selectedTarget === enemy.id}
-                  onSelect={() => setSelectedTarget(enemy.id)}
-                  isPlayerTurn={combatState?.isPlayerTurn || false}
-                />
+      <div className="flex flex-col min-h-[calc(100vh-80px)] transition-all duration-300 lg:mr-96 justify-between">
+        {/* Enemy Cards - PC Optimized Layout */}
+        <div className="p-2 sm:p-4 lg:max-h-[50vh] lg:overflow-y-auto">
+          {/* Mobile: Horizontal scroll, Desktop: Flex wrap with height limit */}
+          <div className="relative">
+            {/* Scroll indicator for mobile */}
+            {aliveEnemies.length > 1 && (
+              <div className="sm:hidden absolute top-0 right-0 z-10 bg-gray-800/80 px-2 py-1 rounded-bl text-xs text-gray-400">
+                ← Kéo để xem thêm →
               </div>
-            ))}
+            )}
+            <div className="flex overflow-x-auto gap-2 sm:gap-4 sm:flex-wrap sm:justify-center sm:overflow-x-visible scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+              {aliveEnemies.map((enemy) => (
+                <div key={enemy.id} className="flex-shrink-0 w-[280px] sm:w-auto sm:min-w-[300px] sm:max-w-[400px]">
+                  <CombatantCard
+                    combatant={enemy}
+                    isEnemy={true}
+                    isSelected={selectedTarget === enemy.id}
+                    onSelect={() => setSelectedTarget(enemy.id)}
+                    isPlayerTurn={combatState?.isPlayerTurn || false}
+                    isCurrentTurn={currentCombatantId === enemy.id}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Player Card and Actions */}
-        <div className="bg-gray-900/50 border-t border-gray-700 p-2 sm:p-4">
+        <div className="bg-gray-900/50 border-t border-gray-700 p-2 sm:p-4 flex-shrink-0">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4">
             {/* Player Cards - Support Multiple Players */}
             <div className="lg:col-span-1">
@@ -1151,6 +1171,7 @@ export function CombatPage({}: CombatPageProps) {
                     combatant={player}
                     isEnemy={false}
                     isPlayerTurn={combatState?.isPlayerTurn || false}
+                    isCurrentTurn={currentCombatantId === player.id}
                     temporaryPlayerStats={combatState?.temporaryPlayerStats}
                   />
                 ))}
@@ -1238,9 +1259,9 @@ export function CombatPage({}: CombatPageProps) {
                           <button
                             onClick={() => {
                               if (skill.requiresTarget && aliveEnemies.length > 0) {
-                                // TODO: Show target selection modal
-                                // For now, use first enemy as target
-                                handleUseSkill(skill.id, [aliveEnemies[0].id]);
+                                // Use selected target if available, otherwise use first enemy
+                                const targetId = selectedTarget || aliveEnemies[0].id;
+                                handleUseSkill(skill.id, [targetId]);
                               } else {
                                 handleUseSkill(skill.id);
                               }
@@ -1313,17 +1334,12 @@ export function CombatPage({}: CombatPageProps) {
         )}
       </AnimatePresence>
 
-      {/* Combat Log Menu */}
-      <AnimatePresence>
-        {showCombatLog && (
-          <MotionWrapper
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className={`fixed top-20 right-4 w-96 h-[calc(100vh-120px)] bg-gray-800 border border-gray-600 rounded-lg shadow-2xl z-40 flex flex-col ${
-              isCombatLogPinned ? 'fixed' : 'absolute'
-            }`}
-          >
+       {/* Combat Log Menu - Always Visible */}
+       <MotionWrapper
+         initial={{ opacity: 0, x: 20 }}
+         animate={{ opacity: 1, x: 0 }}
+         className="fixed top-20 right-4 w-96 h-[calc(100vh-120px)] bg-gray-800 border border-gray-600 rounded-lg shadow-2xl z-40 flex flex-col"
+       >
             {/* Combat Log Header */}
             <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700 rounded-t-lg flex-shrink-0">
               <div className="flex items-center justify-between">
@@ -1332,24 +1348,9 @@ export function CombatPage({}: CombatPageProps) {
                   <h3 className="text-lg font-semibold text-white">Combat Log</h3>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setIsCombatLogPinned(!isCombatLogPinned)}
-                    className={`p-1 rounded transition-colors ${
-                      isCombatLogPinned 
-                        ? 'bg-blue-600/30 text-blue-400' 
-                        : 'text-gray-400 hover:text-blue-400'
-                    }`}
-                    title={isCombatLogPinned ? "Bỏ ghim" : "Ghim menu"}
-                  >
-                    {isCombatLogPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-                  </button>
-                  <button
-                    onClick={() => setShowCombatLog(false)}
-                    className="p-1 text-gray-400 hover:text-white transition-colors"
-                    title="Đóng"
-                  >
-                    ×
-                  </button>
+                  <div className="p-1 rounded bg-blue-600/30 text-blue-400" title="Luôn hiển thị">
+                    <Pin className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1364,8 +1365,6 @@ export function CombatPage({}: CombatPageProps) {
               />
             </div>
           </MotionWrapper>
-        )}
-      </AnimatePresence>
 
       {/* Combat Confirmation Modal */}
       {selectedNPCForCombat && (

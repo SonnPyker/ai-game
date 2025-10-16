@@ -1002,6 +1002,50 @@ class CombatService {
       }
     });
     
+    // Multi-Enemy Combat Bonus Loot
+    const defeatedEnemyCount = defeatedEnemies.length;
+    if (defeatedEnemyCount >= 3 && this.currentCombat.winner === 'player') {
+      // Bonus loot for defeating 3+ enemies
+      const bonusLootChance = defeatedEnemyCount >= 4 ? 0.5 : 0.3; // 50% for 4+, 30% for 3
+      
+      if (Math.random() < bonusLootChance) {
+        // Generate bonus special item
+        const bonusItem = enhancedLootService.generateLootForEnemy({
+          id: 'bonus_loot',
+          name: 'Multi-Enemy Bonus',
+          type: 'humanoid',
+          level: defeatedEnemies[0].enemyData?.level || 1,
+          combatLevel: defeatedEnemies[0].enemyData?.combatLevel || 1,
+          description: 'Bonus loot from defeating multiple enemies',
+          stats: defeatedEnemies[0].enemyData?.stats || { 
+            strength: 10, agility: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10,
+            modifiers: { strength: 0, agility: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 }
+          },
+          health: { current: 1, max: 1 },
+          armorClass: 10,
+          attacks: [],
+          experienceReward: 0
+        });
+        
+        if (Array.isArray(bonusItem) && bonusItem.length > 0) {
+          items.push(...bonusItem);
+          this.addTurnAction('info', `🎁 Nhận thêm phần thưởng đặc biệt từ chiến thắng ${defeatedEnemyCount} enemies!`);
+        }
+      }
+      
+      // Increase loot quantity for 3+ enemies (10% chance per extra enemy)
+      const extraLootRolls = Math.floor(Math.random() * (defeatedEnemyCount - 2));
+      for (let i = 0; i < extraLootRolls; i++) {
+        const randomEnemy = defeatedEnemies[Math.floor(Math.random() * defeatedEnemies.length)];
+        if (randomEnemy.enemyData) {
+          const extraLoot = enhancedLootService.generateLootForEnemy(randomEnemy.enemyData);
+          if (Array.isArray(extraLoot)) {
+            items.push(...extraLoot);
+          }
+        }
+      }
+    }
+    
     // Add combat XP if player won
     if (this.currentCombat.winner === 'player') {
       const player = this.getCombatant('player');
@@ -1018,9 +1062,20 @@ class CombatService {
       }
     }
 
+    // Multi-Enemy XP Bonus: Multiply XP by number of defeated enemies
+    const enemyCount = defeatedEnemies.length;
+    const finalExperience = totalExperience * enemyCount;
+    
+    // Log XP bonus for multiple enemies
+    if (enemyCount > 1 && this.currentCombat.winner === 'player') {
+      this.addTurnAction('info', 
+        `🎯 Multi-Enemy Bonus: ${totalExperience} XP × ${enemyCount} enemies = ${finalExperience} XP!`
+      );
+    }
+    
     // Set rewards - even for defeat, we still track what happened
     this.currentCombat.rewards = {
-      experience: totalExperience,
+      experience: finalExperience,
       items
     };
   }
@@ -1336,6 +1391,11 @@ class CombatService {
     // Check if combat ended after enemy action
     if (this.currentCombat) {
       this.checkCombatEnd();
+    }
+    
+    // If it's still an enemy turn after processing, continue processing
+    if (this.currentCombat && !this.currentCombat.isPlayerTurn) {
+      await this.processEnemyTurn();
     }
   }
 
