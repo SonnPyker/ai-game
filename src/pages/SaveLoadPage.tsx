@@ -125,6 +125,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         localStorage.removeItem('game_equipment'); // Clear equipment when loading different game
         localStorage.removeItem('combat_history'); // Clear combat history when loading different game
         localStorage.removeItem('combat_result'); // Clear combat result when loading different game
+        localStorage.removeItem('merchant_shops'); // Clear merchant shops when loading different game
         
         // Cập nhật localStorage với dữ liệu từ SaveGame
         const saveGame = result.saveGame;
@@ -152,9 +153,9 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
           localStorage.setItem('quest_system', JSON.stringify(saveGame.questSystem));
         }
 
-        // Khôi phục merchant shops nếu có
+        // Khôi phục merchant shops nếu có (like combat_history)
         if (saveGame.merchantShops) {
-          // Import merchant shops data vào merchantService
+          localStorage.setItem('merchant_shops', JSON.stringify(saveGame.merchantShops));
           const { merchantService } = await import('../services/merchantService');
           merchantService.loadFromSaveGame({ shops: saveGame.merchantShops });
         }

@@ -567,6 +567,21 @@ NGUYÊN TẮC PHÂN TÍCH CHUNG:
 10. Phản xạ sinh lý tự nhiên không thể kiểm soát được
 11. Phản ứng vô thức chỉ tăng chỉ số nhẹ, không mạnh như có ý thức
 
+🎲 XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
+- Nếu narrative chứa "[DC CHECK RESULT]" với Result: SUCCESS:
+  * NPC PHẢI tuân theo hành động của player một cách hợp lý
+  * Nếu player thuyết phục/quyến rũ thành công → NPC đồng ý, thay đổi ý kiến, hoặc làm theo yêu cầu
+  * Nếu player đe dọa thành công → NPC sợ hãi, nhượng bộ, hoặc chấp nhận
+  * Nếu player lừa dối thành công → NPC tin tưởng, bị lừa, hoặc không phát hiện
+  * Nếu player thực hiện kỹ năng thành công → NPC công nhận, ấn tượng, hoặc bị ảnh hưởng
+  * Điều chỉnh arousal change tích cực hơn khi DC check thành công
+- Nếu narrative chứa "[DC CHECK RESULT]" với Result: FAILURE:
+  * NPC phản ứng tiêu cực hoặc không bị ảnh hưởng bởi hành động
+  * NPC có thể từ chối, không tin tưởng, phát hiện sự lừa dối
+  * NPC có thể tức giận, nghi ngờ, hoặc phản ứng mạnh mẽ
+  * Hành động của player không có hiệu quả mong muốn
+  * Điều chỉnh arousal change tiêu cực hơn khi DC check thất bại
+
 NGUYÊN TẮC PHÂN TÍCH PATTERN-AWARE:
 1. Nếu chỉ số đã tăng liên tục nhiều lần → khó tăng thêm (diminishing returns)
 2. Nếu chỉ số dao động mạnh → đối tượng có phản ứng không ổn định → cân nhắc kỹ
@@ -584,6 +599,18 @@ CHỈ SỐ THAY ĐỔI (-50 to +50):
 - Hành động trung tính: -5 to +5
 - Hành động không phù hợp: -10 to -30
 - Hành động vi phạm ranh giới: -30 to -50
+
+DC CHECK SUCCESS BONUS:
+- Thuyết phục/quyến rũ thành công: +8 to +15 (NPC đồng ý và bị ảnh hưởng)
+- Đe dọa thành công: +5 to +12 (NPC sợ hãi và nhượng bộ)
+- Lừa dối thành công: +3 to +8 (NPC tin tưởng và bị lừa)
+- Kỹ năng thành công: +4 to +10 (NPC ấn tượng và công nhận)
+
+DC CHECK FAILURE PENALTY:
+- Thuyết phục/quyến rũ thất bại: -5 to -15 (NPC từ chối và có thể tức giận)
+- Đe dọa thất bại: -8 to -20 (NPC phản ứng mạnh mẽ, có thể trả thù)
+- Lừa dối thất bại: -10 to -25 (NPC phát hiện và mất lòng tin)
+- Kỹ năng thất bại: -3 to -8 (NPC thất vọng hoặc coi thường)
 
 ADAPTIVE SCORING DỰA TRÊN PATTERN:
 - Nếu diminishing returns = true: Giảm positive change 30-50%

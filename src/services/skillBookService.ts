@@ -456,11 +456,15 @@ class SkillBookService {
       legendary: 'Truyền Thuyết'
     };
 
+    // Hỗ trợ cả format cũ và mới
+    const skillType = skillBook.skillData?.skillType || skillBook.skillType || 'damage';
+    const skillLevel = skillBook.skillData?.level || skillBook.skillLevel || 1;
+
     return {
-      skillTypeName: skillTypeNames[skillBook.skillType],
-      levelName: levelNames[skillBook.skillLevel],
+      skillTypeName: skillTypeNames[skillType as keyof typeof skillTypeNames],
+      levelName: levelNames[skillLevel as keyof typeof levelNames],
       rarityName: rarityNames[skillBook.rarity],
-      description: `Học 1 skill ngẫu nhiên thuộc loại ${skillTypeNames[skillBook.skillType]} với level ${skillBook.skillLevel}. Skill sẽ được chọn ngẫu nhiên khi sử dụng.`
+      description: `Học skill "${skillBook.skillData?.name || 'Kỹ năng'}" thuộc loại ${skillTypeNames[skillType as keyof typeof skillTypeNames]} với level ${skillLevel}.`
     };
   }
 }

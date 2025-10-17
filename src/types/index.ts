@@ -724,7 +724,7 @@ export interface Attack {
   name: string;
   attackBonus: number;
   damage: string; // dice notation (e.g., "1d8+2")
-  damageType: 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic';
+  damageType: 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic' | 'radiant' | 'slashing' | 'piercing' | 'bludgeoning';
   range?: number; // range in feet, undefined for melee
 }
 
@@ -749,6 +749,8 @@ export interface Enemy extends CombatStats {
   npcId?: string;
   // Legacy level field for backward compatibility
   level?: number;
+  // Threat level for reward calculation
+  threatLevel?: 'low' | 'medium' | 'high' | 'extreme';
 }
 
 // NPC Relationship System
@@ -1110,12 +1112,16 @@ export interface SkillBook {
   id: string;
   name: string;
   description: string;
+  type: 'skill_book';
   skillType: 'damage' | 'healing' | 'social';
   skillLevel: 1 | 2 | 3;
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-  price: number; // Tính dựa trên level + rarity
-  icon: string;
+  price?: number; // Legacy field
+  value: number; // Base value
+  buyPrice: number; // Price to buy from shop
+  icon?: string;
   quantity: number;
   // Skill data đầy đủ (tương tự character creation skills)
-  skill: CharacterSkill;
+  skillData: CharacterSkill;
+  effects: string[]; // Effects array
 }

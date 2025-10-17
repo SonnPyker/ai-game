@@ -256,7 +256,7 @@ export class CombatPreparationService {
       name: "Tấn công cơ bản",
       attackBonus: 2 + primaryMod + Math.floor(combatLevel / 2),
       damage: `${Math.floor(combatLevel / 2) + 1}d4+${primaryMod}`,
-      damageType: "physical" as const
+      damageType: "bludgeoning" as const
     }];
     
     status.hasWeapon = true;

@@ -9,8 +9,7 @@ import {
   Star,
   Plus,
   Minus,
-  Trash2,
-  Eye
+  Trash2
 } from 'lucide-react';
 
 interface ItemCardProps {
@@ -18,7 +17,6 @@ interface ItemCardProps {
   onEquip?: (itemId: string) => void;
   onUnequip?: (itemId: string) => void;
   onDrop?: (itemId: string) => void;
-  onViewDetails?: (item: InventoryItem) => void;
   showActions?: boolean;
   size?: 'small' | 'medium' | 'large';
   className?: string;
@@ -29,7 +27,6 @@ export function ItemCard({
   onEquip, 
   onUnequip, 
   onDrop, 
-  onViewDetails,
   showActions = true,
   size = 'medium',
   className = ''
@@ -45,7 +42,7 @@ export function ItemCard({
     
     const buttonRect = menuButtonRef.current.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    const menuHeight = 120; // Approximate menu height
+    const menuHeight = 80; // Approximate menu height
     
     // Check if there's enough space below the button
     const spaceBelow = viewportHeight - buttonRect.bottom;
@@ -169,9 +166,6 @@ export function ItemCard({
       case 'drop':
         onDrop?.(item.id);
         break;
-      case 'view':
-        onViewDetails?.(item);
-        break;
     }
   };
 
@@ -227,16 +221,6 @@ export function ItemCard({
                       : `absolute right-0 ${menuPosition === 'top' ? 'bottom-8' : 'top-8'}`
                   }`}
                 >
-                  {onViewDetails && (
-                    <button
-                      onClick={() => handleAction('view')}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white flex items-center space-x-2"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Xem chi tiết</span>
-                    </button>
-                  )}
-                  
                   {item.isEquipped ? (
                     <button
                       onClick={() => handleAction('unequip')}

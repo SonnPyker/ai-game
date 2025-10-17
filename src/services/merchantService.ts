@@ -24,15 +24,22 @@ class MerchantService {
   private loadMerchantShopsFromLocalStorage(): void {
     try {
       const merchantShopsData = localStorage.getItem('merchant_shops');
+      console.log('🔍 Loading merchant shops from localStorage:', merchantShopsData);
+      
       if (merchantShopsData) {
         const data = JSON.parse(merchantShopsData);
-        if (data && Array.isArray(data)) {
-          // Convert array to Map
-          data.forEach((shop: MerchantShop) => {
-            this.merchantShops.set(shop.locationId, shop);
+        console.log('🔍 Parsed merchant shops data:', data);
+        
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          // Convert object to Map (new format only)
+          Object.entries(data).forEach(([locationId, shop]) => {
+            this.merchantShops.set(locationId, shop as MerchantShop);
+            console.log('🔍 Loaded shop:', locationId, shop);
           });
         }
       }
+      
+      console.log('🔍 Loaded merchant shops count:', this.merchantShops.size);
     } catch (error) {
       console.error('Error loading merchant shops from localStorage:', error);
     }
@@ -65,9 +72,13 @@ class MerchantService {
    * Tự động tạo merchant shop cho location nếu chưa có
    */
   public async ensureMerchantShopExists(locationId: string): Promise<MerchantShop | null> {
+    console.log('🔍 ensureMerchantShopExists called for location:', locationId);
+    console.log('🔍 Current merchantShops count:', this.merchantShops.size);
+    
     // Kiểm tra xem shop đã tồn tại chưa
     let shop = this.merchantShops.get(locationId);
     if (shop) {
+      console.log('🔍 Shop already exists for location:', locationId);
       // Kiểm tra xem có cần reroll items không (sang ngày mới)
       const currentTime = this.getCurrentWorldTime();
       const needsReroll = this.shouldRerollShopItems(shop, currentTime);
@@ -98,7 +109,9 @@ class MerchantService {
       }
 
       // Tạo shop mới bằng AI
-      shop = await this.generateMerchantShopWithAI(location, worldData);
+      console.log('🔍 Creating new shop for location:', locationId);
+      const shop = await this.generateMerchantShopWithAI(location, worldData);
+      console.log('🔍 Created shop:', shop);
       return shop;
     } catch (error) {
       console.error('Error creating merchant shop:', error);
@@ -197,16 +210,28 @@ THÔNG TIN THẾ GIỚI:
 - Giới hạn: ${limitations.join(', ')}
 
 ${currentShop ? `CỬA HÀNG HIỆN TẠI:
-- Skill book chance: ${currentShop.skillBookChance}%
+- Skill book chance: ${currentShop.skillBookChance}% (sẽ tăng lên ${Math.min(70, currentShop.skillBookChance + 10)}% sau restock)
 - Đã có ${currentShop.inventory.weapons.length} vũ khí, ${currentShop.inventory.armor.length} áo giáp, ${currentShop.inventory.accessories.length} phụ kiện, ${currentShop.inventory.consumables.length} consumables` : `CỬA HÀNG MỚI:
-- Skill book chance: 0% (bắt đầu từ 0%)
+- Skill book chance: 10% (bắt đầu từ 10%)
 - Tạo shop mới với inventory đa dạng`}
 
 YÊU CẦU ${currentShop ? 'REROLL' : 'TẠO CỬA HÀNG'}:
 - Tạo ${currentShop ? 'lại' : ''} inventory ${currentShop ? 'mới' : ''} (weapons, armor, accessories, consumables)
 - TỔNG CỘNG: Tối đa 9 items (2-3 weapons, 1-2 armor, 2-3 accessories, 2-3 consumables)
-- Skill books: Tối đa 2 items (nếu có, dựa trên skillBookChance)
+- Skill books: Tối đa 2 items (dựa trên skillBookChance: ${currentShop ? Math.min(70, currentShop.skillBookChance + 10) : 10}%)
 - Cân bằng giá cả theo level thế giới
+- QUAN TRỌNG KHI RESTOCK: Tạo items HOÀN TOÀN KHÁC BIỆT với shop cũ
+- Đa dạng hóa tên, mô tả, stats, và giá cả
+- Sử dụng các loại vũ khí, áo giáp, phụ kiện khác nhau
+- Tạo giá cả đa dạng từ nhưng phải phù hợp
+
+TỶ LỆ RARITY (QUAN TRỌNG):
+- COMMON: 40% (4 items)
+- UNCOMMON: 30% (3 items) 
+- RARE: 20% (2 items)
+- EPIC: 8% (1 item)
+- LEGENDARY: 2% (có thể có 1 item)
+- Ưu tiên tạo ít nhất 1-2 items RARE/EPIC/LEGENDARY
 
 QUAN TRỌNG VỀ GIÁ CẢ:
 - value: Giá trị cơ bản của item (dùng để tính giá bán cho player)
@@ -405,7 +430,9 @@ MÔ TẢ VÀ TÊN:
       const { geminiService } = await import('./geminiService');
       
       // Gọi AI để tạo shop data
+      console.log('Calling AI to generate shop...');
       const aiResponse = await geminiService.generateMerchantShopData(prompt);
+      console.log('AI Response received:', aiResponse);
       
       if (aiResponse && aiResponse.merchantShop && aiResponse.merchantShop.inventory) {
         const shop: MerchantShop = {
@@ -413,12 +440,18 @@ MÔ TẢ VÀ TÊN:
           merchantNPCId: '', // Sẽ được gán khi có merchant signature NPC
           lastRestockTime: worldData.currentTime || worldTimeService.initializeWorldTime(worldData.startYear || 1),
           inventory: aiResponse.merchantShop.inventory,
-          skillBookChance: 0, // Bắt đầu từ 0%
+          skillBookChance: 10, // Bắt đầu từ 10%
           currency: 999999 // Merchant có vô hạn tiền
         };
 
+        // Tạo skill books dựa trên skillBookChance
+        this.generateSkillBooks(shop);
+        
         this.merchantShops.set(location.id, shop);
         this.saveMerchantShops();
+        
+        console.log('🔍 Generated shop and saved to Map:', location.id, shop);
+        console.log('🔍 Current merchantShops Map size:', this.merchantShops.size);
         
         return shop;
        } else {
@@ -435,67 +468,140 @@ MÔ TẢ VÀ TÊN:
 
 
   /**
+   * Delete merchant shop by location ID
+   */
+  public deleteMerchantShop(locationId: string): void {
+    console.log('Before delete - merchantShops size:', this.merchantShops.size);
+    console.log('Before delete - merchantShops keys:', Array.from(this.merchantShops.keys()));
+    
+    const deleted = this.merchantShops.delete(locationId);
+    console.log('Delete result:', deleted);
+    
+    this.saveMerchantShops();
+    console.log('After delete - merchantShops size:', this.merchantShops.size);
+    console.log('After delete - merchantShops keys:', Array.from(this.merchantShops.keys()));
+    console.log('Deleted merchant shop for location:', locationId);
+  }
+
+  /**
+   * Restock shop manually (simple version - just regenerate shop)
+   */
+  public async restockShop(locationId: string): Promise<boolean> {
+    try {
+      // Lấy world data
+      const worldDataStr = localStorage.getItem('world_gen_result');
+      if (!worldDataStr) {
+        console.error('No world data found for restock');
+        return false;
+      }
+
+      const worldData = JSON.parse(worldDataStr);
+      const location = worldData.locations?.find((loc: any) => loc.id === locationId);
+      
+      if (!location) {
+        console.error(`Location not found for restock: ${locationId}`);
+        return false;
+      }
+
+      // Tạo shop mới hoàn toàn với skillBookChance tăng dần
+      console.log('Generating new shop with AI...');
+      const newShop = await this.generateMerchantShopWithAI(location, worldData);
+      
+      if (newShop) {
+        // Tăng skillBookChance từ shop cũ (nếu có)
+        const oldShop = this.merchantShops.get(locationId);
+        if (oldShop) {
+          newShop.skillBookChance = Math.min(70, oldShop.skillBookChance + 10);
+          console.log(`🔍 SkillBookChance increased: ${oldShop.skillBookChance}% → ${newShop.skillBookChance}%`);
+        } else {
+          newShop.skillBookChance = 10; // Bắt đầu từ 10% nếu là shop mới
+          console.log(`🔍 New shop skillBookChance: ${newShop.skillBookChance}%`);
+        }
+        
+        console.log('New shop generated successfully');
+        console.log('New shop inventory:', {
+          weapons: newShop.inventory.weapons.length,
+          armor: newShop.inventory.armor.length,
+          accessories: newShop.inventory.accessories.length,
+          consumables: newShop.inventory.consumables.length
+        });
+        console.log('New shop weapons:', newShop.inventory.weapons.map(w => ({ name: w.name, price: w.buyPrice })));
+        
+        // Cập nhật shop với dữ liệu mới
+        this.merchantShops.set(locationId, newShop);
+        this.saveMerchantShops();
+        
+        console.log('Shop restocked successfully');
+        return true;
+      } else {
+        console.error('Failed to generate new shop');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error restocking shop:', error);
+      return false;
+    }
+  }
+
+  /**
    * Kiểm tra và restock shop nếu cần (CHỈ DÙNG AI)
    */
   public async restockShopIfNeeded(shop: MerchantShop, currentTime: WorldTime): Promise<boolean> {
-    const timeDiff = worldTimeService.getTimeDifference(shop.lastRestockTime, currentTime) / 60; // Convert to hours
-    
-    // Nếu đã qua 24 giờ (1 ngày game)
-    if (timeDiff >= 24) {
-      
-      try {
-        // Lấy world data để reroll
-        const worldDataStr = localStorage.getItem('world_gen_result');
-        if (!worldDataStr) {
-          console.error('No world data found for restock');
-          return false;
-        }
-
-        const worldData = JSON.parse(worldDataStr);
-        const location = worldData.locations?.find((loc: any) => loc.id === shop.locationId);
-        
-        if (!location) {
-          console.error(`Location not found for restock: ${shop.locationId}`);
-          return false;
-        }
-
-        // Tạo prompt để reroll items
-        const prompt = this.buildRerollShopPrompt(location, worldData, shop);
-        
-        // Gọi AI để reroll items
-        const { geminiService } = await import('./geminiService');
-        const aiResponse = await geminiService.generateMerchantShopData(prompt);
-        
-        if (aiResponse && aiResponse.merchantShop && aiResponse.merchantShop.inventory) {
-          // Cập nhật inventory mới (giữ nguyên skill books)
-          const newInventory = aiResponse.merchantShop.inventory;
-          shop.inventory.weapons = newInventory.weapons || shop.inventory.weapons;
-          shop.inventory.armor = newInventory.armor || shop.inventory.armor;
-          shop.inventory.accessories = newInventory.accessories || shop.inventory.accessories;
-          shop.inventory.consumables = newInventory.consumables || shop.inventory.consumables;
-          // Giữ nguyên skill books
-          
-          // Tăng skill book chance
-          shop.skillBookChance = Math.min(70, shop.skillBookChance + 10);
-          
-          // Cập nhật thời gian restock
-          shop.lastRestockTime = currentTime;
-          
-          this.merchantShops.set(shop.locationId, shop);
-          this.saveMerchantShops();
-          
-          return true;
-        } else {
-          console.error('AI failed to restock shop - NO FALLBACK!');
-          return false;
-        }
-      } catch (error) {
-        console.error('Error restocking shop with AI:', error);
-        return false;
-      }
+    // Check if it's a new day
+    if (!worldTimeService.isNewDay(shop.lastRestockTime, currentTime)) {
+      return false;
     }
     
-    return false;
+    try {
+      // Lấy world data để reroll
+      const worldDataStr = localStorage.getItem('world_gen_result');
+      if (!worldDataStr) {
+        console.error('No world data found for restock');
+        return false;
+      }
+
+      const worldData = JSON.parse(worldDataStr);
+      const location = worldData.locations?.find((loc: any) => loc.id === shop.locationId);
+      
+      if (!location) {
+        console.error(`Location not found for restock: ${shop.locationId}`);
+        return false;
+      }
+
+      // Tạo prompt để reroll items
+      const prompt = this.buildRerollShopPrompt(location, worldData, shop);
+      
+      // Gọi AI để reroll items
+      const { geminiService } = await import('./geminiService');
+      const aiResponse = await geminiService.generateMerchantShopData(prompt);
+      
+      if (aiResponse && aiResponse.merchantShop && aiResponse.merchantShop.inventory) {
+        // Cập nhật inventory mới (giữ nguyên skill books)
+        const newInventory = aiResponse.merchantShop.inventory;
+        shop.inventory.weapons = newInventory.weapons || shop.inventory.weapons;
+        shop.inventory.armor = newInventory.armor || shop.inventory.armor;
+        shop.inventory.accessories = newInventory.accessories || shop.inventory.accessories;
+        shop.inventory.consumables = newInventory.consumables || shop.inventory.consumables;
+        // Giữ nguyên skill books
+        
+        // Tăng skill book chance
+        shop.skillBookChance = Math.min(70, shop.skillBookChance + 10);
+        
+        // Cập nhật thời gian restock
+        shop.lastRestockTime = currentTime;
+        
+        this.merchantShops.set(shop.locationId, shop);
+        this.saveMerchantShops();
+        
+        return true;
+      } else {
+        console.error('AI failed to restock shop - NO FALLBACK!');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error restocking shop with AI:', error);
+      return false;
+    }
   }
 
   /**
@@ -533,7 +639,10 @@ MÔ TẢ VÀ TÊN:
    * Lấy merchant shop theo location ID
    */
   public getMerchantShopByLocation(locationId: string): MerchantShop | null {
+    console.log('getMerchantShopByLocation called with locationId:', locationId);
+    console.log('Available locationIds in merchantShops:', Array.from(this.merchantShops.keys()));
     const shop = this.merchantShops.get(locationId);
+    console.log('Found shop:', shop ? 'YES' : 'NO');
     return shop || null;
   }
 
@@ -549,8 +658,13 @@ MÔ TẢ VÀ TÊN:
    */
   private saveMerchantShops(): void {
     try {
-      const shopsArray = Array.from(this.merchantShops.values());
-      localStorage.setItem('merchant_shops', JSON.stringify(shopsArray));
+      // Convert Map to object (like combat_history format)
+      const shopsObject: { [key: string]: MerchantShop } = {};
+      this.merchantShops.forEach((shop, locationId) => {
+        shopsObject[locationId] = shop;
+      });
+      localStorage.setItem('merchant_shops', JSON.stringify(shopsObject));
+      console.log('🔍 Saved merchant shops to localStorage:', shopsObject);
     } catch (error) {
       console.error('Error saving merchant shops:', error);
     }
@@ -561,11 +675,14 @@ MÔ TẢ VÀ TÊN:
    */
   public loadFromSaveGame(merchantShopData: { shops: { [key: string]: MerchantShop } }): void {
     try {
+      console.log('🔍 loadFromSaveGame called with:', merchantShopData);
       if (merchantShopData && merchantShopData.shops) {
         this.merchantShops.clear();
-        Object.entries(merchantShopData.shops).forEach(([, shop]) => {
-          this.merchantShops.set(shop.locationId, shop);
+        Object.entries(merchantShopData.shops).forEach(([locationId, shop]) => {
+          this.merchantShops.set(locationId, shop);
+          console.log('🔍 Loaded shop from save game:', locationId, shop);
         });
+        console.log('🔍 Loaded merchant shops count:', this.merchantShops.size);
       }
     } catch (error) {
       console.error('Error loading merchant shops from save game:', error);
@@ -573,13 +690,27 @@ MÔ TẢ VÀ TÊN:
   }
 
   /**
+   * Reload merchant shops từ localStorage (sau khi load game)
+   */
+  public reloadFromLocalStorage(): void {
+    this.loadMerchantShopsFromLocalStorage();
+  }
+
+  /**
    * Export merchant shops cho save game
    */
   public exportForSaveGame(): { shops: { [key: string]: MerchantShop } } {
     const shops: { [key: string]: MerchantShop } = {};
+    console.log('🔍 Exporting merchant shops, current count:', this.merchantShops.size);
+    console.log('🔍 Merchant shops keys:', Array.from(this.merchantShops.keys()));
+    
     this.merchantShops.forEach((shop, locationId) => {
       shops[locationId] = shop;
+      console.log('🔍 Exported shop:', locationId, shop);
     });
+    
+    console.log('🔍 Final export result:', { shops });
+    console.log('🔍 Export result type:', typeof shops, Array.isArray(shops) ? 'ARRAY' : 'OBJECT');
     return { shops };
   }
 
@@ -597,6 +728,136 @@ MÔ TẢ VÀ TÊN:
   public clearAllMerchantShops(): void {
     this.merchantShops.clear();
     localStorage.removeItem('merchant_shops');
+  }
+
+  /**
+   * Tạo skill books dựa trên skillBookChance
+   */
+  private generateSkillBooks(shop: MerchantShop): void {
+    const skillBookChance = shop.skillBookChance;
+    const random = Math.random() * 100;
+    
+    console.log(`🔍 Skill book generation: ${random.toFixed(2)}% vs ${skillBookChance}% chance`);
+    
+    if (random <= skillBookChance) {
+      // Tạo 1-2 skill books
+      const numSkillBooks = Math.random() < 0.5 ? 1 : 2;
+      console.log(`🔍 Generating ${numSkillBooks} skill book(s)`);
+      
+      for (let i = 0; i < numSkillBooks; i++) {
+        const skillBook = this.createRandomSkillBook();
+        shop.inventory.skillBooks = shop.inventory.skillBooks || [];
+        shop.inventory.skillBooks.push(skillBook);
+      }
+    } else {
+      console.log('🔍 No skill books generated this time');
+    }
+  }
+
+  /**
+   * Tạo skill book ngẫu nhiên với format giống character creation skills
+   */
+  private createRandomSkillBook(): any {
+    const skillTemplates = [
+      // Damage Skills
+      {
+        skillType: 'damage',
+        names: ['Lưỡi Kiếm Sắc Bén', 'Cú Đấm Sấm Sét', 'Tia Lửa Hủy Diệt', 'Gió Lưỡi Dao', 'Bão Lửa'],
+        descriptions: [
+          'Tấn công mạnh mẽ với vũ khí sắc bén',
+          'Cú đấm nhanh như chớp với sức mạnh tàn phá',
+          'Phóng tia lửa thiêu đốt kẻ thù',
+          'Tạo luồng gió sắc như dao cắt',
+          'Tạo cơn bão lửa thiêu rụi mọi thứ'
+        ],
+        effects: [
+          ['instant_damage:1d6+2', 'stat_buff:strength:+1:self:2turns'],
+          ['instant_damage:1d8+1', 'stat_buff:agility:+1:self:2turns'],
+          ['instant_damage:2d4+1', 'stat_buff:intelligence:+1:self:2turns'],
+          ['instant_damage:1d6+3', 'stat_buff:strength:+2:self:1turns'],
+          ['instant_damage:1d8+2', 'stat_buff:agility:+2:self:1turns']
+        ],
+        icons: ['⚔️', '👊', '🔥', '💨', '🌪️'],
+        cooldowns: [2, 3, 4, 2, 3]
+      },
+      // Healing Skills
+      {
+        skillType: 'healing',
+        names: ['Hồi Sinh', 'Lá Thuốc Thần', 'Ánh Sáng Chữa Lành', 'Bùa Phép Hồi Phục', 'Năng Lượng Sống'],
+        descriptions: [
+          'Hồi phục sức khỏe và tăng cường thể chất',
+          'Sử dụng thảo dược quý để chữa lành vết thương',
+          'Ánh sáng thiêng liêng chữa lành mọi tổn thương',
+          'Bùa phép cổ xưa hồi phục sức mạnh',
+          'Hấp thụ năng lượng sống để phục hồi'
+        ],
+        effects: [
+          ['instant_heal:1d6+2', 'stat_buff:constitution:+1:self:2turns'],
+          ['instant_heal:2d4+1', 'stat_buff:wisdom:+1:self:2turns'],
+          ['instant_heal:1d8+1', 'stat_buff:constitution:+2:self:1turns'],
+          ['instant_heal:1d6+3', 'stat_buff:wisdom:+2:self:1turns'],
+          ['instant_heal:2d4+2', 'stat_buff:constitution:+1:self:3turns']
+        ],
+        icons: ['💚', '🌿', '✨', '🔮', '🌟'],
+        cooldowns: [3, 4, 3, 4, 2]
+      },
+      // Social Skills
+      {
+        skillType: 'social',
+        names: ['Thuyết Phục', 'Khích Lệ', 'Đàm Phán', 'Lãnh Đạo', 'Giao Tiếp'],
+        descriptions: [
+          'Thuyết phục người khác bằng lời nói khéo léo',
+          'Khích lệ tinh thần và tăng cường sự tự tin',
+          'Đàm phán để đạt được thỏa thuận có lợi',
+          'Thể hiện khả năng lãnh đạo và chỉ huy',
+          'Giao tiếp hiệu quả với mọi người'
+        ],
+        effects: [
+          ['stat_buff:charisma:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'],
+          ['stat_buff:charisma:+1:self:4turns', 'stat_buff:strength:+1:self:2turns'],
+          ['stat_buff:wisdom:+2:self:3turns', 'stat_buff:intelligence:+1:self:3turns'],
+          ['stat_buff:charisma:+3:self:2turns', 'stat_buff:wisdom:+2:self:2turns'],
+          ['stat_buff:charisma:+1:self:5turns', 'stat_buff:wisdom:+1:self:5turns']
+        ],
+        icons: ['💬', '🎭', '🤝', '👑', '🗣️'],
+        cooldowns: [0, 0, 0, 0, 0]
+      }
+    ];
+    
+    // Chọn ngẫu nhiên một template
+    const template = skillTemplates[Math.floor(Math.random() * skillTemplates.length)];
+    const skillIndex = Math.floor(Math.random() * template.names.length);
+    const skillLevel = Math.floor(Math.random() * 3) + 1; // Level 1-3
+    
+    // Tạo skill với format giống character creation
+    const skill = {
+      id: `skill_${template.skillType}_book_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      name: template.names[skillIndex],
+      description: template.descriptions[skillIndex],
+      level: skillLevel,
+      skillType: template.skillType,
+      effects: template.effects[skillIndex],
+      cooldown: template.cooldowns[skillIndex],
+      currentCooldown: 0,
+      icon: template.icons[skillIndex],
+      requiresTarget: template.skillType === 'damage'
+    };
+    
+    // Tạo skill book item
+    return {
+      id: `skill_book_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: `Sách Kỹ Năng: ${skill.name}`,
+      description: `Một cuốn sách cổ chứa kiến thức về "${skill.name}". Đọc để học kỹ năng này.`,
+      type: 'skill_book',
+      rarity: 'uncommon',
+      quantity: 1,
+      value: 50 + (skillLevel * 25),
+      buyPrice: 75 + (skillLevel * 40),
+      skillData: skill, // Chứa toàn bộ skill data
+      skillType: skill.skillType,
+      skillLevel: skillLevel,
+      effects: [`learn_skill:${skill.id}`] // Reference đến skill ID
+    };
   }
 
   /**

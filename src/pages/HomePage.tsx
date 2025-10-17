@@ -32,6 +32,7 @@ export function HomePage() {
       'player_location', // Xóa player location khi reset game
       'game_inventory', // Xóa inventory khi reset game
       'game_equipment', // Xóa equipment khi reset game
+      'merchant_shops', // Xóa merchant shops khi reset game
       // World Builder keys
       'completeWorldData',
       'currentWorldData',

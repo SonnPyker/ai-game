@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { MotionWrapper } from '../MotionWrapper';
 import { ModalHeader } from '../ModalHeader';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
-import { ShoppingBag, Sword, Shield, BookOpen, Coins, Beaker, Minus, Plus, AlertTriangle, Gem } from 'lucide-react';
+import { ShoppingBag, Sword, Shield, BookOpen, Coins, Beaker, Minus, Plus, AlertTriangle, Gem, RefreshCw } from 'lucide-react';
 import { MerchantShop, InventoryItem, Character, SkillBook, NPCRelationship } from '../../types';
 import { tradingService } from '../../services/tradingService';
 import { skillBookService } from '../../services/skillBookService';
+import { worldTimeService } from '../../services/worldTimeService';
 
 interface MerchantShopModalProps {
   isOpen: boolean;
@@ -13,9 +14,9 @@ interface MerchantShopModalProps {
   shop: MerchantShop | null;
   character: Character | null;
   locationId: string;
-  onBuyItem: (item: InventoryItem, shop: MerchantShop) => void;
+  onBuyItem: (item: InventoryItem | SkillBook, shop: MerchantShop) => void;
   onSellItem: (item: InventoryItem, shop: MerchantShop) => void;
-  onUseSkillBook: (skillBook: SkillBook) => void;
+  onRestockShop?: (locationId: string) => Promise<void>;
 }
 
 type TabType = 'buy' | 'sell';
@@ -29,7 +30,7 @@ export function MerchantShopModal({
   locationId,
   onBuyItem,
   onSellItem,
-  onUseSkillBook
+  onRestockShop
 }: MerchantShopModalProps) {
   const { isMinimized, minimize } = useModalMinimize({
     modalId: 'merchant-shop-modal',
@@ -42,6 +43,8 @@ export function MerchantShopModal({
   const [currentShop, setCurrentShop] = useState<MerchantShop | null>(shop);
   const [sellQuantity, setSellQuantity] = useState<{ [itemId: string]: number }>({});
   const [selectedSellItem, setSelectedSellItem] = useState<InventoryItem | null>(null);
+  const [isRestocking, setIsRestocking] = useState(false);
+  const [canRestock, setCanRestock] = useState(false);
 
   useEffect(() => {
     if (isOpen && locationId) {
@@ -55,6 +58,77 @@ export function MerchantShopModal({
   useEffect(() => {
     setCurrentShop(shop);
   }, [shop]);
+
+  // Check if shop can be restocked (new day)
+  useEffect(() => {
+    console.log('Checking restock condition...');
+    console.log('currentShop:', !!currentShop);
+    console.log('character:', !!character);
+    
+    if (currentShop && character) {
+      // Get current world time from localStorage
+      const worldDataStr = localStorage.getItem('world_gen_result');
+      if (worldDataStr) {
+        try {
+          const worldData = JSON.parse(worldDataStr);
+          const currentTime = worldData.currentTime || worldData.worldTime;
+          
+          console.log('currentTime:', currentTime);
+          console.log('shop.lastRestockTime:', currentShop.lastRestockTime);
+          
+          if (currentTime) {
+            const canRestockNow = worldTimeService.isNewDay(currentShop.lastRestockTime, currentTime);
+            console.log('canRestockNow:', canRestockNow);
+            setCanRestock(canRestockNow);
+          }
+        } catch (error) {
+          console.error('Error checking restock condition:', error);
+        }
+      }
+    }
+  }, [currentShop, character]);
+
+  // Handle manual restock
+  const handleRestock = async () => {
+    console.log('handleRestock called!');
+    console.log('onRestockShop:', !!onRestockShop);
+    console.log('locationId prop:', locationId);
+    console.log('isRestocking:', isRestocking);
+    
+    // Get locationId from player_location if not provided
+    let actualLocationId = locationId;
+    if (!actualLocationId) {
+      try {
+        const playerLocationStr = localStorage.getItem('player_location');
+        if (playerLocationStr) {
+          const playerLocation = JSON.parse(playerLocationStr);
+          actualLocationId = playerLocation.currentLocationId;
+          console.log('Got locationId from player_location:', actualLocationId);
+        }
+      } catch (error) {
+        console.error('Error getting locationId from player_location:', error);
+      }
+    }
+    
+    console.log('Final locationId:', actualLocationId);
+    
+    if (!onRestockShop || !actualLocationId || isRestocking) {
+      console.log('Early return - missing props or already restocking');
+      return;
+    }
+    
+    console.log('Starting restock process...');
+    setIsRestocking(true);
+    try {
+      await onRestockShop(actualLocationId);
+      setCanRestock(false); // Disable restock until next day
+      console.log('Restock completed successfully');
+    } catch (error) {
+      console.error('Error restocking shop:', error);
+    } finally {
+      setIsRestocking(false);
+    }
+  };
 
   // Refresh shop data periodically
   useEffect(() => {
@@ -118,7 +192,11 @@ export function MerchantShopModal({
   const getItemPrice = (item: InventoryItem | SkillBook, quantity: number = 1) => {
     if ('skillType' in item) {
       // Skill book
-      return item.price;
+      if (activeTab === 'buy') {
+        return item.buyPrice || item.price || 0;
+      } else {
+        return (item.value || item.price || 0) * 0.5; // Sell for 50% of value
+      }
     } else {
       // Regular item
       if (activeTab === 'buy') {
@@ -158,10 +236,11 @@ export function MerchantShopModal({
     if ('skillType' in item) {
       // Skill book
       if (activeTab === 'buy') {
-        const price = getItemPrice(item);
-        if (canAfford(price)) {
-          onUseSkillBook(item);
-        }
+        // Buy skill book (add to inventory)
+        onBuyItem(item as any, currentShop!);
+      } else {
+        // Skill books can't be sold (they're consumed when used)
+        return;
       }
     } else {
       // Regular item
@@ -364,6 +443,36 @@ export function MerchantShopModal({
               Bán Hàng
             </button>
           </div>
+
+          {/* Restock Button */}
+          {onRestockShop && (
+            <div className="flex justify-center">
+               <button
+                 onClick={() => {
+                   console.log('Restock button clicked!');
+                   console.log('canRestock:', canRestock);
+                   console.log('isRestocking:', isRestocking);
+                   handleRestock();
+                 }}
+                 disabled={!canRestock || isRestocking}
+                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
+                   canRestock && !isRestocking
+                     ? 'bg-green-600 hover:bg-green-700 text-white'
+                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                 }`}
+               >
+                <RefreshCw className={`w-4 h-4 ${isRestocking ? 'animate-spin' : ''}`} />
+                 <span>
+                   {isRestocking 
+                     ? 'Đang Restock...' 
+                     : canRestock 
+                       ? 'Restock Hàng (Ngày Mới)' 
+                       : 'Chưa Đến Ngày Restock'
+                   }
+                 </span>
+              </button>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="flex flex-wrap gap-2">

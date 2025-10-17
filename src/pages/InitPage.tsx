@@ -129,6 +129,7 @@ export function InitPage() {
       localStorage.removeItem('selectedNPCForDialogue'); // Xóa selected NPC khi reset world
       localStorage.removeItem('combat_history'); // Xóa combat history khi reset world
       localStorage.removeItem('combat_result'); // Xóa combat result khi reset world
+      localStorage.removeItem('merchant_shops'); // Xóa merchant shops khi reset world
       // Clear NPC relationship data when starting new world
       npcRelationshipService.clearAllData();
       

@@ -37,12 +37,34 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
   const enemyType = typeof enemy?.type === 'string' ? enemy.type : 'unknown';
   const enemyLevel = typeof enemy?.level === 'number' ? enemy.level : 1;
   const enemyDescription = typeof enemy?.description === 'string' ? enemy.description : 'A mysterious enemy appears.';
+  const enemyThreatLevel = typeof enemy?.threatLevel === 'string' ? enemy.threatLevel : 'medium';
   
   // Defensive checks for location and reason
   const safeLocation = typeof location === 'string' ? location : 
     (typeof location === 'object' && location && 'name' in location ? (location as any).name : 'Unknown Location');
   const safeReason = typeof reason === 'string' ? reason : 
     (typeof reason === 'object' && reason && 'description' in reason ? (reason as any).description : 'Cuộc đối đầu bất ngờ');
+
+  // Threat level display functions
+  const getThreatLevelColor = (threatLevel: string) => {
+    switch (threatLevel.toLowerCase()) {
+      case 'low': return 'text-green-400 bg-green-900/30 border-green-600';
+      case 'medium': return 'text-yellow-400 bg-yellow-900/30 border-yellow-600';
+      case 'high': return 'text-orange-400 bg-orange-900/30 border-orange-600';
+      case 'extreme': return 'text-red-400 bg-red-900/30 border-red-600';
+      default: return 'text-gray-400 bg-gray-900/30 border-gray-600';
+    }
+  };
+
+  const getThreatLevelText = (threatLevel: string) => {
+    switch (threatLevel.toLowerCase()) {
+      case 'low': return 'Thấp';
+      case 'medium': return 'Trung bình';
+      case 'high': return 'Cao';
+      case 'extreme': return 'Cực cao';
+      default: return 'Không xác định';
+    }
+  };
 
   // Show minimized modal if minimized
   if (isMinimized) {
@@ -76,6 +98,9 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
               <span className="px-2 py-1 bg-red-600 text-xs text-white rounded">
                 Level {enemyLevel}
               </span>
+              <span className={`px-2 py-1 text-xs font-medium rounded border ${getThreatLevelColor(enemyThreatLevel)}`}>
+                {getThreatLevelText(enemyThreatLevel)}
+              </span>
             </div>
             
             <div className="space-y-2 text-sm text-gray-300">
@@ -83,6 +108,11 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
               <p><span className="text-gray-400">Mô tả:</span> {enemyDescription}</p>
               <p><span className="text-gray-400">Địa điểm:</span> {safeLocation}</p>
               <p><span className="text-gray-400">Lý do:</span> {safeReason}</p>
+              <p><span className="text-gray-400">Mức độ nguy hiểm:</span> 
+                <span className={`ml-2 px-2 py-1 text-xs font-medium rounded border ${getThreatLevelColor(enemyThreatLevel)}`}>
+                  {getThreatLevelText(enemyThreatLevel)}
+                </span>
+              </p>
             </div>
           </div>
 

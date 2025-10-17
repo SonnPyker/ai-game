@@ -78,6 +78,10 @@ export class MigrationService {
       // Get current NPC relationship data
       const npcRelationshipData = npcRelationshipService.exportForSaveGame();
 
+      // Get current merchant shops data
+      const { merchantService } = await import('../merchantService');
+      const merchantShopsData = merchantService.exportForSaveGame();
+
       // Tạo SaveGame từ dữ liệu cũ
       const saveGame: SaveGame = {
         version: '1.0.0',
@@ -103,7 +107,8 @@ export class MigrationService {
           dayOfWeek: 1
         },
         questSystem: questSystemData,
-        npcRelationships: npcRelationshipData
+        npcRelationships: npcRelationshipData,
+        merchantShops: merchantShopsData.shops
       };
 
       // Validate dữ liệu trước khi lưu

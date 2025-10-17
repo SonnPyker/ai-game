@@ -776,6 +776,27 @@ export function CombatPage({}: CombatPageProps) {
         console.error('Error updating character data before fleeing:', error);
       }
       
+      // Clear enemies from sceneState after fleeing from combat
+      try {
+        const currentSceneState = localStorage.getItem('rp_scene_state');
+        if (currentSceneState) {
+          const sceneState = JSON.parse(currentSceneState);
+          const updatedSceneState = {
+            ...sceneState,
+            combatInitiation: undefined,
+            dangers: {
+              ...sceneState.dangers,
+              monsters: [], // Clear all monsters after fleeing from combat
+              enemies: []   // Clear all enemies after fleeing from combat
+            }
+          };
+          localStorage.setItem('rp_scene_state', JSON.stringify(updatedSceneState));
+          console.log('✅ Cleared enemies from sceneState after fleeing from combat');
+        }
+      } catch (error) {
+        console.error('Error clearing enemies from sceneState after fleeing:', error);
+      }
+      
       // Generate combat result data for fleeing
       const combatResultData = combatService.generateCombatResultData();
       
@@ -1018,17 +1039,24 @@ export function CombatPage({}: CombatPageProps) {
               max: playerCombatant.health.max
             };
             console.log('Updated character HP after combat:', character.health);
+            
+            // Update combat level data from combat service
+            if (playerCombatant.characterData) {
+              // Copy combat level data from the combatant (which was updated by combatService)
+              character.combatLevel = playerCombatant.characterData.combatLevel;
+              character.combatExperience = playerCombatant.characterData.combatExperience;
+              
+              console.log(`⚔️ Combat Level: ${character.combatLevel}, Combat XP: ${character.combatExperience}`);
+            }
           }
           
           // Get actual experience from combat rewards
           const experienceGained = combatState?.rewards?.experience || 0;
+          const currencyGained = combatState?.rewards?.currency || 0;
           
           if (experienceGained > 0) {
             // Add full experience to regular character level
             const regularLevelResult = levelSystemService.addExperience(character, experienceGained);
-            
-            // Save updated character
-            localStorage.setItem('currentCharacter', JSON.stringify(character));
             
             console.log(`💚 Experience gained: ${experienceGained} XP`);
             console.log(`⭐ Character Level: ${regularLevelResult.previousLevel} → ${regularLevelResult.newLevel}`);
@@ -1037,6 +1065,16 @@ export function CombatPage({}: CombatPageProps) {
               console.log(`🎉 Character Level Up! ${regularLevelResult.previousLevel} → ${regularLevelResult.newLevel}`);
             }
           }
+          
+          // Add currency reward
+          if (currencyGained > 0) {
+            const currentCurrency = character.currency || 0;
+            character.currency = currentCurrency + currencyGained;
+            console.log(`💰 Currency gained: ${currencyGained} gold (Total: ${character.currency})`);
+          }
+          
+          // Save updated character
+          localStorage.setItem('currentCharacter', JSON.stringify(character));
         }
       } catch (error) {
         console.error('Error updating combat experience:', error);
@@ -1108,6 +1146,27 @@ export function CombatPage({}: CombatPageProps) {
       } catch (error) {
         console.error('Error adding items to inventory:', error);
       }
+    }
+    
+    // Clear enemies from sceneState after combat ends (victory or defeat)
+    try {
+      const currentSceneState = localStorage.getItem('rp_scene_state');
+      if (currentSceneState) {
+        const sceneState = JSON.parse(currentSceneState);
+        const updatedSceneState = {
+          ...sceneState,
+          combatInitiation: undefined,
+          dangers: {
+            ...sceneState.dangers,
+            monsters: [], // Clear all monsters after combat ends
+            enemies: []   // Clear all enemies after combat ends
+          }
+        };
+        localStorage.setItem('rp_scene_state', JSON.stringify(updatedSceneState));
+        console.log('✅ Cleared enemies from sceneState after combat ended');
+      }
+    } catch (error) {
+      console.error('Error clearing enemies from sceneState after combat ended:', error);
     }
     
     // Clear pending combat data
@@ -1371,7 +1430,7 @@ export function CombatPage({}: CombatPageProps) {
                   </button>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500">
                   {playerSkills.length > 0 ? (
                     playerSkills.map((skill: any, index: number) => (
                       <div key={skill.id || index} className="p-4 bg-white/5 rounded-lg border border-white/20">

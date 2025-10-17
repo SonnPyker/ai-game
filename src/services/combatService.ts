@@ -177,9 +177,17 @@ class CombatService {
 
     combatants.push(playerCombatant);
 
-    // Add allies
+    // Add allies - đảm bảo không có duplicate
     const activeAllies = allyManagementService.getActiveAllies();
+    const addedAllyIds = new Set<string>(); // Track added ally IDs to prevent duplicates
+    
     for (const allyNPC of activeAllies) {
+      // Skip if already added (duplicate prevention)
+      if (addedAllyIds.has(allyNPC.id)) {
+        console.warn(`Skipping duplicate ally: ${allyNPC.name} (${allyNPC.id})`);
+        continue;
+      }
+      
       // Prepare NPC for combat nếu chưa có stats
       if (!allyNPC.combatStats || !allyNPC.canBeCombatant) {
         try {
@@ -213,6 +221,7 @@ class CombatService {
         };
         
         combatants.push(allyCombatant);
+        addedAllyIds.add(allyNPC.id); // Mark as added
       }
     }
 
@@ -612,17 +621,55 @@ class CombatService {
         }
       }
       
-      // Add strength modifier for melee weapons
-      let strengthBonus = 0;
-      if (attack.damageType === 'physical' && attacker.stats.modifiers.strength > 0) {
-        strengthBonus = attacker.stats.modifiers.strength;
-        totalDamage += strengthBonus;
+      // Add appropriate stat modifier based on damage type and weapon properties
+      let statBonus = 0;
+      let statName = '';
+      
+      // Check if this is a finesse weapon (can use agility instead of strength)
+      const isFinesseWeapon = attacker.characterData?.equipment?.weapon?.weaponProperties?.finesse;
+      const isRangedWeapon = attack.range && attack.range > 5; // Range > 5 feet is considered ranged
+      
+      if (attack.damageType === 'physical' || 
+          attack.damageType === 'slashing' || 
+          attack.damageType === 'piercing' || 
+          attack.damageType === 'bludgeoning') {
+        
+        if (isRangedWeapon) {
+          // Ranged weapons use agility modifier
+          statBonus = attacker.stats.modifiers.agility;
+          statName = 'agility';
+        } else if (isFinesseWeapon) {
+          // Finesse weapons can use the better of strength or agility
+          const strengthMod = attacker.stats.modifiers.strength;
+          const agilityMod = attacker.stats.modifiers.agility;
+          statBonus = Math.max(strengthMod, agilityMod);
+          statName = strengthMod >= agilityMod ? 'strength' : 'agility';
+        } else {
+          // Regular melee weapons use strength modifier
+          statBonus = attacker.stats.modifiers.strength;
+          statName = 'strength';
+        }
+      } else if (attack.damageType === 'magical' || 
+                 attack.damageType === 'fire' || 
+                 attack.damageType === 'cold' || 
+                 attack.damageType === 'lightning' || 
+                 attack.damageType === 'poison' || 
+                 attack.damageType === 'psychic' || 
+                 attack.damageType === 'radiant') {
+        // Magic weapons use intelligence modifier
+        statBonus = attacker.stats.modifiers.intelligence;
+        statName = 'intelligence';
+      }
+      
+      // Only add positive modifiers to avoid negative damage
+      if (statBonus > 0) {
+        totalDamage += statBonus;
       }
       
       // Create damage description
       damageDescription += ` ${damageParts.join(' + ')}`;
-      if (strengthBonus > 0) {
-        damageDescription += ` + ${strengthBonus} strength = ${totalDamage} total damage`;
+      if (statBonus > 0) {
+        damageDescription += ` + ${statBonus} ${statName} = ${totalDamage} total damage`;
       } else {
         damageDescription += ` = ${totalDamage} total damage`;
       }
@@ -1027,6 +1074,26 @@ class CombatService {
     });
   }
 
+  // Calculate base currency reward based on enemy level and threat level
+  private calculateBaseCurrency(enemyLevel: number, threatLevel: string): number {
+    // Base currency per level - increased for better rewards
+    const baseCurrencyPerLevel = 8;
+    
+    // Threat level multipliers - increased for better scaling
+    const threatMultipliers = {
+      'low': 0.7,      // 70% base currency (was 50%)
+      'medium': 1.2,   // 120% base currency (was 100%)
+      'high': 2.0,     // 200% base currency (was 180%)
+      'extreme': 3.5   // 350% base currency (was 300%)
+    };
+    
+    // Calculate base currency
+    const baseCurrency = enemyLevel * baseCurrencyPerLevel;
+    const multiplier = threatMultipliers[threatLevel as keyof typeof threatMultipliers] || 1.0;
+    
+    return Math.floor(baseCurrency * multiplier);
+  }
+
   // Calculate combat rewards
   private calculateRewards(): void {
     if (!this.currentCombat) return;
@@ -1034,6 +1101,7 @@ class CombatService {
     const defeatedEnemies = this.currentCombat.combatants.filter(c => c.type === 'enemy' && !c.isAlive);
     
     let totalExperience = 0;
+    let totalCurrency = 0;
     const items: InventoryItem[] = [];
     
     // Track defeated enemies for quest system
@@ -1082,12 +1150,26 @@ class CombatService {
         const enhancedExp = Math.floor(baseExp * difficultyMultipliers[difficultyData.rating]);
         totalExperience += enhancedExp;
         
+        // Calculate currency reward based on threat level and enemy level
+        const threatLevel = enemy.enemyData.threatLevel || 'medium';
+        const enemyLevel = enemy.enemyData.combatLevel || enemy.enemyData.level || 1;
+        
+        // Base currency calculation
+        const baseCurrency = this.calculateBaseCurrency(enemyLevel, threatLevel);
+        const currencyReward = Math.floor(baseCurrency * difficultyMultipliers[difficultyData.rating]);
+        totalCurrency += currencyReward;
+        
         // Log difficulty-based XP bonus
         if (difficultyData.rating !== 'easy') {
           this.addTurnAction('info', 
             `🎯 ${difficultyData.rating.toUpperCase()} Enemy Bonus: +${enhancedExp - baseExp} XP (${difficultyData.score}/100 difficulty)`
           );
         }
+        
+        // Log currency reward
+        this.addTurnAction('info', 
+          `💰 ${enemy.name}: +${currencyReward} gold (Level ${enemyLevel}, ${threatLevel.toUpperCase()})`
+        );
         
         // Use enhanced loot system with difficulty scaling
         const enhancedLoot = enhancedLootService.generateLootForEnemy(enemy.enemyData);
@@ -1178,10 +1260,24 @@ class CombatService {
       );
     }
     
+    // Multi-Enemy Currency Bonus: Add bonus currency for defeating multiple enemies
+    let finalCurrency = totalCurrency;
+    
+    if (enemyCount > 1 && this.currentCombat.winner === 'player') {
+      // Bonus currency for multiple enemies (15% per additional enemy - increased from 10%)
+      const multiEnemyBonus = Math.floor(totalCurrency * 0.15 * (enemyCount - 1));
+      finalCurrency += multiEnemyBonus;
+      
+      this.addTurnAction('info', 
+        `💰 Multi-Enemy Currency Bonus: +${multiEnemyBonus} gold (${enemyCount} enemies defeated)`
+      );
+    }
+    
     // Set rewards - even for defeat, we still track what happened
     this.currentCombat.rewards = {
       experience: finalExperience,
-      items
+      items,
+      currency: finalCurrency
     };
   }
 
@@ -1242,7 +1338,8 @@ class CombatService {
       },
       rewards: this.currentCombat.rewards || {
         experience: 0,
-        items: []
+        items: [],
+        currency: 0
       },
       metadata: {}
     };

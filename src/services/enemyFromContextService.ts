@@ -283,7 +283,7 @@ class EnemyFromContextService {
         name: this.generateAttackName(role, mood),
         attackBonus: 2 + Math.max(modifiers.strength, modifiers.agility) + Math.floor(baseLevel / 2),
         damage: `${Math.floor(baseLevel / 2) + 1}d4+${Math.max(modifiers.strength, modifiers.agility)}`,
-        damageType: 'physical' as const
+        damageType: 'bludgeoning' as const
       }],
       abilities: []
     };
@@ -336,7 +336,7 @@ class EnemyFromContextService {
         name: "Tấn công cơ bản",
         attackBonus: 2 + Math.max(modifiers.strength, modifiers.agility) + Math.floor(baseLevel / 2),
         damage: `${Math.floor(baseLevel / 2) + 1}d4+${Math.max(modifiers.strength, modifiers.agility)}`,
-        damageType: 'physical' as const
+        damageType: 'bludgeoning' as const
       }],
       abilities: []
     };

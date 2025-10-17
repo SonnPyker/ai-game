@@ -3235,7 +3235,7 @@ MỤC ĐÍCH:
     // Random encounter logic removed - now using sceneState.dangers.monsters
     
     // Calculate context information for AI
-    const worldData = JSON.parse(worldJson);
+      const worldData = JSON.parse(worldJson);
     const characterData = JSON.parse(characterJson);
     const worldDifficulty = worldData.difficulty || 'medium';
     const playerLevel = characterData.level || 1;
@@ -3286,8 +3286,18 @@ Hãy kể tiếp câu chuyện dựa trên:
   - Roll: [Số xúc xắc] + [Modifier] = [Tổng]
   - DC: [Difficulty Class]
   - Result: SUCCESS/FAILURE
-- Phản ứng dựa trên kết quả: SUCCESS = hành động thành công, FAILURE = hành động thất bại
-- Tích hợp kết quả vào narrative một cách tự nhiên
+
+QUAN TRỌNG VỀ DC CHECK RESULTS:
+- SUCCESS: NPC PHẢI tuân theo hành động của player một cách hợp lý
+  * Nếu player thuyết phục thành công → NPC đồng ý, thay đổi ý kiến, hoặc làm theo yêu cầu
+  * Nếu player đe dọa thành công → NPC sợ hãi, nhượng bộ, hoặc chấp nhận
+  * Nếu player lừa dối thành công → NPC tin tưởng, bị lừa, hoặc không phát hiện
+  * Nếu player thực hiện kỹ năng thành công → NPC công nhận, ấn tượng, hoặc bị ảnh hưởng
+- FAILURE: NPC phản ứng tiêu cực hoặc không bị ảnh hưởng
+  * NPC từ chối, không tin tưởng, phát hiện sự lừa dối
+  * NPC có thể tức giận, nghi ngờ, hoặc phản ứng mạnh mẽ
+  * Hành động của player không có hiệu quả mong muốn
+- Tích hợp kết quả vào narrative một cách tự nhiên và logic
 
 COMBAT VÀ MULTI-ENEMY ENCOUNTERS:
 - Nếu trong scene có kẻ thù xuất hiện, thêm vào sceneState.dangers.monsters[] HOẶC sceneState.dangers.enemies[]
@@ -3320,12 +3330,12 @@ CONTEXT-BASED ENEMY GENERATION:
   * Location type: ${locationType}
   * Narrative context keywords (pack, group, patrol, ambush, boss, lone, swarm, etc.)
 
-ENEMY COUNT GUIDELINES (Dựa trên context hiện tại):
-- **1 enemy**: Boss encounters, lone predators, single guards, elite enemies
-- **2 enemies**: Pairs, duos, hunting partners, patrol pairs  
-- **3 enemies**: Small groups, wolf packs, guard patrols, coordinated teams
-- **4 enemies**: Large groups, ambush scenarios, swarms, coordinated attacks
-- **Lưu ý**: Hệ thống đã tính toán ${enemyCountContext} enemies là phù hợp nhất cho context này
+ENEMY COUNT GUIDELINES (Dựa trên context hiện tại - Đã được cân bằng tối ưu):
+- **1 enemy**: Boss encounters, lone predators, single guards, elite enemies (Most common - 80-90%)
+- **2 enemies**: Pairs, duos, hunting partners, patrol pairs (Rare - 8-15%)
+- **3 enemies**: Small groups, wolf packs, guard patrols (Very rare - 2-5%)
+- **4 enemies**: Large groups, ambush scenarios, swarms (Extremely rare - 0.5-2%)
+- **Lưu ý**: Hệ thống đã tính toán ${enemyCountContext} enemies là phù hợp nhất cho context này (đã giảm mạnh tỷ lệ multi-enemy)
 
 RULES:
 - Chỉ thêm khi narrative thực sự đề cập đến enemy/monster xuất hiện
@@ -3335,6 +3345,18 @@ RULES:
 - KHÔNG tự động generate random enemies mỗi turn
 - Thêm monsters vào dangers.monsters[] khi narrative context phù hợp
 - Enemies trong cùng encounter nên có mối liên hệ (pack, patrol, group)
+
+⚠️ QUAN TRỌNG VỀ ENEMY PERSISTENCE VÀ PURSUIT:
+- Nếu player đã "tránh né" hoặc "chạy trốn" khỏi enemy, enemies có thể đuổi theo dựa trên narrative context
+- Các yếu tố quyết định enemies có đuổi theo hay không:
+  * Loại enemy: Sói, hổ, bandit thường đuổi theo; undead, golem ít khi đuổi theo
+  * Môi trường: Rừng rậm, hang động dễ đuổi theo; thành phố, khu dân cư khó đuổi theo
+  * Khoảng cách: Enemies nhanh nhẹn có thể đuổi theo, enemies chậm chạp sẽ bỏ cuộc
+  * Mục đích: Enemies hung dữ, đói khát sẽ đuổi theo; enemies bảo vệ lãnh thổ có thể dừng lại
+- Nếu enemies đuổi theo, hãy mô tả narrative phù hợp: "Bạn nghe thấy tiếng chân đuổi theo", "Kẻ thù không bỏ cuộc và tiếp tục truy đuổi"
+- Nếu enemies không đuổi theo, hãy mô tả lý do: "Kẻ thù dừng lại ở biên giới lãnh thổ", "Bạn đã chạy quá xa và mất dấu vết"
+- Chỉ generate enemies mới khi narrative thực sự đề cập đến enemy mới xuất hiện
+- Enemies cũ có thể xuất hiện lại nếu có lý do narrative hợp lý (đuổi theo, phục kích, tình cờ gặp lại)
 
 ${coreInstructions}
 
@@ -3568,6 +3590,21 @@ LƯU Ý VỀ NGÔI KỂ:
 - Nếu narration = "Ngôi thứ hai": sử dụng "Bạn" khi nói về nhân vật chính
 - Nếu narration = "Ngôi thứ nhất": sử dụng "Tôi" khi nói về nhân vật chính  
 - Nếu narration = "Ngôi thứ ba": sử dụng "Anh ấy/Cô ấy" khi nói về nhân vật chính
+
+🎲 XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
+- Nếu PLAYER_ACTION chứa "[DC CHECK RESULT]" với Result: SUCCESS:
+  * NPC PHẢI tuân theo hành động của player một cách hợp lý và logic
+  * Nếu player thuyết phục thành công → NPC đồng ý, thay đổi ý kiến, hoặc làm theo yêu cầu
+  * Nếu player đe dọa thành công → NPC sợ hãi, nhượng bộ, hoặc chấp nhận
+  * Nếu player lừa dối thành công → NPC tin tưởng, bị lừa, hoặc không phát hiện
+  * Nếu player thực hiện kỹ năng thành công → NPC công nhận, ấn tượng, hoặc bị ảnh hưởng
+  * Tích hợp kết quả thành công vào narrative một cách tự nhiên
+- Nếu PLAYER_ACTION chứa "[DC CHECK RESULT]" với Result: FAILURE:
+  * NPC phản ứng tiêu cực hoặc không bị ảnh hưởng bởi hành động
+  * NPC có thể từ chối, không tin tưởng, phát hiện sự lừa dối
+  * NPC có thể tức giận, nghi ngờ, hoặc phản ứng mạnh mẽ
+  * Hành động của player không có hiệu quả mong muốn
+  * Tích hợp kết quả thất bại vào narrative một cách logic
 
 QUAN TRỌNG VỀ OUTPUT:
 - CHỈ trả về JSON object thuần túy
@@ -3806,6 +3843,22 @@ QUAN TRỌNG VỀ OUTPUT:
       const monsters = result.sceneState?.dangers?.monsters;
       const enemies = result.sceneState?.dangers?.enemies;
       
+      // Check if player just fled from combat (but allow enemies to pursue)
+      const playerJustFled = chatDelta.some(turn => 
+        turn.content.includes('tránh né') || 
+        turn.content.includes('chạy trốn') || 
+        turn.content.includes('bỏ chạy') ||
+        turn.content.includes('fled') ||
+        turn.content.includes('dodged')
+      );
+      
+      if (playerJustFled) {
+        console.log('🏃 Player fled from combat - enemies may pursue based on narrative context');
+        // Don't automatically clear enemies - let AI decide if they should pursue
+        // AI will determine if enemies chase player based on narrative context
+      }
+      
+      // Always check for enemies (including pursuing enemies after flee)
       // Combine both monsters and enemies arrays if they exist
       let allEnemies: any[] = [];
       if (monsters && Array.isArray(monsters) && monsters.length > 0) {
@@ -3825,21 +3878,21 @@ QUAN TRỌNG VỀ OUTPUT:
           // Create enemies from combined data
           const generatedEnemies = await this.createEnemiesFromMonsters(
             allEnemies,
-            sceneState,
-            worldJson,
-            characterJson
-          );
+                sceneState, 
+                worldJson, 
+                characterJson
+              );
           
           if (generatedEnemies && generatedEnemies.length > 0) {
-            result.sceneState.combatInitiation = {
-              type: 'random_encounter',
+              result.sceneState.combatInitiation = {
+                type: 'random_encounter',
               enemies: generatedEnemies,
-              location: sceneState.location || 'Unknown',
+                location: sceneState.location || 'Unknown',
               reason: allEnemies.length > 1 
                 ? `Bạn bị vây hãm bởi ${allEnemies.length} kẻ thù!`
                 : 'Cuộc đối đầu với kẻ thù nguy hiểm',
-              turn: turnCounter || 0
-            };
+                turn: turnCounter || 0
+              };
             
             console.log(`✅ Combat initiated with ${generatedEnemies.length} enemy/enemies from dangers data`);
           }
@@ -4235,42 +4288,42 @@ Trả về JSON format:
     // Base enemy count (most common case)
     let baseCount = 1;
     
-    // World difficulty modifiers
+    // World difficulty modifiers (further reduced for better balance)
     const difficultyModifiers = {
-      'easy': { multiChance: 0.05, maxCount: 2 },
-      'medium': { multiChance: 0.10, maxCount: 3 },
-      'hard': { multiChance: 0.15, maxCount: 4 }
+      'easy': { multiChance: 0.02, maxCount: 2 },      // Further reduced from 0.03 to 0.02
+      'medium': { multiChance: 0.04, maxCount: 2 },    // Further reduced from 0.06 to 0.04
+      'hard': { multiChance: 0.06, maxCount: 2 }       // Further reduced from 0.08 to 0.06, max 2 instead of 3
     };
     
     const modifier = difficultyModifiers[worldDifficulty.toLowerCase() as keyof typeof difficultyModifiers] || difficultyModifiers.medium;
     
-    // Location-based adjustments
+    // Location-based adjustments (reduced multipliers for better balance)
     const locationModifiers = {
-      'dungeon': 1.5,      // Higher chance in dungeons
-      'forest': 1.2,       // Slightly higher in forests
-      'city': 0.3,         // Much lower in cities
-      'wilderness': 1.3,   // Higher in wilderness
-      'ruins': 1.4,        // High in ruins
-      'cave': 1.6          // Very high in caves
+      'dungeon': 1.2,      // Reduced from 1.5 to 1.2
+      'forest': 1.1,       // Reduced from 1.2 to 1.1
+      'city': 0.2,         // Reduced from 0.3 to 0.2 (even lower in cities)
+      'wilderness': 1.1,   // Reduced from 1.3 to 1.1
+      'ruins': 1.2,        // Reduced from 1.4 to 1.2
+      'cave': 1.3          // Reduced from 1.6 to 1.3
     };
     
     const locationMultiplier = locationModifiers[locationType.toLowerCase() as keyof typeof locationModifiers] || 1.0;
     
-    // Player level adjustments (higher level = more enemies)
-    const levelMultiplier = Math.min(2.0, 1 + (playerLevel - 1) * 0.1);
+    // Player level adjustments (reduced impact for better balance)
+    const levelMultiplier = Math.min(1.5, 1 + (playerLevel - 1) * 0.05); // Reduced from 2.0 to 1.5, 0.1 to 0.05
     
-    // Narrative context analysis
+    // Narrative context analysis (reduced multipliers for better balance)
     const contextKeywords = {
-      'pack': 2.0,         // "wolf pack", "bandit pack"
-      'group': 1.8,        // "group of enemies"
-      'patrol': 1.5,       // "patrol", "guard patrol"
-      'ambush': 2.5,       // "ambush", "surprise attack"
-      'boss': 0.1,         // "boss encounter" - usually single
-      'lone': 0.1,         // "lone wolf", "single enemy"
-      'swarm': 3.0,        // "swarm", "horde"
-      'pair': 1.0,         // "pair", "duo"
-      'trio': 1.0,         // "trio", "three"
-      'squad': 1.0         // "squad", "team"
+      'pack': 1.5,         // Reduced from 2.0 to 1.5
+      'group': 1.3,        // Reduced from 1.8 to 1.3
+      'patrol': 1.2,       // Reduced from 1.5 to 1.2
+      'ambush': 1.8,       // Reduced from 2.5 to 1.8
+      'boss': 0.1,         // Keep same - boss encounters should be single
+      'lone': 0.1,         // Keep same - lone encounters should be single
+      'swarm': 2.0,        // Reduced from 3.0 to 2.0
+      'pair': 1.0,         // Keep same
+      'trio': 1.0,         // Keep same
+      'squad': 1.0         // Keep same
     };
     
     let contextMultiplier = 1.0;
@@ -4288,12 +4341,12 @@ Trả về JSON format:
     const random = Math.random();
     let enemyCount = baseCount;
     
-    if (random < finalChance * 0.3) {
-      enemyCount = 2; // 30% of multi-chance = 2 enemies
-    } else if (random < finalChance * 0.6) {
-      enemyCount = 3; // 30% of multi-chance = 3 enemies  
+    if (random < finalChance * 0.5) {
+      enemyCount = 2; // 50% of multi-chance = 2 enemies (increased from 30%)
+    } else if (random < finalChance * 0.8) {
+      enemyCount = 3; // 30% of multi-chance = 3 enemies (reduced from 40%)
     } else if (random < finalChance) {
-      enemyCount = 4; // 40% of multi-chance = 4 enemies
+      enemyCount = 4; // 20% of multi-chance = 4 enemies (reduced from 40%)
     }
     
     // Cap at maximum for difficulty
@@ -4332,11 +4385,11 @@ Trả về JSON format:
     narrativeContext: string,
     enemyName: string
   ): string {
-    // Base threat level distribution by world difficulty
+    // Base threat level distribution by world difficulty (further reduced high threat rates)
     const difficultyDistribution = {
-      'easy': { low: 0.6, medium: 0.35, high: 0.05, extreme: 0.0 },
-      'medium': { low: 0.3, medium: 0.5, high: 0.18, extreme: 0.02 },
-      'hard': { low: 0.1, medium: 0.4, high: 0.4, extreme: 0.1 }
+      'easy': { low: 0.8, medium: 0.19, high: 0.01, extreme: 0.0 },    // Further reduced: high from 0.02 to 0.01
+      'medium': { low: 0.6, medium: 0.38, high: 0.02, extreme: 0.0 },  // Further reduced: high from 0.04 to 0.02, extreme from 0.01 to 0.0
+      'hard': { low: 0.3, medium: 0.65, high: 0.05, extreme: 0.0 }     // Further reduced: high from 0.15 to 0.05, extreme from 0.05 to 0.0
     };
     
     const distribution = difficultyDistribution[worldDifficulty.toLowerCase() as keyof typeof difficultyDistribution] || difficultyDistribution.medium;
@@ -4611,9 +4664,9 @@ Trả về JSON format:
     const wisdomSeed = (seed * 5673 + 8901) % 233280 / 233280;
     const charismaSeed = (seed * 6785 + 9012) % 233280 / 233280;
     
-    // Calculate base stats with threat multiplier
-    const basePhysicalStats = Math.floor((10 + level * 1.5) * multiplier.stats);
-    const baseMentalStats = Math.floor((8 + level * 0.8) * multiplier.stats);
+    // Calculate base stats with threat multiplier (reduced for better balance)
+    const basePhysicalStats = Math.floor((8 + level * 1.0) * multiplier.stats); // Reduced from 10+1.5 to 8+1.0
+    const baseMentalStats = Math.floor((6 + level * 0.5) * multiplier.stats);   // Reduced from 8+0.8 to 6+0.5
     
     // Generate core stats (capped at 8-22)
     const strength = Math.max(8, Math.min(22, basePhysicalStats + Math.floor(strengthSeed * 7) - 3));
@@ -4633,18 +4686,18 @@ Trả về JSON format:
       charisma: Math.floor((charisma - 10) / 2)
     };
     
-    // Calculate HP with threat multiplier and constitution bonus
-    const baseHP = 10 + (level * 6) + (modifiers.constitution * level);
+    // Calculate HP with threat multiplier and constitution bonus (reduced for better balance)
+    const baseHP = 10 + (level * 4) + (modifiers.constitution * level); // Reduced from 10+6 to 8+4
     const maxHP = Math.floor(baseHP * multiplier.hp);
     
     // Calculate AC with threat modifier
     const baseAC = 10 + modifiers.agility + Math.floor(level / 3);
     const armorClass = baseAC + multiplier.ac;
     
-    // Generate weapon attack with threat-based scaling
+    // Generate weapon attack with threat-based scaling (further reduced for better balance)
     const primaryMod = Math.max(modifiers.strength, modifiers.agility);
-    const attackBonus = 2 + primaryMod + Math.floor(level / 2) + multiplier.attackBonus;
-    const damageDice = Math.max(1, Math.floor(level / 2) + 1);
+    const attackBonus = 0 + primaryMod + Math.floor(level / 4) + multiplier.attackBonus; // Further reduced: base from 1 to 0, level scaling from /3 to /4
+    const damageDice = Math.max(1, Math.floor(level / 3) + 1); // Keep damage dice scaling
     const damageBonus = Math.floor(primaryMod * multiplier.damage);
     
     // Create complete enemy object (compatible with combatService)

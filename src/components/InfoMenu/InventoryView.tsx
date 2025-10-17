@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
-import { InventoryItem } from '../../types';
+import { InventoryItem, SkillBook } from '../../types';
 import { ItemCard } from './ItemCard';
+import { SkillBookCard } from './SkillBookCard';
 import { 
   Search, 
   SortAsc, 
@@ -13,14 +14,14 @@ import {
 } from 'lucide-react';
 
 interface InventoryViewProps {
-  inventory: InventoryItem[];
+  inventory: (InventoryItem | SkillBook)[];
   onEquipItem?: (itemId: string) => void;
   onUnequipItem?: (itemId: string) => void;
   onDropItem?: (itemId: string) => void;
-  onViewItemDetails?: (item: InventoryItem) => void;
+  onUseSkillBook?: (skillBook: SkillBook) => void;
 }
 
-type FilterType = 'all' | 'weapon' | 'armor' | 'consumable' | 'misc' | 'equipped';
+type FilterType = 'all' | 'weapon' | 'armor' | 'consumable' | 'misc' | 'equipped' | 'skillbook';
 type SortType = 'name' | 'type' | 'rarity' | 'quantity';
 
 export function InventoryView({ 
@@ -28,7 +29,7 @@ export function InventoryView({
   onEquipItem, 
   onUnequipItem, 
   onDropItem,
-  onViewItemDetails
+  onUseSkillBook
 }: InventoryViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
@@ -51,9 +52,11 @@ export function InventoryView({
     // Apply type filter
     if (filter !== 'all') {
       if (filter === 'equipped') {
-        filtered = filtered.filter(item => item.isEquipped);
+        filtered = filtered.filter(item => 'isEquipped' in item && item.isEquipped);
+      } else if (filter === 'skillbook') {
+        filtered = filtered.filter(item => 'skillType' in item);
       } else {
-        filtered = filtered.filter(item => item.type === filter);
+        filtered = filtered.filter(item => 'type' in item && item.type === filter);
       }
     }
 
@@ -87,11 +90,12 @@ export function InventoryView({
   const filterCounts = useMemo(() => {
     return {
       all: inventory.length,
-      weapon: inventory.filter(item => item.type === 'weapon').length,
-      armor: inventory.filter(item => item.type === 'armor').length,
-      consumable: inventory.filter(item => item.type === 'consumable').length,
-      misc: inventory.filter(item => item.type === 'misc').length,
-      equipped: inventory.filter(item => item.isEquipped).length
+      weapon: inventory.filter(item => 'type' in item && item.type === 'weapon').length,
+      armor: inventory.filter(item => 'type' in item && item.type === 'armor').length,
+      consumable: inventory.filter(item => 'type' in item && item.type === 'consumable').length,
+      skillbook: inventory.filter(item => 'skillType' in item).length,
+      misc: inventory.filter(item => 'type' in item && item.type === 'misc').length,
+      equipped: inventory.filter(item => 'isEquipped' in item && item.isEquipped).length
     };
   }, [inventory]);
 
@@ -179,6 +183,7 @@ export function InventoryView({
               { key: 'weapon', label: 'Vũ khí', icon: Sword, count: filterCounts.weapon },
               { key: 'armor', label: 'Trang bị', icon: Shield, count: filterCounts.armor },
               { key: 'consumable', label: 'Tiêu hao', icon: Beaker, count: filterCounts.consumable },
+              { key: 'skillbook', label: 'Sách kỹ năng', icon: Star, count: filterCounts.skillbook },
               { key: 'misc', label: 'Khác', icon: Package, count: filterCounts.misc },
               { key: 'equipped', label: 'Đã trang bị', icon: Star, count: filterCounts.equipped }
             ].map(({ key, label, icon: Icon, count }) => (
@@ -250,18 +255,34 @@ export function InventoryView({
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredAndSortedInventory.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              onEquip={onEquipItem}
-              onUnequip={onUnequipItem}
-              onDrop={onDropItem}
-              onViewDetails={onViewItemDetails}
-              size="large"
-              className="w-full"
-            />
-          ))}
+          {filteredAndSortedInventory.map((item) => {
+            if ('skillType' in item) {
+              // Skill book
+              return (
+                <SkillBookCard
+                  key={item.id}
+                  skillBook={item}
+                  onUse={onUseSkillBook}
+                  onDrop={onDropItem}
+                  size="large"
+                  className="w-full"
+                />
+              );
+            } else {
+              // Regular item
+              return (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onEquip={onEquipItem}
+                  onUnequip={onUnequipItem}
+                  onDrop={onDropItem}
+                  size="large"
+                  className="w-full"
+                />
+              );
+            }
+          })}
         </div>
       )}
     </div>

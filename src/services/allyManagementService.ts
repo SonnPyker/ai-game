@@ -55,11 +55,21 @@ export class AllyManagementService {
       };
     }
 
-    // Kiểm tra NPC đã là đồng minh chưa
+    // Kiểm tra NPC đã là đồng minh chưa - kiểm tra cả isAlly và character.allies
     if (npc.isAlly) {
       return {
         canRecruit: false,
         reason: 'NPC này đã là đồng minh',
+        acceptChance: 0
+      };
+    }
+
+    // Kiểm tra thêm trong character.allies array để đảm bảo không có duplicate
+    const characterData = this.getCurrentCharacter();
+    if (characterData && characterData.allies && characterData.allies.includes(npcId)) {
+      return {
+        canRecruit: false,
+        reason: 'NPC này đã là đồng minh (trong character.allies)',
         acceptChance: 0
       };
     }
@@ -120,13 +130,16 @@ export class AllyManagementService {
         };
       }
 
-      // Cập nhật Character.allies
-      const updatedAllies = [...(characterData.allies || []), npcId];
-      const updatedCharacter = {
-        ...characterData,
-        allies: updatedAllies
-      };
-      localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
+      // Cập nhật Character.allies - đảm bảo không có duplicate
+      const currentAllies = characterData.allies || [];
+      if (!currentAllies.includes(npcId)) {
+        const updatedAllies = [...currentAllies, npcId];
+        const updatedCharacter = {
+          ...characterData,
+          allies: updatedAllies
+        };
+        localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
+      }
 
       // Cập nhật NPCRelationship
       const npc = npcRelationshipService.getRelationship(npcId);
@@ -190,6 +203,9 @@ export class AllyManagementService {
    * Lấy tất cả đồng minh
    */
   public getAllAllies(): NPCRelationship[] {
+    // Đồng bộ hóa và loại bỏ duplicate trước khi lấy allies
+    this.syncAndCleanAllies();
+    
     const characterData = this.getCurrentCharacter();
     if (!characterData || !characterData.allies) {
       return [];
@@ -238,6 +254,38 @@ export class AllyManagementService {
     } catch (error) {
       console.error('Error loading character data:', error);
       return null;
+    }
+  }
+
+  /**
+   * Đồng bộ hóa và loại bỏ duplicate allies
+   */
+  public syncAndCleanAllies(): void {
+    const characterData = this.getCurrentCharacter();
+    if (!characterData) return;
+
+    const currentAllies = characterData.allies || [];
+    
+    // Loại bỏ duplicate IDs
+    const uniqueAllies = [...new Set(currentAllies)];
+    
+    // Kiểm tra từng ally có tồn tại và isAlly = true không
+    const validAllies = uniqueAllies.filter(npcId => {
+      const npc = npcRelationshipService.getRelationship(npcId);
+      return npc && npc.isAlly === true;
+    });
+
+    // Cập nhật character.allies nếu có thay đổi
+    if (validAllies.length !== currentAllies.length || 
+        !validAllies.every((id, index) => currentAllies[index] === id)) {
+      
+      const updatedCharacter = {
+        ...characterData,
+        allies: validAllies
+      };
+      localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
+      
+      console.log(`Cleaned allies: ${currentAllies.length} -> ${validAllies.length}`);
     }
   }
 

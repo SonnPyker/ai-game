@@ -148,6 +148,16 @@ class WorldTimeService {
   }
 
   /**
+   * Check if it's a new day compared to last time
+   */
+  isNewDay(lastTime: WorldTime, currentTime: WorldTime): boolean {
+    // Check if year, month, or day has changed
+    return currentTime.year > lastTime.year || 
+           currentTime.month > lastTime.month || 
+           currentTime.day > lastTime.day;
+  }
+
+  /**
    * Save time to localStorage
    */
   saveTime(worldId: string, time: WorldTime): void {

@@ -332,7 +332,7 @@ QUAN TRỌNG:
         name: "Kiếm",
         attackBonus: 2 + strengthMod, // Base proficiency + stat modifier
         damage: `1d8${damageMod}`, // Fixed weapon damage + stat modifier
-        damageType: "physical" as const
+        damageType: "slashing" as const
       });
     } else if (nameLower.includes('archer') || nameLower.includes('ranger') || nameLower.includes('hunter')) {
       const agilityMod = stats.modifiers.agility;
@@ -341,7 +341,7 @@ QUAN TRỌNG:
         name: "Cung tên",
         attackBonus: 2 + agilityMod, // Base proficiency + stat modifier
         damage: `1d6${damageMod}`, // Fixed weapon damage + stat modifier
-        damageType: "physical" as const,
+        damageType: "piercing" as const,
         range: 60
       });
     } else if (nameLower.includes('mage') || nameLower.includes('wizard') || nameLower.includes('sorcerer')) {
@@ -361,7 +361,7 @@ QUAN TRỌNG:
         name: "Dao găm",
         attackBonus: 2 + agilityMod, // Base proficiency + stat modifier
         damage: `1d4${damageMod}`, // Fixed weapon damage + stat modifier
-        damageType: "physical" as const
+        damageType: "piercing" as const
       });
     } else {
       // Default attack for unknown NPCs
@@ -371,7 +371,7 @@ QUAN TRỌNG:
         name: "Tấn công cơ bản",
         attackBonus: 2 + maxMod, // Base proficiency + stat modifier
         damage: `1d4${damageMod}`, // Fixed weapon damage + stat modifier
-        damageType: "physical" as const
+        damageType: "bludgeoning" as const
       });
     }
     
@@ -475,10 +475,24 @@ QUAN TRỌNG:
       tags: npcData.tags ?? existing?.tags ?? [],
       location: npcData.location,
       faction: npcData.faction,
+      // Location-specific NPC system
+      isLocationSignature: npcData.isLocationSignature ?? existing?.isLocationSignature ?? false,
+      signatureLocationId: npcData.signatureLocationId ?? existing?.signatureLocationId,
+      signatureQuestId: npcData.signatureQuestId ?? existing?.signatureQuestId,
+      // Merchant signature NPC system
+      isMerchantSignature: npcData.isMerchantSignature ?? existing?.isMerchantSignature ?? false,
+      merchantSignatureLocationId: npcData.merchantSignatureLocationId ?? existing?.merchantSignatureLocationId,
+      merchantShopId: npcData.merchantShopId ?? existing?.merchantShopId,
       // Auto-add combat stats for new NPCs
       canBeCombatant: npcData.canBeCombatant ?? (isNewNPC ? true : existing?.canBeCombatant ?? false),
       combatStats: combatStats,
-      combatBehavior: npcData.combatBehavior ?? existing?.combatBehavior
+      combatBehavior: npcData.combatBehavior ?? existing?.combatBehavior,
+      // Arousal system
+      arousal: npcData.arousal ?? existing?.arousal,
+      // Ally system - QUAN TRỌNG: Xử lý isAlly
+      isAlly: npcData.isAlly ?? existing?.isAlly ?? false,
+      isInjured: npcData.isInjured ?? existing?.isInjured ?? false,
+      injuredUntilTurn: npcData.injuredUntilTurn ?? existing?.injuredUntilTurn
     };
 
     this.relationships.set(id, relationship);
@@ -1037,6 +1051,21 @@ NGUYÊN TẮC PHÂN TÍCH THỰC TẾ:
 4. NPCs có thể hiểu lầm, nghi ngờ, hoặc không thích hành động của người chơi
 5. Ngữ cảnh và tình huống quan trọng hơn ý định
 
+🎲 XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
+- Nếu narrative chứa "[DC CHECK RESULT]" với Result: SUCCESS:
+  * NPC PHẢI tuân theo hành động của player một cách hợp lý
+  * Nếu player thuyết phục thành công → NPC đồng ý, thay đổi ý kiến, hoặc làm theo yêu cầu
+  * Nếu player đe dọa thành công → NPC sợ hãi, nhượng bộ, hoặc chấp nhận
+  * Nếu player lừa dối thành công → NPC tin tưởng, bị lừa, hoặc không phát hiện
+  * Nếu player thực hiện kỹ năng thành công → NPC công nhận, ấn tượng, hoặc bị ảnh hưởng
+  * Điều chỉnh relationship change tích cực hơn khi DC check thành công
+- Nếu narrative chứa "[DC CHECK RESULT]" với Result: FAILURE:
+  * NPC phản ứng tiêu cực hoặc không bị ảnh hưởng bởi hành động
+  * NPC có thể từ chối, không tin tưởng, phát hiện sự lừa dối
+  * NPC có thể tức giận, nghi ngờ, hoặc phản ứng mạnh mẽ
+  * Hành động của player không có hiệu quả mong muốn
+  * Điều chỉnh relationship change tiêu cực hơn khi DC check thất bại
+
 SCORING GUIDELINES (THỰC TẾ HƠN):
 RELATIONSHIP CHANGE (-20 to +20):
 - Cứu khỏi cái chết, hy sinh vì NPC: +12 to +20
@@ -1047,6 +1076,18 @@ RELATIONSHIP CHANGE (-20 to +20):
 - Từ chối giúp đỡ, làm tổn thương: -2 to -5
 - Phản bội, lừa dối nghiêm trọng: -5 to -12
 - Cố ý làm hại, tấn công, giết: -12 to -20
+
+DC CHECK SUCCESS BONUS:
+- Thuyết phục thành công: +3 to +8 (tùy theo độ khó và tầm quan trọng)
+- Đe dọa thành công: +2 to +6 (NPC sợ hãi và nhượng bộ)
+- Lừa dối thành công: +1 to +4 (NPC tin tưởng và bị lừa)
+- Kỹ năng thành công: +2 to +5 (NPC ấn tượng và công nhận)
+
+DC CHECK FAILURE PENALTY:
+- Thuyết phục thất bại: -2 to -5 (NPC từ chối và có thể tức giận)
+- Đe dọa thất bại: -3 to -8 (NPC phản ứng mạnh mẽ, có thể trả thù)
+- Lừa dối thất bại: -4 to -10 (NPC phát hiện và mất lòng tin)
+- Kỹ năng thất bại: -1 to -3 (NPC thất vọng hoặc coi thường)
 
 REPUTATION CHANGE (-10 to +10):
 - Hành động công cộng có impact x1.2

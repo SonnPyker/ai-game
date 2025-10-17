@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Equipment, InventoryItem } from '../../types';
+import { Equipment, InventoryItem, CharacterSkill } from '../../types';
 import { ItemCard } from './ItemCard';
 import { 
   Sword, 
@@ -12,9 +12,9 @@ import {
 interface EquipmentViewProps {
   equipment: Equipment;
   inventory: InventoryItem[];
+  skills?: CharacterSkill[];
   onEquipItem?: (itemId: string, slot: string) => void;
   onUnequipItem?: (itemId: string) => void;
-  onViewItemDetails?: (item: InventoryItem) => void;
 }
 
 type EquipmentSlot = 'weapon' | 'armor' | 'accessory1' | 'accessory2' | 'accessory3';
@@ -38,28 +38,13 @@ const SLOT_CONFIG: SlotInfo[] = [
 export function EquipmentView({ 
   equipment, 
   inventory, 
+  skills = [],
   onEquipItem, 
-  onUnequipItem,
-  onViewItemDetails 
+  onUnequipItem
 }: EquipmentViewProps) {
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlot | null>(null);
   const [showAvailableItems, setShowAvailableItems] = useState(false);
 
-  // Calculate total stats bonuses
-  const totalBonuses = React.useMemo(() => {
-    const bonuses = {
-      strength: 0,
-      agility: 0,
-      intelligence: 0,
-      constitution: 0,
-      wisdom: 0,
-      charisma: 0
-    };
-
-    // Equipment không cung cấp stat bonuses trong hệ thống mới
-
-    return bonuses;
-  }, [equipment]);
 
   // Get available items for a slot
   const getAvailableItemsForSlot = (slot: EquipmentSlot): InventoryItem[] => {
@@ -104,13 +89,6 @@ export function EquipmentView({
     onUnequipItem?.(itemId);
   };
 
-  const formatStatBonus = (value: number) => {
-    return value > 0 ? `+${value}` : value.toString();
-  };
-
-  const getStatColor = (value: number) => {
-    return value > 0 ? 'text-green-400' : value < 0 ? 'text-red-400' : 'text-gray-400';
-  };
 
   return (
     <div className="space-y-6">
@@ -234,7 +212,6 @@ export function EquipmentView({
                         <ItemCard
                           item={item}
                           onEquip={() => handleEquipItem(item.id)}
-                          onViewDetails={onViewItemDetails}
                           showActions={false}
                           size="large"
                           className="w-full"
@@ -256,33 +233,41 @@ export function EquipmentView({
         </>
       )}
 
-      {/* Equipment Stats Summary */}
+      {/* Skills Display */}
       <div className="bg-gray-800/50 rounded-lg p-4">
         <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-          <Shield className="w-5 h-5 mr-2" />
-          Tổng Bonuses Trang Bị
+          <Sword className="w-5 h-5 mr-2" />
+          Kỹ Năng Nhân Vật
         </h3>
         
-        {Object.values(totalBonuses).some(value => value !== 0) ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-            {Object.entries(totalBonuses).map(([stat, value]) => (
-              <div key={stat} className="flex items-center justify-between">
-                <span className="text-gray-400 capitalize">
-                  {stat === 'strength' ? 'Sức mạnh' :
-                   stat === 'agility' ? 'Nhanh nhẹn' :
-                   stat === 'intelligence' ? 'Trí tuệ' :
-                   stat === 'constitution' ? 'Thể chất' :
-                   stat === 'wisdom' ? 'Khôn ngoan' :
-                   stat === 'charisma' ? 'Sức hút' : stat}
-                </span>
-                <span className={`font-medium ${getStatColor(value)}`}>
-                  {formatStatBonus(value)}
-                </span>
+        {skills && skills.length > 0 ? (
+          <div className="space-y-2">
+            {skills.map((skill, index) => (
+              <div key={skill.id || index} className="flex items-center justify-between p-2 bg-gray-700/50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">{skill.icon || '⚔️'}</span>
+                  <div>
+                    <div className="text-white font-medium text-sm">{skill.name}</div>
+                    <div className="text-gray-400 text-xs">
+                      {skill.skillType === 'damage' ? 'Tấn Công' :
+                       skill.skillType === 'healing' ? 'Hồi Phục' : 'Xã Hội'} • 
+                      Level {skill.level || 1}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-blue-400 text-xs">
+                    Cooldown: {skill.cooldown || 0}s
+                  </div>
+                  {skill.requiresTarget && (
+                    <div className="text-yellow-400 text-xs">Cần mục tiêu</div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-400 text-sm">Chưa có trang bị nào được trang bị</p>
+          <p className="text-gray-400 text-sm">Chưa có kỹ năng nào</p>
         )}
       </div>
     </div>

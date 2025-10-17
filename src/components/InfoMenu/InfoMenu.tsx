@@ -25,7 +25,7 @@ import {
   Coins,
   TreePine
 } from 'lucide-react';
-import { WorldData, Character, WorldTime, QuestSystem, QuestProgress, ContentFlags, InventoryItem } from '../../types';
+import { WorldData, Character, WorldTime, QuestSystem, QuestProgress, ContentFlags } from '../../types';
 import { npcRelationshipService } from '../../services/npcRelationshipService';
 import { worldTimeService } from '../../services/worldTimeService';
 import { inventoryService } from '../../services/inventoryService';
@@ -79,7 +79,7 @@ interface InfoMenuProps {
   onEquipItem?: (itemId: string, slot?: string) => void;
   onUnequipItem?: (itemId: string) => void;
   onDropItem?: (itemId: string) => void;
-  onViewItemDetails?: (item: InventoryItem) => void;
+  onUseSkillBook?: (skillBook: any) => void;
   // NPC dialogue props
   selectedNPCForDialogue?: string | null;
 }
@@ -118,7 +118,7 @@ export function InfoMenu({
   onEquipItem,
   onUnequipItem,
   onDropItem,
-  onViewItemDetails,
+  onUseSkillBook,
   selectedNPCForDialogue,
   onOpenShop
 }: InfoMenuProps) {
@@ -481,7 +481,7 @@ export function InfoMenu({
             onEquipItem={onEquipItem}
             onUnequipItem={onUnequipItem}
             onDropItem={onDropItem}
-            onViewItemDetails={onViewItemDetails}
+            onUseSkillBook={onUseSkillBook}
           />
         )}
         {characterSubSection === 'equipment' && (
@@ -490,9 +490,9 @@ export function InfoMenu({
             <EquipmentView
               equipment={characterData.equipment || {}}
               inventory={characterData.inventory || []}
+              skills={characterData.skills || []}
               onEquipItem={onEquipItem}
               onUnequipItem={onUnequipItem}
-              onViewItemDetails={onViewItemDetails}
             />
           </div>
         )}
