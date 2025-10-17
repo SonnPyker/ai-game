@@ -8,7 +8,8 @@ import {
   MessageSquare,
   Pin,
   Plus,
-  TestTube
+  TestTube,
+  AlertTriangle
 } from 'lucide-react';
 import { Character, Enemy, InventoryItem } from '../types';
 import { translateEffectFormat } from '../utils/skillEffectTranslator';
@@ -738,6 +739,43 @@ export function CombatPage({}: CombatPageProps) {
     }
   }, [combatState, isProcessing, navigate]);
 
+  // Handle force reset combat state
+  const handleForceReset = useCallback(async () => {
+    if (isProcessing) return;
+
+    const confirmed = window.confirm(
+      '⚠️ FORCE RESET COMBAT STATE ⚠️\n\n' +
+      'This will completely reset the current combat and return you to the game.\n' +
+      'All combat progress will be lost.\n\n' +
+      'Are you sure you want to continue?'
+    );
+
+    if (!confirmed) return;
+
+    setIsProcessing(true);
+    
+    try {
+      // Clear all combat state
+      combatService.endCombat();
+      localStorage.removeItem('current_combat_state');
+      
+      // Reset all combat-related state
+      setCombatState(null);
+      setSelectedTarget(null);
+      setShowInventory(false);
+      setShowSkills(false);
+      setShowResults(false);
+      setIsPaused(false);
+      
+      // Navigate back to game
+      navigate('/game');
+    } catch (error) {
+      console.error('Error during force reset:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isProcessing, navigate]);
+
   // Handle manual end turn
   const handleEndTurn = useCallback(async () => {
     if (!combatState || !combatState.isPlayerTurn || isProcessing) return;
@@ -1367,6 +1405,15 @@ export function CombatPage({}: CombatPageProps) {
                   <h3 className="text-lg font-semibold text-white">Combat Log</h3>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleForceReset}
+                    disabled={isProcessing}
+                    className="flex items-center space-x-1 px-2 py-1 rounded bg-orange-600/30 hover:bg-orange-600/50 text-orange-400 hover:text-orange-300 transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Force Reset Combat (Emergency)"
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
                   <div className="p-1 rounded bg-blue-600/30 text-blue-400" title="Luôn hiển thị">
                     <Pin className="w-4 h-4" />
                   </div>
