@@ -9,7 +9,9 @@ import {
   Pin,
   Plus,
   TestTube,
-  AlertTriangle
+  AlertTriangle,
+  X,
+  Sword
 } from 'lucide-react';
 import { Character, Enemy, InventoryItem } from '../types';
 import { translateEffectFormat } from '../utils/skillEffectTranslator';
@@ -45,10 +47,48 @@ export function CombatPage({}: CombatPageProps) {
   const [showResults, setShowResults] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Combat Log visibility states
+  const [showCombatLog, setShowCombatLog] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
   const processingRef = useRef(false);
   const lastActionTimeRef = useRef(0);
   const currentActionIdRef = useRef<string | null>(null);
   // Combat log is always visible and pinned
+  
+  // Screen size detection and combat log management
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024); // Tailwind's 'lg' breakpoint
+    };
+
+    checkScreenSize(); // Check initially
+    window.addEventListener('resize', checkScreenSize);
+
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  // Always show combat log on large screens
+  useEffect(() => {
+    if (isLargeScreen) {
+      setShowCombatLog(true);
+    }
+  }, [isLargeScreen]);
+
+  // Toggle combat log function for mobile
+  const toggleCombatLog = useCallback(() => {
+    if (!isLargeScreen) {
+      setShowCombatLog(prev => !prev);
+    }
+  }, [isLargeScreen]);
+
+  // Toggle action menu function for mobile
+  const toggleActionMenu = useCallback(() => {
+    if (!isLargeScreen) {
+      setShowActionMenu(prev => !prev);
+    }
+  }, [isLargeScreen]);
   
   // Combat confirmation modal states
   const [showCombatConfirmation, setShowCombatConfirmation] = useState(false);
@@ -127,7 +167,7 @@ export function CombatPage({}: CombatPageProps) {
               const worldData = localStorage.getItem('world_gen_result');
               const worldDifficulty = worldData ? JSON.parse(worldData).difficulty || 'medium' : 'medium';
               
-              // Start combat (NPC challenge or random encounter)
+              // Start combat (NPC challenge or scene-based encounter)
               const newCombatState = await combatService.initiateCombat(player, combatData.enemies, worldDifficulty);
               setCombatState(newCombatState);
               
@@ -1196,7 +1236,7 @@ export function CombatPage({}: CombatPageProps) {
         </div>
       </div>
 
-      <div className="flex flex-col min-h-[calc(100vh-80px)] transition-all duration-300 lg:mr-96 justify-between">
+      <div className={`flex flex-col min-h-[calc(100vh-80px)] transition-all duration-300 justify-between ${isLargeScreen && showCombatLog ? 'lg:mr-96' : ''}`}>
         {/* Enemy Cards - PC Optimized Layout */}
         <div className="p-2 sm:p-4 lg:max-h-[50vh] lg:overflow-y-auto">
           {/* Mobile: Horizontal scroll, Desktop: Flex wrap with height limit */}
@@ -1265,26 +1305,30 @@ export function CombatPage({}: CombatPageProps) {
             <div className="lg:col-span-2">
               {combatState?.isPlayerTurn ? (
                 <div className="space-y-4">
-                  <ActionMenu
-                    combatant={playerCombatants[0] || null}
-                    enemies={aliveEnemies}
-                    onAttack={handleAttack}
-                    onDefend={handleDefend}
-                    onUseItem={handleUseItem}
-                    onInventory={() => setShowInventory(!showInventory)}
-                    onSkills={() => setShowSkills(!showSkills)}
-                    onEndTurn={handleEndTurn}
-                    onRun={handleRun}
-                    isProcessing={isProcessing}
-                    selectedTarget={selectedTarget}
-                    onSelectTarget={setSelectedTarget}
-                    canEndTurn={canEndTurn}
-                    mainActionUsed={turnState?.mainActionUsed || false}
-                    extraActionUsed={turnState?.extraActionUsed || false}
-                    skillActionUsed={turnState?.skillActionUsed || false}
-                    skills={playerSkills}
-                    temporaryPlayerStats={combatState?.temporaryPlayerStats}
-                  />
+                  {/* Desktop Action Menu */}
+                  <div className="hidden lg:block">
+                    <ActionMenu
+                      combatant={playerCombatants[0] || null}
+                      enemies={aliveEnemies}
+                      onAttack={handleAttack}
+                      onDefend={handleDefend}
+                      onUseItem={handleUseItem}
+                      onInventory={() => setShowInventory(!showInventory)}
+                      onSkills={() => setShowSkills(!showSkills)}
+                      onEndTurn={handleEndTurn}
+                      onRun={handleRun}
+                      isProcessing={isProcessing}
+                      selectedTarget={selectedTarget}
+                      onSelectTarget={setSelectedTarget}
+                      canEndTurn={canEndTurn}
+                      mainActionUsed={turnState?.mainActionUsed || false}
+                      extraActionUsed={turnState?.extraActionUsed || false}
+                      skillActionUsed={turnState?.skillActionUsed || false}
+                      skills={playerSkills}
+                      temporaryPlayerStats={combatState?.temporaryPlayerStats}
+                    />
+                  </div>
+                  
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -1417,12 +1461,18 @@ export function CombatPage({}: CombatPageProps) {
         )}
       </AnimatePresence>
 
-       {/* Combat Log Menu - Always Visible */}
-       <MotionWrapper
-         initial={{ opacity: 0, x: 20 }}
-         animate={{ opacity: 1, x: 0 }}
-         className="fixed top-20 right-4 w-96 h-[calc(100vh-120px)] bg-gray-800 border border-gray-600 rounded-lg shadow-2xl z-40 flex flex-col"
-       >
+       {/* Combat Log Menu - Responsive */}
+       {(showCombatLog || isLargeScreen) && (
+         <MotionWrapper
+           initial={isLargeScreen ? { opacity: 0, x: 20 } : { opacity: 0, y: '100%' }}
+           animate={isLargeScreen ? { opacity: 1, x: 0 } : { opacity: 1, y: 0 }}
+           exit={isLargeScreen ? { opacity: 0, x: 20 } : { opacity: 0, y: '100%' }}
+           className={`bg-gray-800 border border-gray-600 rounded-lg shadow-2xl z-40 flex flex-col ${
+             isLargeScreen 
+               ? 'fixed top-20 right-4 w-96 h-[calc(100vh-120px)]' 
+               : 'fixed bottom-0 left-0 w-full h-1/2'
+           }`}
+         >
             {/* Combat Log Header */}
             <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700 rounded-t-lg flex-shrink-0">
               <div className="flex items-center justify-between">
@@ -1440,9 +1490,21 @@ export function CombatPage({}: CombatPageProps) {
                     <AlertTriangle className="w-3 h-3" />
                     <span>Reset</span>
                   </button>
-                  <div className="p-1 rounded bg-blue-600/30 text-blue-400" title="Luôn hiển thị">
-                    <Pin className="w-4 h-4" />
-                  </div>
+                  {/* Close button for mobile, Pin icon for desktop */}
+                  {!isLargeScreen ? (
+                    <button
+                      onClick={toggleCombatLog}
+                      className="flex items-center space-x-1 px-2 py-1 rounded bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 hover:text-blue-300 transition-colors text-xs"
+                      title="Đóng Combat Log"
+                    >
+                      <X className="w-3 h-3" />
+                      <span>Đóng</span>
+                    </button>
+                  ) : (
+                    <div className="p-1 rounded bg-blue-600/30 text-blue-400" title="Luôn hiển thị">
+                      <Pin className="w-4 h-4" />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1457,6 +1519,96 @@ export function CombatPage({}: CombatPageProps) {
               />
             </div>
           </MotionWrapper>
+       )}
+
+      {/* Mobile Action Menu Bong Bóng */}
+      {!isLargeScreen && showActionMenu && combatState?.isPlayerTurn && (
+        <MotionWrapper
+          initial={{ opacity: 0, y: '100%' }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: '100%' }}
+          className="fixed bottom-0 left-0 w-full h-1/2 bg-gray-800 border border-gray-600 rounded-t-lg shadow-2xl z-40 flex flex-col"
+        >
+          {/* Action Menu Header */}
+          <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700 rounded-t-lg flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Sword className="w-5 h-5 text-green-400" />
+                <h3 className="text-lg font-semibold text-white">Action Menu</h3>
+              </div>
+              <button
+                onClick={toggleActionMenu}
+                className="flex items-center space-x-1 px-2 py-1 rounded bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 hover:text-blue-300 transition-colors text-xs"
+                title="Đóng Action Menu"
+              >
+                <X className="w-3 h-3" />
+                <span>Đóng</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Action Menu Content */}
+          <div className="flex-1 overflow-hidden min-h-0 p-4">
+            <ActionMenu
+              combatant={playerCombatants[0] || null}
+              enemies={aliveEnemies}
+              onAttack={handleAttack}
+              onDefend={handleDefend}
+              onUseItem={handleUseItem}
+              onInventory={() => setShowInventory(!showInventory)}
+              onSkills={() => setShowSkills(!showSkills)}
+              onEndTurn={handleEndTurn}
+              onRun={handleRun}
+              isProcessing={isProcessing}
+              selectedTarget={selectedTarget}
+              onSelectTarget={setSelectedTarget}
+              canEndTurn={canEndTurn}
+              mainActionUsed={turnState?.mainActionUsed || false}
+              extraActionUsed={turnState?.extraActionUsed || false}
+              skillActionUsed={turnState?.skillActionUsed || false}
+              skills={playerSkills}
+              temporaryPlayerStats={combatState?.temporaryPlayerStats}
+            />
+          </div>
+        </MotionWrapper>
+      )}
+
+      {/* Floating Action Buttons for Mobile */}
+      {!isLargeScreen && (
+        <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2">
+          {/* Combat Log Button */}
+          {!showCombatLog && (
+            <MotionWrapper
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+            >
+              <button
+                onClick={toggleCombatLog}
+                className="p-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-colors"
+                title="Mở Combat Log"
+              >
+                <MessageSquare className="w-6 h-6" />
+              </button>
+            </MotionWrapper>
+          )}
+          
+          {/* Action Menu Button */}
+          {combatState?.isPlayerTurn && !showActionMenu && (
+            <MotionWrapper
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+            >
+              <button
+                onClick={toggleActionMenu}
+                className="p-3 rounded-full bg-green-600 text-white shadow-lg hover:bg-green-700 transition-colors"
+                title="Mở Action Menu"
+              >
+                <Sword className="w-6 h-6" />
+              </button>
+            </MotionWrapper>
+          )}
+        </div>
+      )}
 
       {/* Combat Confirmation Modal */}
       {selectedNPCForCombat && (

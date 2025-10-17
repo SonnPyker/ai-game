@@ -5,7 +5,7 @@
 
 ## Các Tính Năng Đã Implement
 
-### 1. Random Encounter với Multi-Enemy
+### 1. Scene-Based Encounter với Multi-Enemy
 **File:** `src/services/geminiService.ts`
 
 #### Tỷ Lệ Xuất Hiện Theo Độ Khó:
@@ -138,7 +138,7 @@ generateMultipleEnemies(
 ## Testing Notes
 
 ### Test Cases Cần Kiểm Tra:
-1. ✅ Random encounter rate đúng theo độ khó
+1. ✅ Scene-based encounter rate đúng theo độ khó
 2. ✅ Multiple enemies spawn correctly
 3. ✅ Initiative rolls cho từng enemy
 4. ✅ Enemy coordination strategies (hard mode)
@@ -210,7 +210,7 @@ generateMultipleEnemies(
 ## Conclusion
 
 Hệ thống Multi-Enemy Combat đã được implement đầy đủ theo plan:
-- ✅ Random encounter với tỷ lệ theo độ khó
+- ✅ Scene-based encounter với tỷ lệ theo độ khó
 - ✅ Context-based AI decision
 - ✅ Enemy coordination (hard mode)
 - ✅ Enemy variety generation

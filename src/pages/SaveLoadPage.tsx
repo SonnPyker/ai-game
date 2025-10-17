@@ -125,15 +125,10 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         localStorage.removeItem('game_equipment'); // Clear equipment when loading different game
         localStorage.removeItem('combat_history'); // Clear combat history when loading different game
         localStorage.removeItem('combat_result'); // Clear combat result when loading different game
-        localStorage.removeItem('player_fled_random_combat'); // Clear player fled random combat data when loading different game
         
         // Cập nhật localStorage với dữ liệu từ SaveGame
         const saveGame = result.saveGame;
         
-        // Restore player fled random combat data
-        if (saveGame.playerFledRandomCombat) {
-          localStorage.setItem('player_fled_random_combat', JSON.stringify(saveGame.playerFledRandomCombat));
-        }
 
         // Cập nhật các key localStorage cần thiết
         localStorage.setItem('world_gen_result', JSON.stringify(saveGame.world));

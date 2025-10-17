@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.1.0-releasebeta] - 2024-12-19
+
+### Added
+- **Smart Enemy Count Calculation**: Dynamic enemy count calculation based on world difficulty, player level, location type, and narrative context
+- **Intelligent Threat Level System**: Context-aware threat level calculation using world difficulty, player level, location patterns, and enemy characteristics
+- **Location Type Inference**: Automatic location classification (dungeon, forest, city, cave, ruins, wilderness) for better enemy generation
+- **Context-Aware AI Prompting**: Real-time context information passed to AI including calculated enemy count and threat level suggestions
+- **Comprehensive Enemy Validation**: Full combat stats validation ensuring all generated enemies are combat-ready
+- **Threat-Based Stat Scaling**: Dynamic stat scaling based on threat levels (low, medium, high, extreme) with comprehensive multipliers
+- **Contextual Weapon Generation**: Smart weapon name and damage type generation based on enemy characteristics and threat level
+- **Enemy Ability System**: Special abilities for high/extreme threat enemies with cooldown management
+
+### Changed
+- **Removed Random Encounter System**: Completely eliminated hardcoded random encounter rates and percentages
+- **Enhanced AI Prompt System**: Updated AI prompts to use calculated context instead of hardcoded percentages
+- **Improved Enemy Generation**: Replaced random encounter logic with sceneState.dangers.monsters-based system
+- **Streamlined Quest Combat Service**: Simplified quest combat service by removing encounter rate calculation logic
+- **Updated Documentation**: Refreshed changelog and implementation docs to reflect new context-based system
+
+### Removed
+- **Quest Combat Debug UI**: Removed QuestCombatDebug modal that displayed random encounter mechanism information
+- **Random Encounter Logic**: Eliminated all hardcoded encounter rate calculations and flee tracking systems
+- **Player Flee Data Persistence**: Removed player_fled_random_combat localStorage tracking across all pages
+- **Hardcoded Percentages**: Replaced all hardcoded enemy spawn percentages with dynamic calculation functions
+
+### Fixed
+- **Enemy Count Control**: Fixed issue where AI was generating too many enemies by implementing smart count limiting
+- **Threat Level Consistency**: Ensured threat levels are calculated consistently based on actual game context
+- **Context Information Flow**: Fixed missing context information in AI prompts by adding real-time calculation
+- **Build Warnings**: Resolved TypeScript warnings and linter errors from unused parameters
+
+### Technical Improvements
+- **Function-Based Architecture**: Replaced hardcoded logic with reusable calculation functions
+- **Context Calculation**: Real-time context analysis including world difficulty, player level, location type, and narrative
+- **Smart Override System**: AI suggestions are overridden by calculated values for better balance
+- **Comprehensive Logging**: Detailed console logging for debugging enemy generation and context calculations
+- **Type Safety**: Enhanced TypeScript interfaces and proper type definitions for new calculation functions
+
 ## [7.0.0-releasebeta] - 2024-12-19
 
 ### Added
@@ -48,7 +86,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - **Multi-Enemy Combat System**: Complete implementation supporting 2-4 enemies in single combat encounters
-- **Random Encounter Probabilities**: Difficulty-based enemy spawn rates (Easy: 2 enemies 10%, 3 enemies 5%, 4 enemies 2.5%; Medium: 2 enemies 15%, 3 enemies 7.5%, 4 enemies 4%; Hard: 2 enemies 20%, 3 enemies 10%, 4 enemies 7%)
+- **Scene-Based Enemy Encounters**: AI-driven enemy generation from sceneState.dangers.monsters with difficulty-based threat levels
 - **Context-Based Combat**: AI-driven enemy count determination based on narrative context and scene state
 - **Enemy Coordination Strategies**: Advanced AI tactics for hard difficulty including focus fire, protect healer, flanking, and smart item usage
 - **Turn Indicators**: Clear visual indicators with arrow markers and "ĐANG LƯỢT" badges for current turn combatants

@@ -28,7 +28,6 @@ import { questCombatService } from '../services/questCombatService';
 // Experience is now handled in CombatPage.tsx only
 import { npcHealthUpdateService } from '../services/npcHealthUpdateService';
 import { RandomCombatModal } from '../components/CombatPage/RandomCombatModal';
-import { QuestCombatDebug } from '../components/Debug/QuestCombatDebug';
 import { DiscardItemModal } from '../components/DiscardItemModal';
 import { comfyUIService } from '../services/comfyUIService';
 import { imageStorageService } from '../services/imageStorageService';
@@ -289,7 +288,6 @@ export function GamePage() {
     location: string;
     reason: string;
   } | null>(null);
-  const [showQuestCombatDebug, setShowQuestCombatDebug] = useState(false);
   
   // Discard item modal state
   const [showDiscardModal, setShowDiscardModal] = useState(false);
@@ -1027,8 +1025,6 @@ export function GamePage() {
             // Add to combat history
             combatDataService.addToCombatHistory(combatResult);
             
-            // Clear flee data when combat ends (victory or defeat)
-            localStorage.removeItem('player_fled_random_combat');
             
             // Clear pending result
             combatDataService.clearPendingCombatResult();
@@ -2904,16 +2900,6 @@ ${enhancedMessage}`;
       // Get combat history from localStorage
       const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
 
-      // Get player fled random combat data from localStorage
-      const playerFledRandomCombatData = (() => {
-        try {
-          const fledData = localStorage.getItem('player_fled_random_combat');
-          return fledData ? JSON.parse(fledData) : null;
-        } catch (error) {
-          console.error('Error parsing player_fled_random_combat data:', error);
-          return null;
-        }
-      })();
 
       const saveGame: SaveGame = {
         version: '2.6.1',
@@ -2946,7 +2932,6 @@ ${enhancedMessage}`;
         actionLog: actionLog,
         playerLocation: playerLocationData ? JSON.parse(playerLocationData) : undefined,
         combatHistory: combatHistory,
-        playerFledRandomCombat: playerFledRandomCombatData,
         merchantShops: merchantShopsData.shops
       };
 
@@ -3577,13 +3562,6 @@ ${enhancedMessage}`;
         comfyUIService.saveSettings(saveGame.comfyUISettings);
       }
 
-      // Restore player fled random combat data
-      if (saveGame.playerFledRandomCombat) {
-        localStorage.setItem('player_fled_random_combat', JSON.stringify(saveGame.playerFledRandomCombat));
-      } else {
-        // Clear if not present in save game
-        localStorage.removeItem('player_fled_random_combat');
-      }
 
       // Cập nhật localStorage để tương thích với hệ thống cũ
       localStorage.setItem('rp_chat', JSON.stringify(saveGame.chat));
@@ -4007,8 +3985,6 @@ ${enhancedMessage}`;
   const handleFightRandomCombat = () => {
     if (!randomCombatData) return;
     
-    // Clear flee data when starting combat (player chose to fight)
-    localStorage.removeItem('player_fled_random_combat');
     
     // Store combat data in localStorage for CombatPage to read
     const combatData = {
@@ -4044,52 +4020,7 @@ ${enhancedMessage}`;
     setHasCombatResult(true);
     setCurrentMessage(fleeMessage);
     
-    // Mark that player fled from random combat to reset encounter chance
-    localStorage.setItem('player_fled_random_combat', JSON.stringify({
-      timestamp: Date.now(),
-      turn: turnCounter || 0,
-      enemyName: enemyName
-    }));
     
-    // ADDED: Save flee information to combat_history for encounter rate reset
-    try {
-      const currentTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
-      
-      // Create a CombatResultData for random encounter flee
-      const fleeCombatData = {
-        combatId: `flee_random_${Date.now()}`,
-        duration: 0,
-        victory: false,
-        playerFled: true,
-        enemyNames: [enemyName],
-        enemiesDefeated: [],
-        characterUpdates: {
-          healthBefore: 0,
-          healthAfter: 0,
-          healthLost: 0,
-          experienceGained: 0,
-          combatLevelBefore: 0,
-          combatLevelAfter: 0,
-          leveledUp: false,
-          totalDamageDealt: 0,
-          totalDamageTaken: 0,
-          turnsPlayed: 0,
-          attacksLanded: 0,
-          attacksMissed: 0
-        },
-        rewards: {
-          experience: 0,
-          items: []
-        },
-        metadata: {
-          gameTurn: currentTurn
-        }
-      };
-      
-      combatDataService.addToCombatHistory(fleeCombatData);
-    } catch (error) {
-      console.error('Error updating combat_history with random encounter flee:', error);
-    }
     
     // Clear random combat data
     setRandomCombatData(null);
@@ -4330,14 +4261,6 @@ ${enhancedMessage}`;
                 title="Lịch sử hành động"
               >
                 <History className="w-4 h-4" />
-              </button>
-              {/* Quest Combat Debug Button */}
-              <button
-                onClick={() => setShowQuestCombatDebug(true)}
-                className="p-2 bg-orange-800 border border-orange-700 text-white rounded-lg hover:bg-orange-900 transition-colors duration-200 mobile-button touch-feedback"
-                title="Quest Combat Debug"
-              >
-                <Sword className="w-4 h-4" />
               </button>
               {/* Skip Time Button */}
               <button
@@ -4845,12 +4768,6 @@ ${enhancedMessage}`;
         />
       )}
 
-      {/* Quest Combat Debug Modal */}
-      {showQuestCombatDebug && (
-        <QuestCombatDebug
-          onClose={() => setShowQuestCombatDebug(false)}
-        />
-      )}
 
       {/* Discard Item Modal */}
       <DiscardItemModal

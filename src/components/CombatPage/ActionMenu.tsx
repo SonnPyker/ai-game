@@ -74,13 +74,9 @@ export function ActionMenu({
   const { getEffectiveUIMode } = useResponsiveContext();
   const isMobileMode = getEffectiveUIMode() === 'mobile';
   
-  // Auto-collapse only on mobile mode by default
+  // Default to expanded (open) on both mobile and desktop
   useEffect(() => {
-    if (isMobileMode) {
-      setIsCollapsed(true);
-    } else {
-      setIsCollapsed(false);
-    }
+    setIsCollapsed(false);
   }, [isMobileMode]);
 
   // Toggle collapse function

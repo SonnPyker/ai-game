@@ -4,7 +4,6 @@ import { SCCSummary, SCCState, ContentFlags } from '../types';
 import { npcRelationshipService } from './npcRelationshipService';
 import { nameGenerationService } from './nameGenerationService';
 import { locationService } from './locationService';
-import { questCombatService } from './questCombatService';
 import { armorGenerationService } from './armorGenerationService';
 
 class GeminiService {
@@ -3233,129 +3232,34 @@ MỤC ĐÍCH:
 [STORYTELLING MODE - EDUCATIONAL CASE STUDY]
 ` : '';
 
-    // Check for random combat encounter (every 5 turns)
-    const shouldCheckCombat = turnCounter && turnCounter > 0 && (turnCounter % 5 === 0);
+    // Random encounter logic removed - now using sceneState.dangers.monsters
     
-    // Check if player fled from random combat recently (within last 2 turns)
-    let playerFledRecently = false;
-    try {
-      const fledData = localStorage.getItem('player_fled_random_combat');
-      if (fledData) {
-        const fleeInfo = JSON.parse(fledData);
-        const turnsSinceFlee = (turnCounter || 0) - (fleeInfo.turn || 0);
-        // Reset encounter chance for 2 turns after fleeing
-        if (turnsSinceFlee <= 2) {
-          playerFledRecently = true;
-        }
-      }
-    } catch (error) {
-      console.error('Error checking flee data:', error);
-    }
+    // Calculate context information for AI
+    const worldData = JSON.parse(worldJson);
+    const characterData = JSON.parse(characterJson);
+    const worldDifficulty = worldData.difficulty || 'medium';
+    const playerLevel = characterData.level || 1;
+    const locationType = this.inferLocationType(sceneState.location?.name || 'unknown');
+    const currentTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
     
+    // Calculate enemy count and threat level context for AI
+    const narrativeContext = chatDelta.length > 0 ? chatDelta[chatDelta.length - 1]?.content || '' : '';
     
-    // NEW ENCOUNTER RATE SYSTEM: 0% → tăng dần sau 5 turn → reset về 0% sau combat
-    let baseEncounterRate = 0.33; // Default 33% (trung bình)
-    try {
-      const worldData = JSON.parse(worldJson);
-      const difficulty = worldData.worldDifficulty?.toLowerCase() || worldData.difficulty?.toLowerCase() || 'trung bình';
-      
-      if (difficulty.includes('dễ') || difficulty.includes('easy')) {
-        baseEncounterRate = 0.20; // 20% chance (dễ)
-      } else if (difficulty.includes('khó') || difficulty.includes('hard')) {
-        baseEncounterRate = 0.40; // 40% chance (khó)
-      }
-      // Trung bình giữ nguyên 0.33 (33% chance)
-    } catch (error) {
-      console.error('Error parsing world data for encounter chance:', error);
-    }
+    const enemyCountContext = this.calculateEnemyCount(
+      worldDifficulty,
+      playerLevel,
+      locationType,
+      narrativeContext,
+      currentTurn
+    );
     
-    let encounterRate = 0; // Start with 0%
-    const currentTurn = turnCounter || 0;
-    
-    // Check for last combat encounter (victory/defeat/flee)
-    let lastCombatTurn = -1;
-    
-    // Check combat history for last combat (victory/defeat/flee)
-    try {
-      const combatHistoryData = localStorage.getItem('combat_history');
-      if (combatHistoryData) {
-        const combatHistory = JSON.parse(combatHistoryData);
-        
-        // Check if it's the old format (defeatedEnemies array)
-        if (combatHistory.defeatedEnemies && Array.isArray(combatHistory.defeatedEnemies)) {
-          const recentCombat = combatHistory.defeatedEnemies
-            .filter((enemy: any) => enemy.turn !== undefined)
-            .sort((a: any, b: any) => (b.turn || 0) - (a.turn || 0))[0];
-          
-          if (recentCombat) {
-            lastCombatTurn = recentCombat.turn || 0;
-          }
-        }
-        // Check if it's the new format (CombatResultData array)
-        else if (Array.isArray(combatHistory)) {
-          const recentCombat = combatHistory
-            .filter((combat: any) => combat.metadata?.gameTurn !== undefined)
-            .sort((a: any, b: any) => (b.metadata?.gameTurn || 0) - (a.metadata?.gameTurn || 0))[0];
-          
-          if (recentCombat) {
-            lastCombatTurn = recentCombat.metadata.gameTurn || 0;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error checking combat history:', error);
-    }
-    
-    // Check flee data (for random encounter flee - keep as backup)
-    try {
-      const fledData = localStorage.getItem('player_fled_random_combat');
-      if (fledData) {
-        const fleeInfo = JSON.parse(fledData);
-        const fleeTurn = fleeInfo.turn || 0;
-        if (fleeTurn > lastCombatTurn) {
-          lastCombatTurn = fleeTurn;
-        }
-      }
-    } catch (error) {
-      console.error('Error checking flee data:', error);
-    }
-    
-    const turnsSinceLastEncounter = currentTurn - lastCombatTurn;
-    
-    console.log('🔍 New Encounter Rate System in geminiService:', {
-      currentTurn,
-      lastCombatTurn,
-      turnsSinceLastEncounter,
-      baseEncounterRate,
-      playerFledRecently
-    });
-    
-    if (lastCombatTurn === -1) {
-      // No combat history yet - start with 0% and build up
-      encounterRate = 0;
-      console.log('🔍 Encounter rate: 0% (building up phase - no combat history)', {
-        targetRate: baseEncounterRate
-      });
-    } else if (turnsSinceLastEncounter >= 5) {
-      // After 5 turns: reach target rate and maintain
-      encounterRate = baseEncounterRate;
-      console.log('🔍 Encounter rate: reached target rate', {
-        targetRate: baseEncounterRate,
-        turnsSinceLastEncounter
-      });
-    } else {
-      // First 5 turns after last encounter: 0% chance
-      encounterRate = 0;
-      console.log('🔍 Encounter rate: 0% (building up phase)', {
-        turnsSinceLastEncounter,
-        turnsUntilActive: 5 - turnsSinceLastEncounter
-      });
-    }
-    
-    const combatEncounterChance = shouldCheckCombat ? Math.random() : 0;
-    const shouldTriggerCombat = combatEncounterChance < encounterRate;
-    
-    // Combat trigger check completed
+    const threatLevelContext = this.calculateThreatLevel(
+      worldDifficulty,
+      playerLevel,
+      locationType,
+      narrativeContext,
+      'example'
+    );
     
     const prompt = `${sexEdPrefix}Bạn là AI Storyteller trong box chat roleplay. 
 Hãy kể tiếp câu chuyện dựa trên:
@@ -3366,6 +3270,15 @@ Hãy kể tiếp câu chuyện dựa trên:
 - PLAYER_ACTION: hành động người chơi vừa nêu.
 - GAME_TIME: thời gian trong game (ảnh hưởng đến phản ứng của thế giới và NPC).
 
+🎯 ENEMY GENERATION CONTEXT:
+- World Difficulty: ${worldDifficulty}
+- Player Level: ${playerLevel}
+- Location Type: ${locationType}
+- Current Turn: ${currentTurn}
+- Suggested Enemy Count: ${enemyCountContext} (hệ thống sẽ tự động giới hạn)
+- Suggested Threat Level: ${threatLevelContext} (hệ thống sẽ tự động điều chỉnh)
+- Context Analysis: Dựa trên narrative context và location type, hệ thống đã tính toán số lượng enemies phù hợp
+
 🎲 DC CHECK RESULTS (nếu có):
 - Nếu PLAYER_ACTION chứa "[DC CHECK RESULT]", đây là kết quả của một skill check
 - Format: [DC CHECK RESULT]
@@ -3375,23 +3288,53 @@ Hãy kể tiếp câu chuyện dựa trên:
   - Result: SUCCESS/FAILURE
 - Phản ứng dựa trên kết quả: SUCCESS = hành động thành công, FAILURE = hành động thất bại
 - Tích hợp kết quả vào narrative một cách tự nhiên
-${shouldTriggerCombat ? `
-⚠️ RANDOM COMBAT ENCOUNTER TRIGGERED (Turn ${turnCounter}):
-- Tích hợp một cuộc đối đầu bất ngờ phù hợp với sceneState và tình huống hiện tại
-- Enemy phải phù hợp với location, thời gian, và context của câu chuyện
-- Tạo narrative dẫn đến combat một cách tự nhiên
-- Sử dụng combatInitiation format trong sceneState để trigger combat
 
-MULTI-ENEMY LOGIC:
-- Xem xét context để quyết định số lượng enemies (1-4)
-- Factors: danger level, location type (dungeon/forest/city), time (day/night), narrative tension
-- Examples:
-  * Solo enemy: Lone wolf, single bandit, boss encounter
-  * 2 enemies: Bandit pair, wolf pack duo, patrol team
-  * 3 enemies: Small bandit group, wolf pack, guard patrol
-  * 4 enemies: Ambush scenario, large patrol, pack hunting
-- KHÔNG lạm dụng: Ưu tiên 1-2 enemies, chỉ dùng 3-4 khi context thực sự phù hợp
-` : ''}
+COMBAT VÀ MULTI-ENEMY ENCOUNTERS:
+- Nếu trong scene có kẻ thù xuất hiện, thêm vào sceneState.dangers.monsters[] HOẶC sceneState.dangers.enemies[]
+- Sử dụng "monsters" cho quái vật/sinh vật không phải người
+- Sử dụng "enemies" cho kẻ thù là con người/NPC
+- Format cho cả hai: {
+    name: "Tên enemy cụ thể",
+    level: <số>,
+    threat_level: "low" | "medium" | "high" | "extreme",
+    location: "Vị trí của enemy"
+  }
+
+THREAT_LEVEL SELECTION:
+- Hệ thống đã tính toán: ${threatLevelContext} threat level phù hợp với context hiện tại
+- Chỉ cần thêm threat_level cơ bản vào monster data
+- Hệ thống sẽ tự động điều chỉnh dựa trên:
+  * World difficulty: ${worldDifficulty}
+  * Player level: ${playerLevel}
+  * Location type: ${locationType}
+  * Narrative context keywords (boss, elite, ancient, demon, dragon, weak, strong, powerful)
+  * Enemy name patterns
+- **Lưu ý**: Hệ thống đã tính toán ${threatLevelContext} threat level là phù hợp nhất cho context này
+
+CONTEXT-BASED ENEMY GENERATION:
+- Hệ thống đã tính toán: ${enemyCountContext} enemies phù hợp với context hiện tại
+- Chỉ thêm monsters vào dangers.monsters[] khi narrative thực sự đề cập đến enemies
+- Hệ thống sẽ tự động giới hạn số lượng enemies dựa trên:
+  * World difficulty: ${worldDifficulty}
+  * Player level: ${playerLevel}
+  * Location type: ${locationType}
+  * Narrative context keywords (pack, group, patrol, ambush, boss, lone, swarm, etc.)
+
+ENEMY COUNT GUIDELINES (Dựa trên context hiện tại):
+- **1 enemy**: Boss encounters, lone predators, single guards, elite enemies
+- **2 enemies**: Pairs, duos, hunting partners, patrol pairs  
+- **3 enemies**: Small groups, wolf packs, guard patrols, coordinated teams
+- **4 enemies**: Large groups, ambush scenarios, swarms, coordinated attacks
+- **Lưu ý**: Hệ thống đã tính toán ${enemyCountContext} enemies là phù hợp nhất cho context này
+
+RULES:
+- Chỉ thêm khi narrative thực sự đề cập đến enemy/monster xuất hiện
+- Sử dụng "monsters" cho: quái vật, sinh vật, thú dữ, undead, demon, elemental
+- Sử dụng "enemies" cho: bandit, guard, warrior, thief, humanoid NPCs
+- Hệ thống sẽ tự động tính toán số lượng enemies và threat_level
+- KHÔNG tự động generate random enemies mỗi turn
+- Thêm monsters vào dangers.monsters[] khi narrative context phù hợp
+- Enemies trong cùng encounter nên có mối liên hệ (pack, patrol, group)
 
 ${coreInstructions}
 
@@ -3498,7 +3441,8 @@ ${narrativeRules}
 
 - **dangers**: Các mối nguy hiểm tiềm ẩn
   * traps: Bẫy (type, location, trigger, damage)
-  * monsters: Quái vật (name, level, threat_level, location)
+  * monsters: Quái vật/sinh vật (name, level, threat_level, location)
+  * enemies: Kẻ thù con người/NPC (name, level, threat_level, location)
   * environmental: Môi trường (poison_gas, falling_rocks, etc.)
   * social: Xã hội (hostile_npcs, guards, etc.)
 
@@ -3647,7 +3591,7 @@ QUAN TRỌNG VỀ OUTPUT:
     "worldTime": { "hour": "number", "minute": "number", "day": "number", "month": "number", "year": "number", "season": "spring|summer|autumn|winter", "weather": "string" },
     "environment": { "lighting": "string", "temperature": "string", "humidity": "string", "wind": "string", "sounds": "string", "smells": "string" },
     "interactions": { "examine": "array", "search": "array", "talk": "array", "use": "array", "move": "array", "rest": "array", "craft": "array", "trade": "array" },
-    "dangers": { "traps": "array", "enemies": "array", "environmental": "array", "social": "array" },
+    "dangers": { "traps": "array", "monsters": "array", "environmental": "array", "social": "array" },
   },
   "storyProgress": { "act": 1, "beat": "mô tả nhịp truyện" },
   "sideQuestOffer": {
@@ -3858,58 +3802,49 @@ QUAN TRỌNG VỀ OUTPUT:
         }
       }
 
-      // Handle random combat encounter if triggered
-      if (shouldTriggerCombat && result.sceneState) {
+      // NEW: Check for dangers.monsters and dangers.enemies in sceneState and trigger combat
+      const monsters = result.sceneState?.dangers?.monsters;
+      const enemies = result.sceneState?.dangers?.enemies;
+      
+      // Combine both monsters and enemies arrays if they exist
+      let allEnemies: any[] = [];
+      if (monsters && Array.isArray(monsters) && monsters.length > 0) {
+        console.log('⚔️ Detected monsters in sceneState.dangers.monsters:', monsters);
+        allEnemies = [...allEnemies, ...monsters];
+      }
+      
+      if (enemies && Array.isArray(enemies) && enemies.length > 0) {
+        console.log('⚔️ Detected enemies in sceneState.dangers.enemies:', enemies);
+        allEnemies = [...allEnemies, ...enemies];
+      }
+      
+      if (allEnemies.length > 0) {
+        console.log(`⚔️ Total enemies detected: ${allEnemies.length} (${monsters?.length || 0} monsters + ${enemies?.length || 0} enemies)`);
+        
         try {
-          // Try to extract enemy names from narrative first
-          const { narrativeEnemyExtractionService } = await import('./narrativeEnemyExtractionService');
-          const extractedEnemies = await narrativeEnemyExtractionService.extractEnemiesFromNarrative(
-            result.narrative || '', 
-            result.sceneState
+          // Create enemies from combined data
+          const generatedEnemies = await this.createEnemiesFromMonsters(
+            allEnemies,
+            sceneState,
+            worldJson,
+            characterJson
           );
           
-          let enemy = null;
-          
-          // If we found enemies in narrative, use the best one
-          if (extractedEnemies.length > 0) {
-            const bestEnemy = narrativeEnemyExtractionService.getBestEnemyForEncounter(extractedEnemies);
-            if (bestEnemy) {
-              console.log('🎯 Using enemy from narrative:', bestEnemy.name);
-              enemy = await this.generateEnemyFromNarrativeContext(
-                bestEnemy, 
-                sceneState, 
-                worldJson, 
-                characterJson
-              );
-            }
-          }
-          
-          // Fallback to random enemy generation if no narrative enemies found
-          if (!enemy) {
-            console.log('🔄 No narrative enemies found, generating random enemies');
-            const enemies = await this.generateRandomCombatEnemies(sceneState, worldJson, characterJson);
-            if (enemies && enemies.length > 0) {
-              // Add combatInitiation to sceneState with all enemies
-              result.sceneState.combatInitiation = {
-                type: 'random_encounter',
-                enemies: enemies,
-                location: sceneState.location || 'Unknown',
-                reason: 'Cuộc đối đầu bất ngờ trong hành trình',
-                turn: turnCounter || 0
-              };
-            }
-          } else {
-            // Add combatInitiation to sceneState with single enemy from narrative
+          if (generatedEnemies && generatedEnemies.length > 0) {
             result.sceneState.combatInitiation = {
               type: 'random_encounter',
-              enemies: [enemy],
+              enemies: generatedEnemies,
               location: sceneState.location || 'Unknown',
-              reason: 'Cuộc đối đầu bất ngờ trong hành trình',
+              reason: allEnemies.length > 1 
+                ? `Bạn bị vây hãm bởi ${allEnemies.length} kẻ thù!`
+                : 'Cuộc đối đầu với kẻ thù nguy hiểm',
               turn: turnCounter || 0
             };
+            
+            console.log(`✅ Combat initiated with ${generatedEnemies.length} enemy/enemies from dangers data`);
           }
         } catch (error) {
-          console.error('Error generating random combat encounter:', error);
+          console.error('Error creating enemies from dangers data:', error);
         }
       }
 
@@ -3930,194 +3865,14 @@ QUAN TRỌNG VỀ OUTPUT:
     }
   }
 
-  /**
-   * Determine enemy count based on world difficulty
-   */
-  private determineEnemyCount(worldDifficulty: string): number {
-    // Tỷ lệ xuất hiện theo độ khó (3 độ khó: dễ, trung bình, khó)
-    const spawnRates: Record<string, Record<number, number>> = {
-      'dễ': { 2: 10, 3: 5, 4: 2.5 },
-      'easy': { 2: 10, 3: 5, 4: 2.5 },
-      'trung bình': { 2: 15, 3: 7.5, 4: 4 },
-      'medium': { 2: 15, 3: 7.5, 4: 4 },
-      'khó': { 2: 20, 3: 10, 4: 7 },
-      'hard': { 2: 20, 3: 10, 4: 7 }
-    };
-    
-    const rates = spawnRates[worldDifficulty] || spawnRates['medium'];
-    const roll = Math.random() * 100;
-    let enemyCount = 1;
-    
-    // Tính tỷ lệ tích lũy
-    const rate4 = rates[4];
-    const rate3 = rates[3] + rate4;
-    const rate2 = rates[2] + rate3;
-    
-    if (roll < rate4) enemyCount = 4;
-    else if (roll < rate3) enemyCount = 3;
-    else if (roll < rate2) enemyCount = 2;
-    // else enemyCount = 1 (default)
-    
-    return enemyCount;
-  }
 
-  /**
-   * Generate random combat enemies based on sceneState and context using AI
-   * Now supports multiple enemies with difficulty-based spawn rates
-   */
-  private async generateRandomCombatEnemies(sceneState: any, worldJson: string, characterJson: string): Promise<any[]> {
-    try {
-      // Parse world and character data
-      const worldData = JSON.parse(worldJson);
-      const characterData = JSON.parse(characterJson);
-      
-      // Get current location and time
-      const location = sceneState.location || 'Unknown';
-      const worldTime = sceneState.worldTime || { hour: 12, minute: 0, day: 1 };
-      const isNight = worldTime.hour < 6 || worldTime.hour > 18;
-      
-      // Determine enemy count based on world difficulty
-      const enemyCount = this.determineEnemyCount(worldData.difficulty || 'medium');
-      
-      // Check for active quest combat objectives
-      const questObjective = questCombatService.getBestCombatObjectiveForEncounter();
-      let enemiesData: any[] = [];
-      
-      if (questObjective && enemyCount === 1) {
-        // Generate single enemy based on quest objective
-        const enemyData = await this.generateEnemyWithAI(
-          location, 
-          isNight, 
-          worldData, 
-          characterData,
-          questObjective.targetEnemyName,
-          questObjective.targetEnemyType
-        );
-        
-        if (enemyData) {
-          // Override enemy name to match quest objective
-          enemyData.name = questObjective.targetEnemyName;
-          enemyData.type = questObjective.targetEnemyType;
-          enemiesData = [enemyData];
-        }
-      }
-      
-      // Fallback to random enemies if no quest objective or AI failed
-      if (enemiesData.length === 0) {
-        enemiesData = await this.generateMultipleEnemiesWithAI(
-          location, 
-          isNight, 
-          worldData, 
-          characterData,
-          enemyCount
-        );
-      }
-      
-      if (enemiesData.length === 0) {
-        return []; // AI failed to generate enemies
-      }
-      
-      // Generate enemy stats for each enemy
-      const enemies = [];
-      
-      for (let i = 0; i < enemiesData.length; i++) {
-        const enemyData = enemiesData[i];
-        
-        // Generate enemy stats based on character level with variation
-        const baseEnemyLevel = Math.max(1, characterData.level + Math.floor(Math.random() * 3) - 1); // ±1 level variation
-        const enemyLevel = Math.max(1, baseEnemyLevel + Math.floor(Math.random() * 3) - 1); // Additional variation for multiple enemies
-        
-        // Use enemy level + index as seed for consistent but varied stats
-        const seed = (enemyLevel * 9301 + 49297) + (i * 1000);
-        
-        // Create different random seeds for each stat to ensure variation
-        const strengthSeed = (seed * 1237 + 4567) % 233280 / 233280;
-        const agilitySeed = (seed * 2341 + 5678) % 233280 / 233280;
-        const constitutionSeed = (seed * 3457 + 6789) % 233280 / 233280;
-        const intelligenceSeed = (seed * 4561 + 7890) % 233280 / 233280;
-        const wisdomSeed = (seed * 5673 + 8901) % 233280 / 233280;
-        const charismaSeed = (seed * 6785 + 9012) % 233280 / 233280;
-        
-        // Base stats scale with combat level
-        const basePhysicalStats = 10 + Math.floor(enemyLevel * 1.5); // Physical stats scale better
-        const baseMentalStats = 8 + Math.floor(enemyLevel * 0.8); // Mental stats scale slower
-        
-        const strength = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(strengthSeed * 7) - 3));
-        const agility = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(agilitySeed * 7) - 3));
-        const constitution = Math.max(8, Math.min(20, basePhysicalStats + Math.floor(constitutionSeed * 7) - 3));
-        const intelligence = Math.max(8, Math.min(20, baseMentalStats + Math.floor(intelligenceSeed * 5) - 2));
-        const wisdom = Math.max(8, Math.min(20, baseMentalStats + Math.floor(wisdomSeed * 5) - 2));
-        const charisma = Math.max(8, Math.min(20, baseMentalStats + Math.floor(charismaSeed * 5) - 2));
-        
-        // Calculate modifiers
-        const modifiers = {
-          strength: Math.floor((strength - 10) / 2),
-          agility: Math.floor((agility - 10) / 2),
-          constitution: Math.floor((constitution - 10) / 2),
-          intelligence: Math.floor((intelligence - 10) / 2),
-          wisdom: Math.floor((wisdom - 10) / 2),
-          charisma: Math.floor((charisma - 10) / 2)
-        };
-        
-        // Calculate stats based on actual values
-        const baseHealth = 8 + modifiers.constitution + (enemyLevel - 1) * (4 + modifiers.constitution);
-        const baseAC = 10 + modifiers.agility;
-        const attackBonus = 2 + modifiers.strength;
-        const damage = `1d6+${modifiers.strength}`;
-        
-        // Generate chest armor for the enemy
-        const equippedArmor = armorGenerationService.generateChestArmor({
-          level: enemyLevel,
-          enemyType: enemyData.type,
-          rarity: this.determineRarityByLevel(enemyLevel)
-        });
-        
-        // Use armor's AC + agility modifier (replace base AC, don't add to it)
-        const finalAC = equippedArmor ? (equippedArmor.armorClass || 0) + modifiers.agility : baseAC;
-        
-        enemies.push({
-          name: enemyData.name,
-          type: enemyData.type,
-          level: enemyLevel,
-          combatLevel: enemyLevel,
-          characterLevel: enemyLevel,
-          health: {
-            current: baseHealth,
-            max: baseHealth
-          },
-          armorClass: finalAC,
-          attacks: [{
-            name: enemyData.attackName,
-            attackBonus: attackBonus,
-            damage: damage,
-            damageType: enemyData.damageType || 'physical'
-          }],
-          stats: {
-            strength,
-            agility,
-            constitution,
-            intelligence,
-            wisdom,
-            charisma,
-            modifiers
-          },
-          experienceReward: 50 + (enemyLevel * 25),
-          description: enemyData.description,
-          equippedArmor, // Include generated armor
-          loot: [] // REMOVED: AI-generated loot to prevent invalid items
-        });
-      }
-      
-      return enemies;
-    } catch (error) {
-      console.error('Error generating random combat enemies:', error);
-      return [];
-    }
-  }
 
   /**
    * Generate enemy from narrative context using extracted enemy name
+   * @deprecated - Use generateEnemyFromMonsterData instead
    */
+  // @ts-ignore - Deprecated function kept for backward compatibility
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async generateEnemyFromNarrativeContext(
     extractedEnemy: any,
     _sceneState: any,
@@ -4283,120 +4038,14 @@ QUAN TRỌNG VỀ OUTPUT:
     return Math.random() < 0.2 ? 'legendary' : Math.random() < 0.4 ? 'epic' : 'rare';
   }
 
-  /**
-   * Generate multiple enemies using AI based on context
-   */
-  private async generateMultipleEnemiesWithAI(
-    location: string, 
-    isNight: boolean, 
-    worldData: any, 
-    characterData: any,
-    enemyCount: number
-  ): Promise<any[]> {
-    try {
-      if (!this.isConfigured()) {
-        throw new Error('Gemini API chưa được cấu hình');
-      }
-
-      const worldGenres = worldData.genres || [];
-      const isFantasy = worldGenres.some((g: string) => g.toLowerCase().includes('fantasy') || g.toLowerCase().includes('magic'));
-      const timeOfDay = isNight ? 'đêm' : 'ngày';
-      
-      const prompt = `Bạn là AI tạo enemies cho game RPG. Hãy tạo ${enemyCount} enemies phù hợp với context sau:
-
-THÔNG TIN THẾ GIỚI:
-- Thể loại: ${worldGenres.join(', ')}
-- Địa điểm: ${location}
-- Thời gian: ${timeOfDay}
-- Có phép thuật: ${isFantasy ? 'Có' : 'Không'}
-
-THÔNG TIN NHÂN VẬT:
-- Tên: ${characterData.name || 'Unknown'}
-- Level: ${characterData.level || 1}
-
-YÊU CẦU:
-1. Tạo ${enemyCount} enemies phù hợp với địa điểm và thời gian
-2. Tên enemies phải phù hợp với thể loại thế giới
-3. Mô tả ngắn gọn về từng enemy
-4. Đảm bảo enemies có sự đa dạng (không giống hệt nhau)
-5. Chỉ trả về JSON, không có text khác
-
-ĐỊNH DẠNG JSON:
-{
-  "enemies": [
-    {
-      "name": "Tên enemy 1 (tiếng Việt)",
-      "type": "humanoid|beast|undead|elemental|construct",
-      "attackName": "Tên kỹ năng tấn công",
-      "damageType": "physical|fire|cold|lightning|poison|psychic",
-      "description": "Mô tả ngắn về enemy (1-2 câu)"
-    },
-    {
-      "name": "Tên enemy 2 (tiếng Việt)",
-      "type": "humanoid|beast|undead|elemental|construct",
-      "attackName": "Tên kỹ năng tấn công",
-      "damageType": "physical|fire|cold|lightning|poison|psychic",
-      "description": "Mô tả ngắn về enemy (1-2 câu)"
-    }
-  ]
-}
-
-VÍ DỤ:
-- Forest + Day + Fantasy: ["Goblin Scout", "Orc Warrior"], ["Wild Wolf", "Forest Sprite"]
-- City + Night + Modern: ["Thug", "Pickpocket"], ["Street Gang Member", "Mugger"]
-- Dungeon + Any + Fantasy: ["Skeleton", "Zombie"], ["Wraith", "Bone Golem"]
-- Mountain + Day + Any: ["Bandit", "Wild Bear"], ["Mountain Lion", "Eagle"]
-
-Chỉ trả về JSON:`;
-
-      let response: string;
-      
-      if (this.useMultiKeyService) {
-        // Use multi-key service
-        response = await multiApiKeyService.generateContent(prompt, undefined);
-      } else {
-        // Use single key
-        const model = this.getModelForContentFlags(undefined);
-        const result = await model.generateContent(prompt);
-        response = result.response.text();
-      }
-      
-      // Parse JSON response
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error('No JSON found in AI response:', response);
-        return [];
-      }
-      
-      const responseData = JSON.parse(jsonMatch[0]);
-      
-      // Validate required fields
-      if (!responseData.enemies || !Array.isArray(responseData.enemies)) {
-        console.error('Invalid enemies data from AI:', responseData);
-        return [];
-      }
-      
-      // Validate each enemy
-      const validEnemies = responseData.enemies.filter((enemy: any) => 
-        enemy.name && enemy.type && enemy.attackName
-      );
-      
-      if (validEnemies.length === 0) {
-        console.error('No valid enemies found in AI response');
-        return [];
-      }
-      
-      return validEnemies;
-    } catch (error) {
-      console.error('Error generating multiple enemies with AI:', error);
-      return [];
-    }
-  }
 
   /**
    * Generate enemy using AI based on context
    * Now supports quest-specific enemy generation
+   * @deprecated - Use generateEnemyFromMonsterData instead
    */
+  // @ts-ignore - Deprecated function kept for backward compatibility
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async generateEnemyWithAI(
     location: string, 
     isNight: boolean, 
@@ -4570,6 +4219,652 @@ Trả về JSON format:
       console.error('Error generating merchant shop data:', error);
       return null;
     }
+  }
+
+  /**
+   * Calculate optimal enemy count based on context and world difficulty
+   * Returns a flag indicating how many enemies should spawn
+   */
+  private calculateEnemyCount(
+    worldDifficulty: string,
+    playerLevel: number,
+    locationType: string,
+    narrativeContext: string,
+    _currentTurn: number
+  ): number {
+    // Base enemy count (most common case)
+    let baseCount = 1;
+    
+    // World difficulty modifiers
+    const difficultyModifiers = {
+      'easy': { multiChance: 0.05, maxCount: 2 },
+      'medium': { multiChance: 0.10, maxCount: 3 },
+      'hard': { multiChance: 0.15, maxCount: 4 }
+    };
+    
+    const modifier = difficultyModifiers[worldDifficulty.toLowerCase() as keyof typeof difficultyModifiers] || difficultyModifiers.medium;
+    
+    // Location-based adjustments
+    const locationModifiers = {
+      'dungeon': 1.5,      // Higher chance in dungeons
+      'forest': 1.2,       // Slightly higher in forests
+      'city': 0.3,         // Much lower in cities
+      'wilderness': 1.3,   // Higher in wilderness
+      'ruins': 1.4,        // High in ruins
+      'cave': 1.6          // Very high in caves
+    };
+    
+    const locationMultiplier = locationModifiers[locationType.toLowerCase() as keyof typeof locationModifiers] || 1.0;
+    
+    // Player level adjustments (higher level = more enemies)
+    const levelMultiplier = Math.min(2.0, 1 + (playerLevel - 1) * 0.1);
+    
+    // Narrative context analysis
+    const contextKeywords = {
+      'pack': 2.0,         // "wolf pack", "bandit pack"
+      'group': 1.8,        // "group of enemies"
+      'patrol': 1.5,       // "patrol", "guard patrol"
+      'ambush': 2.5,       // "ambush", "surprise attack"
+      'boss': 0.1,         // "boss encounter" - usually single
+      'lone': 0.1,         // "lone wolf", "single enemy"
+      'swarm': 3.0,        // "swarm", "horde"
+      'pair': 1.0,         // "pair", "duo"
+      'trio': 1.0,         // "trio", "three"
+      'squad': 1.0         // "squad", "team"
+    };
+    
+    let contextMultiplier = 1.0;
+    const lowerContext = narrativeContext.toLowerCase();
+    for (const [keyword, multiplier] of Object.entries(contextKeywords)) {
+      if (lowerContext.includes(keyword)) {
+        contextMultiplier = Math.max(contextMultiplier, multiplier);
+      }
+    }
+    
+    // Calculate final chance for multiple enemies
+    const finalChance = modifier.multiChance * locationMultiplier * levelMultiplier * contextMultiplier;
+    
+    // Determine enemy count based on calculated chance
+    const random = Math.random();
+    let enemyCount = baseCount;
+    
+    if (random < finalChance * 0.3) {
+      enemyCount = 2; // 30% of multi-chance = 2 enemies
+    } else if (random < finalChance * 0.6) {
+      enemyCount = 3; // 30% of multi-chance = 3 enemies  
+    } else if (random < finalChance) {
+      enemyCount = 4; // 40% of multi-chance = 4 enemies
+    }
+    
+    // Cap at maximum for difficulty
+    enemyCount = Math.min(enemyCount, modifier.maxCount);
+    
+    // Special cases override
+    if (lowerContext.includes('boss') || lowerContext.includes('lone')) {
+      enemyCount = 1;
+    }
+    if (lowerContext.includes('swarm') || lowerContext.includes('horde')) {
+      enemyCount = Math.min(4, enemyCount + 1);
+    }
+    
+    console.log(`🎲 Enemy Count Calculation:`, {
+      worldDifficulty,
+      playerLevel,
+      locationType,
+      finalChance: (finalChance * 100).toFixed(1) + '%',
+      contextMultiplier,
+      locationMultiplier,
+      levelMultiplier,
+      result: enemyCount
+    });
+    
+    return enemyCount;
+  }
+
+  /**
+   * Calculate optimal threat level based on context and world difficulty
+   * Returns a flag indicating the appropriate threat level
+   */
+  private calculateThreatLevel(
+    worldDifficulty: string,
+    playerLevel: number,
+    locationType: string,
+    narrativeContext: string,
+    enemyName: string
+  ): string {
+    // Base threat level distribution by world difficulty
+    const difficultyDistribution = {
+      'easy': { low: 0.6, medium: 0.35, high: 0.05, extreme: 0.0 },
+      'medium': { low: 0.3, medium: 0.5, high: 0.18, extreme: 0.02 },
+      'hard': { low: 0.1, medium: 0.4, high: 0.4, extreme: 0.1 }
+    };
+    
+    const distribution = difficultyDistribution[worldDifficulty.toLowerCase() as keyof typeof difficultyDistribution] || difficultyDistribution.medium;
+    
+    // Location-based threat adjustments
+    const locationThreatModifiers = {
+      'dungeon': { low: -0.1, medium: 0.0, high: 0.1, extreme: 0.0 },
+      'forest': { low: 0.0, medium: 0.0, high: 0.0, extreme: 0.0 },
+      'city': { low: 0.2, medium: -0.1, high: -0.1, extreme: -0.1 },
+      'wilderness': { low: -0.1, medium: 0.0, high: 0.1, extreme: 0.0 },
+      'ruins': { low: -0.1, medium: 0.0, high: 0.1, extreme: 0.0 },
+      'cave': { low: -0.2, medium: 0.0, high: 0.1, extreme: 0.1 }
+    };
+    
+    const locationModifier = locationThreatModifiers[locationType.toLowerCase() as keyof typeof locationThreatModifiers] || { low: 0, medium: 0, high: 0, extreme: 0 };
+    
+    // Player level adjustments (higher level = higher threat enemies)
+    const levelAdjustment = Math.min(0.2, (playerLevel - 1) * 0.02);
+    
+    // Narrative context analysis
+    const contextThreatModifiers = {
+      'boss': { low: -0.3, medium: 0.0, high: 0.2, extreme: 0.1 },
+      'elite': { low: -0.2, medium: 0.0, high: 0.1, extreme: 0.1 },
+      'ancient': { low: -0.3, medium: 0.0, high: 0.1, extreme: 0.2 },
+      'demon': { low: -0.2, medium: 0.0, high: 0.1, extreme: 0.1 },
+      'dragon': { low: -0.3, medium: 0.0, high: 0.0, extreme: 0.3 },
+      'weak': { low: 0.3, medium: -0.2, high: -0.1, extreme: 0.0 },
+      'strong': { low: -0.2, medium: 0.0, high: 0.1, extreme: 0.1 },
+      'powerful': { low: -0.3, medium: 0.0, high: 0.0, extreme: 0.3 }
+    };
+    
+    let contextModifier = { low: 0, medium: 0, high: 0, extreme: 0 };
+    const lowerContext = narrativeContext.toLowerCase();
+    const lowerName = enemyName.toLowerCase();
+    
+    for (const [keyword, modifier] of Object.entries(contextThreatModifiers)) {
+      if (lowerContext.includes(keyword) || lowerName.includes(keyword)) {
+        contextModifier = {
+          low: contextModifier.low + modifier.low,
+          medium: contextModifier.medium + modifier.medium,
+          high: contextModifier.high + modifier.high,
+          extreme: contextModifier.extreme + modifier.extreme
+        };
+      }
+    }
+    
+    // Apply all modifiers
+    const finalDistribution = {
+      low: Math.max(0, Math.min(1, distribution.low + locationModifier.low + contextModifier.low)),
+      medium: Math.max(0, Math.min(1, distribution.medium + locationModifier.medium + contextModifier.medium)),
+      high: Math.max(0, Math.min(1, distribution.high + locationModifier.high + contextModifier.high + levelAdjustment)),
+      extreme: Math.max(0, Math.min(1, distribution.extreme + locationModifier.extreme + contextModifier.extreme + levelAdjustment))
+    };
+    
+    // Normalize distribution
+    const total = finalDistribution.low + finalDistribution.medium + finalDistribution.high + finalDistribution.extreme;
+    const normalizedDistribution = {
+      low: finalDistribution.low / total,
+      medium: finalDistribution.medium / total,
+      high: finalDistribution.high / total,
+      extreme: finalDistribution.extreme / total
+    };
+    
+    // Roll for threat level
+    const random = Math.random();
+    let threatLevel = 'medium'; // default
+    
+    if (random < normalizedDistribution.low) {
+      threatLevel = 'low';
+    } else if (random < normalizedDistribution.low + normalizedDistribution.medium) {
+      threatLevel = 'medium';
+    } else if (random < normalizedDistribution.low + normalizedDistribution.medium + normalizedDistribution.high) {
+      threatLevel = 'high';
+    } else {
+      threatLevel = 'extreme';
+    }
+    
+    console.log(`🎯 Threat Level Calculation:`, {
+      worldDifficulty,
+      playerLevel,
+      locationType,
+      enemyName,
+      distribution: normalizedDistribution,
+      result: threatLevel
+    });
+    
+    return threatLevel;
+  }
+
+  /**
+   * Infer location type from location name for enemy count calculations
+   */
+  private inferLocationType(locationName: string): string {
+    const lowerName = locationName.toLowerCase();
+    
+    // Dungeon patterns
+    if (lowerName.includes('dungeon') || lowerName.includes('hầm') || 
+        lowerName.includes('catacomb') || lowerName.includes('underground')) {
+      return 'dungeon';
+    }
+    
+    // Forest patterns
+    if (lowerName.includes('forest') || lowerName.includes('rừng') || 
+        lowerName.includes('wood') || lowerName.includes('jungle')) {
+      return 'forest';
+    }
+    
+    // City patterns
+    if (lowerName.includes('city') || lowerName.includes('thành phố') || 
+        lowerName.includes('town') || lowerName.includes('village') ||
+        lowerName.includes('market') || lowerName.includes('street')) {
+      return 'city';
+    }
+    
+    // Cave patterns
+    if (lowerName.includes('cave') || lowerName.includes('hang') || 
+        lowerName.includes('cavern') || lowerName.includes('tunnel')) {
+      return 'cave';
+    }
+    
+    // Ruins patterns
+    if (lowerName.includes('ruin') || lowerName.includes('tàn tích') || 
+        lowerName.includes('ancient') || lowerName.includes('temple') ||
+        lowerName.includes('tower') || lowerName.includes('castle')) {
+      return 'ruins';
+    }
+    
+    // Wilderness patterns
+    if (lowerName.includes('wilderness') || lowerName.includes('hoang dã') || 
+        lowerName.includes('mountain') || lowerName.includes('hill') ||
+        lowerName.includes('plain') || lowerName.includes('desert')) {
+      return 'wilderness';
+    }
+    
+    // Default to wilderness for unknown locations
+    return 'wilderness';
+  }
+
+  /**
+   * Create multiple enemies from monsters/enemies data in sceneState
+   * Supports both sceneState.dangers.monsters and sceneState.dangers.enemies
+   * Ensures all enemies have valid combat stats using combatPreparationService validation
+   */
+  private async createEnemiesFromMonsters(
+    enemiesData: any[],
+    sceneState: any,
+    worldJson: string,
+    characterJson: string
+  ): Promise<any[]> {
+    const characterData = JSON.parse(characterJson);
+    const worldData = JSON.parse(worldJson);
+    const enemies: any[] = [];
+    
+    // Get context information for calculations
+    const worldDifficulty = worldData.difficulty || 'medium';
+    const playerLevel = characterData.level || 1;
+    const locationType = this.inferLocationType(sceneState.location?.name || 'unknown');
+    const narrativeContext = sceneState.narrative || '';
+    const currentTurn = parseInt(localStorage.getItem('game_turn_counter') || '0');
+    
+    // Calculate how many enemies should actually spawn
+    const targetEnemyCount = this.calculateEnemyCount(
+      worldDifficulty,
+      playerLevel,
+      locationType,
+      narrativeContext,
+      currentTurn
+    );
+    
+    console.log(`🎯 Target enemy count: ${targetEnemyCount} (from ${enemiesData.length} available)`);
+    
+    // Limit enemies to calculated count
+    const enemiesToProcess = enemiesData.slice(0, targetEnemyCount);
+    
+    // Process each enemy/monster in the limited array
+    for (const enemyData of enemiesToProcess) {
+      const enemyName = enemyData.name || 'Unknown Enemy';
+      const enemyLevel = enemyData.level || characterData.level;
+      
+      // Calculate threat level using our function instead of using AI's threat_level
+      const calculatedThreatLevel = this.calculateThreatLevel(
+        worldDifficulty,
+        playerLevel,
+        locationType,
+        narrativeContext,
+        enemyName
+      );
+      
+      // Generate enemy with calculated threat level
+      const enemy = await this.generateEnemyFromMonsterData(
+        enemyName,
+        enemyLevel,
+        calculatedThreatLevel,
+        enemyData,
+        sceneState,
+        characterJson
+      );
+      
+      if (enemy) {
+        // Validate enemy has all required combat stats
+        const isValid = this.validateEnemyCombatStats(enemy);
+        if (isValid) {
+          enemies.push(enemy);
+          console.log(`✅ Valid enemy created: ${enemy.name} (Level ${enemy.level}, Threat: ${calculatedThreatLevel})`);
+        } else {
+          console.warn(`⚠️ Enemy ${enemyName} has invalid combat stats, skipping`);
+        }
+      }
+    }
+    
+    console.log(`Generated ${enemies.length} valid enemies from ${enemiesToProcess.length} processed enemies`);
+    return enemies;
+  }
+
+  /**
+   * Generate single enemy from monster/enemy data with threat-based stat scaling
+   * Supports both monsters and enemies from sceneState.dangers
+   * Ensures enemy has all required fields for combat
+   */
+  private async generateEnemyFromMonsterData(
+    name: string,
+    level: number,
+    threatLevel: string,
+    enemyData: any,
+    sceneState: any,
+    characterJson: string
+  ): Promise<any> {
+    // @ts-ignore - Unused variable kept for future use
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _characterData = JSON.parse(characterJson);
+    
+    // Threat level multipliers for comprehensive stat scaling
+    const threatMultipliers = {
+      low: {
+        stats: 0.8,      // Base stats multiplier
+        hp: 0.7,         // HP multiplier
+        damage: 0.75,    // Damage multiplier
+        ac: 0,           // AC modifier
+        attackBonus: -1  // Attack bonus modifier
+      },
+      medium: {
+        stats: 1.0,
+        hp: 1.0,
+        damage: 1.0,
+        ac: 0,
+        attackBonus: 0
+      },
+      high: {
+        stats: 1.3,
+        hp: 1.4,
+        damage: 1.3,
+        ac: 2,
+        attackBonus: 2
+      },
+      extreme: {
+        stats: 1.6,
+        hp: 1.8,
+        damage: 1.6,
+        ac: 4,
+        attackBonus: 4
+      }
+    };
+    
+    const multiplier = threatMultipliers[threatLevel as keyof typeof threatMultipliers] || threatMultipliers.medium;
+    
+    // Generate deterministic stats based on level and name seed
+    const seed = level * 9301 + name.charCodeAt(0) * 997 + 49297;
+    const strengthSeed = (seed * 1237 + 4567) % 233280 / 233280;
+    const agilitySeed = (seed * 2341 + 5678) % 233280 / 233280;
+    const constitutionSeed = (seed * 3457 + 6789) % 233280 / 233280;
+    const intelligenceSeed = (seed * 4561 + 7890) % 233280 / 233280;
+    const wisdomSeed = (seed * 5673 + 8901) % 233280 / 233280;
+    const charismaSeed = (seed * 6785 + 9012) % 233280 / 233280;
+    
+    // Calculate base stats with threat multiplier
+    const basePhysicalStats = Math.floor((10 + level * 1.5) * multiplier.stats);
+    const baseMentalStats = Math.floor((8 + level * 0.8) * multiplier.stats);
+    
+    // Generate core stats (capped at 8-22)
+    const strength = Math.max(8, Math.min(22, basePhysicalStats + Math.floor(strengthSeed * 7) - 3));
+    const agility = Math.max(8, Math.min(22, basePhysicalStats + Math.floor(agilitySeed * 7) - 3));
+    const constitution = Math.max(8, Math.min(22, basePhysicalStats + Math.floor(constitutionSeed * 7) - 3));
+    const intelligence = Math.max(8, Math.min(22, baseMentalStats + Math.floor(intelligenceSeed * 5) - 2));
+    const wisdom = Math.max(8, Math.min(22, baseMentalStats + Math.floor(wisdomSeed * 5) - 2));
+    const charisma = Math.max(8, Math.min(22, baseMentalStats + Math.floor(charismaSeed * 5) - 2));
+    
+    // Calculate modifiers (D&D 5e formula)
+    const modifiers = {
+      strength: Math.floor((strength - 10) / 2),
+      agility: Math.floor((agility - 10) / 2),
+      constitution: Math.floor((constitution - 10) / 2),
+      intelligence: Math.floor((intelligence - 10) / 2),
+      wisdom: Math.floor((wisdom - 10) / 2),
+      charisma: Math.floor((charisma - 10) / 2)
+    };
+    
+    // Calculate HP with threat multiplier and constitution bonus
+    const baseHP = 10 + (level * 6) + (modifiers.constitution * level);
+    const maxHP = Math.floor(baseHP * multiplier.hp);
+    
+    // Calculate AC with threat modifier
+    const baseAC = 10 + modifiers.agility + Math.floor(level / 3);
+    const armorClass = baseAC + multiplier.ac;
+    
+    // Generate weapon attack with threat-based scaling
+    const primaryMod = Math.max(modifiers.strength, modifiers.agility);
+    const attackBonus = 2 + primaryMod + Math.floor(level / 2) + multiplier.attackBonus;
+    const damageDice = Math.max(1, Math.floor(level / 2) + 1);
+    const damageBonus = Math.floor(primaryMod * multiplier.damage);
+    
+    // Create complete enemy object (compatible with combatService)
+    const enemy: any = {
+      id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: name,
+      description: enemyData.description || `Một ${name} nguy hiểm xuất hiện.`,
+      type: this.inferEnemyType(name, threatLevel),
+      level: level,                    // Character level
+      combatLevel: level,              // Combat level (same as character level)
+      characterLevel: level,           // Explicit character level
+      
+      // Core stats (REQUIRED for combat)
+      stats: {
+        strength,
+        agility,
+        constitution,
+        intelligence,
+        wisdom,
+        charisma,
+        modifiers
+      },
+      
+      // Health (REQUIRED)
+      health: {
+        current: maxHP,
+        max: maxHP
+      },
+      
+      // Armor Class (REQUIRED)
+      armorClass: armorClass,
+      
+      // Attacks array (REQUIRED - at least 1 attack)
+      attacks: [{
+        name: this.generateWeaponName(name, threatLevel, primaryMod > modifiers.strength),
+        attackBonus: attackBonus,
+        damage: `${damageDice}d6+${damageBonus}`,
+        damageType: this.determineDamageType(name, threatLevel),
+        range: (modifiers.agility > modifiers.strength) ? 60 : undefined
+      }],
+      
+      // Abilities (optional but recommended)
+      abilities: this.generateEnemyAbilities(level, threatLevel, modifiers),
+      
+      // Experience reward
+      experienceReward: Math.floor(level * 25 * (1 + (Object.keys(threatMultipliers).indexOf(threatLevel) * 0.3))),
+      
+      // Metadata
+      threatLevel: threatLevel,
+      location: enemyData.location || sceneState.location?.name
+    };
+    
+    return enemy;
+  }
+
+  /**
+   * Validate enemy has all required combat stats (following combatPreparationService patterns)
+   */
+  private validateEnemyCombatStats(enemy: any): boolean {
+    // Check required level fields
+    const hasValidLevel = (enemy.combatLevel || enemy.level) >= 1 && 
+                         (enemy.characterLevel || enemy.level) >= 1;
+    
+    // Check stats
+    const hasValidStats = enemy.stats && 
+                         enemy.stats.strength >= 8 && 
+                         enemy.stats.agility >= 8 && 
+                         enemy.stats.constitution >= 8 &&
+                         enemy.stats.modifiers;
+    
+    // Check health
+    const hasValidHealth = enemy.health && 
+                          enemy.health.current > 0 && 
+                          enemy.health.max > 0;
+    
+    // Check AC
+    const hasValidAC = enemy.armorClass && enemy.armorClass > 0;
+    
+    // Check attacks (at least 1 valid attack)
+    const hasValidWeapon = Array.isArray(enemy.attacks) && 
+                          enemy.attacks.length > 0 &&
+                          enemy.attacks.some((atk: any) => 
+                            atk.name && 
+                            atk.attackBonus !== undefined && 
+                            atk.damage && 
+                            atk.damageType
+                          );
+    
+    const isValid = hasValidLevel && hasValidStats && hasValidHealth && hasValidAC && hasValidWeapon;
+    
+    if (!isValid) {
+      console.error('Enemy validation failed:', {
+        name: enemy.name,
+        hasValidLevel,
+        hasValidStats,
+        hasValidHealth,
+        hasValidAC,
+        hasValidWeapon
+      });
+    }
+    
+    return isValid;
+  }
+
+  /**
+   * Infer enemy type from name
+   */
+  private inferEnemyType(name: string, _threatLevel: string): string {
+    const lowerName = name.toLowerCase();
+    
+    // Beast patterns
+    if (lowerName.includes('hổ') || lowerName.includes('sói') || lowerName.includes('gấu') || 
+        lowerName.includes('tiger') || lowerName.includes('wolf') || lowerName.includes('bear') ||
+        lowerName.includes('lang')) {
+      return 'beast';
+    }
+    
+    // Undead patterns
+    if (lowerName.includes('ma') || lowerName.includes('skeleton') || lowerName.includes('zombie') ||
+        lowerName.includes('wraith') || lowerName.includes('ghost')) {
+      return 'undead';
+    }
+    
+    // Humanoid patterns
+    if (lowerName.includes('warrior') || lowerName.includes('guard') || lowerName.includes('bandit') ||
+        lowerName.includes('thief') || lowerName.includes('chiến binh') || lowerName.includes('cướp')) {
+      return 'humanoid';
+    }
+    
+    // Demon patterns
+    if (lowerName.includes('demon') || lowerName.includes('devil') || lowerName.includes('quỷ')) {
+      return 'demon';
+    }
+    
+    // Elemental patterns
+    if (lowerName.includes('elemental') || lowerName.includes('lửa') || lowerName.includes('nước')) {
+      return 'elemental';
+    }
+    
+    return 'other';
+  }
+
+  /**
+   * Generate contextual weapon name based on enemy type and threat
+   */
+  private generateWeaponName(enemyName: string, threatLevel: string, isRanged: boolean): string {
+    const lowerName = enemyName.toLowerCase();
+    
+    // Beast weapons
+    if (lowerName.includes('hổ') || lowerName.includes('tiger')) {
+      return threatLevel === 'extreme' ? 'Nanh Sát Thủ' : 'Cắn và Cào';
+    }
+    if (lowerName.includes('sói') || lowerName.includes('wolf')) {
+      return threatLevel === 'extreme' ? 'Nanh Đói' : 'Cắn';
+    }
+    
+    // Humanoid weapons
+    if (lowerName.includes('bandit') || lowerName.includes('cướp')) {
+      if (isRanged) return threatLevel === 'extreme' ? 'Cung Tên Độc' : 'Cung Ngắn';
+      return threatLevel === 'extreme' ? 'Kiếm Bén' : 'Kiếm Gỉ';
+    }
+    if (lowerName.includes('guard') || lowerName.includes('warrior')) {
+      return threatLevel === 'extreme' ? 'Giáo Chiến' : 'Kiếm Dài';
+    }
+    
+    // Default weapons
+    if (isRanged) {
+      return threatLevel === 'extreme' ? 'Phi Tiêu Độc' : 'Ném Đá';
+    }
+    return threatLevel === 'extreme' ? 'Vũ Khí Nguy Hiểm' : 'Tấn Công Cơ Bản';
+  }
+
+  /**
+   * Determine damage type based on enemy characteristics
+   */
+  private determineDamageType(name: string, threatLevel: string): string {
+    const lowerName = name.toLowerCase();
+    
+    if (lowerName.includes('fire') || lowerName.includes('lửa')) return 'fire';
+    if (lowerName.includes('ice') || lowerName.includes('băng')) return 'cold';
+    if (lowerName.includes('poison') || lowerName.includes('độc')) return 'poison';
+    if (lowerName.includes('lightning') || lowerName.includes('sét')) return 'lightning';
+    if (lowerName.includes('ghost') || lowerName.includes('ma')) return 'psychic';
+    
+    // Extreme threat enemies have magical damage
+    if (threatLevel === 'extreme') return 'magical';
+    
+    return 'physical';
+  }
+
+  /**
+   * Generate abilities based on level and threat
+   */
+  private generateEnemyAbilities(level: number, threatLevel: string, _modifiers: any): any[] {
+    const abilities: any[] = [];
+    
+    // Only add abilities for level 3+ or high threat enemies
+    if (level >= 3 || threatLevel === 'high' || threatLevel === 'extreme') {
+      // Add defensive ability for high/extreme threat
+      if (threatLevel === 'high' || threatLevel === 'extreme') {
+        abilities.push({
+          name: 'Phòng Thủ Tinh Thông',
+          description: 'Tăng AC khi defend',
+          type: 'defensive',
+          cooldown: 0
+        });
+      }
+      
+      // Add special attack for extreme threat
+      if (threatLevel === 'extreme' && level >= 5) {
+        abilities.push({
+          name: 'Tấn Công Đặc Biệt',
+          description: 'Gây thêm sát thương',
+          type: 'offensive',
+          cooldown: 3
+        });
+      }
+    }
+    
+    return abilities;
   }
 }
 
