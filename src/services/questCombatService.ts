@@ -25,6 +25,99 @@ class QuestCombatService {
   }
 
   /**
+   * Validate and limit requiredKills to maximum 3 for combat objectives
+   */
+  private validateCombatObjective(objective: any): void {
+    if (objective && objective.type === 'combat' && objective.requiredKills) {
+      if (objective.requiredKills > 3) {
+        console.log(`⚠️ Limiting requiredKills from ${objective.requiredKills} to 3 for objective: ${objective.description}`);
+        objective.requiredKills = 3;
+      }
+    }
+  }
+
+  /**
+   * Validate and fix all existing quests in localStorage to limit requiredKills to 3
+   */
+  public validateAllQuests(): void {
+    try {
+      const questSystemData = localStorage.getItem('quest_system');
+      if (!questSystemData) {
+        console.log('🔍 No quest_system data found for validation');
+        return;
+      }
+
+      const questSystem = JSON.parse(questSystemData);
+      let updated = false;
+
+      // Validate starterQuest
+      if (questSystem.starterQuest && questSystem.starterQuest.objectives) {
+        Object.values(questSystem.starterQuest.objectives).forEach((objective: any) => {
+          if (objective && objective.type === 'combat' && objective.requiredKills > 3) {
+            console.log(`⚠️ Fixing starterQuest objective: ${objective.description} (${objective.requiredKills} -> 3)`);
+            objective.requiredKills = 3;
+            updated = true;
+          }
+        });
+      }
+
+      // Validate mainQuests
+      if (questSystem.mainQuests && Array.isArray(questSystem.mainQuests)) {
+        questSystem.mainQuests.forEach((quest: any) => {
+          if (quest && quest.objectives) {
+            Object.values(quest.objectives).forEach((objective: any) => {
+              if (objective && objective.type === 'combat' && objective.requiredKills > 3) {
+                console.log(`⚠️ Fixing mainQuest objective: ${objective.description} (${objective.requiredKills} -> 3)`);
+                objective.requiredKills = 3;
+                updated = true;
+              }
+            });
+          }
+        });
+      }
+
+      // Validate sideQuests
+      if (questSystem.sideQuests && Array.isArray(questSystem.sideQuests)) {
+        questSystem.sideQuests.forEach((quest: any) => {
+          if (quest && quest.objectives) {
+            Object.values(quest.objectives).forEach((objective: any) => {
+              if (objective && objective.type === 'combat' && objective.requiredKills > 3) {
+                console.log(`⚠️ Fixing sideQuest objective: ${objective.description} (${objective.requiredKills} -> 3)`);
+                objective.requiredKills = 3;
+                updated = true;
+              }
+            });
+          }
+        });
+      }
+
+      // Validate factionQuests
+      if (questSystem.factionQuests && Array.isArray(questSystem.factionQuests)) {
+        questSystem.factionQuests.forEach((quest: any) => {
+          if (quest && quest.objectives) {
+            Object.values(quest.objectives).forEach((objective: any) => {
+              if (objective && objective.type === 'combat' && objective.requiredKills > 3) {
+                console.log(`⚠️ Fixing factionQuest objective: ${objective.description} (${objective.requiredKills} -> 3)`);
+                objective.requiredKills = 3;
+                updated = true;
+              }
+            });
+          }
+        });
+      }
+
+      if (updated) {
+        localStorage.setItem('quest_system', JSON.stringify(questSystem));
+        console.log('✅ All quest objectives validated and fixed');
+      } else {
+        console.log('✅ All quest objectives are already within limits');
+      }
+    } catch (error) {
+      console.error('❌ Error validating quests:', error);
+    }
+  }
+
+  /**
    * Lấy tất cả combat objectives đang active từ quest system
    */
   public getActiveCombatObjectives(): QuestCombatObjective[] {
@@ -75,6 +168,10 @@ class QuestCombatService {
                 objective.type === 'combat' && 
                 objective.completed === false &&
                 objective.unlocked === true) {
+              
+              // Validate and limit requiredKills
+              this.validateCombatObjective(objective);
+              
               activeCombatObjectives.push({
                 id: objective.id,
                 type: objective.type,
@@ -157,6 +254,9 @@ class QuestCombatService {
               !objective.completed &&
               objective.targetEnemyName === enemyName) {
             
+            // Validate and limit requiredKills
+            this.validateCombatObjective(objective);
+            
             // Tăng currentKills
             objective.currentKills = (objective.currentKills || 0) + 1;
             
@@ -192,6 +292,9 @@ class QuestCombatService {
                   objective.status === 'active' && 
                   !objective.completed &&
                   objective.targetEnemyName === enemyName) {
+                
+                // Validate and limit requiredKills
+                this.validateCombatObjective(objective);
                 
                 // Tăng currentKills
                 objective.currentKills = (objective.currentKills || 0) + 1;
@@ -231,6 +334,9 @@ class QuestCombatService {
                   !objective.completed &&
                   objective.targetEnemyName === enemyName) {
                 
+                // Validate and limit requiredKills
+                this.validateCombatObjective(objective);
+                
                 // Tăng currentKills
                 objective.currentKills = (objective.currentKills || 0) + 1;
                 
@@ -268,6 +374,9 @@ class QuestCombatService {
                   objective.status === 'active' && 
                   !objective.completed &&
                   objective.targetEnemyName === enemyName) {
+                
+                // Validate and limit requiredKills
+                this.validateCombatObjective(objective);
                 
                 // Tăng currentKills
                 objective.currentKills = (objective.currentKills || 0) + 1;

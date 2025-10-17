@@ -229,6 +229,12 @@ class QuestCompletionService {
       return false;
     }
 
+    // Validate and limit requiredKills to maximum 3
+    if (objective.requiredKills > 3) {
+      console.log(`⚠️ Limiting requiredKills from ${objective.requiredKills} to 3 for objective: ${objective.description}`);
+      objective.requiredKills = 3;
+    }
+
     const targetName = objective.targetEnemyName.toLowerCase().trim();
     const cacheKey = `combat_${objective.id}_${targetName}_${objective.requiredKills}`;
     
@@ -570,6 +576,12 @@ class QuestCompletionService {
   } {
     if (objective.type !== 'combat' || !objective.requiredKills) {
       return { current: 0, required: 0, percentage: 0 };
+    }
+
+    // Validate and limit requiredKills to maximum 3
+    if (objective.requiredKills > 3) {
+      console.log(`⚠️ Limiting requiredKills from ${objective.requiredKills} to 3 for objective: ${objective.description}`);
+      objective.requiredKills = 3;
     }
 
     const requiredKills = objective.requiredKills;

@@ -198,10 +198,21 @@ export function CombatPage({}: CombatPageProps) {
   useEffect(() => {
     const interval = setInterval(() => {
       const currentCombat = combatService.getCurrentCombat();
-      if (currentCombat && (!combatState || currentCombat !== combatState)) {
-        setCombatState({ ...currentCombat });
-        // Auto-save combat state
-        combatService.saveCombatState();
+      if (currentCombat) {
+        // Always update if combat state changed or if it's the first time
+        // Check for important state changes like isActive, currentTurn, etc.
+        const shouldUpdate = !combatState || 
+          currentCombat.isActive !== combatState.isActive ||
+          currentCombat.currentTurn !== combatState.currentTurn ||
+          currentCombat.currentCombatantIndex !== combatState.currentCombatantIndex ||
+          currentCombat.turnOrder?.length !== combatState.turnOrder?.length ||
+          currentCombat.combatants?.length !== combatState.combatants?.length;
+        
+        if (shouldUpdate) {
+          setCombatState({ ...currentCombat });
+          // Auto-save combat state
+          combatService.saveCombatState();
+        }
       }
     }, 100); // Check every 100ms
 
@@ -211,9 +222,24 @@ export function CombatPage({}: CombatPageProps) {
   // Check for combat end and show results
   useEffect(() => {
     if (combatState && !combatState.isActive) {
+      console.log('🎯 Combat ended, showing results. Winner:', combatState.winner);
       setShowResults(true);
     }
   }, [combatState?.isActive]);
+
+  // Fallback: Check for combat end every second as backup
+  useEffect(() => {
+    const fallbackInterval = setInterval(() => {
+      const currentCombat = combatService.getCurrentCombat();
+      if (currentCombat && !currentCombat.isActive && !showResults) {
+        console.log('🔄 Fallback: Combat ended, showing results. Winner:', currentCombat.winner);
+        setCombatState({ ...currentCombat });
+        setShowResults(true);
+      }
+    }, 1000); // Check every second
+
+    return () => clearInterval(fallbackInterval);
+  }, [showResults]);
 
   // createNPCCombat function removed - replaced with loadNPCAndShowConfirmation
 

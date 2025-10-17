@@ -298,10 +298,10 @@ export class QuestDetectionService {
           objective.targetEnemyName = enemyMatch[1].trim();
         }
         
-        // Extract quantity
+        // Extract quantity and limit to maximum 3
         const killMatch = lowerContent.match(/(\d+)\s*(?:con|tên|người)/);
         if (killMatch) {
-          objective.requiredKills = parseInt(killMatch[1]);
+          objective.requiredKills = Math.min(parseInt(killMatch[1]), 3);
         } else {
           objective.requiredKills = 1;
         }

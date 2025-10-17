@@ -1491,7 +1491,8 @@ QUAN TRỌNG VỀ QUEST OBJECTIVES - 5 LOẠI CHÍNH:
 3. COMBAT (Chiến đấu):
    - Với enemy thường: cần targetEnemyName + targetEnemyType + requiredKills
    - Với NPC enemy: cần targetNPCName (sẽ match với NPC cụ thể)
-   - Ví dụ: "Đánh bại 5 Goblin" hoặc "Hạ gục tên cướp Marcus"
+   - QUAN TRỌNG: requiredKills TỐI ĐA là 3 (không được vượt quá)
+   - Ví dụ: "Đánh bại 3 Goblin" hoặc "Hạ gục tên cướp Marcus"
 
 4. TRAVEL (Di chuyển):
    - Phải có targetLocationName cụ thể
@@ -1640,7 +1641,7 @@ SCHEMA:
           "targetNPCName": "Tên NPC cụ thể (nếu type là find_npc/delivery)",
           "targetEnemyName": "Tên enemy (nếu type là combat)",
           "targetEnemyType": "beast|humanoid|... (nếu type là combat)",
-          "requiredKills": 5,
+          "requiredKills": 3,
           "targetLocationName": "Tên địa điểm (nếu type là travel)",
           "completed": false,
           "unlocked": true
@@ -1708,7 +1709,7 @@ SCHEMA:
             "targetNPCName": "Tên NPC cụ thể (nếu type là find_npc/delivery)",
             "targetEnemyName": "Tên enemy (nếu type là combat)",
             "targetEnemyType": "beast|humanoid|... (nếu type là combat)",
-            "requiredKills": 5,
+            "requiredKills": 3,
             "targetLocationName": "Tên địa điểm (nếu type là travel)",
             "deliveryItemName": "Tên item cần giao (nếu type là delivery)",
             "deliveryNPCName": "Tên NPC cần giao (nếu type là delivery)",
@@ -1790,7 +1791,7 @@ SCHEMA:
             "targetNPCName": "Tên NPC cụ thể (nếu type là find_npc/delivery)",
             "targetEnemyName": "Tên enemy (nếu type là combat)",
             "targetEnemyType": "beast|humanoid|... (nếu type là combat)",
-            "requiredKills": 5,
+            "requiredKills": 3,
             "targetLocationName": "Tên địa điểm (nếu type là travel)",
             "deliveryItemName": "Tên item cần giao (nếu type là delivery)",
             "deliveryNPCName": "Tên NPC cần giao (nếu type là delivery)",
@@ -1868,7 +1869,7 @@ SCHEMA:
             "targetNPCName": "Tên NPC cụ thể (nếu type là find_npc/delivery)",
             "targetEnemyName": "Tên enemy (nếu type là combat)",
             "targetEnemyType": "beast|humanoid|... (nếu type là combat)",
-            "requiredKills": 5,
+            "requiredKills": 3,
             "targetLocationName": "Tên địa điểm (nếu type là travel)"
           }
         ],
@@ -1927,7 +1928,7 @@ SCHEMA:
             "targetNPCName": "Tên NPC cụ thể (nếu type là find_npc/delivery)",
             "targetEnemyName": "Tên enemy (nếu type là combat)",
             "targetEnemyType": "beast|humanoid|... (nếu type là combat)",
-            "requiredKills": 5,
+            "requiredKills": 3,
             "targetLocationName": "Tên địa điểm (nếu type là travel)"
           }
         ],
@@ -1986,7 +1987,7 @@ SCHEMA:
             "targetNPCName": "Tên NPC cụ thể (nếu type là find_npc/delivery)",
             "targetEnemyName": "Tên enemy (nếu type là combat)",
             "targetEnemyType": "beast|humanoid|... (nếu type là combat)",
-            "requiredKills": 5,
+            "requiredKills": 3,
             "targetLocationName": "Tên địa điểm (nếu type là travel)"
           }
         ],
@@ -2745,7 +2746,8 @@ QUAN TRỌNG VỀ QUEST OBJECTIVES - 5 LOẠI CHÍNH:
 3. COMBAT (Chiến đấu):
    - Với enemy thường: cần targetEnemyName + targetEnemyType + requiredKills
    - Với NPC enemy: cần targetNPCName (sẽ match với NPC cụ thể)
-   - Ví dụ: "Đánh bại 5 Goblin" hoặc "Hạ gục tên cướp Marcus"
+   - QUAN TRỌNG: requiredKills TỐI ĐA là 3 (không được vượt quá)
+   - Ví dụ: "Đánh bại 3 Goblin" hoặc "Hạ gục tên cướp Marcus"
 
 4. TRAVEL (Di chuyển):
    - Phải có targetLocationName cụ thể

@@ -335,7 +335,7 @@ Trả về JSON theo format này:
       "targetNPCName": "Tên NPC cụ thể (nếu type là find_npc/delivery)",
       "targetEnemyName": "Tên enemy (nếu type là combat)",
       "targetEnemyType": "beast|humanoid|... (nếu type là combat)",
-      "requiredKills": 5,
+      "requiredKills": 3,
       "targetLocationName": "Tên địa điểm (nếu type là travel)"
     }
   ],

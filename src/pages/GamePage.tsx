@@ -578,12 +578,15 @@ export function GamePage() {
     loadAvailableNPCs();
   }, []); // Empty dependency array - only run once on mount
 
-  // Initialize combat_history if not exists
+  // Initialize combat_history if not exists and validate quests
   useEffect(() => {
     const combatHistory = localStorage.getItem('combat_history');
     if (!combatHistory) {
       localStorage.setItem('combat_history', JSON.stringify({ defeatedEnemies: [] }));
     }
+    
+    // Validate all quests to limit requiredKills to maximum 3
+    questCombatService.validateAllQuests();
   }, []); // Empty dependency array - only run once on mount
 
   // Check for combat result and auto-paste message

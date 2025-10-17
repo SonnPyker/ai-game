@@ -982,12 +982,14 @@ class CombatService {
     
     if (!player || !player.isAlive) {
       // Player defeated
+      console.log('💀 Player defeated, ending combat');
       this.currentCombat.isActive = false;
       this.currentCombat.winner = 'enemies';
       this.calculateRewards(); // Calculate rewards even for defeat
       this.addTurnAction('defeat', 'Bạn đã bị đánh bại!');
     } else if (enemies.length === 0) {
       // All enemies defeated
+      console.log('🏆 All enemies defeated, ending combat');
       this.currentCombat.isActive = false;
       this.currentCombat.winner = 'player';
       this.calculateRewards();
