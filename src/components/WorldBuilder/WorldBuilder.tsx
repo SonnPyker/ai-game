@@ -14,6 +14,7 @@ import { WorldData, ContentFlags } from '../../types';
 import { AdultContentSettings } from './AdultContentSettings';
 import { HelpTooltip } from '../HelpTooltip';
 import { useResponsiveContext } from '../../contexts/ResponsiveContext';
+import { HelpButton } from '../HelpChat/HelpButton';
 
 export function WorldBuilder() {
   const { shouldUseMobileLayout } = useResponsiveContext();
@@ -664,6 +665,9 @@ export function WorldBuilder() {
 
   return (
     <div className="min-h-screen bg-gray-900 p-6">
+      {/* Help Button */}
+      <HelpButton variant="fixed" />
+      
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

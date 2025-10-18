@@ -41,6 +41,7 @@ import { SkillBookPreview } from '../components/Shop/SkillBookPreview';
 import { NegotiationPanel } from '../components/Shop/NegotiationPanel';
 import { MerchantShop, SkillBook } from '../types';
 import { enemyFromContextService } from '../services/enemyFromContextService';
+import { HelpButton } from '../components/HelpChat/HelpButton';
 
 // ImageDisplay component for handling base64 images
 const ImageDisplay = ({ filepath, prompt }: { filepath: string; prompt?: string }) => {
@@ -4578,6 +4579,8 @@ ${enhancedMessage}`;
               >
                 <Info className="w-4 h-4" />
               </button>
+              {/* Help Button */}
+              <HelpButton variant="inline" />
               {/* Action Log Button */}
               <button
                 onClick={() => setShowActionLog(true)}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Play, Globe, User, ArrowRight, CheckCircle, Circle } from 'lucide-react';
 import { npcRelationshipService } from '../services/npcRelationshipService';
 import { MotionWrapper } from '../components/MotionWrapper';
+import { HelpButton } from '../components/HelpChat/HelpButton';
 
 type InitStep = 'world' | 'character' | 'scenario';
 
@@ -211,6 +212,9 @@ export function InitPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 p-6">
+      {/* Help Button */}
+      <HelpButton variant="fixed" />
+      
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <MotionWrapper

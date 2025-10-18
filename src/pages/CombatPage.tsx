@@ -33,6 +33,7 @@ import { CombatResults } from '../components/CombatPage/CombatResults';
 import { TurnIndicator } from '../components/CombatPage/TurnIndicator';
 import { CombatConfirmationModal } from '../components/CombatPage/CombatConfirmationModal';
 import { CombatDialogueSequence } from '../components/CombatPage/CombatDialogueBubble';
+import { HelpButton } from '../components/HelpChat/HelpButton';
 
 interface CombatPageProps {}
 
@@ -1236,6 +1237,8 @@ export function CombatPage({}: CombatPageProps) {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Help Button */}
+      <HelpButton variant="fixed" />
       {/* Header with Turn Indicator */}
       <div className="bg-gray-900/50 border-b border-gray-700 p-4">
         <div className="flex items-center justify-between">

@@ -12,6 +12,7 @@ import { Sparkles, Download, RotateCcw, Check, Globe, Upload, Shuffle, Star } fr
 import { HelpTooltip } from '../components/HelpTooltip';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
 import { translateEffectFormat } from '../utils/skillEffectTranslator';
+import { HelpButton } from '../components/HelpChat/HelpButton';
 
 interface CharacterData {
   name: string;
@@ -514,7 +515,11 @@ export function CharacterCreationPage() {
 
   if (currentStep === 'description') {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-gray-900 p-6">
+        {/* Help Button */}
+        <HelpButton variant="fixed" />
+        
+        <div className="max-w-4xl mx-auto">
         <MotionWrapper
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -612,13 +617,17 @@ export function CharacterCreationPage() {
             })()}
           </div>
         </MotionWrapper>
-
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-900 p-6">
+      {/* Help Button */}
+      <HelpButton variant="fixed" />
+      
+      <div className="max-w-7xl mx-auto">
       <MotionWrapper
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1112,6 +1121,7 @@ export function CharacterCreationPage() {
           <span>Chấp Nhận & Vào Game</span>
         </button>
       </MotionWrapper>
+      </div>
     </div>
   );
 }
