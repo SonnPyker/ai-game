@@ -98,11 +98,16 @@ Initiative = Agility Modifier + Skill Tree Bonus + Status Effects
 ## 📈 **Level Progression**
 
 ### **Combat Level**:
-- **Mỗi 3 levels**: +1 Combat Skill Point, +7 HP
+- **Level 1**: 1 Combat Skill Point
+- **Level 2**: 2 Combat Skill Points  
+- **Level 3**: 3 Combat Skill Points
+- **Mỗi 3 levels**: +7 HP
 - **Skill Points**: Dùng cho combat skills
 
 ### **Character Level**:
-- **Mỗi 3 levels**: +1 Social Skill Point
+- **Level 1**: 1 Social Skill Point
+- **Level 2**: 2 Social Skill Points
+- **Level 3**: 3 Social Skill Points
 - **Skill Points**: Dùng cho social skills
 
 ---

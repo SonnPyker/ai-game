@@ -3,6 +3,7 @@ import { Character, SkillTreeSkill } from '../../types';
 import { skillTreeService } from '../../services/skillTreeService';
 import { combatLevelService } from '../../services/combatLevelService';
 import { levelSystemService } from '../../services/levelSystemService';
+import { skillPointRecalculateService } from '../../services/skillPointRecalculateService';
 import { 
   Sword, 
   Heart, 
@@ -11,7 +12,8 @@ import {
   RotateCcw,
   Check,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 
 interface SkillTreeViewProps {
@@ -22,6 +24,7 @@ interface SkillTreeViewProps {
 export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewProps) {
   const [activeTab, setActiveTab] = useState<'combat' | 'social'>('combat');
   const [showResetModal, setShowResetModal] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
 
   // Lấy skill definitions
   const skillDefinitions = skillTreeService.getSkillDefinitions();
@@ -60,6 +63,32 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
     if (success && onCharacterUpdate) {
       onCharacterUpdate(character);
       setShowResetModal(false);
+    }
+  };
+
+  // Recalculate skill points
+  const handleRecalculateSkillPoints = async () => {
+    if (!confirm('Bạn có chắc muốn tính lại skill points? Điều này sẽ cập nhật skill points theo cơ chế mới (mỗi level = 1 skill point).')) {
+      return;
+    }
+
+    try {
+      setRecalculating(true);
+      
+      // Recalculate current character
+      const updatedCharacter = skillPointRecalculateService.recalculateCurrentCharacter();
+      
+      if (updatedCharacter && onCharacterUpdate) {
+        onCharacterUpdate(updatedCharacter);
+        alert('Đã cập nhật skill points thành công!');
+      } else {
+        alert('Không thể cập nhật skill points. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Error recalculating skill points:', error);
+      alert('Lỗi khi tính lại skill points. Vui lòng thử lại.');
+    } finally {
+      setRecalculating(false);
     }
   };
 
@@ -329,7 +358,22 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
 
       {/* Skill Points */}
       <div className="bg-gray-800/50 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-white mb-3">Skill Points</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-white">Skill Points</h3>
+          <button
+            onClick={handleRecalculateSkillPoints}
+            disabled={recalculating}
+            className="flex items-center space-x-2 px-3 py-2 bg-purple-600/20 border border-purple-500/50 text-purple-300 rounded-lg hover:bg-purple-600/30 transition-colors duration-200 disabled:opacity-50 text-sm"
+            title="Tính lại skill points theo cơ chế mới (mỗi level = 1 skill point)"
+          >
+            {recalculating ? (
+              <div className="w-4 h-4 border-2 border-purple-300 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            <span>{recalculating ? 'Đang tính...' : 'Tính lại'}</span>
+          </button>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center space-x-3">
             <Sword className="w-6 h-6 text-orange-400" />

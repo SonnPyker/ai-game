@@ -327,6 +327,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
     }
   };
 
+
   const getSlotStatus = (slot: SaveSlot) => {
     if (!slot.saveGame) return 'empty';
     return 'saved';
