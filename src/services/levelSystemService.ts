@@ -113,17 +113,16 @@ class LevelSystemService {
     // Tính social skill points
     let socialSkillPointsEarned = 0;
     if (levelsGained > 0) {
-      // Tính skill points: mỗi character level = 1 social skill point
-      // Cần tính tổng skill points dựa trên level hiện tại, không phải chỉ cộng thêm
-      const expectedSocialSkillPoints = currentLevel;
-      const currentSocialSkillPoints = character.skillPoints?.social || 0;
-      socialSkillPointsEarned = expectedSocialSkillPoints - currentSocialSkillPoints;
+      // Tính skill points: mỗi 1 character level = 1 social skill point
+      const previousSkillPoints = previousLevel - 1;
+      const newSkillPoints = currentLevel - 1;
+      socialSkillPointsEarned = newSkillPoints - previousSkillPoints;
 
       // Cập nhật skill points
       if (!character.skillPoints) {
         character.skillPoints = { combat: 0, social: 0 };
       }
-      character.skillPoints.social = expectedSocialSkillPoints;
+      character.skillPoints.social += socialSkillPointsEarned;
     }
 
     // Cập nhật character

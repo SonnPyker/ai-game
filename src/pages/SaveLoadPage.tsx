@@ -135,6 +135,13 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         localStorage.setItem('world_gen_result', JSON.stringify(saveGame.world));
         localStorage.setItem('currentCharacter', JSON.stringify(saveGame.character));
         localStorage.setItem('rp_scenario', JSON.stringify(saveGame.scenario));
+        
+        // Recalculate skill points for existing saves with new formula
+        const { skillTreeService } = await import('../services/skillTreeService');
+        const skillResult = skillTreeService.recalculateSkillPointsForExistingSave(saveGame.character);
+        if (skillResult.combatPointsAdded > 0 || skillResult.socialPointsAdded > 0) {
+          console.log(`Added ${skillResult.combatPointsAdded} combat + ${skillResult.socialPointsAdded} social skill points`);
+        }
         localStorage.setItem('rp_chat', JSON.stringify(saveGame.chat));
         localStorage.setItem('game_turn_counter', saveGame.turnCounter.toString());
         // Lọc bỏ mainQuests khỏi sceneState trước khi lưu vào localStorage
@@ -326,7 +333,6 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
       setLoading(false);
     }
   };
-
 
   const getSlotStatus = (slot: SaveSlot) => {
     if (!slot.saveGame) return 'empty';

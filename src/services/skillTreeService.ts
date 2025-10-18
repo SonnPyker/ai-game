@@ -663,11 +663,11 @@ class SkillTreeService {
     const combatLevel = character.combatLevel || 1;
     const characterLevel = character.level || 1;
 
-    // Mỗi 3 combat levels = 1 combat skill point
-    const combatPoints = Math.floor((combatLevel - 1) / 3);
+    // Mỗi 1 combat level = 1 combat skill point
+    const combatPoints = combatLevel - 1;
     
-    // Mỗi 3 character levels = 1 social skill point
-    const socialPoints = Math.floor((characterLevel - 1) / 3);
+    // Mỗi 1 character level = 1 social skill point
+    const socialPoints = characterLevel - 1;
 
     return { combat: combatPoints, social: socialPoints };
   }
@@ -736,6 +736,36 @@ class SkillTreeService {
     // Công thức từ character creation: CON modifier + 20
     const constitutionModifier = Math.floor((character.coreStats.constitution - 10) / 2);
     return constitutionModifier + 20;
+  }
+
+  /**
+   * Recalculate skill points for existing saves that were created with old formula
+   * This adds missing skill points without resetting already learned skills
+   */
+  public recalculateSkillPointsForExistingSave(character: Character): { 
+    combatPointsAdded: number; 
+    socialPointsAdded: number;
+  } {
+    // Calculate what points SHOULD be with new formula
+    const expectedPoints = this.calculateSkillPointsFromLevels(character);
+    
+    // Get current points
+    const currentPoints = character.skillPoints || { combat: 0, social: 0 };
+    
+    // Add missing points (không reset skills đã học)
+    const combatPointsAdded = Math.max(0, expectedPoints.combat - currentPoints.combat);
+    const socialPointsAdded = Math.max(0, expectedPoints.social - currentPoints.social);
+    
+    // Update character skill points
+    character.skillPoints = {
+      combat: currentPoints.combat + combatPointsAdded,
+      social: currentPoints.social + socialPointsAdded
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('currentCharacter', JSON.stringify(character));
+    
+    return { combatPointsAdded, socialPointsAdded };
   }
 }
 

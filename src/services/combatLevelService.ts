@@ -173,11 +173,10 @@ class CombatLevelService {
     let hpBonusEarned = 0;
 
     if (levelsGained > 0) {
-      // Tính skill points: mỗi combat level = 1 skill point
-      // Cần tính tổng skill points dựa trên level hiện tại, không phải chỉ cộng thêm
-      const expectedCombatSkillPoints = currentCombatLevel;
-      const currentCombatSkillPoints = character.skillPoints?.combat || 0;
-      skillPointsEarned = expectedCombatSkillPoints - currentCombatSkillPoints;
+      // Tính skill points: mỗi 1 combat level = 1 skill point
+      const previousSkillPoints = previousCombatLevel - 1;
+      const newSkillPoints = currentCombatLevel - 1;
+      skillPointsEarned = newSkillPoints - previousSkillPoints;
 
       // Tính HP bonus: mỗi 3 combat levels = +7 HP
       const previousHpBonus = Math.floor((previousCombatLevel - 1) / 3) * 7;
@@ -188,7 +187,7 @@ class CombatLevelService {
       if (!character.skillPoints) {
         character.skillPoints = { combat: 0, social: 0 };
       }
-      character.skillPoints.combat = expectedCombatSkillPoints;
+      character.skillPoints.combat += skillPointsEarned;
 
       // Cập nhật HP
       if (character.health) {

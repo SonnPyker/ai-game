@@ -3791,6 +3791,13 @@ ${enhancedMessage}`;
       localStorage.setItem('world_gen_result', JSON.stringify(saveGame.world));
       localStorage.setItem('currentCharacter', JSON.stringify(saveGame.character));
       
+      // Recalculate skill points for existing saves with new formula
+      const { skillTreeService } = await import('../services/skillTreeService');
+      const result = skillTreeService.recalculateSkillPointsForExistingSave(saveGame.character);
+      if (result.combatPointsAdded > 0 || result.socialPointsAdded > 0) {
+        console.log(`Added ${result.combatPointsAdded} combat + ${result.socialPointsAdded} social skill points`);
+      }
+      
       // Khôi phục quest system nếu có
       if (saveGame.questSystem) {
         localStorage.setItem('quest_system', JSON.stringify(saveGame.questSystem));

@@ -588,8 +588,8 @@ class InventoryService {
       charisma: Math.floor((baseStats.charisma - 10) / 2)
     };
 
-    // Calculate and update Armor Class (AC)
-    this.character.coreStats.armorClass = this.calculateArmorClass();
+    // Calculate and update Armor Class (AC) while preserving skill tree bonuses
+    this.updateArmorClassWithSkillBonuses();
   }
 
   // Calculate Armor Class (AC) based on agility modifier and armor
@@ -610,6 +610,31 @@ class InventoryService {
     }
     
     return ac;
+  }
+
+  // Update AC while preserving skill tree bonuses
+  private updateArmorClassWithSkillBonuses(): void {
+    if (!this.character || !this.character.coreStats) return;
+
+    // Calculate base AC from equipment and agility
+    const baseAC = this.calculateArmorClass();
+    
+    // Get current AC to check if it has skill bonuses
+    const currentAC = this.character.coreStats.armorClass || 10;
+    
+    // Calculate what the AC would be without skill bonuses
+    // We need to reverse-engineer the skill bonuses by checking the difference
+    // between current AC and what it should be with just base stats + equipment
+    
+    // If current AC is higher than base AC, it likely has skill bonuses
+    if (currentAC > baseAC) {
+      // Preserve the skill bonuses by keeping the current AC
+      // This means skill bonuses are already applied and we don't want to overwrite them
+      return;
+    } else {
+      // No skill bonuses detected, update with base AC
+      this.character.coreStats.armorClass = baseAC;
+    }
   }
 
   // Get current character reference
