@@ -73,14 +73,14 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 flex items-start justify-center z-[10001] pt-8 pb-4 px-4"
       onClick={handleClose}
     >
       <MotionWrapper
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className={`bg-gray-900 rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col ${
+        className={`bg-gray-900 rounded-lg shadow-2xl w-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col ${
           shouldUseMobileLayout() ? 'h-full max-h-full' : ''
         }`}
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
@@ -250,7 +250,14 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Mobile Search */}
+            {/* Conversation - Show at top when selected */}
+            {selectedFAQ && (
+              <div className="flex-1 overflow-y-auto p-4">
+                <ConversationView faq={selectedFAQ} />
+              </div>
+            )}
+
+            {/* Mobile Search - Only show when no FAQ selected */}
             {shouldUseMobileLayout() && !selectedFAQ && (
               <div className="p-4 border-b border-gray-700">
                 <div className="relative">
@@ -266,14 +273,13 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
               </div>
             )}
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {selectedFAQ ? (
-                // Show conversation
-                <ConversationView faq={selectedFAQ} />
-              ) : selectedCategory || searchQuery ? (
-                // Show FAQs list (mobile)
-                <div>
+            {/* Content Area - Only show when no FAQ selected */}
+            {!selectedFAQ && (
+              <div className="flex-1 overflow-y-auto">
+                {selectedCategory || searchQuery ? (
+                <div className="p-4">
+                  {/* Show FAQs list (mobile) */}
+                  <div>
                   <h3 className="text-lg font-semibold text-white mb-4">
                     {searchQuery ? `Kết quả tìm kiếm (${faqs.length})` : `${currentCategory?.name} (${faqs.length})`}
                   </h3>
@@ -298,6 +304,7 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                         <p className="text-sm">Thử từ khóa khác</p>
                       </div>
                     )}
+                  </div>
                   </div>
                 </div>
               ) : (
@@ -326,8 +333,9 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </MotionWrapper>

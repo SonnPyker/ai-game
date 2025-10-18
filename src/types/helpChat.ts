@@ -1,4 +1,4 @@
-export type HelpCategory = 'world-builder' | 'character-creation' | 'combat' | 'gameplay';
+export type HelpCategory = 'world-builder' | 'character-creation' | 'combat' | 'gameplay' | 'relationships';
 
 export interface HelpFAQ {
   id: string;

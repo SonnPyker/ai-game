@@ -64,7 +64,6 @@ class SkillTreeService {
       description: 'Phòng thủ nâng cao',
       tier: 2,
       category: 'combat',
-      prerequisites: ['fortified_defense'],
       cost: 2,
       bonuses: { armorClass: 3 },
       icon: '🛡️'
@@ -75,7 +74,6 @@ class SkillTreeService {
       description: 'Độ chính xác chết người',
       tier: 2,
       category: 'combat',
-      prerequisites: ['precise_strike'],
       cost: 2,
       bonuses: { attackBonus: 2 },
       icon: '🎯'
@@ -86,7 +84,6 @@ class SkillTreeService {
       description: 'Đòn tấn công nghiền nát',
       tier: 2,
       category: 'combat',
-      prerequisites: ['power_attack'],
       cost: 2,
       bonuses: { damageBonus: '1d6' },
       icon: '⚔️'
@@ -97,7 +94,6 @@ class SkillTreeService {
       description: 'Chuyên môn chiến đấu',
       tier: 2,
       category: 'combat',
-      prerequisites: ['quick_reflexes'],
       cost: 2,
       bonuses: { initiative: 2 },
       icon: '⚡'
@@ -110,7 +106,6 @@ class SkillTreeService {
       description: 'Bậc thầy phòng thủ',
       tier: 3,
       category: 'combat',
-      prerequisites: ['advanced_defense'],
       cost: 3,
       bonuses: { armorClass: 5 },
       icon: '🛡️'
@@ -121,7 +116,6 @@ class SkillTreeService {
       description: 'Mục tiêu hoàn hảo',
       tier: 3,
       category: 'combat',
-      prerequisites: ['deadly_precision'],
       cost: 3,
       bonuses: { attackBonus: 3 },
       icon: '🎯'
@@ -132,7 +126,6 @@ class SkillTreeService {
       description: 'Đòn tấn công tàn phá',
       tier: 3,
       category: 'combat',
-      prerequisites: ['crushing_blow'],
       cost: 3,
       bonuses: { damageBonus: '2d4' },
       icon: '⚔️'
@@ -143,7 +136,6 @@ class SkillTreeService {
       description: 'Phản xạ sét',
       tier: 3,
       category: 'combat',
-      prerequisites: ['combat_expertise'],
       cost: 3,
       bonuses: { initiative: 3 },
       icon: '⚡'
@@ -231,7 +223,6 @@ class SkillTreeService {
       description: 'Sức hút nâng cao',
       tier: 2,
       category: 'social',
-      prerequisites: ['natural_charm'],
       cost: 2,
       bonuses: { statBonuses: { charisma: 2 } },
       icon: '😊'
@@ -242,7 +233,6 @@ class SkillTreeService {
       description: 'Trí tuệ sắc bén',
       tier: 2,
       category: 'social',
-      prerequisites: ['quick_wit'],
       cost: 2,
       bonuses: { statBonuses: { intelligence: 2 } },
       icon: '🧠'
@@ -275,7 +265,6 @@ class SkillTreeService {
       description: 'Bậc thầy ngoại giao',
       tier: 3,
       category: 'social',
-      prerequisites: ['enhanced_charm'],
       cost: 3,
       bonuses: { statBonuses: { charisma: 3 } },
       icon: '😊'
@@ -286,7 +275,6 @@ class SkillTreeService {
       description: 'Tâm trí thiên tài',
       tier: 3,
       category: 'social',
-      prerequisites: ['sharp_intellect'],
       cost: 3,
       bonuses: { statBonuses: { intelligence: 3 } },
       icon: '🧠'
@@ -375,9 +363,9 @@ class SkillTreeService {
     const availablePoints = character.skillPoints?.[skill.category] || 0;
     if (availablePoints < skill.cost) return false;
 
-    // Kiểm tra prerequisites
+    // Bỏ qua kiểm tra prerequisites cho tier 2 và 3 - cho phép học bất cứ khi nào đủ điểm
     const learnedSkills = character.skillTree?.[skill.category]?.learned || [];
-    if (skill.prerequisites) {
+    if (skill.prerequisites && skill.tier !== 2 && skill.tier !== 3) {
       for (const prereq of skill.prerequisites) {
         if (!learnedSkills.includes(prereq)) return false;
       }
@@ -685,9 +673,9 @@ class SkillTreeService {
       // Bỏ qua nếu đã học
       if (character.skillTree[skill.category].learned.includes(skill.id)) continue;
 
-      // Kiểm tra prerequisites
+      // Bỏ qua kiểm tra prerequisites cho tier 2 và 3 - luôn cho phép
       let canLearn = true;
-      if (skill.prerequisites) {
+      if (skill.prerequisites && skill.tier !== 2 && skill.tier !== 3) {
         const learnedSkills = character.skillTree[skill.category].learned;
         for (const prereq of skill.prerequisites) {
           if (!learnedSkills.includes(prereq)) {

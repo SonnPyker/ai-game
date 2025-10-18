@@ -12,7 +12,6 @@ import { MotionWrapper } from '../MotionWrapper';
 import { worldTimeService } from '../../services/worldTimeService';
 import { WorldData, ContentFlags } from '../../types';
 import { AdultContentSettings } from './AdultContentSettings';
-import { HelpTooltip } from '../HelpTooltip';
 import { useResponsiveContext } from '../../contexts/ResponsiveContext';
 import { HelpButton } from '../HelpChat/HelpButton';
 
@@ -1054,27 +1053,6 @@ export function WorldBuilder() {
           </div>
         </div>
 
-        {/* Help Tooltip */}
-        <HelpTooltip
-          title="Hướng Dẫn Tạo Thế Giới"
-          content={[
-            "🤖 HƯỚNG DẪN SỬ DỤNG AI:",
-            "• Gợi ý bằng AI (Nguyên tắc thế giới/Thực thể thế giới): Tạo gợi ý phù hợp với ý tưởng cốt lõi. Cần điền ý tưởng cốt lõi trước.",
-            "• Hoàn thành tất cả: Tự động điền các mục: thể loại, bối cảnh, tông truyện, ngôi kể, độ khó, nguyên tắc, thực thể, tiền tệ (không thay đổi ý tưởng cốt lõi).",
-            "",
-            "📁 NHẬP/XUẤT THẾ GIỚI:",
-            "• Xuất thế giới: Lưu thế giới hiện tại thành file JSON để chia sẻ hoặc backup",
-            "• Nhập thế giới: Tải file JSON để khôi phục thế giới đã lưu trước đó",
-            "",
-            "💡 MẸO TẠO THẾ GIỚI:",
-            "• Viết ý tưởng cốt lõi cơ bản, sau đó dùng 'Hoàn thành tất cả' để AI tự động điền các phần còn lại",
-            "• Nguyên tắc thế giới định nghĩa quy luật của thế giới",
-            "• Thực thể thế giới là các tổ chức/sức mạnh quan trọng",
-            "• Tông truyện ảnh hưởng đến cách AI kể chuyện",
-            "• Ngôi kể quyết định góc nhìn của người chơi",
-            "• Sử dụng tính năng nhập/xuất để chia sẻ thế giới với bạn bè"
-          ]}
-        />
       </div>
 
       {/* Principle Selection Popup */}

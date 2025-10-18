@@ -29,6 +29,13 @@ export const helpCategories: HelpCategoryInfo[] = [
     description: 'Các cơ chế gameplay chính',
     icon: '🎮',
     faqCount: 0 // Will be calculated
+  },
+  {
+    id: 'relationships',
+    name: 'Mối Quan Hệ',
+    description: 'Hệ thống quan hệ với NPC',
+    icon: '🤝',
+    faqCount: 0 // Will be calculated
   }
 ];
 
@@ -48,7 +55,7 @@ export const helpFAQs: HelpFAQ[] = [
 5. **Cấu hình tiền tệ**: Loại tiền tệ và giá trị
 6. **Chọn độ khó**: Dễ, Trung bình, Khó
 
-**Mẹo**: Mô tả chi tiết sẽ giúp AI tạo kịch bản phù hợp hơn.`,
+**Mẹo**: Mô tả chi tiết sẽ giúp AI tạo kịch bản phù hợp hơn hoặc bạn có thể điền mỗi ý tưởng cốt lõi và ấn nút hoàn thành tất cả để AI tự xử`,
     tags: ['tạo thế giới', 'world builder', 'thiết lập', 'bối cảnh']
   },
   {
@@ -552,37 +559,8 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 **Quest Tracker**:
 - Theo dõi tiến độ quest
 - Hiển thị mục tiêu hiện tại
-- Đánh dấu quest đã hoàn thành`,
+- Đánh dấu quest đã hoàn thành bằng cách ấn nút kiểm tra để xác nhận hoàn thành hay chưa`,
     tags: ['quest', 'nhiệm vụ', 'NPC', 'thưởng', 'tracker']
-  },
-  {
-    id: 'game-2',
-    category: 'gameplay',
-    question: 'Cách tương tác với NPC?',
-    answer: `Tương tác với NPC:
-
-**Gặp gỡ NPC**:
-- NPC xuất hiện trong scene
-- Click vào NPC để bắt đầu hội thoại
-- Một số NPC cần điều kiện đặc biệt
-
-**Hội thoại**:
-- Chọn câu trả lời phù hợp
-- Ảnh hưởng đến mối quan hệ
-- Có thể mở khóa quest mới
-
-**Mối quan hệ**:
-- **Thân thiện**: NPC sẵn sàng giúp đỡ
-- **Trung lập**: Tương tác bình thường
-- **Thù địch**: NPC có thể tấn công
-
-**Cải thiện mối quan hệ**:
-- Chọn câu trả lời tích cực
-- Hoàn thành quest cho NPC
-- Tặng quà (nếu có)
-
-**Mẹo**: Mối quan hệ tốt mở ra nhiều cơ hội.`,
-    tags: ['NPC', 'hội thoại', 'mối quan hệ', 'tương tác', 'thân thiện']
   },
   {
     id: 'game-3',
@@ -752,7 +730,7 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 - Kết quả sẽ hiển thị trong chat log
 - Thành công/thất bại ảnh hưởng đến kết quả hành động
 
-**Mẹo**: Chỉ số cao giúp tăng khả năng thành công trong các hành động khó.`,
+**Mẹo**: - Chỉ số cao giúp tăng khả năng thành công trong các hành động khó. Nếu bạn DC check thành công NPC chắc chắn sẽ hành động theo ý bạn ngay cả nhưng yêu cầu phi lý nhất :)))`,
     tags: ['DC check', 'difficulty class', 'roll', 'ability modifier', 'dice', 'thành công', 'thất bại']
   },
   {
@@ -799,6 +777,8 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 
 **Tìm shop**:
 - Shop xuất hiện trong thị trấn/thành phố
+- NPC merchant xuất hiện mục quan hệ trong Info Menu
+- Khi sang địa điểm khác NPC merchant sẽ không bán đồ nữa trừ khi bạn quay lại vị trí của shop đó
 - NPC merchant sẽ đề xuất mua bán khi tương tác
 - Có thể có nhiều shop khác nhau
 
@@ -825,54 +805,196 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 - Có thể giảm giá mua hoặc tăng giá bán
 - Mối quan hệ với merchant ảnh hưởng giá
 
+**Restock**:
+- NPC merchant sẽ restock hàng hóa mỗi ngày lúc 00:00
+- Player có thể restock bằng cách ấn nút restock trong shop
+- Shop restock sẽ có tỷ lệ bán đồ ngon hơn và cả Skill Books
+
 **Mẹo**: Luôn kiểm tra giá trước khi mua, và bán vật phẩm không cần thiết.`,
     tags: ['shop', 'mua bán', 'merchant', 'thương lượng', 'giá cả', 'vật phẩm']
   },
   {
-    id: 'game-10',
+    id: 'game-11',
     category: 'gameplay',
-    question: 'Các loại shop và merchant trong game?',
-    answer: `Các loại shop và merchant:
+    question: 'Hệ thống faction quest (quest phe phái) hoạt động như thế nào?',
+    answer: `Hệ thống faction quest:
 
-**Weapon Shop**:
-- Bán vũ khí các loại
-- Từ vũ khí cơ bản đến ma thuật
-- Có thể nâng cấp vũ khí
+**Khái niệm**:
+- Quest đặc biệt từ các phe phái trong thế giới
+- Mỗi phe phái có mục tiêu và phương pháp riêng
+- Ảnh hưởng đến danh tiếng phe phái
 
-**Armor Shop**:
-- Bán giáp bảo vệ
-- Giáp nhẹ, giáp nặng, giáp ma thuật
-- Phụ kiện như găng tay, giày
+**Điều kiện tạo quest**:
+- Cần 100 điểm danh tiếng với phe phái
+- Chỉ có thể tạo 1 quest phe phái tại một thời điểm
+- Quest được tạo tự động bởi AI
 
-**General Store**:
-- Vật phẩm đa dạng
-- Consumable, skill books
-- Vật phẩm quest và đặc biệt
+**Loại objectives**:
+- **FIND_ITEM**: Tìm vật phẩm cụ thể
+- **FIND_NPC**: Gặp gỡ NPC cụ thể
+- **COMBAT**: Đánh bại kẻ thù
+- **TRAVEL**: Di chuyển đến địa điểm
+- **DELIVERY**: Giao vật phẩm cho NPC
 
-**Magic Shop**:
-- Vật phẩm phép thuật
-- Scroll, potion, wand
-- Chỉ xuất hiện ở thành phố lớn
+**Phần thưởng**:
+- Danh tiếng phe phái (30-50 điểm)
+- Kinh nghiệm nhân vật
+- Có thể mở khóa quest mới
+- Item đặc trưng phe phái
 
-**Black Market**:
-- Vật phẩm hiếm và bất hợp pháp
-- Giá cao nhưng chất lượng tốt
-- Cần mối quan hệ đặc biệt
+**Cách tạo quest**:
+1. Vào Quest Tracker
+2. Chọn tab "Faction Quests"
+3. Nhấn "Tạo Quest" bên cạnh tên phe phái
+4. AI sẽ tạo quest phù hợp với mục tiêu phe phái
 
-**Merchant Types**:
-- **Friendly**: Giá công bằng, dễ thương lượng
-- **Greedy**: Giá cao, khó thương lượng
-- **Suspicious**: Cần kiểm tra kỹ trước khi mua
-- **Elite**: Chỉ bán cho người có địa vị cao
+**Quản lý danh tiếng**:
+- Hoàn thành quest tăng danh tiếng
+- Danh tiếng cao = nhiều quest hơn
+- Danh tiếng thấp = ít cơ hội tạo quest
 
-**Trading Tips**:
-- Mối quan hệ tốt = giá tốt hơn
-- Charisma cao = thương lượng hiệu quả
-- Mua nhiều = có thể được giảm giá
-- Bán vật phẩm hiếm = giá cao
+**Mẹo**: Tập trung vào một phe phái để xây dựng danh tiếng cao.`,
+    tags: ['faction', 'phe phái', 'quest', 'danh tiếng', 'reputation', 'objectives']
+  },
 
-**Mẹo**: Xây dựng mối quan hệ tốt với merchant để có giá ưu đãi.`,
-    tags: ['merchant', 'shop types', 'weapon shop', 'armor shop', 'magic shop', 'black market', 'trading']
+  // Relationships FAQs
+  {
+    id: 'rel-1',
+    category: 'relationships',
+    question: 'Hệ thống mối quan hệ với NPC hoạt động như thế nào?',
+    answer: `Hệ thống mối quan hệ NPC:
+
+**Relationship Level (Mức độ quan hệ)**:
+- Phạm vi: -100 đến +100
+- Ý nghĩa: Mức độ thân thiết cá nhân
+- Ảnh hưởng: Cách NPC phản ứng với bạn
+
+**Reputation (Danh tiếng)**:
+- Phạm vi: -100 đến +100
+- Ý nghĩa: Danh tiếng công khai
+- Ảnh hưởng: Cách NPC khác đối xử với bạn
+
+**Status (Trạng thái)**:
+- **Neutral**: Trung lập (mặc định)
+- **Friendly**: Thân thiện (≥80 relationship)
+- **Hostile**: Thù địch (≤-60 relationship)
+- **Romantic**: Lãng mạn (≥60 + romantic action)
+- **Rival**: Đối thủ (-30 đến -59)
+- **Ally**: Đồng minh (có thể chiêu mộ)
+
+**Cách cải thiện mối quan hệ**:
+- Chọn câu trả lời tích cực
+- Hoàn thành quest cho NPC
+- Cứu mạng/bảo vệ NPC (+8 relationship)
+- Tặng quà phù hợp
+- Tương tác thường xuyên
+
+**Mẹo**: Mối quan hệ tốt mở khóa nhiều cơ hội và quest mới.`,
+    tags: ['NPC', 'mối quan hệ', 'relationship', 'reputation', 'status', 'tương tác']
+  },
+  {
+    id: 'rel-2',
+    category: 'relationships',
+    question: 'Hệ thống arousal (hấp dẫn) của NPC là gì?',
+    answer: `Hệ thống arousal cho nội dung 18+:
+
+**Khái niệm**:
+- Chỉ có khi bật nội dung 18+
+- Theo dõi mức độ hấp dẫn của NPC với bạn
+- Phạm vi: 0-100 (không quan tâm đến rất hấp dẫn)
+
+**Các yếu tố ảnh hưởng**:
+- **Hành động của bạn**: Cử chỉ lãng mạn, tặng quà
+- **Mối quan hệ**: Relationship level cao = nhạy cảm hơn
+- **Tính cách NPC**: Mỗi NPC có personality riêng
+- **Context**: Tình huống và môi trường
+
+**Mức độ thay đổi**:
+- **Low intensity**: Thay đổi nhỏ
+- **Medium intensity**: Thay đổi vừa phải
+- **High intensity**: Thay đổi lớn
+
+**Ảnh hưởng đến tương tác**:
+- Arousal cao = NPC phản ứng tích cực hơn
+- Arousal thấp = NPC ít quan tâm
+- Ảnh hưởng đến dialogue và hành động
+
+**Mẹo**: Xây dựng mối quan hệ tốt trước khi thực hiện hành động lãng mạn.`,
+    tags: ['arousal', 'hấp dẫn', '18+', 'NPC', 'tính cách', 'romance']
+  },
+  {
+    id: 'rel-3',
+    category: 'relationships',
+    question: 'Cách chiêu mộ đồng minh và quản lý đồng minh?',
+    answer: `Hệ thống chiêu mộ đồng minh:
+
+**Điều kiện chiêu mộ**:
+- **Mối quan hệ**: Cần điểm quan hệ >= 50 với NPC
+- **Số lượng**: Tối đa 2 đồng minh cùng lúc
+- **Trạng thái**: NPC không được bị thương
+- **Trùng lặp**: NPC chưa là đồng minh
+
+**Tỷ lệ chấp nhận**:
+- **50-79 điểm**: 50% cơ hội chấp nhận
+- **80+ điểm**: 100% cơ hội chấp nhận
+
+**Cách chiêu mộ**:
+1. Tương tác với NPC có đủ điều kiện
+2. Chọn "Chiêu mộ" trong menu NPC
+3. Hệ thống sẽ roll xác suất
+4. Thành công: NPC trở thành đồng minh
+
+**Quản lý đồng minh**:
+- **Xem danh sách**: Tab "Allies" trong Info Menu
+- **Hủy đồng minh**: Click "Hủy đồng minh" trong menu NPC
+- **Trạng thái**: Đồng minh bị thương sẽ không tham gia combat
+
+**Trong combat**:
+- Đồng minh tự động tham gia chiến đấu
+- Có chỉ số combat riêng
+- Có thể sử dụng kỹ năng đặc biệt
+- Chết trong combat sẽ bị thương
+
+**Mẹo**: Xây dựng mối quan hệ tốt với NPC để dễ chiêu mộ hơn.`,
+    tags: ['đồng minh', 'ally', 'chiêu mộ', 'recruit', 'NPC', 'mối quan hệ', 'combat']
+  },
+  {
+    id: 'rel-4',
+    category: 'relationships',
+    question: 'Hệ thống merchant NPC và shop như thế nào?',
+    answer: `Hệ thống merchant NPC:
+
+**Merchant Signature NPC**:
+- NPC đặc biệt quản lý shop tại mỗi địa điểm
+- Có tags: ['merchant', 'shopkeeper']
+- Chỉ có thể mua/bán với NPC này
+- Tự động tạo shop khi cần
+
+**Cách tương tác**:
+- Gặp merchant NPC tại shop location
+- Nhấn "Mở Shop" để xem hàng hóa
+- Merchant sẽ đề xuất mua bán
+- Có thể thương lượng giá
+
+**Mối quan hệ với merchant**:
+- Relationship level ảnh hưởng đến giá
+- Reputation ảnh hưởng đến thái độ
+- Mối quan hệ tốt = giá ưu đãi
+- Có thể mở khóa hàng hóa đặc biệt
+
+**Loại shop**:
+- **Weapon Shop**: Vũ khí các loại
+- **Armor Shop**: Giáp bảo vệ
+- **General Store**: Vật phẩm đa dạng
+- **Magic Shop**: Vật phẩm phép thuật
+
+**Restock hàng hóa**:
+- Tự động restock mỗi ngày lúc 00:00
+- Có thể restock thủ công bằng nút "Restock"
+- Restock có tỷ lệ bán đồ tốt hơn
+
+**Mẹo**: Xây dựng mối quan hệ tốt với merchant để có giá tốt.`,
+    tags: ['merchant', 'shop', 'NPC', 'mua bán', 'thương lượng', 'restock']
   }
 ];
 

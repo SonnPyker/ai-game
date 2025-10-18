@@ -10,7 +10,6 @@ import {
   Star, 
   RotateCcw,
   Check,
-  Lock,
   AlertTriangle
 } from 'lucide-react';
 
@@ -41,9 +40,6 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
   const learnedCombatSkills = character.skillTree?.combat?.learned || [];
   const learnedSocialSkills = character.skillTree?.social?.learned || [];
 
-  // Available skills
-  const availableCombatSkills = character.skillTree?.combat?.available || [];
-  const availableSocialSkills = character.skillTree?.social?.available || [];
 
   // Học skill
   const handleLearnSkill = (skillId: string) => {
@@ -85,7 +81,6 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
   const renderSkillCard = (skill: SkillTreeSkill) => {
     const isLearned = learnedCombatSkills.includes(skill.id) || learnedSocialSkills.includes(skill.id);
     const canLearn = skillTreeService.canLearnSkill(character, skill.id);
-    const isAvailable = availableCombatSkills.includes(skill.id) || availableSocialSkills.includes(skill.id);
 
     return (
       <div 
@@ -121,7 +116,6 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
               </h3>
               <div className="flex items-center space-x-1 md:ml-2">
                 {isLearned && <Check className="w-4 h-4 text-green-400" />}
-                {!isAvailable && !isLearned && <Lock className="w-4 h-4 text-gray-500" />}
               </div>
             </div>
             

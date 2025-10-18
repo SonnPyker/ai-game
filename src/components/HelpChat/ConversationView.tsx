@@ -49,7 +49,7 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ faq }) => {
   };
 
   return (
-    <div className="flex flex-col space-y-4 h-full">
+    <div className="flex flex-col space-y-4 h-full pb-8">
       {/* Question Bubble */}
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">

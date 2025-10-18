@@ -9,7 +9,6 @@ import { combatLevelService } from '../services/combatLevelService';
 import { currencyService } from '../services/currencyService';
 import { skillTreeService } from '../services/skillTreeService';
 import { Sparkles, Download, RotateCcw, Check, Globe, Upload, Shuffle, Star } from 'lucide-react';
-import { HelpTooltip } from '../components/HelpTooltip';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
 import { translateEffectFormat } from '../utils/skillEffectTranslator';
 import { HelpButton } from '../components/HelpChat/HelpButton';
@@ -1071,23 +1070,6 @@ export function CharacterCreationPage() {
           </div>
         </MotionWrapper>
 
-        {/* Help Tooltip */}
-        <HelpTooltip
-          title="Hướng Dẫn Tạo Nhân Vật"
-          content={[
-            "📁 NHẬP/XUẤT NHÂN VẬT:",
-            "• Nhập nhân vật: Tải file JSON để khôi phục nhân vật đã lưu trước đó. Tự động chuyển sang tab tùy chỉnh.",
-            "• Xuất nhân vật: Lưu nhân vật hiện tại thành file JSON để chia sẻ hoặc backup (có trong tab tùy chỉnh)",
-            "• Bạn có thể chia sẻ nhân vật với bạn bè hoặc tạo nhiều nhân vật khác nhau cho cùng một thế giới",
-            "",
-            "💡 MẸO TẠO NHÂN VẬT:",
-            "• Điền đầy đủ thông tin cơ bản trước khi sử dụng AI gợi ý",
-            "• Chỉ số cốt lõi ảnh hưởng đến khả năng của nhân vật trong game",
-            "• Đặc điểm tính cách giúp AI hiểu rõ hơn về nhân vật",
-            "• Tiểu sử chi tiết sẽ giúp AI tạo kịch bản phù hợp hơn",
-            "• Sử dụng tính năng gợi ý AI để tự động hoàn thiện nhân vật"
-          ]}
-        />
       </div>
 
       {/* Action Buttons */}
