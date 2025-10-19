@@ -12,8 +12,9 @@ interface ParsedSkillEffect {
 }
 
 interface SkillEffectResult {
-  logType: 'damage' | 'heal' | 'status' | 'info';
+  logType: 'damage' | 'heal' | 'status' | 'info' | 'buff' | 'debuff';
   description: string;
+  details?: any;
 }
 
 class SkillEffectService {
@@ -40,6 +41,27 @@ class SkillEffectService {
     }
 
     const [type, value, target, duration] = parts;
+    
+    // Handle heal effects with dice notation
+    if (type === 'heal' && value.includes('d')) {
+      return {
+        type: 'instant_heal',
+        value: value,
+        target: (target as 'self' | 'enemy' | 'all_enemies') || 'self',
+        duration: 0
+      };
+    }
+    
+    // Handle damage buff effects
+    if (type === 'damage_buff') {
+      return {
+        type: 'stat_buff',
+        value: value,
+        statType: 'damage',
+        target: (target as 'self' | 'enemy' | 'all_enemies') || 'self',
+        duration: parseInt(duration) || 3
+      };
+    }
     
     // Determine default target based on effect type
     let defaultTarget: 'self' | 'enemy' | 'all_enemies' = 'self';
@@ -158,18 +180,26 @@ class SkillEffectService {
       // Use combatService.applyDamageWithEffects for floating text and proper damage handling
       combatService.applyDamageWithEffects(target.id, damage, caster.id);
       
-      // Add detailed log with dice breakdown
-      if (target.health.current <= 0) {
-        results.push({
-          logType: 'damage',
-          description: `${caster.name} gây ${damage}(${damageResult.breakdown}) sát thương cho ${target.name} (${target.name} đã chết!)`
-        });
+      // Format damage like attack format
+      let damageDescription = '';
+      if (damageResult.diceDetails) {
+        const diceFormula = damageResult.diceDetails.formula;
+        damageDescription = `${caster.name} gây ${damage} sát thương cho ${target.name} (${diceFormula})`;
       } else {
-        results.push({
-          logType: 'damage',
-          description: `${caster.name} gây ${damage}(${damageResult.breakdown}) sát thương cho ${target.name} (${target.health.current}/${target.health.max} HP)`
-        });
+        damageDescription = `${caster.name} gây ${damage} sát thương cho ${target.name} (${damageResult.breakdown})`;
       }
+      
+      if (target.health.current <= 0) {
+        damageDescription += ` (${target.name} đã chết!)`;
+      } else {
+        damageDescription += ` (${target.health.current}/${target.health.max} HP)`;
+      }
+      
+      results.push({
+        logType: 'damage',
+        description: damageDescription,
+        details: damageResult.diceDetails
+      });
     }
 
     return results;
@@ -188,8 +218,11 @@ class SkillEffectService {
     
     if (!effect.value) return results;
 
-    // Calculate heal amount
-    const healAmount = this.calculateHeal(effect.value);
+    // Calculate heal amount with dice details
+    console.log(`🔍 Healing effect value: ${effect.value}`);
+    const healResult = this.calculateHeal(effect.value);
+    console.log(`🔍 Heal result:`, healResult);
+    const healAmount = healResult.total;
     
     // Apply to targets
     const targets = this.getTargets(effect.target, targetIds, allCombatants, caster);
@@ -207,9 +240,19 @@ class SkillEffectService {
         combatService.triggerHealAnimation(target.id, actualHeal);
       }
       
+      // Format healing like attack format
+      let healDescription = '';
+      if (healResult.diceDetails) {
+        const diceFormula = healResult.diceDetails.formula;
+        healDescription = `${caster.name} hồi phục ${actualHeal} HP cho ${target.name} (${diceFormula}) (${target.health.current}/${target.health.max} HP)`;
+      } else {
+        healDescription = `${caster.name} hồi phục ${actualHeal} HP cho ${target.name} (${target.health.current}/${target.health.max} HP)`;
+      }
+      
       results.push({
         logType: 'heal',
-        description: `${caster.name} hồi phục ${actualHeal} HP cho ${target.name} (${target.health.current}/${target.health.max} HP)`
+        description: healDescription,
+        details: healResult.diceDetails
       });
     }
 
@@ -244,12 +287,22 @@ class SkillEffectService {
     
     if (!effect.statType || !effect.value || !effect.duration) return results;
 
-    // Parse stat value
-    const statValue = parseInt(effect.value.replace('+', ''));
+    // Parse stat value - handle dice notation
+    let statValue: number;
+    if (effect.value.includes('d')) {
+      // For dice notation like +1d4, use the dice count as base value
+      const diceMatch = effect.value.match(/\+?(\d+)d\d+/);
+      statValue = diceMatch ? parseInt(diceMatch[1]) : 1;
+    } else {
+      statValue = parseInt(effect.value.replace('+', ''));
+    }
     if (isNaN(statValue)) return results;
 
     // Apply to targets
     const targets = this.getTargets(effect.target, targetIds, allCombatants, caster);
+    
+    console.log(`🔍 Applying stat effect: ${effect.statType} +${statValue} for ${effect.duration} turns`);
+    console.log(`🔍 Targets:`, targets.map(t => t.name));
     
     for (const target of targets) {
       if (!target.isAlive) continue;
@@ -268,9 +321,10 @@ class SkillEffectService {
       };
       
       target.statusEffects.push(statusEffect);
+      console.log(`🔍 Applied status effect to ${target.name}:`, statusEffect);
       
       results.push({
-        logType: 'status',
+        logType: effect.type === 'stat_buff' ? 'buff' : 'debuff',
         description: `${caster.name} ${effect.type === 'stat_buff' ? 'tăng' : 'giảm'} ${effect.statType} +${statValue} cho ${target.name} (${effect.duration} lượt)`
       });
     }
@@ -304,15 +358,24 @@ class SkillEffectService {
   /**
    * Calculate damage with dice breakdown for logging
    */
-  private calculateDamageWithBreakdown(diceNotation: string): { total: number; breakdown: string } {
+  private calculateDamageWithBreakdown(diceNotation: string): { total: number; breakdown: string; diceDetails?: any } {
     try {
       if (diceNotation.includes('d')) {
         const result = DiceRoller.roll(diceNotation);
         if (typeof result === 'number') {
           return { total: result, breakdown: diceNotation };
         } else {
-          // Use the original dice notation for breakdown to preserve modifiers
-          return { total: result.total, breakdown: diceNotation };
+          // Return dice details for logging
+          return { 
+            total: result.total, 
+            breakdown: diceNotation,
+            diceDetails: {
+              formula: diceNotation,
+              rolls: result.rolls,
+              total: result.total,
+              bonus: (result as any).bonus || 0
+            }
+          };
         }
       }
       const value = parseInt(diceNotation) || 0;
@@ -329,18 +392,32 @@ class SkillEffectService {
   /**
    * Calculate heal amount from dice notation
    */
-  private calculateHeal(diceNotation: string): number {
+  private calculateHeal(diceNotation: string): { total: number; diceDetails?: any } {
     try {
       if (diceNotation.includes('d')) {
         const result = DiceRoller.roll(diceNotation);
-        return typeof result === 'number' ? result : result.total;
+        if (typeof result === 'number') {
+          return { total: result };
+        } else {
+          return { 
+            total: result.total,
+            diceDetails: {
+              formula: diceNotation,
+              rolls: result.rolls,
+              total: result.total,
+              bonus: (result as any).bonus || 0
+            }
+          };
+        }
       }
-      return parseInt(diceNotation) || 0;
+      const value = parseInt(diceNotation) || 0;
+      return { total: value };
     } catch (error) {
       console.error(`Invalid dice notation for healing: ${diceNotation}`, error);
       // Fallback to simple number if dice notation is invalid
       const numberMatch = diceNotation.match(/(\d+)/);
-      return numberMatch ? parseInt(numberMatch[1]) : 1;
+      const fallbackValue = numberMatch ? parseInt(numberMatch[1]) : 1;
+      return { total: fallbackValue };
     }
   }
 }

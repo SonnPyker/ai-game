@@ -7,7 +7,6 @@ import {
   Pause,
   MessageSquare,
   Pin,
-  Plus,
   TestTube,
   X,
   Sword
@@ -19,7 +18,6 @@ import { combatDataService } from '../services/combatDataService';
 import { inventoryService } from '../services/inventoryService';
 import { levelSystemService } from '../services/levelSystemService';
 import { questCombatService } from '../services/questCombatService';
-import { enemyGenerationService } from '../services/enemyGenerationService';
 import { effectProcessingService } from '../services/effectProcessingService';
 import { MotionWrapper } from '../components/MotionWrapper';
 
@@ -452,42 +450,233 @@ export function CombatPage({}: CombatPageProps) {
         localStorage.setItem('currentCharacter', JSON.stringify(player));
       }
       
-      // Create test enemies
+      // Create test enemies with different threat levels
       const testEnemies: Enemy[] = [
+        // Low threat goblin (no skills)
         {
-          id: 'test_goblin',
-          name: 'Goblin Test',
-          description: 'Một goblin thử nghiệm.',
+          id: 'test_goblin_low',
+          name: 'Goblin Thường',
+          description: 'Một goblin yếu ớt, chỉ có basic attacks.',
           type: 'humanoid',
           level: 1,
           combatLevel: 1,
+          threatLevel: 'low',
           stats: {
-            strength: 12,
-            agility: 14,
-            constitution: 10,
-            intelligence: 8,
-            wisdom: 10,
+            strength: 10,
+            agility: 12,
+            constitution: 8,
+            intelligence: 6,
+            wisdom: 8,
+            charisma: 6,
+            modifiers: {
+              strength: 0,
+              agility: 1,
+              constitution: -1,
+              intelligence: -2,
+              wisdom: -1,
+              charisma: -2
+            }
+          },
+          health: { current: 20, max: 20 },
+          armorClass: 6,
+          attacks: [
+            {
+              name: 'Rusty Dagger',
+              attackBonus: 2,
+              damage: '1d4',
+              damageType: 'physical'
+            }
+          ],
+          experienceReward: 15
+        },
+        // Medium threat goblin (1 skill)
+        {
+          id: 'test_goblin_medium',
+          name: 'Goblin Chiến Binh',
+          description: 'Một goblin có kinh nghiệm chiến đấu, biết sử dụng skills.',
+          type: 'humanoid',
+          level: 3,
+          combatLevel: 3,
+          threatLevel: 'medium',
+          stats: {
+            strength: 14,
+            agility: 16,
+            constitution: 12,
+            intelligence: 10,
+            wisdom: 12,
             charisma: 8,
             modifiers: {
-              strength: 1,
-              agility: 2,
-              constitution: 0,
-              intelligence: -1,
-              wisdom: 0,
+              strength: 2,
+              agility: 3,
+              constitution: 1,
+              intelligence: 0,
+              wisdom: 1,
               charisma: -1
             }
           },
-          health: { current: 25, max: 25 },
-          armorClass: 8,
+          health: { current: 35, max: 35 },
+          armorClass: 10,
           attacks: [
             {
               name: 'Scimitar',
+              attackBonus: 5,
+              damage: '1d6+2',
+              damageType: 'physical'
+            }
+          ],
+          skills: [
+            {
+              id: 'goblin_power_strike',
+              name: 'Power Strike',
+              description: 'Tấn công mạnh mẽ với sát thương tăng thêm.',
+              level: 2,
+              skillType: 'damage',
+              effects: ['damage_buff:+1d4:3turns'],
+              cooldown: 3,
+              currentCooldown: 0,
+              icon: '⚔️',
+              requiresTarget: true
+            }
+          ],
+          experienceReward: 50
+        },
+        // High threat goblin (2 skills)
+        {
+          id: 'test_goblin_high',
+          name: 'Goblin Shaman',
+          description: 'Một goblin pháp sư mạnh mẽ với nhiều kỹ năng.',
+          type: 'humanoid',
+          level: 5,
+          combatLevel: 5,
+          threatLevel: 'high',
+          stats: {
+            strength: 12,
+            agility: 14,
+            constitution: 14,
+            intelligence: 16,
+            wisdom: 18,
+            charisma: 10,
+            modifiers: {
+              strength: 1,
+              agility: 2,
+              constitution: 2,
+              intelligence: 3,
+              wisdom: 4,
+              charisma: 0
+            }
+          },
+          health: { current: 45, max: 45 },
+          armorClass: 12,
+          attacks: [
+            {
+              name: 'Staff',
               attackBonus: 4,
               damage: '1d6+1',
               damageType: 'physical'
             }
           ],
-          experienceReward: 25
+          skills: [
+            {
+              id: 'goblin_fire_blast',
+              name: 'Fire Blast',
+              description: 'Tạo ra ngọn lửa tấn công kẻ thù.',
+              level: 3,
+              skillType: 'damage',
+              effects: ['damage:2d6:instant'],
+              cooldown: 4,
+              currentCooldown: 0,
+              icon: '🔥',
+              requiresTarget: true
+            },
+            {
+              id: 'goblin_heal_self',
+              name: 'Heal Self',
+              description: 'Hồi phục HP cho bản thân.',
+              level: 2,
+              skillType: 'healing',
+              effects: ['heal:2d4:+2:instant'],
+              cooldown: 3,
+              currentCooldown: 0,
+              icon: '💚',
+              requiresTarget: false
+            }
+          ],
+          experienceReward: 100
+        },
+        // Extreme threat goblin (3 skills)
+        {
+          id: 'test_goblin_extreme',
+          name: 'Goblin Warlord',
+          description: 'Một goblin tướng lĩnh cực kỳ nguy hiểm với đầy đủ kỹ năng.',
+          type: 'humanoid',
+          level: 8,
+          combatLevel: 8,
+          threatLevel: 'extreme',
+          stats: {
+            strength: 18,
+            agility: 16,
+            constitution: 18,
+            intelligence: 14,
+            wisdom: 16,
+            charisma: 12,
+            modifiers: {
+              strength: 4,
+              agility: 3,
+              constitution: 4,
+              intelligence: 2,
+              wisdom: 3,
+              charisma: 1
+            }
+          },
+          health: { current: 80, max: 80 },
+          armorClass: 16,
+          attacks: [
+            {
+              name: 'War Axe',
+              attackBonus: 8,
+              damage: '2d6+4',
+              damageType: 'physical'
+            }
+          ],
+          skills: [
+            {
+              id: 'goblin_berserker_rage',
+              name: 'Berserker Rage',
+              description: 'Kích hoạt cơn thịnh nộ, tăng sức mạnh và tốc độ.',
+              level: 4,
+              skillType: 'damage',
+              effects: ['stat_buff:strength:+3:4turns', 'stat_buff:agility:+2:4turns'],
+              cooldown: 5,
+              currentCooldown: 0,
+              icon: '😡',
+              requiresTarget: false
+            },
+            {
+              id: 'goblin_heal_self_advanced',
+              name: 'Greater Heal',
+              description: 'Hồi phục HP mạnh mẽ cho bản thân.',
+              level: 4,
+              skillType: 'healing',
+              effects: ['heal:3d6:+3:instant'],
+              cooldown: 4,
+              currentCooldown: 0,
+              icon: '💚',
+              requiresTarget: false
+            },
+            {
+              id: 'goblin_defensive_stance',
+              name: 'Defensive Stance',
+              description: 'Tăng khả năng phòng thủ tạm thời.',
+              level: 3,
+              skillType: 'healing',
+              effects: ['stat_buff:ac:+3:5turns'],
+              cooldown: 3,
+              currentCooldown: 0,
+              icon: '🛡️',
+              requiresTarget: false
+            }
+          ],
+          experienceReward: 200
         }
       ];
 
@@ -856,31 +1045,269 @@ export function CombatPage({}: CombatPageProps) {
     }
   }, [combatState, isProcessing]);
 
-  // Test function: Add enemy
-  const handleAddTestEnemy = useCallback(async () => {
+  // Test function: Add specific goblin by threat level
+  const handleAddSpecificGoblin = useCallback(async (threatLevel: 'low' | 'medium' | 'high' | 'extreme') => {
     if (!combatState || isProcessing) return;
 
     try {
       setIsProcessing(true);
       
-      // Generate a test enemy
-      const testEnemy = enemyGenerationService.generateRandomEnemy(
-        combatState.currentTurn + 1
-      );
+      // Get the specific goblin from test enemies
+      const testEnemies: Enemy[] = [
+        // Low threat goblin (no skills)
+        {
+          id: 'test_goblin_low',
+          name: 'Goblin Thường',
+          description: 'Một goblin yếu ớt, chỉ có basic attacks.',
+          type: 'humanoid',
+          level: 1,
+          combatLevel: 1,
+          threatLevel: 'low',
+          stats: {
+            strength: 10,
+            agility: 12,
+            constitution: 8,
+            intelligence: 6,
+            wisdom: 8,
+            charisma: 6,
+            modifiers: {
+              strength: 0,
+              agility: 1,
+              constitution: -1,
+              intelligence: -2,
+              wisdom: -1,
+              charisma: -2
+            }
+          },
+          health: { current: 20, max: 20 },
+          armorClass: 6,
+          attacks: [
+            {
+              name: 'Rusty Dagger',
+              attackBonus: 2,
+              damage: '1d4',
+              damageType: 'physical'
+            }
+          ],
+          experienceReward: 15
+        },
+        // Medium threat goblin (1 skill)
+        {
+          id: 'test_goblin_medium',
+          name: 'Goblin Chiến Binh',
+          description: 'Một goblin có kinh nghiệm chiến đấu, biết sử dụng skills.',
+          type: 'humanoid',
+          level: 3,
+          combatLevel: 3,
+          threatLevel: 'medium',
+          stats: {
+            strength: 14,
+            agility: 16,
+            constitution: 12,
+            intelligence: 10,
+            wisdom: 12,
+            charisma: 8,
+            modifiers: {
+              strength: 2,
+              agility: 3,
+              constitution: 1,
+              intelligence: 0,
+              wisdom: 1,
+              charisma: -1
+            }
+          },
+          health: { current: 35, max: 35 },
+          armorClass: 10,
+          attacks: [
+            {
+              name: 'Scimitar',
+              attackBonus: 5,
+              damage: '1d6+2',
+              damageType: 'physical'
+            }
+          ],
+          skills: [
+            {
+              id: 'goblin_power_strike',
+              name: 'Power Strike',
+              description: 'Tấn công mạnh mẽ với sát thương tăng thêm.',
+              level: 2,
+              skillType: 'damage',
+              effects: ['damage_buff:+1d4:3turns'],
+              cooldown: 3,
+              currentCooldown: 0,
+              icon: '⚔️',
+              requiresTarget: true
+            }
+          ],
+          experienceReward: 50
+        },
+        // High threat goblin (2 skills)
+        {
+          id: 'test_goblin_high',
+          name: 'Goblin Shaman',
+          description: 'Một goblin pháp sư mạnh mẽ với nhiều kỹ năng.',
+          type: 'humanoid',
+          level: 5,
+          combatLevel: 5,
+          threatLevel: 'high',
+          stats: {
+            strength: 12,
+            agility: 14,
+            constitution: 14,
+            intelligence: 16,
+            wisdom: 18,
+            charisma: 10,
+            modifiers: {
+              strength: 1,
+              agility: 2,
+              constitution: 2,
+              intelligence: 3,
+              wisdom: 4,
+              charisma: 0
+            }
+          },
+          health: { current: 45, max: 45 },
+          armorClass: 12,
+          attacks: [
+            {
+              name: 'Staff',
+              attackBonus: 4,
+              damage: '1d6+1',
+              damageType: 'physical'
+            }
+          ],
+          skills: [
+            {
+              id: 'goblin_fire_blast',
+              name: 'Fire Blast',
+              description: 'Tạo ra ngọn lửa tấn công kẻ thù.',
+              level: 3,
+              skillType: 'damage',
+              effects: ['damage:2d6:instant'],
+              cooldown: 4,
+              currentCooldown: 0,
+              icon: '🔥',
+              requiresTarget: true
+            },
+            {
+              id: 'goblin_heal_self',
+              name: 'Heal Self',
+              description: 'Hồi phục HP cho bản thân.',
+              level: 2,
+              skillType: 'healing',
+              effects: ['heal:2d4:+2:instant'],
+              cooldown: 3,
+              currentCooldown: 0,
+              icon: '💚',
+              requiresTarget: false
+            }
+          ],
+          experienceReward: 100
+        },
+        // Extreme threat goblin (3 skills)
+        {
+          id: 'test_goblin_extreme',
+          name: 'Goblin Warlord',
+          description: 'Một goblin tướng lĩnh cực kỳ nguy hiểm với đầy đủ kỹ năng.',
+          type: 'humanoid',
+          level: 8,
+          combatLevel: 8,
+          threatLevel: 'extreme',
+          stats: {
+            strength: 18,
+            agility: 16,
+            constitution: 18,
+            intelligence: 14,
+            wisdom: 16,
+            charisma: 12,
+            modifiers: {
+              strength: 4,
+              agility: 3,
+              constitution: 4,
+              intelligence: 2,
+              wisdom: 3,
+              charisma: 1
+            }
+          },
+          health: { current: 80, max: 80 },
+          armorClass: 16,
+          attacks: [
+            {
+              name: 'War Axe',
+              attackBonus: 8,
+              damage: '2d6+4',
+              damageType: 'physical'
+            }
+          ],
+          skills: [
+            {
+              id: 'goblin_berserker_rage',
+              name: 'Berserker Rage',
+              description: 'Kích hoạt cơn thịnh nộ, tăng sức mạnh và tốc độ.',
+              level: 4,
+              skillType: 'damage',
+              effects: ['stat_buff:strength:+3:4turns', 'stat_buff:agility:+2:4turns'],
+              cooldown: 5,
+              currentCooldown: 0,
+              icon: '😡',
+              requiresTarget: false
+            },
+            {
+              id: 'goblin_heal_self_advanced',
+              name: 'Greater Heal',
+              description: 'Hồi phục HP mạnh mẽ cho bản thân.',
+              level: 4,
+              skillType: 'healing',
+              effects: ['heal:3d6:+3:instant'],
+              cooldown: 4,
+              currentCooldown: 0,
+              icon: '💚',
+              requiresTarget: false
+            },
+            {
+              id: 'goblin_defensive_stance',
+              name: 'Defensive Stance',
+              description: 'Tăng khả năng phòng thủ tạm thời.',
+              level: 3,
+              skillType: 'healing',
+              effects: ['stat_buff:ac:+3:5turns'],
+              cooldown: 3,
+              currentCooldown: 0,
+              icon: '🛡️',
+              requiresTarget: false
+            }
+          ],
+          experienceReward: 200
+        }
+      ];
+      
+      const selectedGoblin = testEnemies.find(enemy => enemy.threatLevel === threatLevel);
+      if (!selectedGoblin) {
+        console.error('Goblin not found for threat level:', threatLevel);
+        return;
+      }
+      
+      // Add unique ID to avoid conflicts
+      const uniqueGoblin = {
+        ...selectedGoblin,
+        id: `${selectedGoblin.id}_${Date.now()}`
+      };
       
       // Add enemy to combat
-      combatService.addEnemyToCombat(testEnemy);
+      combatService.addEnemyToCombat(uniqueGoblin);
       
       // Update combat state
       setCombatState({ ...combatService.getCurrentCombat()! });
       
-      console.log('✅ Added test enemy:', testEnemy.name);
+      console.log('✅ Added goblin:', uniqueGoblin.name, `(${threatLevel} threat)`);
     } catch (error) {
-      console.error('Error adding test enemy:', error);
+      console.error('Error adding goblin:', error);
     } finally {
       setIsProcessing(false);
     }
   }, [combatState, isProcessing]);
+
 
   // Test function: Add consumable to player
   const handleAddTestConsumable = useCallback(async () => {
@@ -1237,14 +1664,41 @@ export function CombatPage({}: CombatPageProps) {
 
             {/* Test Buttons */}
             <div className="flex items-center space-x-1 border-l border-gray-600 pl-2">
-              {/* Add Enemy Test Button */}
+              {/* Goblin Test Buttons */}
               <button
-                onClick={handleAddTestEnemy}
+                onClick={() => handleAddSpecificGoblin('low')}
+                disabled={isProcessing}
+                className="p-2 text-gray-400 hover:text-gray-300 transition-colors disabled:opacity-50"
+                title="Thêm Goblin Thường (Low Threat)"
+              >
+                <Sword className="w-4 h-4" />
+              </button>
+              
+              <button
+                onClick={() => handleAddSpecificGoblin('medium')}
+                disabled={isProcessing}
+                className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors disabled:opacity-50"
+                title="Thêm Goblin Chiến Binh (Medium Threat)"
+              >
+                <Sword className="w-4 h-4" />
+              </button>
+              
+              <button
+                onClick={() => handleAddSpecificGoblin('high')}
+                disabled={isProcessing}
+                className="p-2 text-orange-400 hover:text-orange-300 transition-colors disabled:opacity-50"
+                title="Thêm Goblin Shaman (High Threat)"
+              >
+                <Zap className="w-4 h-4" />
+              </button>
+              
+              <button
+                onClick={() => handleAddSpecificGoblin('extreme')}
                 disabled={isProcessing}
                 className="p-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
-                title="Thêm Enemy Test"
+                title="Thêm Goblin Warlord (Extreme Threat)"
               >
-                <Plus className="w-4 h-4" />
+                <Sword className="w-4 h-4" />
               </button>
               
               {/* Add Consumable Test Button */}

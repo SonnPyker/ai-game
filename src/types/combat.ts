@@ -2,11 +2,13 @@
 import { InventoryItem } from './index';
 
 export interface CombatAction {
-  type: 'attack' | 'defend' | 'use_item' | 'useItem' | 'ability' | 'move';
+  type: 'attack' | 'defend' | 'use_item' | 'useItem' | 'ability' | 'move' | 'skill';
   targetId?: string;
+  targetIds?: string[];
   attackIndex?: number;
   itemId?: string;
   abilityId?: string;
+  skillId?: string;
   description: string;
   priority: number; // Higher number = higher priority
 }
@@ -32,12 +34,12 @@ export interface CombatNarrationTemplate {
 }
 
 export interface CombatLogEntry {
-  type: 'attack' | 'damage' | 'status' | 'death' | 'victory' | 'defeat' | 'info' | 'heal' | 'initiative';
+  type: 'attack' | 'damage' | 'status' | 'death' | 'victory' | 'defeat' | 'info' | 'heal' | 'initiative' | 'skill' | 'buff' | 'debuff' | 'consumable';
   message: string;
   combatantId?: string;
   targetId?: string;
   id?: string;
-  details?: string;
+  details?: any;
 }
 
 export interface TurnLog {

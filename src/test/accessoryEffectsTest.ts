@@ -1,6 +1,6 @@
 // Test file để kiểm tra accessory effects system
 import { accessoryEffectService } from '../services/accessoryEffectService';
-import { inventoryService } from '../services/inventoryService';
+// import { inventoryService } from '../services/inventoryService';
 import { Character, InventoryItem } from '../types';
 
 export function testAccessoryEffectsSystem() {

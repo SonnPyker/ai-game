@@ -90,21 +90,21 @@ export function testInventoryAccessorySystem() {
 
   // Test 5: Test equiping accessories
   console.log('\n3. Testing accessory equipping...');
-  console.log('Before equip - Strength:', testCharacter.coreStats.strength);
+  console.log('Before equip - Strength:', testCharacter.coreStats?.strength);
   
   const equipResult1 = inventoryService.equipItem(testAccessory1.id);
   console.log('Equip accessory1 result:', equipResult1);
-  console.log('After equip accessory1 - Strength:', testCharacter.coreStats.strength);
+  console.log('After equip accessory1 - Strength:', testCharacter.coreStats?.strength);
 
   const equipResult2 = inventoryService.equipItem(testAccessory2.id);
   console.log('Equip accessory2 result:', equipResult2);
-  console.log('After equip accessory2 - Agility:', testCharacter.coreStats.agility);
+  console.log('After equip accessory2 - Agility:', testCharacter.coreStats?.agility);
 
   // Test 6: Test unequiping accessories
   console.log('\n4. Testing accessory unequiping...');
   const unequipResult = inventoryService.unequipItem(testAccessory1.id);
   console.log('Unequip accessory1 result:', unequipResult);
-  console.log('After unequip accessory1 - Strength:', testCharacter.coreStats.strength);
+  console.log('After unequip accessory1 - Strength:', testCharacter.coreStats?.strength);
 
   // Test 7: Test misc item cannot be equipped
   console.log('\n5. Testing misc item cannot be equipped...');

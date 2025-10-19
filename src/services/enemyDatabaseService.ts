@@ -1,4 +1,4 @@
-import { Enemy, CombatStats, Attack, InventoryItem } from '../types';
+import { Enemy, CombatStats, Attack, InventoryItem, CharacterSkill } from '../types';
 import { armorGenerationService } from './armorGenerationService';
 
 class EnemyDatabaseService {
@@ -523,8 +523,189 @@ class EnemyDatabaseService {
     };
   }
 
+  // Generate enemy skills based on threat level
+  public generateEnemySkills(level: number, threatLevel: 'low' | 'medium' | 'high' | 'extreme', enemyType?: Enemy['type']): CharacterSkill[] {
+    const skills: CharacterSkill[] = [];
+    
+    // Skill count based on threat level
+    const skillCounts = {
+      low: 0,
+      medium: 1,
+      high: 2,
+      extreme: 3
+    };
+    
+    const skillCount = skillCounts[threatLevel];
+    if (skillCount === 0) return skills;
+    
+    // Generate skills based on threat level and enemy type
+    for (let i = 0; i < skillCount; i++) {
+      const skill = this.generateSingleEnemySkill(level, threatLevel, enemyType, i);
+      if (skill) {
+        skills.push(skill);
+      }
+    }
+    
+    return skills;
+  }
+
+  // Generate a single enemy skill
+  private generateSingleEnemySkill(level: number, threatLevel: string, enemyType?: Enemy['type'], skillIndex: number = 0): CharacterSkill | null {
+    const skillTemplates = this.getEnemySkillTemplates(threatLevel, enemyType);
+    const template = skillTemplates[skillIndex % skillTemplates.length];
+    
+    if (!template) return null;
+    
+    // Scale skill based on level
+    const scaledLevel = Math.max(1, Math.min(5, Math.floor(level / 3) + 1));
+    const cooldown = Math.max(2, Math.min(4, Math.floor(level / 5) + 2));
+    
+    return {
+      id: `enemy_skill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: template.name,
+      description: template.description,
+      level: scaledLevel,
+      skillType: template.skillType,
+      effects: template.effects,
+      cooldown: cooldown,
+      currentCooldown: 0,
+      icon: template.icon,
+      requiresTarget: template.requiresTarget
+    };
+  }
+
+  // Get skill templates based on threat level and enemy type
+  private getEnemySkillTemplates(threatLevel: string, enemyType?: Enemy['type']): any[] {
+    const baseTemplates = {
+      low: [],
+      medium: [
+        {
+          name: 'Power Strike',
+          description: 'Tấn công mạnh mẽ với sát thương tăng thêm.',
+          skillType: 'damage' as const,
+          effects: ['damage_buff:+1d4:3turns'],
+          icon: '⚔️',
+          requiresTarget: true
+        }
+      ],
+      high: [
+        {
+          name: 'Power Strike',
+          description: 'Tấn công mạnh mẽ với sát thương tăng thêm.',
+          skillType: 'damage' as const,
+          effects: ['damage_buff:+1d4:3turns'],
+          icon: '⚔️',
+          requiresTarget: true
+        },
+        {
+          name: 'Defensive Stance',
+          description: 'Tăng khả năng phòng thủ tạm thời.',
+          skillType: 'healing' as const,
+          effects: ['stat_buff:ac:+2:3turns'],
+          icon: '🛡️',
+          requiresTarget: false
+        }
+      ],
+      extreme: [
+        {
+          name: 'Power Strike',
+          description: 'Tấn công mạnh mẽ với sát thương tăng thêm.',
+          skillType: 'damage' as const,
+          effects: ['damage_buff:+1d4:3turns'],
+          icon: '⚔️',
+          requiresTarget: true
+        },
+        {
+          name: 'Defensive Stance',
+          description: 'Tăng khả năng phòng thủ tạm thời.',
+          skillType: 'healing' as const,
+          effects: ['stat_buff:ac:+2:3turns'],
+          icon: '🛡️',
+          requiresTarget: false
+        },
+        {
+          name: 'Heal Self',
+          description: 'Hồi phục HP cho bản thân.',
+          skillType: 'healing' as const,
+          effects: ['heal:2d4:+2:instant'],
+          icon: '💚',
+          requiresTarget: false
+        }
+      ]
+    };
+
+    // Add type-specific skills
+    const typeSpecificTemplates = this.getTypeSpecificSkillTemplates(enemyType);
+    const templates = [...baseTemplates[threatLevel as keyof typeof baseTemplates]];
+    
+    // Add type-specific skills for high/extreme threats
+    if (threatLevel === 'high' || threatLevel === 'extreme') {
+      templates.push(...typeSpecificTemplates.slice(0, threatLevel === 'extreme' ? 2 : 1));
+    }
+    
+    return templates;
+  }
+
+  // Get type-specific skill templates
+  private getTypeSpecificSkillTemplates(enemyType?: Enemy['type']): any[] {
+    const typeTemplates: Record<string, any[]> = {
+      beast: [
+        {
+          name: 'Feral Rage',
+          description: 'Kích hoạt bản năng hoang dã, tăng sát thương và tốc độ.',
+          skillType: 'damage' as const,
+          effects: ['stat_buff:strength:+2:4turns', 'stat_buff:agility:+2:4turns'],
+          icon: '🐺',
+          requiresTarget: false
+        }
+      ],
+      undead: [
+        {
+          name: 'Life Drain',
+          description: 'Hút máu từ kẻ thù để hồi phục bản thân.',
+          skillType: 'damage' as const,
+          effects: ['damage:1d6:instant', 'heal:1d4:instant'],
+          icon: '💀',
+          requiresTarget: true
+        }
+      ],
+      demon: [
+        {
+          name: 'Hellfire',
+          description: 'Tạo ra ngọn lửa địa ngục gây sát thương AoE.',
+          skillType: 'damage' as const,
+          effects: ['damage:2d6:instant'],
+          icon: '🔥',
+          requiresTarget: true
+        }
+      ],
+      elemental: [
+        {
+          name: 'Elemental Shield',
+          description: 'Tạo ra lá chắn nguyên tố bảo vệ khỏi sát thương.',
+          skillType: 'healing' as const,
+          effects: ['stat_buff:ac:+3:5turns'],
+          icon: '🌪️',
+          requiresTarget: false
+        }
+      ],
+      construct: [
+        {
+          name: 'Repair Protocol',
+          description: 'Tự động sửa chữa và hồi phục HP.',
+          skillType: 'healing' as const,
+          effects: ['heal:1d6:+1:instant'],
+          icon: '🔧',
+          requiresTarget: false
+        }
+      ]
+    };
+
+    return typeTemplates[enemyType || 'humanoid'] || [];
+  }
+
   // Generate random enemy stats based on combat level with improved difficulty calculation
-  public generateRandomEnemyStats(level: number, enemyType?: Enemy['type']): CombatStats {
+  public generateRandomEnemyStats(level: number, enemyType?: Enemy['type'], threatLevel?: 'low' | 'medium' | 'high' | 'extreme'): CombatStats {
     // Use level as seed for consistent stats
     const seed = level * 9301 + 49297;
     
@@ -601,6 +782,9 @@ class EnemyDatabaseService {
       }
     ];
 
+    // Generate skills based on threat level
+    const skills = threatLevel ? this.generateEnemySkills(level, threatLevel, enemyType) : [];
+
     return {
       level,
       combatLevel: level,
@@ -608,7 +792,8 @@ class EnemyDatabaseService {
       health,
       armorClass: finalArmorClass,
       attacks,
-      equippedArmor
+      equippedArmor,
+      skills
     };
   }
 

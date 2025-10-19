@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Equipment, InventoryItem, CharacterSkill } from '../../types';
 import { ItemCard } from './ItemCard';
-import { accessoryEffectService } from '../../services/accessoryEffectService';
+// import { accessoryEffectService } from '../../services/accessoryEffectService';
 import { 
   Sword, 
   Shield, 

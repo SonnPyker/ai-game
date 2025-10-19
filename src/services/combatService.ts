@@ -61,6 +61,7 @@ export interface StatusEffect {
     damagePerTurn?: number;
     damageType?: string;
   };
+  diceDetails?: any; // For dice roll details
 }
 
 export interface TemporaryPlayerStats {
@@ -104,7 +105,7 @@ export interface TemporaryPlayerStats {
 export interface CombatLogEntry {
   id: string;
   turn: number;
-  type: 'initiative' | 'attack' | 'damage' | 'heal' | 'status' | 'death' | 'victory' | 'defeat' | 'info';
+  type: 'initiative' | 'attack' | 'damage' | 'heal' | 'status' | 'death' | 'victory' | 'defeat' | 'info' | 'skill' | 'buff' | 'debuff' | 'consumable';
   message: string;
   details?: any;
 }
@@ -128,6 +129,7 @@ export interface CombatState {
   turnState?: CombatTurnState; // Current turn state for manual turn control
   playerInventory?: InventoryItem[]; // Player's current inventory for combat UI
   temporaryPlayerStats?: TemporaryPlayerStats; // Player's temporary stats with buffs/debuffs
+  enemyTurnStates?: Map<string, CombatTurnState>; // Turn states for each enemy
 }
 
 class CombatService {
@@ -255,6 +257,7 @@ class CombatService {
         armorClass: enemy.armorClass,
         attacks: enemy.attacks,
         abilities: enemy.abilities,
+        skills: enemy.skills || [], // Include enemy skills
         initiative: 0,
         isAlive: true,
         statusEffects: [],
@@ -262,8 +265,9 @@ class CombatService {
         equippedArmor: (enemy as any).equippedArmor, // Include equipped armor
         inventory: (enemy as any).inventory || effectProcessingService.generateEnemyConsumables(
           enemy.combatLevel || enemy.level || 1,
-          worldDifficulty === 'easy' ? 'easy' : worldDifficulty === 'hard' ? 'hard' : 'medium'
-        ), // Generate consumables for enemy
+          worldDifficulty === 'easy' ? 'easy' : worldDifficulty === 'hard' ? 'hard' : 'medium',
+          enemy.threatLevel
+        ), // Generate consumables for enemy based on threat level
         enemyData: enemy
       };
 
@@ -296,8 +300,16 @@ class CombatService {
         mainActionUsed: false,
         extraActionUsed: false,
         skillActionUsed: false,
-      }
+      },
+      enemyTurnStates: new Map() // Initialize enemy turn states
     };
+
+    // Initialize turn states for all enemies
+    combatants.forEach(combatant => {
+      if (combatant.type === 'enemy') {
+        this.initializeEnemyTurnState(combatant.id);
+      }
+    });
 
     // Initialize turn tracking
     this.currentTurnActions = [];
@@ -920,14 +932,15 @@ class CombatService {
       this.currentCombat.combatants
     );
     
-    // Log the skill usage
-    this.addTurnAction('info', 
-      `${combatant.name} sử dụng kỹ năng ${skill.name}`
+    // Log the skill usage with skill icon
+    this.addTurnAction('skill', 
+      `${combatant.name} sử dụng kỹ năng ${skill.name}`,
+      { skillType: skill.skillType, skillLevel: skill.level }
     );
     
     // Log results and trigger floating text for damage
     results.forEach(result => {
-      this.addTurnAction(result.logType, result.description);
+      this.addTurnAction(result.logType, result.description, result.details);
       
       // Trigger floating text for damage results
       if (result.logType === 'damage') {
@@ -984,6 +997,11 @@ class CombatService {
     const currentCombatantForEffects = this.getCombatant(currentCombatantId);
     if (currentCombatantForEffects) {
       this.processCombatantStatusEffects(currentCombatantForEffects);
+      
+      // Reset turn state for enemies at the start of their turn
+      if (currentCombatantForEffects.type === 'enemy') {
+        this.resetEnemyTurnState(currentCombatantId);
+      }
     }
     
     // CHỈ giảm cooldown khi đến lượt player
@@ -1490,14 +1508,15 @@ class CombatService {
       // Get AI difficulty based on world difficulty or default to medium
       const difficulty = this.getAIDifficulty();
       
-      // Decide action using AI service
-      const action = await this.decideNonPlayerAction(currentCombatant, difficulty);
-      
-      // Execute the action
-      await this.executeNonPlayerAction(currentCombatant, action);
-      
-      // End turn after action
-      this.endTurn();
+      // For enemies, allow multiple actions per turn
+      if (currentCombatant.type === 'enemy') {
+        await this.executeEnemyTurnWithMultipleActions(currentCombatant, difficulty);
+      } else {
+        // For allies, single action per turn (existing behavior)
+        const action = await this.decideNonPlayerAction(currentCombatant, difficulty);
+        await this.executeNonPlayerAction(currentCombatant, action);
+        this.endTurn();
+      }
       
     } catch (error) {
       console.error('Error executing non-player turn:', error);
@@ -1506,6 +1525,122 @@ class CombatService {
       // End turn even on error
       this.endTurn();
     }
+  }
+
+  // Preview enemy planned actions before execution
+  private async previewEnemyActions(combatant: Combatant, allCombatants: Combatant[], difficulty: 'easy' | 'medium' | 'hard'): Promise<void> {
+    const plannedActions: string[] = [];
+    
+    // Check for extra action (consumable) - use a preview method
+    if (this.canEnemyPerformAction(combatant.id, 'extra')) {
+      const extraAction = await this.previewConsumableAction(combatant, allCombatants, difficulty);
+      if (extraAction) {
+        plannedActions.push(`💊 ${extraAction}`);
+      }
+    }
+    
+    // Check for main action (attack, skill, defend) - use a preview method
+    if (this.canEnemyPerformAction(combatant.id, 'main')) {
+      const mainAction = await this.previewMainAction(combatant, allCombatants, difficulty);
+      if (mainAction) {
+        plannedActions.push(`${mainAction}`);
+      }
+    }
+    
+    // Log planned actions
+    if (plannedActions.length > 0) {
+      const actionText = plannedActions.length === 1 
+        ? plannedActions[0]
+        : `📋 ${combatant.name} chuẩn bị: ${plannedActions.join(' → ')}`;
+      
+      this.addTurnAction('info', actionText);
+      
+      // Add delay for player to read the preview
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  // Preview consumable action without side effects
+  private async previewConsumableAction(combatant: Combatant, allCombatants: Combatant[], difficulty: 'easy' | 'medium' | 'hard'): Promise<string | null> {
+    if (!combatant.inventory || combatant.inventory.length === 0) return null;
+    
+    const player = allCombatants.find(c => c.id === 'player' && c.isAlive);
+    if (!player) return null;
+    
+    const enemyHPPercent = combatant.health.current / combatant.health.max;
+    
+    // Simple logic to determine if enemy should use consumable
+    const shouldUseConsumable = enemyHPPercent < 0.5 || (difficulty === 'hard' && enemyHPPercent < 0.7);
+    
+    if (shouldUseConsumable) {
+      const healingItems = combatant.inventory.filter(item => 
+        item.type === 'consumable' && 
+        item.effects?.some(effect => effect.includes('heal'))
+      );
+      
+      if (healingItems.length > 0) {
+        const item = healingItems[0];
+        return `${combatant.name} sử dụng ${item.name}`;
+      }
+    }
+    
+    return null;
+  }
+
+  // Preview main action without side effects
+  private async previewMainAction(combatant: Combatant, allCombatants: Combatant[], difficulty: 'easy' | 'medium' | 'hard'): Promise<string | null> {
+    const player = allCombatants.find(c => c.id === 'player' && c.isAlive);
+    if (!player) return null;
+    
+    // Check for skills first
+    if (combatant.skills && combatant.skills.length > 0) {
+      const availableSkills = combatant.skills.filter(skill => skill.currentCooldown === 0);
+      if (availableSkills.length > 0) {
+        const skillProbabilities = { easy: 0.2, medium: 0.4, hard: 0.6 };
+        const skillChance = skillProbabilities[difficulty];
+        
+        if (Math.random() < skillChance) {
+          const skill = availableSkills[0]; // Use first available skill for preview
+          return `🔮 ${combatant.name} sử dụng ${skill.name}`;
+        }
+      }
+    }
+    
+    // Default to attack
+    if (combatant.attacks && combatant.attacks.length > 0) {
+      const attack = combatant.attacks[0];
+      return `⚔️ ${combatant.name} tấn công ${player.name} với ${attack.name}`;
+    }
+    
+    return `🛡️ ${combatant.name} phòng thủ`;
+  }
+
+
+  // Execute enemy turn with multiple actions (main + extra)
+  private async executeEnemyTurnWithMultipleActions(combatant: Combatant, difficulty: 'easy' | 'medium' | 'hard'): Promise<void> {
+    const allCombatants = this.currentCombat?.combatants || [];
+    
+    // Preview all planned actions first
+    await this.previewEnemyActions(combatant, allCombatants, difficulty);
+    
+    // First, try extra action (consumable) if available and needed
+    if (this.canEnemyPerformAction(combatant.id, 'extra')) {
+      const extraAction = await enemyAIService.decideConsumableUsage(combatant, allCombatants, difficulty);
+      if (extraAction) {
+        await this.executeNonPlayerAction(combatant, extraAction);
+        // Add delay between extra and main action
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
+    // Then, try main action (attack, skill, defend)
+    if (this.canEnemyPerformAction(combatant.id, 'main')) {
+      const mainAction = await this.decideNonPlayerAction(combatant, difficulty);
+      await this.executeNonPlayerAction(combatant, mainAction);
+    }
+    
+    // End turn after all actions
+    this.endTurn();
   }
 
   // Get AI difficulty based on world difficulty
@@ -1550,7 +1685,7 @@ class CombatService {
   // Execute non-player action
   private async executeNonPlayerAction(combatant: Combatant, action: CombatAction): Promise<void> {
     // Add delay before enemy action for better visibility
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     switch (action.type) {
       case 'attack':
@@ -1559,6 +1694,7 @@ class CombatService {
           if (target && target.isAlive) {
             this.addTurnAction('attack', action.description);
             await this.performAttack(combatant.id, target.id, action.attackIndex);
+            this.markEnemyActionUsed(combatant.id, 'main');
           }
         }
         break;
@@ -1566,6 +1702,7 @@ class CombatService {
       case 'defend':
         this.addTurnAction('status', action.description);
         this.defend(combatant.id);
+        this.markEnemyActionUsed(combatant.id, 'main');
         break;
         
       case 'use_item':
@@ -1574,6 +1711,7 @@ class CombatService {
           if (item) {
             this.addTurnAction('heal', action.description);
             this.useItem(combatant.id, item, action.targetId);
+            this.markEnemyActionUsed(combatant.id, 'extra');
           }
         }
         break;
@@ -1582,6 +1720,15 @@ class CombatService {
         if (action.abilityId) {
           this.addTurnAction('status', action.description);
           // Implement ability usage logic here
+          this.markEnemyActionUsed(combatant.id, 'main');
+        }
+        break;
+        
+      case 'skill':
+        if (action.skillId && action.targetIds) {
+          this.addTurnAction('skill', action.description);
+          this.useSkill(combatant.id, action.skillId, action.targetIds);
+          this.markEnemyActionUsed(combatant.id, 'skill');
         }
         break;
         
@@ -1590,7 +1737,7 @@ class CombatService {
     }
     
     // Add delay after enemy action for better visibility
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 400));
   }
 
   // Check if it's enemy turn and execute AI
@@ -1598,7 +1745,7 @@ class CombatService {
     if (!this.currentCombat || this.currentCombat.isPlayerTurn) return;
     
     // Add delay for better UX - enemy turns should be visible
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 600));
     
     await this.executeNonPlayerTurn();
     
@@ -1863,6 +2010,83 @@ class CombatService {
   // Get current turn state
   public getTurnState(): CombatTurnState | undefined {
     return this.currentCombat?.turnState;
+  }
+
+  // Get turn state for specific enemy
+  public getEnemyTurnState(enemyId: string): CombatTurnState | null {
+    if (!this.currentCombat?.enemyTurnStates) {
+      return null;
+    }
+    return this.currentCombat.enemyTurnStates.get(enemyId) || null;
+  }
+
+  // Set turn state for specific enemy
+  public setEnemyTurnState(enemyId: string, turnState: CombatTurnState): void {
+    if (!this.currentCombat) return;
+    
+    if (!this.currentCombat.enemyTurnStates) {
+      this.currentCombat.enemyTurnStates = new Map();
+    }
+    
+    this.currentCombat.enemyTurnStates.set(enemyId, turnState);
+  }
+
+  // Initialize turn state for enemy
+  public initializeEnemyTurnState(enemyId: string): void {
+    const turnState: CombatTurnState = {
+      hasPerformedAction: false,
+      mainActionUsed: false,
+      extraActionUsed: false,
+      skillActionUsed: false,
+      actionTarget: undefined,
+      canEndTurn: false
+    };
+    
+    this.setEnemyTurnState(enemyId, turnState);
+  }
+
+  // Check if enemy can perform action
+  public canEnemyPerformAction(enemyId: string, actionType: 'main' | 'extra' | 'skill'): boolean {
+    const turnState = this.getEnemyTurnState(enemyId);
+    if (!turnState) return true; // Default to true if no turn state
+    
+    switch (actionType) {
+      case 'main':
+        return !turnState.mainActionUsed;
+      case 'extra':
+        return !turnState.extraActionUsed;
+      case 'skill':
+        return !turnState.skillActionUsed;
+      default:
+        return true;
+    }
+  }
+
+  // Mark enemy action as used
+  public markEnemyActionUsed(enemyId: string, actionType: 'main' | 'extra' | 'skill'): void {
+    const turnState = this.getEnemyTurnState(enemyId);
+    if (!turnState) return;
+    
+    switch (actionType) {
+      case 'main':
+        turnState.mainActionUsed = true;
+        turnState.hasPerformedAction = true;
+        break;
+      case 'extra':
+        turnState.extraActionUsed = true;
+        break;
+      case 'skill':
+        turnState.skillActionUsed = true;
+        turnState.hasPerformedAction = true;
+        break;
+    }
+    
+    this.setEnemyTurnState(enemyId, turnState);
+  }
+
+  // Reset enemy turn state
+  public resetEnemyTurnState(enemyId: string): void {
+    this.initializeEnemyTurnState(enemyId);
   }
 
   // Check if player can end turn (must have used main action)

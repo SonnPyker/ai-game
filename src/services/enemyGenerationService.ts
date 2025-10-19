@@ -19,13 +19,16 @@ class EnemyGenerationService {
 
 
   // Create enemy from NPC data
-  public createEnemyFromNPC(npcId: string, npcName: string, npcLevel: number = 1, npcType?: Enemy['type']): Enemy {
-    const combatStats = enemyDatabaseService.generateRandomEnemyStats(npcLevel, npcType);
-    return enemyDatabaseService.createEnemyFromNPC(npcId, npcName, combatStats);
+  public createEnemyFromNPC(npcId: string, npcName: string, npcLevel: number = 1, npcType?: Enemy['type'], threatLevel?: 'low' | 'medium' | 'high' | 'extreme'): Enemy {
+    const finalThreatLevel = threatLevel || this.determineThreatLevelByLevel(npcLevel);
+    const combatStats = enemyDatabaseService.generateRandomEnemyStats(npcLevel, npcType, finalThreatLevel);
+    const enemy = enemyDatabaseService.createEnemyFromNPC(npcId, npcName, combatStats);
+    enemy.threatLevel = finalThreatLevel;
+    return enemy;
   }
 
   // Generate multiple random enemies with variety
-  public generateMultipleEnemies(count: number, level: number = 1): Enemy[] {
+  public generateMultipleEnemies(count: number, level: number = 1, threatLevel?: 'low' | 'medium' | 'high' | 'extreme'): Enemy[] {
     const enemies: Enemy[] = [];
     const usedNames = new Set<string>();
     
@@ -47,10 +50,10 @@ class EnemyGenerationService {
       }
       
       // Generate enemy with unique name
-      let enemy = this.generateRandomEnemy(enemyLevel, selectedType);
+      let enemy = this.generateRandomEnemy(enemyLevel, selectedType, threatLevel);
       let attempts = 0;
       while (usedNames.has(enemy.name) && attempts < 10) {
-        enemy = this.generateRandomEnemy(enemyLevel, selectedType);
+        enemy = this.generateRandomEnemy(enemyLevel, selectedType, threatLevel);
         attempts++;
       }
       
@@ -67,8 +70,11 @@ class EnemyGenerationService {
   }
 
   // Generate random enemy for testing
-  public generateRandomEnemy(level: number = 1, type?: Enemy['type']): Enemy {
-    const combatStats = enemyDatabaseService.generateRandomEnemyStats(level, type);
+  public generateRandomEnemy(level: number = 1, type?: Enemy['type'], threatLevel?: 'low' | 'medium' | 'high' | 'extreme'): Enemy {
+    // Determine threat level based on level if not provided
+    const finalThreatLevel = threatLevel || this.determineThreatLevelByLevel(level);
+    
+    const combatStats = enemyDatabaseService.generateRandomEnemyStats(level, type, finalThreatLevel);
     
     const enemyTypes = ['humanoid', 'beast', 'undead', 'demon', 'elemental', 'construct', 'other'];
     const selectedType = type || (enemyTypes[Math.floor(Math.random() * enemyTypes.length)] as Enemy['type']);
@@ -91,6 +97,7 @@ class EnemyGenerationService {
       name: randomName,
       description: `Một ${randomName.toLowerCase()} nguy hiểm.`,
       type: selectedType,
+      threatLevel: finalThreatLevel,
       ...combatStats,
       experienceReward: level * 25
     };
@@ -101,6 +108,14 @@ class EnemyGenerationService {
     (enemy as any).difficultyScore = difficultyData.score;
 
     return enemy;
+  }
+
+  // Determine threat level based on enemy level
+  private determineThreatLevelByLevel(level: number): 'low' | 'medium' | 'high' | 'extreme' {
+    if (level <= 2) return 'low';
+    if (level <= 5) return 'medium';
+    if (level <= 10) return 'high';
+    return 'extreme';
   }
 
   // Generate unique enemy ID

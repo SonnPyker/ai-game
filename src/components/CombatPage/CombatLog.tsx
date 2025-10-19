@@ -15,7 +15,11 @@ import {
   Target,
   User,
   Bot,
-  ChevronDown
+  ChevronDown,
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Activity
 } from 'lucide-react';
 
 interface CombatLogProps {
@@ -79,6 +83,14 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
         return <Heart className="w-4 h-4 text-green-400" />;
       case 'status':
         return <Shield className="w-4 h-4 text-purple-400" />;
+      case 'skill':
+        return <Sparkles className="w-4 h-4 text-cyan-400" />;
+      case 'buff':
+        return <TrendingUp className="w-4 h-4 text-emerald-400" />;
+      case 'debuff':
+        return <TrendingDown className="w-4 h-4 text-amber-400" />;
+      case 'consumable':
+        return <Activity className="w-4 h-4 text-blue-400" />;
       case 'death':
         return <Skull className="w-4 h-4 text-red-500" />;
       case 'victory':
@@ -105,6 +117,14 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
         return 'text-green-300';
       case 'status':
         return 'text-purple-300';
+      case 'skill':
+        return 'text-cyan-300';
+      case 'buff':
+        return 'text-emerald-300';
+      case 'debuff':
+        return 'text-amber-300';
+      case 'consumable':
+        return 'text-blue-300';
       case 'death':
         return 'text-red-400';
       case 'victory':
@@ -119,21 +139,6 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
   };
 
 
-  // Format dice roll details
-  const formatDiceDetails = (details: any) => {
-    if (!details) return null;
-    
-    if (details.rolls) {
-      return (
-        <div className="text-xs text-gray-400 mt-1">
-          Rolls: {details.rolls.join(', ')}
-          {details.modifier && ` + ${details.modifier}`}
-        </div>
-      );
-    }
-    
-    return null;
-  };
 
   return (
     <div className={`${isInMenu ? 'h-full flex flex-col min-h-0' : 'h-full bg-gray-900/50 border-t border-gray-700 flex flex-col min-h-0'}`}>
@@ -186,11 +191,6 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
                         <div className="text-sm text-gray-200">
                           {entry.message}
                         </div>
-                        {entry.details && (
-                          <div className="text-xs text-gray-400 mt-1">
-                            {formatDiceDetails(entry.details)}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -254,16 +254,21 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
                         ${action.type === 'attack' ? 'border-l-orange-400' : ''}
                         ${action.type === 'initiative' ? 'border-l-blue-400' : ''}
                         ${action.type === 'status' ? 'border-l-purple-400' : ''}
+                        ${action.type === 'skill' ? 'border-l-cyan-400' : ''}
+                        ${action.type === 'buff' ? 'border-l-emerald-400' : ''}
+                        ${action.type === 'debuff' ? 'border-l-amber-400' : ''}
+                        ${action.type === 'consumable' ? 'border-l-blue-400' : ''}
                       `}
                     >
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-shrink-0">
+                      <div className="flex items-start space-x-2">
+                        <div className="flex-shrink-0 mt-0.5">
                           {getLogIcon(action.type)}
                         </div>
-                        <p className={`text-xs ${getLogColor(action.type)}`}>
-                          {action.message}
-                        </p>
-                        {formatDiceDetails(action.details)}
+                        <div className="flex-1">
+                          <p className={`text-xs ${getLogColor(action.type)}`}>
+                            {action.message}
+                          </p>
+                        </div>
                       </div>
                     </MotionWrapper>
                   ))}
@@ -288,6 +293,10 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
                     ${entry.type === 'attack' ? 'border-l-orange-400' : ''}
                     ${entry.type === 'initiative' ? 'border-l-blue-400' : ''}
                     ${entry.type === 'status' ? 'border-l-purple-400' : ''}
+                    ${entry.type === 'skill' ? 'border-l-cyan-400' : ''}
+                    ${entry.type === 'buff' ? 'border-l-emerald-400' : ''}
+                    ${entry.type === 'debuff' ? 'border-l-amber-400' : ''}
+                    ${entry.type === 'consumable' ? 'border-l-blue-400' : ''}
                   `}
                 >
                   <div className="flex items-start space-x-3">
@@ -304,8 +313,6 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
                           T{entry.turn}
                         </div>
                       </div>
-                      
-                      {formatDiceDetails(entry.details)}
                       
                       <div className="text-xs text-gray-500 mt-1">
                         Action

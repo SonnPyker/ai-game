@@ -721,6 +721,7 @@ export interface CombatStats {
   armorClass: number; // AC trong DnD
   attacks: Attack[];
   abilities?: SpecialAbility[];
+  skills?: CharacterSkill[]; // Character skills for combat
   equippedArmor?: InventoryItem; // Chest armor đang mặc
   statusEffects?: StatusEffect[]; // Active status effects
 }
@@ -757,6 +758,8 @@ export interface Enemy extends CombatStats {
   level?: number;
   // Threat level for reward calculation
   threatLevel?: 'low' | 'medium' | 'high' | 'extreme';
+  // Enemy skills (optional for backward compatibility)
+  skills?: CharacterSkill[];
 }
 
 // NPC Relationship System

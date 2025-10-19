@@ -23,13 +23,13 @@ export class EnemyAIService {
     // Map world difficulty to AI difficulty if not specified
     const aiDifficulty = this.mapWorldDifficultyToAI(difficulty, worldDifficulty);
     
-    // Check if enemy should use consumable first
-    const consumableAction = this.decideConsumableUsage(enemy, allCombatants, aiDifficulty);
-    if (consumableAction) {
-      return consumableAction;
+    // Check if enemy should use skill first
+    const skillAction = this.decideSkillUsage(enemy, allCombatants, aiDifficulty);
+    if (skillAction) {
+      return skillAction;
     }
     
-    // Otherwise, decide main action
+    // Otherwise, decide main action (attack or defend)
     switch (aiDifficulty) {
       case 'easy':
         return this.easyAI(enemy, allCombatants);
@@ -40,6 +40,173 @@ export class EnemyAIService {
       default:
         return this.easyAI(enemy, allCombatants);
     }
+  }
+
+  /**
+   * Decide if enemy should use a skill
+   */
+  public decideSkillUsage(
+    enemy: Combatant,
+    allCombatants: Combatant[],
+    difficulty: 'easy' | 'medium' | 'hard'
+  ): CombatAction | null {
+    if (!enemy.skills || enemy.skills.length === 0) {
+      return null;
+    }
+
+    // Get available skills (not on cooldown)
+    const availableSkills = enemy.skills.filter(skill => skill.currentCooldown === 0);
+    if (availableSkills.length === 0) {
+      return null;
+    }
+
+    // Skill usage probability based on difficulty
+    const skillProbabilities = {
+      easy: 0.2,    // 20% chance
+      medium: 0.4,  // 40% chance
+      hard: 0.6     // 60% chance
+    };
+
+    const skillChance = skillProbabilities[difficulty];
+    if (Math.random() > skillChance) {
+      return null;
+    }
+
+    // Choose best skill for situation
+    const bestSkill = this.chooseBestSkill(enemy, allCombatants, availableSkills, difficulty);
+    if (!bestSkill) {
+      return null;
+    }
+
+    // Determine target(s)
+    const targets = this.chooseSkillTargets(enemy, allCombatants, bestSkill, difficulty);
+    if (targets.length === 0) {
+      return null;
+    }
+
+    return {
+      type: 'skill',
+      skillId: bestSkill.id,
+      targetIds: targets,
+      description: `${enemy.name} sử dụng ${bestSkill.name}${targets.length > 1 ? ' (AoE)' : ''}`,
+      priority: 5 // High priority for skills
+    };
+  }
+
+  /**
+   * Choose the best skill for the current situation
+   */
+  private chooseBestSkill(
+    enemy: Combatant,
+    allCombatants: Combatant[],
+    availableSkills: any[],
+    _difficulty: 'easy' | 'medium' | 'hard'
+  ): any | null {
+    const player = allCombatants.find(c => c.id === 'player' && c.isAlive);
+    if (!player) return null;
+
+    const enemyHPPercent = enemy.health.current / enemy.health.max;
+    const playerHPPercent = player.health.current / player.health.max;
+
+    // Prioritize skills based on situation
+    const skillPriorities = availableSkills.map(skill => {
+      let priority = 0;
+      
+      // Healing skills when low HP
+      if (skill.skillType === 'healing' && enemyHPPercent < 0.5) {
+        priority += 50;
+      }
+      
+      // Damage skills when player is low HP
+      if (skill.skillType === 'damage' && playerHPPercent < 0.3) {
+        priority += 40;
+      }
+      
+      // Buff skills when not buffed
+      if (skill.skillType === 'healing' && !this.hasRecentBuff(enemy)) {
+        priority += 30;
+      }
+      
+      // Debuff skills when player is strong
+      if (skill.skillType === 'damage' && playerHPPercent > 0.7) {
+        priority += 20;
+      }
+      
+      // Random factor for variety
+      priority += Math.random() * 20;
+      
+      return { skill, priority };
+    });
+
+    // Sort by priority and return best skill
+    skillPriorities.sort((a, b) => b.priority - a.priority);
+    return skillPriorities[0]?.skill || null;
+  }
+
+  /**
+   * Choose targets for skill
+   */
+  private chooseSkillTargets(
+    enemy: Combatant,
+    allCombatants: Combatant[],
+    skill: any,
+    difficulty: 'easy' | 'medium' | 'hard'
+  ): string[] {
+    const targets: string[] = [];
+    
+    if (!skill.requiresTarget) {
+      // Self-targeting skill
+      return [enemy.id];
+    }
+
+    // Find valid targets
+    const validTargets = allCombatants.filter(c => 
+      c.isAlive && c.id !== enemy.id && c.type === 'player'
+    );
+
+    if (validTargets.length === 0) {
+      return [];
+    }
+
+    // Choose target based on difficulty
+    switch (difficulty) {
+      case 'easy':
+        // Random target
+        const randomTarget = validTargets[Math.floor(Math.random() * validTargets.length)];
+        targets.push(randomTarget.id);
+        break;
+        
+      case 'medium':
+        // Target weakest player
+        const weakestTarget = validTargets.reduce((weakest, current) => 
+          current.health.current < weakest.health.current ? current : weakest
+        );
+        targets.push(weakestTarget.id);
+        break;
+        
+      case 'hard':
+        // Target weakest player, or all players for AoE skills
+        if (skill.effects.some((e: string) => e.includes('AoE'))) {
+          targets.push(...validTargets.map(t => t.id));
+        } else {
+          const weakestTarget = validTargets.reduce((weakest, current) => 
+            current.health.current < weakest.health.current ? current : weakest
+          );
+          targets.push(weakestTarget.id);
+        }
+        break;
+    }
+
+    return targets;
+  }
+
+  /**
+   * Check if enemy has recent buff
+   */
+  private hasRecentBuff(enemy: Combatant): boolean {
+    return enemy.statusEffects.some(effect => 
+      effect.name.includes('buff') || effect.name.includes('tăng') || effect.name.includes('+')
+    );
   }
 
   /**
@@ -66,7 +233,7 @@ export class EnemyAIService {
   /**
    * Quyết định sử dụng consumable dựa trên AI difficulty
    */
-  private decideConsumableUsage(
+  public decideConsumableUsage(
     enemy: Combatant,
     allCombatants: Combatant[],
     aiDifficulty: 'easy' | 'medium' | 'hard'

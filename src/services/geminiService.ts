@@ -4793,6 +4793,9 @@ Trả về JSON format:
       // Abilities (optional but recommended)
       abilities: this.generateEnemyAbilities(level, threatLevel, modifiers),
       
+      // Skills (new - based on threat level)
+      skills: this.generateEnemySkills(level, threatLevel, this.inferEnemyType(name, threatLevel)),
+      
       // Experience reward
       experienceReward: Math.floor(level * 25 * (1 + (Object.keys(threatMultipliers).indexOf(threatLevel) * 0.3))),
       
@@ -4802,6 +4805,39 @@ Trả về JSON format:
     };
     
     return enemy;
+  }
+
+  /**
+   * Generate enemy skills based on threat level and type
+   */
+  private generateEnemySkills(level: number, threatLevel: string, enemyType: string): any[] {
+    // Import enemyDatabaseService to use skill generation
+    const { enemyDatabaseService } = require('./enemyDatabaseService');
+    
+    // Map threat level string to proper type
+    const threatLevelMap: Record<string, 'low' | 'medium' | 'high' | 'extreme'> = {
+      'low': 'low',
+      'medium': 'medium', 
+      'high': 'high',
+      'extreme': 'extreme'
+    };
+    
+    const mappedThreatLevel = threatLevelMap[threatLevel] || 'medium';
+    
+    // Map enemy type string to proper type
+    const typeMap: Record<string, 'beast' | 'humanoid' | 'undead' | 'demon' | 'elemental' | 'construct' | 'other'> = {
+      'beast': 'beast',
+      'humanoid': 'humanoid',
+      'undead': 'undead', 
+      'demon': 'demon',
+      'elemental': 'elemental',
+      'construct': 'construct',
+      'other': 'other'
+    };
+    
+    const mappedEnemyType = typeMap[enemyType] || 'humanoid';
+    
+    return enemyDatabaseService.generateEnemySkills(level, mappedThreatLevel, mappedEnemyType);
   }
 
   /**

@@ -257,13 +257,19 @@ class ConsumableDatabase {
   }
 
   /**
-   * Get random consumable by level and rarity
+   * Get random consumable by level, rarity, and types
    */
-  public getRandomConsumable(level: number, rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'): ConsumableTemplate | null {
+  public getRandomConsumable(level: number, types?: string[], rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'): ConsumableTemplate | null {
     let availableConsumables = this.consumables.filter(c => c.level <= level);
     
     if (rarity) {
       availableConsumables = availableConsumables.filter(c => c.rarity === rarity);
+    }
+    
+    if (types && types.length > 0) {
+      availableConsumables = availableConsumables.filter(c => 
+        types.some(type => c.tags.includes(type))
+      );
     }
     
     if (availableConsumables.length === 0) {

@@ -94,16 +94,26 @@ class EnhancedLootService {
   }
 
   /**
-   * Generate equipment loot (weapon/armor) with small chance
+   * Generate equipment loot (weapon/armor) with chance based on threat level + level
    */
   private generateEquipmentLoot(enemy: Enemy): InventoryItem[] {
     const loot: InventoryItem[] = [];
     
-    // Calculate drop chance based on enemy level (15-35%)
+    // Calculate drop chance based on threat level + enemy level
     const enemyLevel = enemy.level || 1;
-    const baseChance = 0.15; // Increased from 5% to 15%
-    const levelBonus = Math.min(enemyLevel * 0.02, 0.20); // Increased from 1% to 2% per level, max 20%
-    const dropChance = baseChance + levelBonus;
+    const threatLevel = enemy.threatLevel || 'medium';
+    
+    // Base drop chance by threat level
+    const threatChances = {
+      low: { base: 0.10, max: 0.20 },
+      medium: { base: 0.15, max: 0.30 },
+      high: { base: 0.25, max: 0.45 },
+      extreme: { base: 0.40, max: 0.65 }
+    };
+    
+    const threatConfig = threatChances[threatLevel];
+    const levelBonus = Math.min(enemyLevel * 0.01, threatConfig.max - threatConfig.base);
+    const dropChance = threatConfig.base + levelBonus;
     
     if (Math.random() < dropChance) {
       // 60% chance for weapon, 40% chance for armor
@@ -126,10 +136,11 @@ class EnhancedLootService {
   }
 
   /**
-   * Select random misc item based on enemy
+   * Select random misc item based on enemy threat level + level
    */
   private selectRandomMiscItem(enemy: Enemy): any {
     const enemyLevel = enemy.level || 1;
+    const threatLevel = enemy.threatLevel || 'medium';
     
     // Filter items by level
     const availableItems = this.lootTable.misc.filter(item => {
@@ -142,14 +153,51 @@ class EnhancedLootService {
       return this.lootTable.misc.find(item => item.tags.includes('general'));
     }
     
-    return availableItems[Math.floor(Math.random() * availableItems.length)];
+    // Weight items by threat level
+    const weightedItem = this.selectWeightedItem(availableItems, threatLevel);
+    return weightedItem || availableItems[Math.floor(Math.random() * availableItems.length)];
   }
 
   /**
-   * Select random consumable item based on enemy
+   * Select weighted item based on threat level
+   */
+  private selectWeightedItem(items: any[], threatLevel: string): any | null {
+    // Rarity weights by threat level
+    const rarityWeights = {
+      low: { common: 0.80, uncommon: 0.15, rare: 0.05, epic: 0.00, legendary: 0.00 },
+      medium: { common: 0.60, uncommon: 0.25, rare: 0.10, epic: 0.05, legendary: 0.00 },
+      high: { common: 0.40, uncommon: 0.30, rare: 0.20, epic: 0.10, legendary: 0.00 },
+      extreme: { common: 0.20, uncommon: 0.30, rare: 0.30, epic: 0.15, legendary: 0.05 }
+    };
+    
+    const weights = rarityWeights[threatLevel as keyof typeof rarityWeights] || rarityWeights.medium;
+    
+    // Calculate weighted selection
+    const weightedItems = items.map(item => ({
+      item,
+      weight: weights[item.rarity as keyof typeof weights] || 0
+    }));
+    
+    const totalWeight = weightedItems.reduce((sum, w) => sum + w.weight, 0);
+    if (totalWeight === 0) return null;
+    
+    let random = Math.random() * totalWeight;
+    for (const weighted of weightedItems) {
+      random -= weighted.weight;
+      if (random <= 0) {
+        return weighted.item;
+      }
+    }
+    
+    return weightedItems[0]?.item || null;
+  }
+
+  /**
+   * Select random consumable item based on enemy threat level + level
    */
   private selectRandomConsumableItem(enemy: Enemy): any {
     const enemyLevel = enemy.level || 1;
+    const threatLevel = enemy.threatLevel || 'medium';
     
     // Use consumable database instead of loot table
     const template = consumableDatabase.getRandomConsumable(enemyLevel);
@@ -174,15 +222,18 @@ class EnhancedLootService {
       return this.lootTable.consumables[0];
     }
     
-    return availableItems[Math.floor(Math.random() * availableItems.length)];
+    // Weight items by threat level
+    const weightedItem = this.selectWeightedItem(availableItems, threatLevel);
+    return weightedItem || availableItems[Math.floor(Math.random() * availableItems.length)];
   }
 
   /**
-   * Select random weapon item based on enemy
+   * Select random weapon item based on enemy threat level + level
    */
   private selectRandomWeaponItem(enemy: Enemy): any {
     const enemyType = enemy.type || 'humanoid';
     const enemyLevel = enemy.level || 1;
+    const threatLevel = enemy.threatLevel || 'medium';
     
     const availableItems = this.lootTable.weapons.filter(item => {
       const levelMatch = this.getItemLevel(item.rarity) <= enemyLevel + 1;
@@ -196,15 +247,18 @@ class EnhancedLootService {
       return this.lootTable.weapons.find(item => item.tags.includes('general'));
     }
     
-    return availableItems[Math.floor(Math.random() * availableItems.length)];
+    // Weight items by threat level
+    const weightedItem = this.selectWeightedItem(availableItems, threatLevel);
+    return weightedItem || availableItems[Math.floor(Math.random() * availableItems.length)];
   }
 
   /**
-   * Select random armor item based on enemy
+   * Select random armor item based on enemy threat level + level
    */
   private selectRandomArmorItem(enemy: Enemy): any {
     const enemyType = enemy.type || 'humanoid';
     const enemyLevel = enemy.level || 1;
+    const threatLevel = enemy.threatLevel || 'medium';
     
     const availableItems = this.lootTable.armor.filter(item => {
       const levelMatch = this.getItemLevel(item.rarity) <= enemyLevel + 1;
@@ -218,7 +272,9 @@ class EnhancedLootService {
       return this.lootTable.armor.find(item => item.tags.includes('general'));
     }
     
-    return availableItems[Math.floor(Math.random() * availableItems.length)];
+    // Weight items by threat level
+    const weightedItem = this.selectWeightedItem(availableItems, threatLevel);
+    return weightedItem || availableItems[Math.floor(Math.random() * availableItems.length)];
   }
 
   /**

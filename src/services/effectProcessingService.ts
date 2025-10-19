@@ -454,16 +454,23 @@ class EffectProcessingService {
     const diceSize = parseInt(healMatch[2]);
     const bonus = parseInt(healMatch[3]);
     
-    const healAmount = DiceRoller.roll(`${diceCount}d${diceSize}+${bonus}`, 'Healing potion').total;
+    const diceResult = DiceRoller.roll(`${diceCount}d${diceSize}+${bonus}`, 'Healing potion');
+    const healAmount = diceResult.total;
 
     return {
       id: this.generateEffectId(),
       name: 'Hồi máu',
-      description: `Hồi phục ${healAmount} HP`,
+      description: `Hồi phục ${healAmount} HP (${diceCount}d${diceSize}+${bonus})`,
       duration: 0, // Instant
       icon: '💚',
       effects: {
         healthModifier: healAmount
+      },
+      diceDetails: {
+        formula: `${diceCount}d${diceSize}+${bonus}`,
+        rolls: diceResult.rolls,
+        total: diceResult.total,
+        bonus: bonus
       }
     };
   }
@@ -647,6 +654,20 @@ class EffectProcessingService {
     // Trigger heal animation for floating text
     combatService.triggerHealAnimation(combatant.id, actualHeal);
     
+    // Log healing with dice details in attack format
+    const diceDetails = (effect as any).diceDetails;
+    if (diceDetails) {
+      const diceFormula = diceDetails.formula;
+      combatService.addTurnAction('heal', 
+        `${combatant.name} hồi ${actualHeal} HP (${diceFormula}) (${combatant.health.current}/${combatant.health.max} HP)`,
+        { diceDetails }
+      );
+    } else {
+      combatService.addTurnAction('heal', 
+        `${combatant.name} hồi ${actualHeal} HP (${combatant.health.current}/${combatant.health.max} HP)`
+      );
+    }
+    
     console.log(`Healing applied: ${combatant.name} ${oldHP} -> ${combatant.health.current} (+${actualHeal})`);
   }
 
@@ -744,16 +765,31 @@ class EffectProcessingService {
   }
 
   /**
-   * Generate random consumables for enemy inventory
+   * Generate random consumables for enemy inventory based on threat level
    */
-  public generateEnemyConsumables(level: number, difficulty: 'easy' | 'medium' | 'hard'): InventoryItem[] {
+  public generateEnemyConsumables(level: number, difficulty: 'easy' | 'medium' | 'hard', threatLevel?: 'low' | 'medium' | 'high' | 'extreme'): InventoryItem[] {
     const consumables: InventoryItem[] = [];
     
-    // Determine number of consumables based on difficulty
-    const count = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 3;
+    // Determine number of consumables based on threat level (preferred) or difficulty
+    let count: number;
+    if (threatLevel) {
+      const threatCounts = {
+        low: 0,
+        medium: 1,
+        high: 2,
+        extreme: 3
+      };
+      count = threatCounts[threatLevel];
+    } else {
+      // Fallback to difficulty-based count
+      count = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 3;
+    }
+    
+    // Add variety based on threat level
+    const consumableTypes = this.getConsumableTypesForThreatLevel(threatLevel || 'medium');
     
     for (let i = 0; i < count; i++) {
-      const template = consumableDatabase.getRandomConsumable(level);
+      const template = consumableDatabase.getRandomConsumable(level, consumableTypes);
       console.log('Generated template:', template);
       if (template) {
         const item = consumableDatabase.createInventoryItem(template, 1);
@@ -765,6 +801,20 @@ class EffectProcessingService {
     }
     
     return consumables;
+  }
+
+  /**
+   * Get consumable types based on threat level
+   */
+  private getConsumableTypesForThreatLevel(threatLevel: 'low' | 'medium' | 'high' | 'extreme'): string[] {
+    const typeMap = {
+      low: ['healing'],
+      medium: ['healing', 'buff'],
+      high: ['healing', 'buff', 'debuff'],
+      extreme: ['healing', 'buff', 'debuff', 'special']
+    };
+    
+    return typeMap[threatLevel] || ['healing'];
   }
 }
 
