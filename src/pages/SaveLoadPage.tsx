@@ -17,12 +17,16 @@ import { localSaveService } from '../services/saveStorage/localSaveService';
 import { cloudSyncService } from '../services/saveStorage/cloudSyncService';
 import { authService, AuthState } from '../services/saveStorage/authService';
 import { npcRelationshipService } from '../services/npcRelationshipService';
+import { useResponsiveContext } from '../contexts/ResponsiveContext';
 
 interface SaveLoadPageProps {
   // No props needed since we handle navigation directly
 }
 
 export function SaveLoadPage({}: SaveLoadPageProps) {
+  const { shouldUseMobileLayout } = useResponsiveContext();
+  const isMobile = shouldUseMobileLayout();
+  
   const [cloudSlots, setCloudSlots] = useState<SaveSlot[]>([]);
   const [localSlots, setLocalSlots] = useState<SaveSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<'slot1' | 'slot2' | 'slot3' | 'local1' | 'local2' | 'local3' | null>(null);
@@ -370,29 +374,30 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="max-w-6xl mx-auto p-4"
+      className={`max-w-6xl mx-auto ${isMobile ? 'p-2 sm:p-4' : 'p-4'}`}
     >
-      <div className="flex items-center justify-between mb-8">
+      <div className={`flex items-center ${isMobile ? 'flex-col space-y-4' : 'justify-between'} ${isMobile ? 'mb-6' : 'mb-8'}`}>
         <button
           onClick={() => window.history.back()}
-          className="flex items-center space-x-2 px-4 py-2 bg-gray-700/50 border border-gray-600/50 text-gray-300 rounded-lg hover:bg-gray-600/50 transition-colors duration-200"
+          className={`flex items-center space-x-2 ${isMobile ? 'px-3 py-2' : 'px-4 py-2'} bg-gray-700/50 border border-gray-600/50 text-gray-300 rounded-lg hover:bg-gray-600/50 transition-colors duration-200`}
         >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Quay lại</span>
+          <ArrowLeft className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+          <span className={isMobile ? 'text-sm' : ''}>Quay lại</span>
         </button>
-        <h1 className="text-3xl font-bold-vietnamese text-white">QUẢN LÝ SAVE GAME</h1>
+        <h1 className={`${isMobile ? 'text-xl sm:text-2xl' : 'text-3xl'} font-bold-vietnamese text-white text-center`}>QUẢN LÝ SAVE GAME</h1>
         {authState.isLoading ? (
-          <div className="flex items-center space-x-2 px-3 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg text-yellow-300">
-            <div className="w-4 h-4 border-2 border-yellow-300 border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm font-medium">Đang kiểm tra...</span>
+          <div className={`flex items-center space-x-2 ${isMobile ? 'px-2 py-1' : 'px-3 py-2'} bg-yellow-500/20 border border-yellow-500/50 rounded-lg text-yellow-300`}>
+            <div className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} border-2 border-yellow-300 border-t-transparent rounded-full animate-spin`} />
+            <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Đang kiểm tra...</span>
           </div>
         ) : authState.isAuthenticated ? (
-          <div className="flex items-center space-x-2 px-3 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-300">
-            <User className="w-4 h-4" />
-            <span className="text-sm font-medium">{authState.user?.email}</span>
+          <div className={`flex items-center space-x-2 ${isMobile ? 'px-2 py-1' : 'px-3 py-2'} bg-green-500/20 border border-green-500/50 rounded-lg text-green-300`}>
+            <User className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+            <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium ${isMobile ? 'hidden sm:inline' : ''}`}>{authState.user?.email}</span>
+            <span className={`${isMobile ? 'sm:hidden' : 'hidden'} text-xs`}>Đã đăng nhập</span>
           </div>
         ) : (
-          <span className="text-sm text-gray-400">Chưa đăng nhập</span>
+          <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-400`}>Chưa đăng nhập</span>
         )}
       </div>
 
@@ -468,7 +473,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
             </div>
             <h3 className="text-lg font-bold text-white">Cloud Save</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className={`grid grid-cols-1 ${isMobile ? 'sm:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-3'} ${isMobile ? 'gap-4' : 'gap-6'}`}>
             {['slot1', 'slot2', 'slot3'].map((slotId) => {
               const slot = cloudSlots.find(s => s.slotId === slotId);
               const status = slot ? getSlotStatus(slot) : 'empty';
@@ -590,7 +595,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
           </div>
           <h3 className="text-lg font-bold text-white">Local Save</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 ${isMobile ? 'sm:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-3'} ${isMobile ? 'gap-4' : 'gap-6'}`}>
           {['local1', 'local2', 'local3'].map((slotId) => {
             const slot = localSlots.find(s => s.slotId === slotId);
             const status = slot ? getSlotStatus(slot) : 'empty';
@@ -599,20 +604,20 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
             return (
               <div
                 key={slotId}
-                className={`p-6 border-2 rounded-xl transition-all duration-200 ${
+                className={`${isMobile ? 'p-4' : 'p-6'} border-2 rounded-xl transition-all duration-200 ${
                   isSelected
                     ? 'border-blue-500/50 bg-blue-500/10'
                     : 'border-gray-600/50 bg-gray-800/20'
                 }`}
               >
                 {/* Slot Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className={`flex items-center justify-between ${isMobile ? 'mb-3' : 'mb-4'}`}>
                   <div className="flex items-center space-x-2">
                     {getStatusIcon(status)}
-                    <span className="text-lg font-bold text-white">
+                    <span className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-white`}>
                       {slotId.toUpperCase()}
                     </span>
-                    <span className="text-xs text-gray-400 ml-2">
+                    <span className={`${isMobile ? 'text-xs' : 'text-xs'} text-gray-400 ml-2`}>
                       {status === 'saved' ? 'Đã lưu' : 'Trống'}
                     </span>
                   </div>
@@ -620,27 +625,27 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
 
                 {/* Slot Details */}
                 {slot?.saveGame && (
-                  <div className="mb-4 space-y-2">
-                    <div className="flex items-center space-x-2 text-gray-300 text-sm">
-                      <Calendar className="w-4 h-4" />
+                  <div className={`${isMobile ? 'mb-3' : 'mb-4'} space-y-2`}>
+                    <div className={`flex items-center space-x-2 text-gray-300 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                      <Calendar className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                       <span>
                         {new Date(slot.saveGame.meta.updatedAt).toLocaleDateString('vi-VN')}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2 text-gray-300 text-sm">
-                      <User className="w-4 h-4" />
+                    <div className={`flex items-center space-x-2 text-gray-300 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                      <User className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                       <span>Turn: {slot.saveGame.turnCounter}</span>
                     </div>
-                    <div className="flex items-center space-x-2 text-gray-300 text-sm">
+                    <div className={`flex items-center space-x-2 text-gray-300 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                       <span>Chat: {slot.saveGame.chat.length} tin nhắn</span>
                     </div>
                     {slot.saveGame.world?.worldTitle && (
-                      <div className="flex items-center space-x-2 text-gray-300 text-sm">
+                      <div className={`flex items-center space-x-2 text-gray-300 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                         <span>Thế giới: {slot.saveGame.world.worldTitle}</span>
                       </div>
                     )}
                     {slot.saveGame.character?.name && (
-                      <div className="flex items-center space-x-2 text-gray-300 text-sm">
+                      <div className={`flex items-center space-x-2 text-gray-300 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                         <span>Nhân vật: {slot.saveGame.character.name}</span>
                       </div>
                     )}
@@ -648,14 +653,14 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                 )}
 
                 {/* Local Actions */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className={`grid grid-cols-3 ${isMobile ? 'gap-1' : 'gap-2'} ${isMobile ? 'mb-3' : 'mb-4'}`}>
                   <button
                     onClick={() => handleLoad(slotId as any)}
                     disabled={loading || !slot?.saveGame}
-                    className="flex flex-col items-center space-y-1 px-3 py-3 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 disabled:opacity-50"
+                    className={`flex flex-col items-center space-y-1 ${isMobile ? 'px-2 py-2' : 'px-3 py-3'} bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 disabled:opacity-50`}
                   >
-                    <Play className="w-5 h-5" />
-                    <span className="text-xs">Tải</span>
+                    <Play className={`${isMobile ? 'w-3 h-3' : 'w-5 h-5'}`} />
+                    <span className={`${isMobile ? 'text-xs' : 'text-xs'}`}>Tải</span>
                   </button>
                   <button
                     onClick={() => handleDelete(slotId as any)}

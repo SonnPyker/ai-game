@@ -514,7 +514,7 @@ export function CharacterCreationPage() {
 
   if (currentStep === 'description') {
     return (
-      <div className="min-h-screen bg-gray-900 p-6">
+      <div className={`min-h-screen bg-gray-900 ${shouldUseMobileLayout() ? 'p-2 sm:p-4' : 'p-6'}`}>
         {/* Help Button */}
         <HelpButton variant="fixed" />
         
@@ -523,12 +523,12 @@ export function CharacterCreationPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-12"
+          className={`text-center ${shouldUseMobileLayout() ? 'mb-8' : 'mb-12'}`}
         >
-          <h1 className="text-5xl font-extrabold-vietnamese text-white mb-4 uppercase">
+          <h1 className={`${shouldUseMobileLayout() ? 'text-2xl sm:text-3xl' : 'text-5xl'} font-extrabold-vietnamese text-white mb-4 uppercase`}>
             MÔ TẢ NHÂN VẬT
           </h1>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className={`${shouldUseMobileLayout() ? 'text-base sm:text-lg' : 'text-xl'} text-gray-300 max-w-3xl mx-auto`}>
             Hãy mô tả nhân vật của bạn bằng ngôn ngữ tự do. AI sẽ phân tích và tự động điền vào form tạo nhân vật.
           </p>
         </MotionWrapper>
@@ -539,20 +539,20 @@ export function CharacterCreationPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="glass-effect p-6 rounded-xl mb-6"
+            className={`glass-effect ${shouldUseMobileLayout() ? 'p-4' : 'p-6'} rounded-xl ${shouldUseMobileLayout() ? 'mb-4' : 'mb-6'}`}
           >
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Globe className="w-4 h-4 text-white" />
+            <div className={`flex items-center ${shouldUseMobileLayout() ? 'space-x-2' : 'space-x-3'} ${shouldUseMobileLayout() ? 'mb-3' : 'mb-4'}`}>
+              <div className={`${shouldUseMobileLayout() ? 'w-6 h-6' : 'w-8 h-8'} bg-blue-500 rounded-lg flex items-center justify-center`}>
+                <Globe className={`${shouldUseMobileLayout() ? 'w-3 h-3' : 'w-4 h-4'} text-white`} />
               </div>
-              <h3 className="text-lg font-semibold text-white">Thế giới đã tạo</h3>
+              <h3 className={`${shouldUseMobileLayout() ? 'text-base' : 'text-lg'} font-semibold text-white`}>Thế giới đã tạo</h3>
             </div>
-            <div className="bg-gray-800/30 border border-gray-600/50 rounded-lg p-4 max-h-40 overflow-y-auto">
-              <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+            <div className={`bg-gray-800/30 border border-gray-600/50 rounded-lg ${shouldUseMobileLayout() ? 'p-3' : 'p-4'} ${shouldUseMobileLayout() ? 'max-h-32' : 'max-h-40'} overflow-y-auto`}>
+              <p className={`text-gray-300 ${shouldUseMobileLayout() ? 'text-xs' : 'text-sm'} leading-relaxed whitespace-pre-wrap`}>
                 {worldDescription}
               </p>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className={`${shouldUseMobileLayout() ? 'text-xs' : 'text-xs'} text-gray-400 ${shouldUseMobileLayout() ? 'mt-1' : 'mt-2'}`}>
               💡 Tham khảo thông tin thế giới ở trên để mô tả nhân vật phù hợp với bối cảnh
             </p>
           </MotionWrapper>
@@ -562,34 +562,34 @@ export function CharacterCreationPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="glass-effect p-8 rounded-2xl"
+          className={`glass-effect ${shouldUseMobileLayout() ? 'p-4' : 'p-8'} rounded-2xl`}
         >
-          <div className="mb-6">
-            <label className="block text-lg font-semibold text-white mb-3">
+          <div className={`${shouldUseMobileLayout() ? 'mb-4' : 'mb-6'}`}>
+            <label className={`block ${shouldUseMobileLayout() ? 'text-base' : 'text-lg'} font-semibold text-white ${shouldUseMobileLayout() ? 'mb-2' : 'mb-3'}`}>
               Mô tả nhân vật của bạn
             </label>
             <textarea
               value={characterDescription}
               onChange={(e) => setCharacterDescription(e.target.value)}
               placeholder="Ví dụ: Tôi muốn tạo một nhân vật tên là Aria, một nữ pháp sư trẻ tuổi với mái tóc bạc dài và đôi mắt tím. Cô ấy thông minh nhưng hơi kiêu ngạo, có khả năng điều khiển phép thuật băng. Cô sinh ra trong một gia đình quý tộc nhưng đã bỏ nhà ra đi để tìm kiếm tri thức cổ xưa..."
-              className="w-full h-64 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
+              className={`w-full ${shouldUseMobileLayout() ? 'h-48' : 'h-64'} px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere ${shouldUseMobileLayout() ? 'text-sm' : ''}`}
             />
           </div>
 
-          <div className="flex flex-col items-center space-y-3">
+          <div className={`flex flex-col items-center ${shouldUseMobileLayout() ? 'space-y-2' : 'space-y-3'}`}>
             <button
               onClick={handleAnalyzeDescription}
               disabled={!characterDescription.trim() || isAnalyzing}
-              className="px-8 py-4 bg-primary-500/20 border-2 border-primary-500/70 rounded-lg text-primary-300 hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3"
+              className={`${shouldUseMobileLayout() ? 'px-4 py-3 text-sm' : 'px-8 py-4'} bg-primary-500/20 border-2 border-primary-500/70 rounded-lg text-primary-300 hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center ${shouldUseMobileLayout() ? 'space-x-2' : 'space-x-3'}`}
             >
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className={`${shouldUseMobileLayout() ? 'w-4 h-4' : 'w-5 h-5'}`} />
               <span>{isAnalyzing ? 'Đang phân tích...' : 'Phân Tích & Tạo Nhân Vật'}</span>
             </button>
             
             {/* Import Character Button */}
-            <label className="px-6 py-3 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 cursor-pointer flex items-center space-x-2">
-              <Upload className="w-4 h-4" />
-              <span>Nhập nhân vật từ file JSON</span>
+            <label className={`${shouldUseMobileLayout() ? 'px-4 py-2 text-sm' : 'px-6 py-3'} bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 cursor-pointer flex items-center ${shouldUseMobileLayout() ? 'space-x-1' : 'space-x-2'}`}>
+              <Upload className={`${shouldUseMobileLayout() ? 'w-3 h-3' : 'w-4 h-4'}`} />
+              <span className={shouldUseMobileLayout() ? 'text-xs' : ''}>Nhập nhân vật từ file JSON</span>
               <input
                 type="file"
                 accept=".json"

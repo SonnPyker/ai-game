@@ -3,6 +3,7 @@ import { Play, Globe, User, ArrowRight, CheckCircle, Circle } from 'lucide-react
 import { npcRelationshipService } from '../services/npcRelationshipService';
 import { MotionWrapper } from '../components/MotionWrapper';
 import { HelpButton } from '../components/HelpChat/HelpButton';
+import { useResponsiveContext } from '../contexts/ResponsiveContext';
 
 type InitStep = 'world' | 'character' | 'scenario';
 
@@ -16,6 +17,9 @@ interface InitState {
 }
 
 export function InitPage() {
+  const { shouldUseMobileLayout } = useResponsiveContext();
+  const isMobile = shouldUseMobileLayout();
+  
   const [initState, setInitState] = useState<InitState>({
     currentStep: 'world',
     worldCompleted: false,
@@ -211,55 +215,55 @@ export function InitPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-900 p-4 sm:p-6">
       {/* Help Button */}
       <HelpButton variant="fixed" />
       
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <MotionWrapper
-          className="text-center mb-8"
+          className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-3xl font-bold-vietnamese text-white mb-2 uppercase">
+          <h1 className={`${isMobile ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-bold-vietnamese text-white mb-2 uppercase`}>
             KHỞI TẠO GAME
           </h1>
-          <p className="text-gray-400">
+          <p className={`${isMobile ? 'text-sm sm:text-base' : 'text-base'} text-gray-400`}>
             Theo dõi tiến trình tạo game và tiếp tục từ bước hiện tại
           </p>
         </MotionWrapper>
 
         {/* Progress Steps */}
-        <div className="space-y-4">
+        <div className={`space-y-4 ${isMobile ? 'space-y-3' : ''}`}>
           {steps.map((step, index) => (
             <MotionWrapper
               key={step.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`glass-effect p-6 rounded-xl border-2 transition-all duration-200 ${
+              className={`glass-effect ${isMobile ? 'p-4' : 'p-6'} rounded-xl border-2 transition-all duration-200 ${
                 step.disabled 
                   ? 'cursor-not-allowed opacity-50' 
                   : 'cursor-pointer hover:scale-[1.02]'
               } ${getStepColor(step)}`}
               onClick={() => handleStepClick(step)}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+              <div className={`flex items-center ${isMobile ? 'flex-col sm:flex-row' : 'justify-between'}`}>
+                <div className={`flex items-center ${isMobile ? 'w-full sm:w-auto' : ''} ${isMobile ? 'space-x-3' : 'space-x-4'}`}>
                   <div className="flex-shrink-0">
                     {getStepIcon(step)}
                   </div>
-                  <div>
-                    <h3 className={`text-xl font-bold-vietnamese mb-1 ${getStepTextColor(step)}`}>
+                  <div className={`${isMobile ? 'flex-1' : ''}`}>
+                    <h3 className={`${isMobile ? 'text-lg sm:text-xl' : 'text-xl'} font-bold-vietnamese mb-1 ${getStepTextColor(step)}`}>
                       {step.title}
                     </h3>
-                    <p className="text-gray-400 text-sm">
+                    <p className={`text-gray-400 ${isMobile ? 'text-xs sm:text-sm' : 'text-sm'}`}>
                       {step.description}
                     </p>
                     {step.name && (
-                      <p className={`text-sm font-medium mt-1 ${
+                      <p className={`${isMobile ? 'text-xs sm:text-sm' : 'text-sm'} font-medium mt-1 ${
                         getStepStatus(step) === 'completed' 
                           ? 'text-green-300' 
                           : getStepStatus(step) === 'current'
@@ -272,17 +276,17 @@ export function InitPage() {
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
+                <div className={`flex items-center space-x-2 ${isMobile ? 'mt-3 sm:mt-0' : ''}`}>
                   {getStepStatus(step) === 'current' && (
-                    <span className="px-3 py-1 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-full text-xs font-medium">
+                    <span className={`${isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs'} bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-full font-medium`}>
                       TIẾP TỤC
                     </span>
                   )}
                   {getStepStatus(step) === 'completed' && (
-                    <span className={`px-3 py-1 bg-green-500/20 border border-green-500/50 text-green-300 rounded-full font-medium ${
+                    <span className={`${isMobile ? 'px-2 py-1' : 'px-3 py-1'} bg-green-500/20 border border-green-500/50 text-green-300 rounded-full font-medium ${
                       step.id === 'scenario' && initState.worldCompleted && initState.characterCompleted && initState.scenarioCompleted 
-                        ? 'text-sm px-4 py-2 bg-green-500/30 border-green-400 text-green-200 font-bold' 
-                        : 'text-xs'
+                        ? `${isMobile ? 'text-xs px-3 py-1' : 'text-sm px-4 py-2'} bg-green-500/30 border-green-400 text-green-200 font-bold` 
+                        : isMobile ? 'text-xs' : 'text-xs'
                     }`}>
                       {step.id === 'scenario' && initState.worldCompleted && initState.characterCompleted && initState.scenarioCompleted 
                         ? 'CHƠI TIẾP' 
@@ -291,12 +295,12 @@ export function InitPage() {
                     </span>
                   )}
                   {getStepStatus(step) === 'disabled' && (
-                    <span className="px-3 py-1 bg-gray-500/20 border border-gray-500/50 text-gray-400 rounded-full text-xs font-medium">
+                    <span className={`${isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs'} bg-gray-500/20 border border-gray-500/50 text-gray-400 rounded-full font-medium`}>
                       CHƯA SẴN SÀNG
                     </span>
                   )}
                   {!step.disabled && (
-                    <ArrowRight className="w-5 h-5 text-gray-400" />
+                    <ArrowRight className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-gray-400`} />
                   )}
                 </div>
               </div>
@@ -306,12 +310,12 @@ export function InitPage() {
 
         {/* Status Summary */}
         <MotionWrapper
-          className="mt-8 glass-effect p-6 rounded-xl border border-gray-700/50"
+          className={`${isMobile ? 'mt-6' : 'mt-8'} glass-effect ${isMobile ? 'p-4' : 'p-6'} rounded-xl border border-gray-700/50`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <h3 className="text-lg font-semibold text-white mb-4">Trạng thái hiện tại:</h3>
+          <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-white mb-4`}>Trạng thái hiện tại:</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
               <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${

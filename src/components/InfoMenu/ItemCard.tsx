@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { InventoryItem } from '../../types';
+import { accessoryEffectService } from '../../services/accessoryEffectService';
 import { 
   MoreVertical, 
   Sword, 
@@ -298,6 +299,19 @@ export function ItemCard({
                 {getDamageTypeName(item.damageType)}
               </span>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Accessory Effects */}
+      {item.effects && item.effects.length > 0 && (
+        <div className="mb-2">
+          <div className="flex flex-wrap gap-1 text-xs">
+            {accessoryEffectService.getFormattedEffects(item).map((effect, index) => (
+              <span key={index} className="text-purple-400 bg-purple-500/20 px-2 py-1 rounded">
+                {effect}
+              </span>
+            ))}
           </div>
         </div>
       )}

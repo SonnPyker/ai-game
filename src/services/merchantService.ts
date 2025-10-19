@@ -283,15 +283,30 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
        "accessories": [
          {
            "id": "accessory_1",
-           "name": "Tên phụ kiện",
-           "description": "Mô tả chi tiết",
-           "type": "accessory",
+           "name": "Nhẫn Sức Mạnh",
+           "description": "Tăng sức mạnh cho người đeo",
+           "type": "misc",
            "rarity": "common",
            "quantity": 1,
            "icon": "💍",
            "slot": "accessory1",
+           "effects": ["stat_buff:strength:+1:permanent"],
            "value": 30,
            "buyPrice": 60,
+           "tags": ["accessory", "magical"]
+         },
+         {
+           "id": "accessory_2",
+           "name": "Vòng Tay Thông Minh",
+           "description": "Tăng trí tuệ và nhanh nhẹn",
+           "type": "misc",
+           "rarity": "uncommon",
+           "quantity": 1,
+           "icon": "⌚",
+           "slot": "accessory2",
+           "effects": ["stat_buff:intelligence:+2:permanent", "stat_buff:agility:+2:permanent"],
+           "value": 80,
+           "buyPrice": 160,
            "tags": ["accessory", "magical"]
          }
        ],
@@ -362,12 +377,23 @@ ARMOR (ÁO GIÁP):
 - quantity: 1 (áo giáp chỉ có 1 cái)
 - icon: "🛡️", "⛑️", "🧥", "👕", "👖", "👟"
 
-ACCESSORIES (PHỤ KIỆN):
-- BẮT BUỘC: slot, quantity
+ACCESSORIES (PHỤ KIỆN) - HỆ THỐNG MỚI:
+- BẮT BUỘC: slot, quantity, effects
 - slot: "accessory1", "accessory2", "accessory3" (KHÔNG có armorClass)
 - quantity: 1 (phụ kiện chỉ có 1 cái)
 - icon: "💍", "⌚", "📿", "🎭", "🔮", "💎", "🌟", "✨"
+- effects: Array các stat buffs PERMANENT
+- Effect format: "stat_buff:stat_name:+value:permanent"
+  * stat_name: CHỈ ĐƯỢC sử dụng 6 core stats D&D: strength, agility, intelligence, constitution, wisdom, charisma
+  * CẤM: spirit, magic, mana, energy, health, hp, mp, ac, damage, attack, defense
 - KHÔNG có: damage, damageType, attackBonus, armorClass
+
+RARITY VÀ EFFECTS CHO ACCESSORIES:
+- Common: 1 effect, +1 vào 1 stat
+- Uncommon: 2 effects, +2 vào 2 stats khác nhau
+- Rare: 3 effects, +3 vào 3 stats khác nhau
+- Epic: 3-4 effects, +4 vào 3 stats hoặc +3 vào 4 stats
+- Legendary: 4+ effects, +5 vào nhiều stats
 
 CONSUMABLES (VẬT PHẨM TIÊU DÙNG):
 - BẮT BUỘC: effect (format chuẩn theo consumableDatabase.ts), quantity

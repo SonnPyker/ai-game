@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Equipment, InventoryItem, CharacterSkill } from '../../types';
 import { ItemCard } from './ItemCard';
+import { accessoryEffectService } from '../../services/accessoryEffectService';
 import { 
   Sword, 
   Shield, 
@@ -60,12 +61,8 @@ export function EquipmentView({
       }
       
       if (['accessory1', 'accessory2', 'accessory3'].includes(slot)) {
-        // Check if item has a specific slot property that matches the requested slot
-        if (item.slot) {
-          return item.slot === slot;
-        }
-        // Fallback to type check for items without slot property
-        return item.type === 'misc';
+        // CHỈ items có slot accessory1/2/3 mới hiển thị
+        return item.slot && ['accessory1', 'accessory2', 'accessory3'].includes(item.slot);
       }
       
       return false;

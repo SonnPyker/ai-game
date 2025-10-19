@@ -2972,6 +2972,51 @@ QUAN TRỌNG VỀ ARMOR GENERATION:
 - KHÔNG tạo armor nào thiếu armorClass
 - CẤM: accessory1, accessory2, accessory3 KHÔNG ĐƯỢC có armorClass
 
+💎 QUAN TRỌNG VỀ ACCESSORY GENERATION - HỆ THỐNG MỚI:
+- ACCESSORY PHẢI có: slot (accessory1/2/3), effects (array không rỗng) - KHÔNG ĐƯỢC THIẾU
+- ACCESSORY KHÔNG ĐƯỢC có: damage, damageType, attackBonus, armorClass (chỉ dành cho weapon/armor)
+- Effect format chuẩn cho accessories: "stat_buff:stat_name:+value:permanent"
+  * stat_name: CHỈ ĐƯỢC sử dụng 6 core stats chuẩn D&D: strength, agility, intelligence, constitution, wisdom, charisma
+  * CẤM sử dụng: spirit, magic, mana, energy, health, hp, mp, ac, damage, attack, defense
+  * value: số dương (+1, +2, +3, etc.)
+  * duration: BẮT BUỘC là "permanent"
+
+RARITY VÀ EFFECTS CHO ACCESSORIES:
+- Common: 1 effect, +1 vào 1 stat
+  * VD: ["stat_buff:strength:+1:permanent"]
+- Uncommon: 2 effects, +2 vào 2 stats khác nhau
+  * VD: ["stat_buff:strength:+2:permanent", "stat_buff:agility:+2:permanent"]
+- Rare: 3 effects, +3 vào 3 stats khác nhau
+  * VD: ["stat_buff:strength:+3:permanent", "stat_buff:agility:+3:permanent", "stat_buff:intelligence:+3:permanent"]
+- Epic: 3-4 effects, +4 vào 3 stats hoặc +3 vào 4 stats
+  * VD: ["stat_buff:strength:+4:permanent", "stat_buff:agility:+4:permanent", "stat_buff:intelligence:+4:permanent"]
+- Legendary: 4+ effects, +5 vào nhiều stats hoặc combo đặc biệt
+  * VD: ["stat_buff:strength:+5:permanent", "stat_buff:agility:+5:permanent", "stat_buff:constitution:+5:permanent", "stat_buff:wisdom:+5:permanent"]
+
+VÍ DỤ ACCESSORY ĐÚNG FORMAT:
+{
+  "id": "accessory_ring_strength",
+  "name": "Nhẫn Sức Mạnh",
+  "description": "Tăng sức mạnh cho người đeo",
+  "type": "misc",
+  "rarity": "common",
+  "quantity": 1,
+  "icon": "💍",
+  "slot": "accessory1",
+  "effects": ["stat_buff:strength:+1:permanent"],
+  "value": 30,
+  "tags": ["accessory", "magical"]
+}
+
+⚠️ VALIDATION RULES CHO ACCESSORIES:
+- BẮT BUỘC: slot field phải là "accessory1", "accessory2", hoặc "accessory3"
+- BẮT BUỘC: effects array phải có và không rỗng
+- BẮT BUỘC: type phải là "misc"
+- BẮT BUỘC: effects chỉ cộng 6 core stats D&D: strength, agility, intelligence, constitution, wisdom, charisma
+- CẤM: damage, damageType, attackBonus, armorClass fields
+- CẤM: effects có duration khác "permanent"
+- CẤM: sử dụng stat names không hợp lệ như spirit, magic, mana, energy, health, hp, mp, ac
+
 QUAN TRỌNG - TÍNH HỢP LÝ CỦA VẬT PHẨM:
 - Items PHẢI phù hợp với bối cảnh thời đại và thế giới game:
   * Thời trung cổ: KHÔNG có smartphone, súng lục, máy tính, điện thoại, xe hơi, vũ khí hiện đại
@@ -3027,7 +3072,10 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
         "armorClass": 14, // AC từ 10-20
         "slot": "armor", // Vị trí trang bị (CHỈ armor mới có armorClass)
         // CHO CONSUMABLE - BẮT BUỘC:
-        "effect": "heal:1d4:+1:instant|damage_buff:+1d4:3turns|stat_buff:ac:+2:3turns|debuff:poison:1d4:3turns|heal:full:instant"
+        "effect": "heal:1d4:+1:instant|damage_buff:+1d4:3turns|stat_buff:ac:+2:3turns|debuff:poison:1d4:3turns|heal:full:instant",
+        // CHO ACCESSORY - BẮT BUỘC:
+        "slot": "accessory1", // Vị trí trang bị (accessory1, accessory2, hoặc accessory3)
+        "effects": ["stat_buff:strength:+2:permanent", "stat_buff:agility:+1:permanent"] // Array các stat buffs PERMANENT
       }
     ]
   }

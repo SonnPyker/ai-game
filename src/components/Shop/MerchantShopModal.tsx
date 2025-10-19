@@ -7,6 +7,7 @@ import { MerchantShop, InventoryItem, Character, SkillBook, NPCRelationship } fr
 import { tradingService } from '../../services/tradingService';
 import { skillBookService } from '../../services/skillBookService';
 import { worldTimeService } from '../../services/worldTimeService';
+import { accessoryEffectService } from '../../services/accessoryEffectService';
 
 interface MerchantShopModalProps {
   isOpen: boolean;
@@ -571,17 +572,31 @@ export function MerchantShopModal({
                     </div>
                   )}
 
-                  {!isSkillBook && item.type === 'accessory' && (
+                  {!isSkillBook && (item.type === 'accessory' || (item.type === 'misc' && item.slot && ['accessory1', 'accessory2', 'accessory3'].includes(item.slot))) && (
                     <div className="bg-purple-900/20 rounded p-2 mb-3">
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-purple-300">Slot:</span>
-                          <span className="text-white ml-1">{item.slot}</span>
+                      <div className="space-y-2 text-xs">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-purple-300">Slot:</span>
+                            <span className="text-white ml-1">{item.slot}</span>
+                          </div>
+                          <div>
+                            <span className="text-purple-300">Loại:</span>
+                            <span className="text-white ml-1">Phụ kiện</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-purple-300">Loại:</span>
-                          <span className="text-white ml-1">Phụ kiện</span>
-                        </div>
+                        {item.effects && item.effects.length > 0 && (
+                          <div>
+                            <span className="text-purple-300">Hiệu ứng:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {accessoryEffectService.getFormattedEffects(item).map((effect, index) => (
+                                <span key={index} className="text-purple-400 bg-purple-500/20 px-2 py-1 rounded text-xs">
+                                  {effect}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

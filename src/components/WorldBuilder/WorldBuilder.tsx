@@ -663,23 +663,23 @@ export function WorldBuilder() {
 
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
+    <div className={`min-h-screen bg-gray-900 ${shouldUseMobileLayout() ? 'p-2 sm:p-4' : 'p-6'}`}>
       {/* Help Button */}
       <HelpButton variant="fixed" />
       
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold-vietnamese text-white mb-2 uppercase">WORLD BUILDER</h1>
-            <p className="text-gray-400">Tạo thế giới cho cuộc phiêu lưu của bạn</p>
+        <div className={`flex items-center ${shouldUseMobileLayout() ? 'flex-col space-y-4' : 'justify-between'} ${shouldUseMobileLayout() ? 'mb-6' : 'mb-8'}`}>
+          <div className={shouldUseMobileLayout() ? 'text-center' : ''}>
+            <h1 className={`${shouldUseMobileLayout() ? 'text-xl sm:text-2xl' : 'text-3xl'} font-bold-vietnamese text-white mb-2 uppercase`}>WORLD BUILDER</h1>
+            <p className={`${shouldUseMobileLayout() ? 'text-sm' : 'text-base'} text-gray-400`}>Tạo thế giới cho cuộc phiêu lưu của bạn</p>
           </div>
           
           {/* Import/Export Buttons */}
-          <div className="flex space-x-3">
-            <label className="px-4 py-2 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 cursor-pointer flex items-center space-x-2">
-              <Upload className="w-4 h-4" />
-              <span>Nhập thế giới</span>
+          <div className={`flex ${shouldUseMobileLayout() ? 'flex-col sm:flex-row' : ''} ${shouldUseMobileLayout() ? 'space-y-2 sm:space-y-0 sm:space-x-3' : 'space-x-3'}`}>
+            <label className={`${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-2'} bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 cursor-pointer flex items-center space-x-2`}>
+              <Upload className={`${shouldUseMobileLayout() ? 'w-3 h-3' : 'w-4 h-4'}`} />
+              <span className={shouldUseMobileLayout() ? 'text-xs' : ''}>Nhập thế giới</span>
               <input
                 type="file"
                 accept=".json"
@@ -690,30 +690,30 @@ export function WorldBuilder() {
             
             <button
               onClick={handleExportWorld}
-              className="px-4 py-2 bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 flex items-center space-x-2"
+              className={`${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-2'} bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 flex items-center space-x-2`}
             >
-              <Download className="w-4 h-4" />
-              <span>Xuất thế giới</span>
+              <Download className={`${shouldUseMobileLayout() ? 'w-3 h-3' : 'w-4 h-4'}`} />
+              <span className={shouldUseMobileLayout() ? 'text-xs' : ''}>Xuất thế giới</span>
             </button>
           </div>
         </div>
 
-        <div className="space-y-4 lg:space-y-6">
+        <div className={`space-y-4 ${shouldUseMobileLayout() ? 'space-y-3' : 'lg:space-y-6'}`}>
           {/* Main Form */}
-          <div className="space-y-4 lg:space-y-6">
+          <div className={`space-y-4 ${shouldUseMobileLayout() ? 'space-y-3' : 'lg:space-y-6'}`}>
             {/* Core Idea */}
             <MotionWrapper
-              className="glass-effect p-6 rounded-xl"
+              className={`glass-effect ${shouldUseMobileLayout() ? 'p-4' : 'p-6'} rounded-xl`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold-vietnamese text-white uppercase">Ý TƯỞNG CỐT LÕI</h3>
+              <div className={`flex items-center ${shouldUseMobileLayout() ? 'flex-col space-y-2' : 'justify-between'} ${shouldUseMobileLayout() ? 'mb-3' : 'mb-4'}`}>
+                <h3 className={`${shouldUseMobileLayout() ? 'text-lg' : 'text-xl'} font-bold-vietnamese text-white uppercase`}>Ý TƯỞNG CỐT LÕI</h3>
                 <button
                   onClick={() => handleAISuggestion('coreIdea')}
                   disabled={isGenerating}
-                  className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm disabled:opacity-50"
+                  className={`${shouldUseMobileLayout() ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-sm'} bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 disabled:opacity-50`}
                 >
                   {isGenerating && generatingField === 'coreIdea' ? 'Đang tạo...' : 'Hoàn thành tất cả'}
                 </button>
@@ -722,37 +722,37 @@ export function WorldBuilder() {
                 value={worldData.coreIdea}
                 onChange={(e) => setWorldData(prev => ({ ...prev, coreIdea: e.target.value }))}
                 placeholder="Mô tả ý tưởng cốt lõi của thế giới..."
-                className="w-full h-32 px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none resize-none break-words"
+                className={`w-full ${shouldUseMobileLayout() ? 'h-24' : 'h-32'} px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none resize-none break-words ${shouldUseMobileLayout() ? 'text-sm' : ''}`}
               />
             </MotionWrapper>
 
             {/* Genre & Setting */}
             <MotionWrapper
-              className="glass-effect p-6 rounded-xl"
+              className={`glass-effect ${shouldUseMobileLayout() ? 'p-4' : 'p-6'} rounded-xl`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">THỂ LOẠI & BỐI CẢNH</h3>
-              <div className={`grid gap-3 lg:gap-4 ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+              <h3 className={`${shouldUseMobileLayout() ? 'text-lg' : 'text-xl'} font-bold-vietnamese text-white ${shouldUseMobileLayout() ? 'mb-3' : 'mb-4'} uppercase`}>THỂ LOẠI & BỐI CẢNH</h3>
+              <div className={`grid ${shouldUseMobileLayout() ? 'gap-2' : 'gap-3 lg:gap-4'} ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Thể loại</label>
+                  <label className={`block ${shouldUseMobileLayout() ? 'text-xs' : 'text-sm'} font-medium text-gray-300 ${shouldUseMobileLayout() ? 'mb-1' : 'mb-2'}`}>Thể loại</label>
                   <input
                     type="text"
                     value={worldData.genre}
                     onChange={(e) => setWorldData(prev => ({ ...prev, genre: e.target.value }))}
                     placeholder="Ví dụ: Fantasy, Sci-fi, Horror..."
-                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Bối cảnh</label>
+                  <label className={`block ${shouldUseMobileLayout() ? 'text-xs' : 'text-sm'} font-medium text-gray-300 ${shouldUseMobileLayout() ? 'mb-1' : 'mb-2'}`}>Bối cảnh</label>
                   <input
                     type="text"
                     value={worldData.setting}
                     onChange={(e) => setWorldData(prev => ({ ...prev, setting: e.target.value }))}
                     placeholder="Ví dụ: Thời trung cổ, Tương lai, Hiện đại..."
-                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none`}
                   />
                 </div>
               </div>
@@ -760,19 +760,19 @@ export function WorldBuilder() {
 
             {/* Story Tone & Narration */}
             <MotionWrapper
-              className="glass-effect p-6 rounded-xl"
+              className={`glass-effect ${shouldUseMobileLayout() ? 'p-4' : 'p-6'} rounded-xl`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <h3 className="text-xl font-bold-vietnamese text-white mb-4 uppercase">TÔNG TRUYỆN & NGÔI KỂ</h3>
-              <div className={`grid gap-3 lg:gap-4 ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+              <h3 className={`${shouldUseMobileLayout() ? 'text-lg' : 'text-xl'} font-bold-vietnamese text-white ${shouldUseMobileLayout() ? 'mb-3' : 'mb-4'} uppercase`}>TÔNG TRUYỆN & NGÔI KỂ</h3>
+              <div className={`grid ${shouldUseMobileLayout() ? 'gap-2' : 'gap-3 lg:gap-4'} ${shouldUseMobileLayout() ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Tông truyện</label>
+                  <label className={`block ${shouldUseMobileLayout() ? 'text-xs' : 'text-sm'} font-medium text-gray-300 ${shouldUseMobileLayout() ? 'mb-1' : 'mb-2'}`}>Tông truyện</label>
                   <select
                     value={worldData.storyTone}
                     onChange={(e) => setWorldData(prev => ({ ...prev, storyTone: e.target.value }))}
-                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none`}
                   >
                     <option value="">Chọn tông truyện</option>
                     {storyTones.map(tone => (
@@ -781,11 +781,11 @@ export function WorldBuilder() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Ngôi kể</label>
+                  <label className={`block ${shouldUseMobileLayout() ? 'text-xs' : 'text-sm'} font-medium text-gray-300 ${shouldUseMobileLayout() ? 'mb-1' : 'mb-2'}`}>Ngôi kể</label>
                   <select
                     value={worldData.narration}
                     onChange={(e) => setWorldData(prev => ({ ...prev, narration: e.target.value }))}
-                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none`}
                   >
                     <option value="">Chọn ngôi kể</option>
                     {narrations.map(narration => (

@@ -1,6 +1,7 @@
 import { InventoryItem, Equipment, Character } from '../types';
 import { storageCache } from './storageCache';
 import { skillTreeService } from './skillTreeService';
+import { accessoryEffectService } from './accessoryEffectService';
 
 class InventoryService {
   private static instance: InventoryService;
@@ -514,6 +515,11 @@ class InventoryService {
     item.equipped_at = new Date();
     this.equipment[targetSlot as keyof Equipment] = item;
 
+    // Apply accessory effects if this is an accessory
+    if (['accessory1', 'accessory2', 'accessory3'].includes(targetSlot) && this.character) {
+      accessoryEffectService.applyAccessoryEffectsToCharacter(this.character, item);
+    }
+
     this.saveToStorage();
     this.updateCharacterInventory();
     this.updateCharacterStats();
@@ -524,6 +530,11 @@ class InventoryService {
   public unequipItem(itemId: string): boolean {
     const item = this.inventory.find(i => i.id === itemId);
     if (!item || !item.isEquipped || !item.slot) return false;
+
+    // Remove accessory effects if this is an accessory
+    if (['accessory1', 'accessory2', 'accessory3'].includes(item.slot) && this.character) {
+      accessoryEffectService.removeAccessoryEffectsFromCharacter(this.character, item);
+    }
 
     // Remove from equipment
     this.equipment[item.slot as keyof Equipment] = undefined;
@@ -549,15 +560,17 @@ class InventoryService {
       return 'armor';
     }
 
-    if (item.type === 'misc') {
-      // Find free accessory slot
+    // CHỈ items có slot accessory1/2/3 mới được trang bị
+    // Bất kỳ accessory nào cũng có thể vào bất kỳ ô nào còn trống
+    if (item.slot && ['accessory1', 'accessory2', 'accessory3'].includes(item.slot)) {
+      // Tìm ô accessory trống đầu tiên
       if (!this.equipment.accessory1) return 'accessory1';
       if (!this.equipment.accessory2) return 'accessory2';
       if (!this.equipment.accessory3) return 'accessory3';
-      return 'accessory1'; // Replace first accessory
+      return 'accessory1'; // Replace first nếu đầy
     }
 
-    return null; // Cannot be equipped
+    return null; // Misc items không có slot không thể trang bị
   }
 
   // Calculate equipped stats bonuses (DISABLED - equipment no longer provides stat bonuses)
@@ -724,13 +737,18 @@ class InventoryService {
         return item.type === 'weapon';
       }
       
-      if (['armor', 'accessory1', 'accessory2', 'accessory3'].includes(slot)) {
+      if (slot === 'armor') {
         // Check if item has a specific slot property that matches the requested slot
         if (item.slot) {
           return item.slot === slot;
         }
         // Fallback to type check for items without slot property
         return item.type === 'armor';
+      }
+      
+      if (['accessory1', 'accessory2', 'accessory3'].includes(slot)) {
+        // CHỈ items có slot accessory1/2/3 mới hiển thị
+        return item.slot && ['accessory1', 'accessory2', 'accessory3'].includes(item.slot);
       }
       
       return false;

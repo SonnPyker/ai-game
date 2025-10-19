@@ -161,6 +161,9 @@ export interface InventoryItem {
   // NEW: Trading fields
   value?: number; // Giá bán (50% của giá mua) - KHUYẾN NGHỊ
   buyPrice?: number; // Giá mua từ merchant
+  
+  // NEW: Accessory effects (tương tự skill tree effects)
+  effects?: string[]; // Array các effects cho accessories: ["stat_buff:strength:+2:permanent"]
 }
 
 export interface WeaponProperties {
@@ -494,6 +497,7 @@ export interface SCCState {
     attackBonus?: number; // For weapons
     armorClass?: number; // For armor
     slot?: string; // Equipment slot
+    effects?: string[]; // For accessories: stat buffs
   }>;
   
   // Time-based events (clocks)
