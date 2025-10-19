@@ -177,6 +177,9 @@ class MerchantService {
         // Tăng skill book chance (mỗi ngày +10%, tối đa 70%)
         shop.skillBookChance = Math.min(shop.skillBookChance + 10, 70);
         
+        // Tạo skill books mới dựa trên skillBookChance mới
+        await this.generateSkillBooks(shop);
+        
         this.merchantShops.set(shop.locationId, shop);
         this.saveMerchantShops();
         
@@ -310,17 +313,19 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
        "skillBooks": [
          {
            "id": "skillbook_1",
-           "name": "Tên skill book",
+           "name": "Sách Kỹ Năng: Lưỡi Kiếm Sấm Sét",
            "description": "Học 1 skill ngẫu nhiên thuộc loại damage với level 1",
+           "type": "skill_book",
            "skillType": "damage",
            "skillLevel": 1,
            "rarity": "common",
-           "price": 100,
+           "value": 100,
+           "buyPrice": 150,
            "icon": "📖",
            "quantity": 1,
-           "skill": {
+           "skillData": {
              "id": "skill_damage_random_1",
-             "name": "Tên skill damage",
+             "name": "Lưỡi Kiếm Sấm Sét",
              "description": "Mô tả ngắn gọn về cách sử dụng và hiệu quả",
              "level": 1,
              "skillType": "damage",
@@ -329,7 +334,8 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
              "currentCooldown": 0,
              "icon": "⚔️",
              "requiresTarget": true
-           }
+           },
+           "effects": ["learn_skill:skill_damage_random_1"]
          }
        ]
     }
@@ -377,20 +383,60 @@ CONSUMABLES (VẬT PHẨM TIÊU DÙNG):
 - icon: "🧪", "💊", "🍯", "🌿", "💧", "🔥", "❄️", "⚡"
 - KHÔNG có: damage, damageType, attackBonus, armorClass, slot
 
-SKILL BOOKS (SÁCH KỸ NĂNG):
+SKILL BOOKS (SÁCH KỸ NĂNG) - QUAN TRỌNG NHẤT:
 - Tối đa 2 items (nếu có, dựa trên skillBookChance)
 - QUY TẮC TẠO SKILL BOOKS:
   * skillBookChance = 0%: KHÔNG tạo skill books
   * skillBookChance = 10-40%: Tạo 1 skill book (random)
   * skillBookChance = 50-70%: Tạo 1-2 skill books (random)
   * skillBookChance = 70%+: Tạo 2 skill books (random)
-- Format JSON tương tự character creation skills
-- BẮT BUỘC có trường "skill" chứa skill data đầy đủ
-- Skill level: 1, 2, hoặc 3 (dựa trên rarity)
-- Effects: ít nhất 2 effects trong array
-- Cooldown: 2-4 lượt cho damage/healing, 0 cho social
-- Icon: emoji phù hợp với skill type
-- requiresTarget: true cho damage, false cho healing/social
+
+BẮT BUỘC CHO SKILL BOOKS (KHÔNG ĐƯỢC SAI):
+- BẮT BUỘC có trường "skillData" chứa skill data đầy đủ
+- BẮT BUỘC có trường "type": "skill_book"
+- BẮT BUỘC có trường "skillType": "damage" | "healing" | "social"
+- BẮT BUỘC có trường "skillLevel": 1 | 2 | 3
+- BẮT BUỘC có trường "rarity": "common" | "uncommon" | "rare" | "epic" | "legendary"
+- BẮT BUỘC có trường "quantity": 1
+- BẮT BUỘC có trường "value": số (base value)
+- BẮT BUỘC có trường "buyPrice": số (value * rarity multiplier)
+- BẮT BUỘC có trường "icon": "📖"
+- BẮT BUỘC có trường "effects": ["learn_skill:skill_id"]
+
+SKILL DATA BẮT BUỘC (TRONG skillData):
+- BẮT BUỘC có trường "id": string unique
+- BẮT BUỘC có trường "name": string (tên kỹ năng thuần túy)
+- BẮT BUỘC có trường "description": string
+- BẮT BUỘC có trường "level": 1 | 2 | 3
+- BẮT BUỘC có trường "skillType": "damage" | "healing" | "social"
+- BẮT BUỘC có trường "effects": string[] (ít nhất 2 effects)
+- BẮT BUỘC có trường "cooldown": number (2-4 cho damage/healing, 0 cho social)
+- BẮT BUỘC có trường "currentCooldown": 0
+- BẮT BUỘC có trường "icon": string (emoji phù hợp)
+- BẮT BUỘC có trường "requiresTarget": boolean (true cho damage, false cho healing/social)
+
+EFFECTS FORMAT BẮT BUỘC (KHÔNG ĐƯỢC SAI):
+- Damage: "instant_damage:1d6+2" (KHÔNG có target, sẽ tự động target enemy)
+- Healing: "instant_heal:1d6+2" (KHÔNG có target, sẽ tự động target self)
+- Stat Buff: "stat_buff:strength:+1:self:2turns" (BẮT BUỘC có :self:)
+- Stat Debuff: "stat_buff:enemy:-1:enemy:2turns" (BẮT BUỘC có :enemy:)
+- Defend: "defend" (KHÔNG có tham số khác)
+
+TÊN QUAN TRỌNG (KHÔNG ĐƯỢC SAI):
+- Skill book name: "Sách Kỹ Năng: [Tên Kỹ Năng]" hoặc "Tập Kỹ Năng: [Tên Kỹ Năng]"
+- Skill name: tên kỹ năng thuần túy (KHÔNG có prefix "Sách Kỹ Năng")
+- VÍ DỤ: skillBook.name = "Sách Kỹ Năng: Lưỡi Kiếm Sấm Sét", skillData.name = "Lưỡi Kiếm Sấm Sét"
+
+RARITY VÀ GIÁ CẢ:
+- RARITY: Random theo tỷ lệ (40% common, 30% uncommon, 20% rare, 8% epic, 2% legendary)
+- GIÁ CẢ: value = base value, buyPrice = value * rarity multiplier
+- Level 1: base 100-150, Level 2: base 200-300, Level 3: base 400-600
+
+LƯU Ý QUAN TRỌNG:
+- KHÔNG được tạo skill book nếu không chắc chắn về format
+- KIỂM TRA KỸ tất cả trường bắt buộc trước khi tạo
+- ĐẢM BẢO effects đúng format chuẩn
+- ĐẢM BẢO tên skill book khác tên skill
 
 MÔ TẢ VÀ TÊN:
 - Mô tả chi tiết và hấp dẫn
@@ -445,7 +491,7 @@ MÔ TẢ VÀ TÊN:
         };
 
         // Tạo skill books dựa trên skillBookChance
-        this.generateSkillBooks(shop);
+        await this.generateSkillBooks(shop);
         
         this.merchantShops.set(location.id, shop);
         this.saveMerchantShops();
@@ -616,23 +662,10 @@ MÔ TẢ VÀ TÊN:
   }
 
   /**
-   * Tính giá skill book
+   * Tính giá skill book (sử dụng hệ thống giá mới)
    */
   public calculateSkillBookPrice(level: number, rarity: string): number {
-    const basePrices = { 
-      common: 50, 
-      uncommon: 150, 
-      rare: 400, 
-      epic: 1000, 
-      legendary: 2500 
-    };
-    
-    const levelMultipliers = { 1: 1, 2: 2.5, 3: 5 };
-    
-    const basePrice = basePrices[rarity as keyof typeof basePrices] || 50;
-    const levelMultiplier = levelMultipliers[level as keyof typeof levelMultipliers] || 1;
-    
-    return Math.floor(basePrice * levelMultiplier);
+    return this.calculateSkillBookValue(level, rarity);
   }
 
   /**
@@ -733,7 +766,7 @@ MÔ TẢ VÀ TÊN:
   /**
    * Tạo skill books dựa trên skillBookChance
    */
-  private generateSkillBooks(shop: MerchantShop): void {
+  private async generateSkillBooks(shop: MerchantShop): Promise<void> {
     const skillBookChance = shop.skillBookChance;
     const random = Math.random() * 100;
     
@@ -745,7 +778,7 @@ MÔ TẢ VÀ TÊN:
       console.log(`🔍 Generating ${numSkillBooks} skill book(s)`);
       
       for (let i = 0; i < numSkillBooks; i++) {
-        const skillBook = this.createRandomSkillBook();
+        const skillBook = await this.createRandomSkillBook();
         shop.inventory.skillBooks = shop.inventory.skillBooks || [];
         shop.inventory.skillBooks.push(skillBook);
       }
@@ -755,81 +788,206 @@ MÔ TẢ VÀ TÊN:
   }
 
   /**
-   * Tạo skill book ngẫu nhiên với format giống character creation skills
+   * Tạo skill book ngẫu nhiên sử dụng AI với rarity và effect random
    */
-  private createRandomSkillBook(): any {
+  private async createRandomSkillBook(): Promise<any> {
+    try {
+      // Random rarity với tỷ lệ cân bằng
+      const rarityRoll = Math.random() * 100;
+      let rarity: string;
+      if (rarityRoll <= 40) rarity = 'common';
+      else if (rarityRoll <= 70) rarity = 'uncommon';
+      else if (rarityRoll <= 90) rarity = 'rare';
+      else if (rarityRoll <= 98) rarity = 'epic';
+      else rarity = 'legendary';
+
+      // Random skill type
+      const skillTypes = ['damage', 'healing', 'social'];
+      const skillType = skillTypes[Math.floor(Math.random() * skillTypes.length)];
+
+      // Random level dựa trên rarity
+      let skillLevel: number;
+      if (rarity === 'common') skillLevel = 1;
+      else if (rarity === 'uncommon') skillLevel = Math.random() < 0.7 ? 1 : 2;
+      else if (rarity === 'rare') skillLevel = Math.random() < 0.5 ? 2 : 3;
+      else if (rarity === 'epic') skillLevel = 3;
+      else skillLevel = 3; // legendary
+
+      // Tạo prompt cho AI
+      const prompt = `Tạo 1 skill book ngẫu nhiên với thông tin sau:
+
+RARITY: ${rarity}
+SKILL TYPE: ${skillType}
+SKILL LEVEL: ${skillLevel}
+
+YÊU CẦU BẮT BUỘC:
+- Tạo skill book với rarity ${rarity} (${this.getRarityDescription(rarity)})
+- Skill type: ${skillType} (${this.getSkillTypeDescription(skillType)})
+- Skill level: ${skillLevel} (${this.getLevelDescription(skillLevel)})
+- Tên skill book phải KHÁC với tên skill bên trong
+- Tên skill book: "Sách Kỹ Năng: [Tên Kỹ Năng]" hoặc "Tập Kỹ Năng: [Tên Kỹ Năng]"
+- Tên skill bên trong: tên kỹ năng thực tế (không có prefix "Sách Kỹ Năng")
+- Effects phải cân bằng theo level và rarity
+- Cooldown phù hợp với skill type
+
+EFFECTS FORMAT BẮT BUỘC (KHÔNG ĐƯỢC SAI):
+- Damage: "instant_damage:1d6+2" (KHÔNG có target, sẽ tự động target enemy)
+- Healing: "instant_heal:1d6+2" (KHÔNG có target, sẽ tự động target self)
+- Stat Buff: "stat_buff:strength:+1:self:2turns" (BẮT BUỘC có :self:)
+- Stat Debuff: "stat_buff:enemy:-1:enemy:2turns" (BẮT BUỘC có :enemy:)
+- Defend: "defend" (KHÔNG có tham số khác)
+
+VÍ DỤ TÊN:
+- Skill book name: "Sách Kỹ Năng: Lưỡi Kiếm Sấm Sét"
+- Skill name: "Lưỡi Kiếm Sấm Sét"
+
+JSON FORMAT BẮT BUỘC (KHÔNG ĐƯỢC SAI):
+{
+  "skillBook": {
+    "id": "skill_book_unique_id",
+    "name": "Sách Kỹ Năng: [Tên Kỹ Năng]",
+    "description": "Mô tả skill book",
+    "type": "skill_book",
+    "rarity": "${rarity}",
+    "quantity": 1,
+    "value": 0,
+    "buyPrice": 0,
+    "skillData": {
+      "id": "skill_unique_id",
+      "name": "[Tên Kỹ Năng]",
+      "description": "Mô tả skill",
+      "level": ${skillLevel},
+      "skillType": "${skillType}",
+      "effects": ["effect1", "effect2"],
+      "cooldown": 0,
+      "currentCooldown": 0,
+      "icon": "emoji",
+      "requiresTarget": true/false
+    },
+    "skillType": "${skillType}",
+    "skillLevel": ${skillLevel},
+    "effects": ["learn_skill:skill_id"],
+    "icon": "📖"
+  }
+}
+
+QUAN TRỌNG NHẤT:
+- Tên skill book và tên skill PHẢI KHÁC NHAU
+- Skill book name có prefix "Sách Kỹ Năng:" hoặc "Tập Kỹ Năng:"
+- Skill name là tên kỹ năng thuần túy
+- Effects phải đúng format chuẩn (xem EFFECTS FORMAT BẮT BUỘC)
+- Damage skills: requiresTarget = true, cooldown 2-4
+- Healing skills: requiresTarget = false, cooldown 2-4  
+- Social skills: requiresTarget = false, cooldown = 0
+- Icon phù hợp với skill type
+- Chỉ trả về JSON thuần túy, không thêm text khác
+- KIỂM TRA KỸ tất cả trường bắt buộc trước khi tạo`;
+
+      const { geminiService } = await import('./geminiService');
+      const response = await geminiService.generateContent(prompt);
+      
+      if (!response) {
+        throw new Error('Failed to generate skill book');
+      }
+
+      // Parse JSON response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
+      }
+
+      const skillBookData = JSON.parse(jsonMatch[0]);
+      const skillBook = skillBookData.skillBook;
+
+      // Tính giá dựa trên rarity và level
+      const baseValue = this.calculateSkillBookValue(skillLevel, rarity);
+      skillBook.value = baseValue;
+      skillBook.buyPrice = Math.floor(baseValue * this.getRarityMultiplier(rarity));
+
+      // Đảm bảo format chuẩn với SkillBook interface
+      return {
+        id: skillBook.id,
+        name: skillBook.name,
+        description: skillBook.description,
+        type: 'skill_book' as const,
+        skillType: skillBook.skillType,
+        skillLevel: skillBook.skillLevel,
+        rarity: skillBook.rarity,
+        value: skillBook.value,
+        buyPrice: skillBook.buyPrice,
+        icon: skillBook.icon || '📖',
+        quantity: 1,
+        skillData: skillBook.skillData,
+        effects: skillBook.effects || [`learn_skill:${skillBook.skillData.id}`]
+      };
+
+    } catch (error) {
+      console.error('Error creating AI skill book:', error);
+      // Fallback to template-based creation
+      return this.createFallbackSkillBook();
+    }
+  }
+
+  /**
+   * Tạo skill book fallback khi AI fail
+   */
+  private createFallbackSkillBook(): any {
     const skillTemplates = [
-      // Damage Skills
       {
         skillType: 'damage',
-        names: ['Lưỡi Kiếm Sắc Bén', 'Cú Đấm Sấm Sét', 'Tia Lửa Hủy Diệt', 'Gió Lưỡi Dao', 'Bão Lửa'],
+        names: ['Lưỡi Kiếm Sắc Bén', 'Cú Đấm Sấm Sét', 'Tia Lửa Hủy Diệt'],
         descriptions: [
           'Tấn công mạnh mẽ với vũ khí sắc bén',
           'Cú đấm nhanh như chớp với sức mạnh tàn phá',
-          'Phóng tia lửa thiêu đốt kẻ thù',
-          'Tạo luồng gió sắc như dao cắt',
-          'Tạo cơn bão lửa thiêu rụi mọi thứ'
+          'Phóng tia lửa thiêu đốt kẻ thù'
         ],
         effects: [
           ['instant_damage:1d6+2', 'stat_buff:strength:+1:self:2turns'],
           ['instant_damage:1d8+1', 'stat_buff:agility:+1:self:2turns'],
-          ['instant_damage:2d4+1', 'stat_buff:intelligence:+1:self:2turns'],
-          ['instant_damage:1d6+3', 'stat_buff:strength:+2:self:1turns'],
-          ['instant_damage:1d8+2', 'stat_buff:agility:+2:self:1turns']
+          ['instant_damage:2d4+1', 'stat_buff:intelligence:+1:self:2turns']
         ],
-        icons: ['⚔️', '👊', '🔥', '💨', '🌪️'],
-        cooldowns: [2, 3, 4, 2, 3]
+        icons: ['⚔️', '👊', '🔥'],
+        cooldowns: [2, 3, 4]
       },
-      // Healing Skills
       {
         skillType: 'healing',
-        names: ['Hồi Sinh', 'Lá Thuốc Thần', 'Ánh Sáng Chữa Lành', 'Bùa Phép Hồi Phục', 'Năng Lượng Sống'],
+        names: ['Hồi Sinh', 'Lá Thuốc Thần', 'Ánh Sáng Chữa Lành'],
         descriptions: [
           'Hồi phục sức khỏe và tăng cường thể chất',
           'Sử dụng thảo dược quý để chữa lành vết thương',
-          'Ánh sáng thiêng liêng chữa lành mọi tổn thương',
-          'Bùa phép cổ xưa hồi phục sức mạnh',
-          'Hấp thụ năng lượng sống để phục hồi'
+          'Ánh sáng thiêng liêng chữa lành mọi tổn thương'
         ],
         effects: [
           ['instant_heal:1d6+2', 'stat_buff:constitution:+1:self:2turns'],
           ['instant_heal:2d4+1', 'stat_buff:wisdom:+1:self:2turns'],
-          ['instant_heal:1d8+1', 'stat_buff:constitution:+2:self:1turns'],
-          ['instant_heal:1d6+3', 'stat_buff:wisdom:+2:self:1turns'],
-          ['instant_heal:2d4+2', 'stat_buff:constitution:+1:self:3turns']
+          ['instant_heal:1d8+1', 'stat_buff:constitution:+2:self:1turns']
         ],
-        icons: ['💚', '🌿', '✨', '🔮', '🌟'],
-        cooldowns: [3, 4, 3, 4, 2]
+        icons: ['💚', '🌿', '✨'],
+        cooldowns: [3, 4, 3]
       },
-      // Social Skills
       {
         skillType: 'social',
-        names: ['Thuyết Phục', 'Khích Lệ', 'Đàm Phán', 'Lãnh Đạo', 'Giao Tiếp'],
+        names: ['Thuyết Phục', 'Khích Lệ', 'Đàm Phán'],
         descriptions: [
           'Thuyết phục người khác bằng lời nói khéo léo',
           'Khích lệ tinh thần và tăng cường sự tự tin',
-          'Đàm phán để đạt được thỏa thuận có lợi',
-          'Thể hiện khả năng lãnh đạo và chỉ huy',
-          'Giao tiếp hiệu quả với mọi người'
+          'Đàm phán để đạt được thỏa thuận có lợi'
         ],
         effects: [
           ['stat_buff:charisma:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'],
           ['stat_buff:charisma:+1:self:4turns', 'stat_buff:strength:+1:self:2turns'],
-          ['stat_buff:wisdom:+2:self:3turns', 'stat_buff:intelligence:+1:self:3turns'],
-          ['stat_buff:charisma:+3:self:2turns', 'stat_buff:wisdom:+2:self:2turns'],
-          ['stat_buff:charisma:+1:self:5turns', 'stat_buff:wisdom:+1:self:5turns']
+          ['stat_buff:wisdom:+2:self:3turns', 'stat_buff:intelligence:+1:self:3turns']
         ],
-        icons: ['💬', '🎭', '🤝', '👑', '🗣️'],
-        cooldowns: [0, 0, 0, 0, 0]
+        icons: ['💬', '🎭', '🤝'],
+        cooldowns: [0, 0, 0]
       }
     ];
     
-    // Chọn ngẫu nhiên một template
     const template = skillTemplates[Math.floor(Math.random() * skillTemplates.length)];
     const skillIndex = Math.floor(Math.random() * template.names.length);
-    const skillLevel = Math.floor(Math.random() * 3) + 1; // Level 1-3
+    const skillLevel = Math.floor(Math.random() * 3) + 1;
+    const rarity = Math.random() < 0.5 ? 'common' : 'uncommon';
     
-    // Tạo skill với format giống character creation
     const skill = {
       id: `skill_${template.skillType}_book_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       name: template.names[skillIndex],
@@ -843,21 +1001,93 @@ MÔ TẢ VÀ TÊN:
       requiresTarget: template.skillType === 'damage'
     };
     
-    // Tạo skill book item
+    const baseValue = this.calculateSkillBookValue(skillLevel, rarity);
+    
+    // Tạo tên skill book khác với tên skill
+    const skillBookNames = [
+      `Sách Kỹ Năng: ${skill.name}`,
+      `Tập Kỹ Năng: ${skill.name}`,
+      `Cuốn Sách: ${skill.name}`,
+      `Tài Liệu: ${skill.name}`,
+      `Bí Kíp: ${skill.name}`
+    ];
+    const skillBookName = skillBookNames[Math.floor(Math.random() * skillBookNames.length)];
+
     return {
       id: `skill_book_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: `Sách Kỹ Năng: ${skill.name}`,
+      name: skillBookName,
       description: `Một cuốn sách cổ chứa kiến thức về "${skill.name}". Đọc để học kỹ năng này.`,
-      type: 'skill_book',
-      rarity: 'uncommon',
+      type: 'skill_book' as const,
+      rarity: rarity as 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary',
       quantity: 1,
-      value: 50 + (skillLevel * 25),
-      buyPrice: 75 + (skillLevel * 40),
-      skillData: skill, // Chứa toàn bộ skill data
+      value: baseValue,
+      buyPrice: Math.floor(baseValue * this.getRarityMultiplier(rarity)),
+      skillData: skill,
       skillType: skill.skillType,
-      skillLevel: skillLevel,
-      effects: [`learn_skill:${skill.id}`] // Reference đến skill ID
+      skillLevel: skillLevel as 1 | 2 | 3,
+      effects: [`learn_skill:${skill.id}`],
+      icon: '📖'
     };
+  }
+
+  /**
+   * Tính giá trị cơ bản của skill book
+   */
+  private calculateSkillBookValue(level: number, rarity: string): number {
+    const baseValue = 100 + (level * 50); // Base 100 + 50 per level
+    return Math.floor(baseValue * this.getRarityMultiplier(rarity));
+  }
+
+  /**
+   * Lấy multiplier cho rarity
+   */
+  private getRarityMultiplier(rarity: string): number {
+    const multipliers = {
+      'common': 1.0,
+      'uncommon': 1.5,
+      'rare': 2.5,
+      'epic': 4.0,
+      'legendary': 6.0
+    };
+    return multipliers[rarity as keyof typeof multipliers] || 1.0;
+  }
+
+  /**
+   * Lấy mô tả rarity
+   */
+  private getRarityDescription(rarity: string): string {
+    const descriptions = {
+      'common': 'Thường - Kỹ năng cơ bản',
+      'uncommon': 'Hiếm - Kỹ năng nâng cao',
+      'rare': 'Quý - Kỹ năng mạnh mẽ',
+      'epic': 'Huyền Thoại - Kỹ năng siêu mạnh',
+      'legendary': 'Truyền Thuyết - Kỹ năng tối thượng'
+    };
+    return descriptions[rarity as keyof typeof descriptions] || 'Thường';
+  }
+
+  /**
+   * Lấy mô tả skill type
+   */
+  private getSkillTypeDescription(skillType: string): string {
+    const descriptions = {
+      'damage': 'Tấn Công - Gây sát thương',
+      'healing': 'Hồi Phục - Chữa lành và buff',
+      'social': 'Xã Hội - Giao tiếp và thuyết phục'
+    };
+    return descriptions[skillType as keyof typeof descriptions] || 'Tấn Công';
+  }
+
+  /**
+   * Lấy mô tả level
+   */
+  private getLevelDescription(level: number): string {
+    const descriptions = {
+      1: 'Cơ Bản - Dễ học, hiệu quả vừa phải',
+      2: 'Nâng Cao - Khó học hơn, hiệu quả tốt',
+      3: 'Bậc Thầy - Rất khó học, hiệu quả cao'
+    };
+    return descriptions[level as keyof typeof descriptions] || 'Cơ Bản';
   }
 
   /**

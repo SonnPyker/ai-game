@@ -13,25 +13,32 @@ class SkillBookService {
   }
 
   /**
-   * Sử dụng skill book để học skill ngẫu nhiên
+   * Sử dụng skill book để học skill từ skillData
    */
   public useSkillBook(character: Character, skillBook: SkillBook): { success: boolean; skill?: CharacterSkill; message: string } {
     if (!character.skills) {
       character.skills = [];
     }
 
-    // Tạo skill ngẫu nhiên
-    const newSkill = this.generateRandomSkill(skillBook.skillType, skillBook.skillLevel);
-    
-    if (!newSkill) {
+    // Sử dụng skill data từ skill book thay vì tạo mới
+    if (!skillBook.skillData) {
       return {
         success: false,
-        message: 'Không thể tạo skill từ skill book này.'
+        message: 'Skill book này không có dữ liệu kỹ năng hợp lệ.'
       };
     }
 
-    // Kiểm tra xem character đã có skill này chưa
-    const existingSkill = character.skills.find(s => s.id === newSkill.id);
+    // Tạo skill từ skillData với ID mới để tránh trùng lặp
+    const newSkill: CharacterSkill = {
+      ...skillBook.skillData,
+      id: `skill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      currentCooldown: 0
+    };
+
+    // Kiểm tra xem character đã có skill này chưa (dựa trên tên và loại)
+    const existingSkill = character.skills.find(s => 
+      s.name === newSkill.name && s.skillType === newSkill.skillType
+    );
     if (existingSkill) {
       return {
         success: false,

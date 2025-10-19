@@ -49,10 +49,15 @@ class SkillEffectService {
       defaultTarget = 'self';
     }
     
+    // Validate target type
+    const validTargets: ('self' | 'enemy' | 'all_enemies')[] = ['self', 'enemy', 'all_enemies'];
+    const parsedTarget = target as ParsedSkillEffect['target'];
+    const finalTarget = target && validTargets.includes(parsedTarget) ? parsedTarget : defaultTarget;
+    
     return {
       type: type as ParsedSkillEffect['type'],
       value: value || undefined,
-      target: (target as ParsedSkillEffect['target']) || defaultTarget,
+      target: finalTarget,
       statType: type.includes('stat_') ? value?.split('+')[0] : undefined,
       duration: duration ? parseInt(duration.replace('turns', '')) : undefined
     };
@@ -69,15 +74,27 @@ class SkillEffectService {
   ): SkillEffectResult[] {
     const results: SkillEffectResult[] = [];
     
+    // Debug logging
+    console.log(`🔍 Applying skill effects for: ${skill.name}`);
+    console.log(`🔍 Skill effects:`, skill.effects);
+    console.log(`🔍 Target IDs:`, targetIds);
+    console.log(`🔍 Caster:`, caster.name);
+    
     // Parse all effects
-    const parsedEffects = skill.effects.map(effect => this.parseSkillEffect(effect)).filter(Boolean) as ParsedSkillEffect[];
+    const parsedEffects = skill.effects.map(effect => {
+      const parsed = this.parseSkillEffect(effect);
+      console.log(`🔍 Parsed effect "${effect}":`, parsed);
+      return parsed;
+    }).filter(Boolean) as ParsedSkillEffect[];
     
     if (parsedEffects.length === 0) {
+      console.warn(`🔍 No valid effects found for skill: ${skill.name}`);
       return results;
     }
 
     // Apply each effect
     for (const effect of parsedEffects) {
+      console.log(`🔍 Applying effect:`, effect);
       const effectResults = this.applySingleEffect(effect, caster, targetIds, allCombatants);
       results.push(...effectResults);
     }
@@ -278,6 +295,8 @@ class SkillEffectService {
       case 'all_enemies':
         return allCombatants.filter(c => c.id !== caster.id && c.type !== 'player' && c.isAlive);
       default:
+        // Log warning for invalid target type
+        console.warn(`Invalid target type: ${targetType}. Defaulting to self.`);
         return [caster];
     }
   }
