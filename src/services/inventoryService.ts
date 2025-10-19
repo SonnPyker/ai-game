@@ -265,6 +265,7 @@ class InventoryService {
       item.attackBonus = itemData.attackBonus || this.autoDetectAttackBonus(itemData);
       item.damageType = itemData.damageType || this.autoDetectDamageType(itemData);
       item.weaponProperties = itemData.weaponProperties;
+      item.saveDC = this.autoGenerateSaveDC(itemData);
     } else if (itemType === 'armor') {
       item.armorClass = itemData.armorClass || this.autoDetectArmorClass(itemData);
     }
@@ -982,6 +983,29 @@ class InventoryService {
     }
     
     return baseAC;
+  }
+
+  // NEW: Auto-generate saveDC for elemental weapons
+  private autoGenerateSaveDC(itemData: any): number | undefined {
+    if (itemData.saveDC) return itemData.saveDC;
+    
+    const damageType = this.autoDetectDamageType(itemData);
+    const elementalTypes = ['fire', 'cold', 'lightning', 'poison', 'psychic'];
+    
+    if (!elementalTypes.includes(damageType)) {
+      return undefined; // Not an elemental weapon
+    }
+    
+    const rarity = itemData.rarity || 'common';
+    const dcMap: { [key: string]: number } = {
+      'common': 11,
+      'uncommon': 13,
+      'rare': 15,
+      'epic': 17,
+      'legendary': 19
+    };
+    
+    return dcMap[rarity] || 11;
   }
 
   // NEW: Auto-detect damage type

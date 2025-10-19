@@ -353,7 +353,7 @@ Hãy tạo 1 vũ khí phù hợp nhất theo format JSON:
   "name": "Tên vũ khí (tiếng Việt)",
   "attackBonus": ${2 + Math.max(stats?.modifiers?.strength || 0, stats?.modifiers?.agility || 0) + Math.floor(combatLevel / 2)},
   "damage": "${Math.floor(combatLevel / 2) + 1}d6+${Math.max(stats?.modifiers?.strength || 0, stats?.modifiers?.agility || 0)}",
-  "damageType": "physical|magical|fire|cold|lightning|poison|psychic",
+  "damageType": "bludgeoning|slashing|piercing|magical|fire|cold|lightning|poison|psychic",
   "range": ${(stats?.modifiers?.agility || 0) > (stats?.modifiers?.strength || 0) ? 60 : undefined},
   "description": "Mô tả ngắn về vũ khí"
 }

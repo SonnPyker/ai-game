@@ -1589,7 +1589,7 @@ export function CombatPage({}: CombatPageProps) {
           initial={{ opacity: 0, y: '100%' }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: '100%' }}
-          className="fixed bottom-0 left-0 w-full h-1/2 bg-gray-800 border border-gray-600 rounded-t-lg shadow-2xl z-40 flex flex-col"
+          className="fixed bottom-0 left-0 w-full h-2/3 bg-gray-800 border border-gray-600 rounded-t-lg shadow-2xl z-40 flex flex-col"
         >
           {/* Action Menu Header */}
           <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700 rounded-t-lg flex-shrink-0">
@@ -1610,7 +1610,7 @@ export function CombatPage({}: CombatPageProps) {
           </div>
 
           {/* Action Menu Content */}
-          <div className="flex-1 overflow-hidden min-h-0 p-4">
+          <div className="flex-1 overflow-y-auto min-h-0 p-4 pb-8">
             <ActionMenu
               combatant={playerCombatants[0] || null}
               enemies={aliveEnemies}

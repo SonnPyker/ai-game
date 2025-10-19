@@ -453,6 +453,42 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
     tags: ['skills', 'kỹ năng', 'cooldown', 'effects', 'damage', 'healing', 'social']
   },
   {
+    id: 'combat-9',
+    category: 'combat',
+    question: 'Hệ thống Elemental Damage và Saving Throw hoạt động như thế nào?',
+    answer: `Hệ thống Elemental Damage và Saving Throw:
+
+**Elemental Damage Types**:
+- **Fire (Lửa)**: Gây sát thương liên tục + giảm phòng thủ
+- **Cold (Băng)**: Gây sát thương liên tục + giảm tốc độ
+- **Lightning (Sét)**: Gây sát thương liên tục + có thể bỏ lượt
+- **Poison (Độc)**: Gây sát thương liên tục + giảm sát thương
+- **Psychic (Tâm lý)**: Gây sát thương liên tục + giảm trí tuệ
+
+**Saving Throw Mechanism**:
+- Khi bị tấn công bằng elemental weapon, phải thực hiện saving throw
+- **DC (Difficulty Class)** dựa trên rarity của weapon:
+  * Common: DC 11, Uncommon: DC 13, Rare: DC 15, Epic: DC 17, Legendary: DC 19
+- **Ability Modifier** dựa trên loại damage:
+  * Fire/Poison: Constitution modifier
+  * Psychic: Wisdom modifier  
+  * Lightning/Cold: Agility modifier
+
+**Debuff Effects**:
+- **Success**: Không bị debuff, chỉ nhận sát thương thường
+- **Failure**: Bị debuff tương ứng với damage type
+- **Duration**: 2-4 turns tùy theo rarity
+- **Damage per turn**: 1-5 damage tùy theo rarity
+
+**Ví dụ**:
+- Kiếm lửa (Rare) tấn công → DC 15 Constitution save
+- Nếu fail: Bị Burning (3 damage/turn, 3 turns, -1 AC)
+- Nếu success: Chỉ nhận sát thương thường
+
+**Mẹo**: Tăng Constitution, Wisdom, hoặc Agility để tăng khả năng chống lại elemental effects.`,
+    tags: ['elemental', 'saving throw', 'debuff', 'fire', 'cold', 'lightning', 'poison', 'psychic', 'DC']
+  },
+  {
     id: 'combat-8',
     category: 'combat',
     question: 'Cách tính sát thương và phòng thủ chi tiết?',

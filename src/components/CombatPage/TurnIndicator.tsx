@@ -1,6 +1,7 @@
 import React from 'react';
 import { MotionWrapper } from '../MotionWrapper';
 import { Clock, User, Sword, ChevronRight, Zap } from 'lucide-react';
+import { useResponsiveContext } from '../../contexts/ResponsiveContext';
 
 interface TurnIndicatorProps {
   turnNumber: number;
@@ -21,12 +22,62 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
   turnOrder = [],
   currentCombatantIndex = 0
 }) => {
+  const { shouldUseMobileLayout } = useResponsiveContext();
+  const isMobile = shouldUseMobileLayout();
+  
   // Get next combatant info
   const nextIndex = (currentCombatantIndex + 1) % turnOrder.length;
   const nextCombatantId = turnOrder[nextIndex];
   const isNextPlayerTurn = nextCombatantId === 'player';
   const nextName = nextCombatantName || (isNextPlayerTurn ? 'Player' : `Enemy ${nextCombatantId}`);
 
+  if (isMobile) {
+    // Mobile: Compact layout
+    return (
+      <MotionWrapper
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between w-full px-2 py-1 bg-gray-800/80 backdrop-blur-sm rounded-lg border border-gray-600/50"
+      >
+        {/* Turn Number - Compact */}
+        <div className="flex items-center space-x-1">
+          <Clock className="w-3 h-3 text-blue-400" />
+          <span className="text-xs font-bold text-blue-400">
+            T{turnNumber}
+          </span>
+        </div>
+
+        {/* Current Turn - Very Compact */}
+        <div className="flex items-center space-x-1 px-2 py-1 bg-gray-700/50 rounded">
+          {isPlayerTurn ? (
+            <User className="w-3 h-3 text-green-400" />
+          ) : (
+            <Sword className="w-3 h-3 text-red-400" />
+          )}
+          <span className={`text-xs font-bold ${isPlayerTurn ? 'text-green-400' : 'text-red-400'}`}>
+            {isPlayerTurn ? 'Bạn' : (currentCombatantName || 'Kẻ thù')}
+          </span>
+        </div>
+
+        {/* Next Turn - Only if multiple combatants */}
+        {turnOrder.length > 1 && (
+          <div className="flex items-center space-x-1 text-xs">
+            <span className="text-gray-400">Tiếp:</span>
+            <span className={`font-medium ${isNextPlayerTurn ? 'text-green-300' : 'text-red-300'}`}>
+              {isNextPlayerTurn ? 'Bạn' : nextName}
+            </span>
+          </div>
+        )}
+
+        {/* Processing Indicator */}
+        {isProcessing && (
+          <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></div>
+        )}
+      </MotionWrapper>
+    );
+  }
+
+  // Desktop: Full layout
   return (
     <MotionWrapper
       initial={{ opacity: 0, y: -20 }}

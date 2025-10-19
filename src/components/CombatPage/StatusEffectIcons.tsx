@@ -34,6 +34,16 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-lg border transition-all duration-200 cursor-help ${
               effect.name === 'Phòng Thủ' 
                 ? 'bg-blue-700/80 border-blue-500 hover:border-blue-400' 
+                : effect.name === 'Burning'
+                ? 'bg-red-700/80 border-red-500 hover:border-red-400'
+                : effect.name === 'Frozen'
+                ? 'bg-blue-600/80 border-blue-400 hover:border-blue-300'
+                : effect.name === 'Shocked'
+                ? 'bg-yellow-700/80 border-yellow-500 hover:border-yellow-400'
+                : effect.name === 'Poisoned'
+                ? 'bg-green-700/80 border-green-500 hover:border-green-400'
+                : effect.name === 'Confused'
+                ? 'bg-purple-700/80 border-purple-500 hover:border-purple-400'
                 : 'bg-gray-700/80 border-gray-600 hover:border-gray-400'
             }`}>
               {effect.icon}
@@ -44,6 +54,16 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
               <div className={`absolute -top-1 -right-1 w-4 h-4 text-white text-xs rounded-full flex items-center justify-center font-bold border ${
                 effect.name === 'Phòng Thủ' 
                   ? 'bg-blue-600 border-blue-500' 
+                  : effect.name === 'Burning'
+                  ? 'bg-red-600 border-red-500'
+                  : effect.name === 'Frozen'
+                  ? 'bg-blue-500 border-blue-400'
+                  : effect.name === 'Shocked'
+                  ? 'bg-yellow-600 border-yellow-500'
+                  : effect.name === 'Poisoned'
+                  ? 'bg-green-600 border-green-500'
+                  : effect.name === 'Confused'
+                  ? 'bg-purple-600 border-purple-500'
                   : 'bg-red-600 border-red-500'
               }`}>
                 {effect.duration}

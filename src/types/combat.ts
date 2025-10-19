@@ -90,9 +90,10 @@ export interface StatusEffect {
     healthModifier?: number;
     armorClassModifier?: number;
     attackModifier?: number;
-    damageModifier?: number;
+    damageModifier?: string;
     statModifiers?: { [key: string]: number };
     skipTurn?: boolean;
+    skipTurnChance?: number;
     damagePerTurn?: number;
     damageType?: string;
   };
@@ -108,7 +109,7 @@ export interface EnvironmentalEffect {
     visibilityModifier?: number;
     movementModifier?: number;
     attackModifier?: number;
-    damageModifier?: number;
+    damageModifier?: string;
     statusEffects?: StatusEffect[];
   };
   duration?: number; // turns, undefined = permanent

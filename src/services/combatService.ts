@@ -14,6 +14,7 @@ import { enemyDatabaseService } from './enemyDatabaseService';
 import { allyManagementService } from './allyManagementService';
 import { npcRelationshipService } from './npcRelationshipService';
 import { combatPreparationService } from './combatPreparationService';
+import { elementalDamageService } from './elementalDamageService';
 
 export interface Combatant {
   id: string;
@@ -48,12 +49,17 @@ export interface StatusEffect {
   description: string;
   duration: number; // turns remaining
   icon: string; // Icon để hiển thị
+  color?: string; // Color for UI
   effects: {
     healthModifier?: number;
     armorClassModifier?: number;
     attackModifier?: number;
     damageModifier?: string;
     statModifiers?: { [key: string]: number };
+    skipTurn?: boolean;
+    skipTurnChance?: number;
+    damagePerTurn?: number;
+    damageType?: string;
   };
 }
 
@@ -683,6 +689,9 @@ class CombatService {
       
       // Step 3: Apply damage with visual effects
       await this.applyDamageWithEffects(defenderId, totalDamage, attackerId);
+      
+      // Step 4: Process elemental saving throw if applicable
+      await this.processElementalSavingThrow(attacker, defender, attack);
       
       return true;
     } else {
@@ -1357,7 +1366,7 @@ class CombatService {
   }
 
   // Add entry to current turn actions (replaces addTurnAction)
-  private addTurnAction(type: CombatLogEntry['type'], message: string, details?: any): void {
+  public addTurnAction(type: CombatLogEntry['type'], message: string, details?: any): void {
     if (!this.currentCombat) return;
     
     const entry: CombatLogEntry = {
@@ -1608,7 +1617,7 @@ class CombatService {
   }
 
   // Animation trigger methods
-  private triggerDamageAnimation(combatantId: string, damage: number, _attackerId?: string): void {
+  public triggerDamageAnimation(combatantId: string, damage: number, _attackerId?: string): void {
     const combatant = this.getCombatant(combatantId);
     if (!combatant) return;
 
@@ -1907,6 +1916,18 @@ class CombatService {
     // Process regular status effects
     effectProcessingService.processStatusEffects(combatant);
     
+    // Check if combatant died from status effects
+    if (combatant.health.current <= 0) {
+      combatant.isAlive = false;
+      this.addTurnAction('death', `${combatant.name} is defeated!`);
+      
+      // Trigger death animation
+      this.triggerDeathAnimation(combatant.id);
+      
+      // Check if combat ends after death
+      this.checkCombatEnd();
+    }
+    
     // Handle defend effect specifically - it only lasts 1 turn
     const defendEffect = combatant.statusEffects.find(effect => effect.name === 'Phòng Thủ');
     if (defendEffect && defendEffect.duration <= 0) {
@@ -2013,6 +2034,49 @@ class CombatService {
     // Update current turn tracking
     this.currentTurnActions = [];
     this.currentTurnCombatant = this.currentCombat?.turnOrder[this.currentCombat.currentCombatantIndex] || null;
+  }
+
+  /**
+   * Process elemental saving throw for elemental damage attacks
+   */
+  private async processElementalSavingThrow(attacker: Combatant, defender: Combatant, attack: any): Promise<void> {
+    // Check if this is an elemental damage type
+    if (!elementalDamageService.isElementalDamageType(attack.damageType)) {
+      return;
+    }
+
+    // Get weapon info for DC calculation
+    let weapon: any = null;
+    if (attacker.characterData?.equipment?.weapon) {
+      weapon = attacker.characterData.equipment.weapon;
+    } else if (attacker.inventory) {
+      // For enemies/NPCs, find weapon in inventory
+      weapon = attacker.inventory.find(item => item.type === 'weapon' && item.isEquipped);
+    }
+
+    // Process saving throw
+    const saveResult = elementalDamageService.processSavingThrow(attacker, defender, weapon, attack);
+    
+    // Log saving throw result
+    const saveText = `${defender.name} ${saveResult.ability} saving throw: ${saveResult.roll} vs DC ${saveResult.dc} → ${saveResult.success ? 'SUCCESS' : 'FAILURE'}`;
+    this.addTurnAction('status', saveText);
+
+    // If saving throw failed, apply elemental debuff
+    if (!saveResult.success) {
+      const rarity = weapon?.rarity || 'common';
+      const debuff = elementalDamageService.createElementalDebuff(attack.damageType, rarity, attacker.name);
+      
+      // Apply debuff to defender
+      defender.statusEffects.push(debuff);
+      
+      // Log debuff application
+      this.addTurnAction('status', `${defender.name} bị ${debuff.name}! ${debuff.description}`);
+      
+      // Add delay for visual feedback
+      if (attacker.id === 'player') {
+        await this.delay(300);
+      }
+    }
   }
 
 }

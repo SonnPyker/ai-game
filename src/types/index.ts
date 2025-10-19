@@ -153,6 +153,7 @@ export interface InventoryItem {
   attackBonus?: number; // For weapons: +1, +2, etc.
   armorClass?: number; // For armor: 12, 14, etc.
   weaponProperties?: WeaponProperties;
+  saveDC?: number; // For elemental weapons: DC for saving throw
   
   // NEW: Delivery quest fields
   deliveryQuestId?: string; // Quest ID nếu item này dùng để giao
@@ -726,6 +727,7 @@ export interface Attack {
   damage: string; // dice notation (e.g., "1d8+2")
   damageType: 'physical' | 'magical' | 'fire' | 'cold' | 'lightning' | 'poison' | 'psychic' | 'radiant' | 'slashing' | 'piercing' | 'bludgeoning';
   range?: number; // range in feet, undefined for melee
+  saveDC?: number; // DC for saving throw against elemental effects
 }
 
 export interface SpecialAbility {

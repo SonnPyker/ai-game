@@ -676,17 +676,65 @@ class EffectProcessingService {
     combatant.statusEffects.forEach(effect => {
       // Apply ongoing effects
       if (effect.effects.healthModifier && effect.effects.healthModifier < 0) {
-        // Damage over time
+        // Damage over time (legacy)
         combatant.health.current = Math.max(0, combatant.health.current + effect.effects.healthModifier);
+      }
+      
+      // Apply elemental damage per turn
+      if (effect.effects.damagePerTurn && effect.effects.damagePerTurn > 0) {
+        const damage = effect.effects.damagePerTurn;
+        const damageType = effect.effects.damageType || 'elemental';
+        
+        // Apply damage
+        combatant.health.current = Math.max(0, combatant.health.current - damage);
+        
+        // Add to combat log
+        combatService.addTurnAction('damage', 
+          `${combatant.name} bị ${damage} sát thương ${this.getDamageTypeName(damageType)} từ ${effect.name} (${combatant.health.current}/${combatant.health.max} HP)`
+        );
+        
+        // Trigger damage animation for visual feedback
+        combatService.triggerDamageAnimation(combatant.id, damage, 'elemental');
+        
       }
     });
 
     // Decrease duration and remove expired effects
+    const expiredEffects: StatusEffect[] = [];
     combatant.statusEffects = combatant.statusEffects
-      .map(effect => ({ ...effect, duration: effect.duration - 1 }))
+      .map(effect => {
+        const newEffect = { ...effect, duration: effect.duration - 1 };
+        if (newEffect.duration <= 0) {
+          expiredEffects.push(effect);
+        }
+        return newEffect;
+      })
       .filter(effect => effect.duration > 0);
+    
+    // Log expired effects
+    expiredEffects.forEach(effect => {
+      combatService.addTurnAction('status', 
+        `${combatant.name} không còn bị ${effect.name}`
+      );
+    });
   }
 
+
+  /**
+   * Get Vietnamese name for damage type
+   */
+  private getDamageTypeName(damageType: string): string {
+    const damageTypeNames: { [key: string]: string } = {
+      'fire': 'lửa',
+      'cold': 'băng',
+      'lightning': 'sét',
+      'poison': 'độc',
+      'psychic': 'tâm lý',
+      'elemental': 'nguyên tố'
+    };
+    
+    return damageTypeNames[damageType] || damageType;
+  }
 
   /**
    * Generate unique effect ID

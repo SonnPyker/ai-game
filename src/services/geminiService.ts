@@ -2958,6 +2958,9 @@ QUAN TRỌNG VỀ WEAPON GENERATION:
 - attackBonus: +1 đến +5 (dựa trên rarity)
 - damage: "1d4+1", "1d6+2", "2d6+3", etc. (dựa trên rarity)
 - damageType: "physical", "magical", "fire", "cold", "lightning", "poison", "psychic"
+- saveDC: CHỈ cho elemental weapons (fire, cold, lightning, poison, psychic)
+  * Common: DC 11, Uncommon: DC 13, Rare: DC 15, Epic: DC 17, Legendary: DC 19
+  * Physical/magical weapons KHÔNG cần saveDC
 - KHÔNG tạo weapon nào thiếu damage hoặc attackBonus
 
 QUAN TRỌNG VỀ ARMOR GENERATION:

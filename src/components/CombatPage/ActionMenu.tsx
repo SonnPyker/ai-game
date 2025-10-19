@@ -74,6 +74,7 @@ export function ActionMenu({
   const { getEffectiveUIMode } = useResponsiveContext();
   const isMobileMode = getEffectiveUIMode() === 'mobile';
   
+  
   // Default to expanded (open) on both mobile and desktop
   useEffect(() => {
     setIsCollapsed(false);
@@ -208,7 +209,8 @@ export function ActionMenu({
 
       {/* Action Buttons - Collapsible only on mobile */}
       {isMobileMode ? (
-        !isCollapsed ? (
+        <div className="space-y-4">
+          {!isCollapsed ? (
           <MotionWrapper
             initial={{ opacity: 0, height: 0 }}
             animate={{ 
@@ -316,28 +318,53 @@ export function ActionMenu({
                       </div>
                     </div>
                   </MotionButton>
-
-                  {/* Run Action */}
-                  <MotionButton
-                    onClick={onRun}
-                    disabled={isProcessing}
-                    className="flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium bg-red-700 hover:bg-red-600 text-white hover:shadow-lg transform hover:scale-105"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                    <div className="text-left">
-                      <div className="font-medium">Chạy Trốn</div>
-                      <div className="text-xs text-gray-300">
-                        Thoát khỏi combat
-                      </div>
-                    </div>
-                  </MotionButton>
                 </div>
               </div>
             </div>
           </MotionWrapper>
-        ) : null
+          ) : null}
+
+          {/* Bottom Actions - Always visible on mobile */}
+          <div className="flex flex-col gap-2 pb-4">
+            {/* End Turn Action */}
+            <MotionButton
+              onClick={_onEndTurn}
+              disabled={isProcessing || !canEndTurn}
+              className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium ${
+                !canEndTurn
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
+                  : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-lg transform hover:scale-105'
+              }`}
+              whileHover={!canEndTurn ? {} : { scale: 1.02 }}
+              whileTap={!canEndTurn ? {} : { scale: 0.98 }}
+            >
+              <RotateCcw className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">Kết Thúc Lượt</div>
+                <div className="text-xs text-gray-300">
+                  {!canEndTurn ? 'Cần dùng hành động chính' : 'Chuyển lượt'}
+                </div>
+              </div>
+            </MotionButton>
+
+            {/* Run Action */}
+            <MotionButton
+              onClick={onRun}
+              disabled={isProcessing}
+              className="flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium bg-red-700 hover:bg-red-600 text-white hover:shadow-lg transform hover:scale-105"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <ArrowRight className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">Chạy Trốn</div>
+                <div className="text-xs text-gray-300">
+                  Thoát khỏi combat
+                </div>
+              </div>
+            </MotionButton>
+          </div>
+        </div>
       ) : (
         /* Desktop Layout - Always visible */
         <div className="space-y-1 lg:space-y-2">
