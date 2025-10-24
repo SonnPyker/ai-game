@@ -5216,7 +5216,7 @@ ${enhancedMessage}`;
             return null;
           }
         })()}
-        locationId={gameState.sceneState?.location || ''}
+        locationId={typeof gameState.sceneState?.location === 'string' ? gameState.sceneState.location : (gameState.sceneState?.location as any)?.id || ''}
         onBuyItem={handleBuyItem}
         onSellItem={handleSellItem}
         onRestockShop={handleRestockShop}

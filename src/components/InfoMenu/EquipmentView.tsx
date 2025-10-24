@@ -60,10 +60,11 @@ export function EquipmentView({
         return item.type === 'armor';
       }
       
-      if (['accessory1', 'accessory2', 'accessory3'].includes(slot)) {
-        // CHỈ items có slot accessory1/2/3 mới hiển thị
-        return item.slot && ['accessory1', 'accessory2', 'accessory3'].includes(item.slot);
-      }
+          if (['accessory1', 'accessory2', 'accessory3'].includes(slot)) {
+            // CHỈ items có originalSlot hoặc slot accessory1/2/3 mới hiển thị
+            const accessorySlot = item.originalSlot || item.slot;
+            return accessorySlot && ['accessory1', 'accessory2', 'accessory3'].includes(accessorySlot);
+          }
       
       return false;
     });

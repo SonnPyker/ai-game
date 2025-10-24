@@ -469,6 +469,10 @@ class InventoryService {
 
     // Equip new item
     item.isEquipped = true;
+    // Lưu originalSlot nếu chưa có (chỉ lần đầu equip)
+    if (!item.originalSlot) {
+      item.originalSlot = item.slot as any;
+    }
     item.slot = targetSlot as any;
     item.equipped_at = new Date();
     this.equipment[targetSlot as keyof Equipment] = item;
@@ -499,7 +503,8 @@ class InventoryService {
 
     // Update item
     item.isEquipped = false;
-    item.slot = undefined;
+    // KHÔNG xóa originalSlot - chỉ xóa slot hiện tại
+    item.slot = item.originalSlot; // Khôi phục về slot gốc
     item.equipped_at = undefined;
 
     this.saveToStorage();
@@ -518,9 +523,10 @@ class InventoryService {
       return 'armor';
     }
 
-    // CHỈ items có slot accessory1/2/3 mới được trang bị
+    // CHỈ items có originalSlot hoặc slot accessory1/2/3 mới được trang bị
     // Bất kỳ accessory nào cũng có thể vào bất kỳ ô nào còn trống
-    if (item.slot && ['accessory1', 'accessory2', 'accessory3'].includes(item.slot)) {
+    const accessorySlot = item.originalSlot || item.slot;
+    if (accessorySlot && ['accessory1', 'accessory2', 'accessory3'].includes(accessorySlot)) {
       // Tìm ô accessory trống đầu tiên
       if (!this.equipment.accessory1) return 'accessory1';
       if (!this.equipment.accessory2) return 'accessory2';
@@ -705,8 +711,9 @@ class InventoryService {
       }
       
       if (['accessory1', 'accessory2', 'accessory3'].includes(slot)) {
-        // CHỈ items có slot accessory1/2/3 mới hiển thị
-        return item.slot && ['accessory1', 'accessory2', 'accessory3'].includes(item.slot);
+        // CHỈ items có originalSlot hoặc slot accessory1/2/3 mới hiển thị
+        const accessorySlot = item.originalSlot || item.slot;
+        return accessorySlot && ['accessory1', 'accessory2', 'accessory3'].includes(accessorySlot);
       }
       
       return false;

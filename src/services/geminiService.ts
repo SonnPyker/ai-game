@@ -3337,7 +3337,7 @@ Hãy kể tiếp câu chuyện dựa trên:
   - Result: SUCCESS/FAILURE
 
 QUAN TRỌNG VỀ DC CHECK RESULTS:
-- SUCCESS: NPC PHẢI tuân theo hành động của player một cách hợp lý
+- SUCCESS: NPC PHẢI tuân theo hành động của player một cách TUYỆT ĐỐI nhưng vẫn phải hợp lý
   * Nếu player thuyết phục thành công → NPC đồng ý, thay đổi ý kiến, hoặc làm theo yêu cầu
   * Nếu player đe dọa thành công → NPC sợ hãi, nhượng bộ, hoặc chấp nhận
   * Nếu player lừa dối thành công → NPC tin tưởng, bị lừa, hoặc không phát hiện

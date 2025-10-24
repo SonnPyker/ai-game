@@ -511,7 +511,6 @@ MÔ TẢ VÀ TÊN:
         this.merchantShops.set(location.id, shop);
         this.saveMerchantShops();
         
-        
         return shop;
        } else {
          throw new Error('AI shop generation failed - no fallback available');

@@ -144,6 +144,7 @@ export interface InventoryItem {
   stackable?: boolean; // Whether multiple instances can be active at once
   maxStacks?: number; // Maximum number of stacks (if stackable)
   slot?: 'weapon' | 'armor' | 'accessory1' | 'accessory2' | 'accessory3';
+  originalSlot?: 'weapon' | 'armor' | 'accessory1' | 'accessory2' | 'accessory3'; // Slot gốc của item (không thay đổi)
   equipped_at?: Date;
   // Tags system for quest rewards
   tags?: string[]; // Tags để phân loại items (type tags + 'reward' tag)

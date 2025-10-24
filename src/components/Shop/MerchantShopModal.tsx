@@ -88,6 +88,7 @@ export function MerchantShopModal({
     
     // Get locationId from player_location if not provided
     let actualLocationId = locationId;
+    
     if (!actualLocationId) {
       try {
         const playerLocationStr = localStorage.getItem('player_location');
@@ -97,6 +98,41 @@ export function MerchantShopModal({
         }
       } catch (error) {
         console.error('Error getting locationId from player_location:', error);
+      }
+    }
+    
+    // Ensure actualLocationId is a string
+    if (typeof actualLocationId === 'object') {
+      // Try to find the location ID from the object
+      const locationObj = actualLocationId as any;
+      
+      // Check if it's a location object with an id field
+      if (locationObj.id) {
+        actualLocationId = locationObj.id;
+      } else if (locationObj.locationId) {
+        actualLocationId = locationObj.locationId;
+      } else {
+        // If no ID found, try to find it in world data
+        try {
+          const worldDataStr = localStorage.getItem('world_gen_result');
+          if (worldDataStr) {
+            const worldData = JSON.parse(worldDataStr);
+            const matchingLocation = worldData.locations?.find((loc: any) => 
+              loc.name === locationObj.name || 
+              loc.description === locationObj.description ||
+              loc.type === locationObj.type
+            );
+            if (matchingLocation) {
+              actualLocationId = matchingLocation.id;
+            } else {
+              console.error('Could not find matching location in world data');
+              return; // Exit if we can't find the location ID
+            }
+          }
+        } catch (error) {
+          console.error('Error finding location ID:', error);
+          return;
+        }
       }
     }
     
@@ -554,13 +590,13 @@ export function MerchantShopModal({
                     </div>
                   )}
 
-                  {!isSkillBook && (item.type === 'accessory' || (item.type === 'misc' && item.slot && ['accessory1', 'accessory2', 'accessory3'].includes(item.slot))) && (
+                  {!isSkillBook && (item.type === 'accessory' || (item.type === 'misc' && (item.originalSlot || item.slot) && ['accessory1', 'accessory2', 'accessory3'].includes((item.originalSlot || item.slot) as string))) && (
                     <div className="bg-purple-900/20 rounded p-2 mb-3">
                       <div className="space-y-2 text-xs">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <span className="text-purple-300">Slot:</span>
-                            <span className="text-white ml-1">{item.slot}</span>
+                            <span className="text-white ml-1">{item.originalSlot || item.slot}</span>
                           </div>
                           <div>
                             <span className="text-purple-300">Loại:</span>
