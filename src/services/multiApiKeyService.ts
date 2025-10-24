@@ -684,8 +684,9 @@ class MultiApiKeyService {
 
   // Debug method to check all keys status
   debugKeysStatus(): void {
-    this.apiKeys.forEach((key, index) => {
+    this.apiKeys.forEach((key) => {
       const isActive = this.activeRequests.has(key.id);
+      console.log(`Key ${key.id}: ${isActive ? 'Active' : 'Inactive'}`);
     });
     
     // Check if only one account is active

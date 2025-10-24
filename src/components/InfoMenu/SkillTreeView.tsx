@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Character, SkillTreeSkill } from '../../types';
 import { skillTreeService } from '../../services/skillTreeService';
-import { combatLevelService } from '../../services/combatLevelService';
-import { levelSystemService } from '../../services/levelSystemService';
 import { 
   Sword, 
   Heart, 
