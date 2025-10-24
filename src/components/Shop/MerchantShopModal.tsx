@@ -62,9 +62,6 @@ export function MerchantShopModal({
 
   // Check if shop can be restocked (new day)
   useEffect(() => {
-    console.log('Checking restock condition...');
-    console.log('currentShop:', !!currentShop);
-    console.log('character:', !!character);
     
     if (currentShop && character) {
       // Get current world time from localStorage
@@ -74,12 +71,9 @@ export function MerchantShopModal({
           const worldData = JSON.parse(worldDataStr);
           const currentTime = worldData.currentTime || worldData.worldTime;
           
-          console.log('currentTime:', currentTime);
-          console.log('shop.lastRestockTime:', currentShop.lastRestockTime);
           
           if (currentTime) {
             const canRestockNow = worldTimeService.isNewDay(currentShop.lastRestockTime, currentTime);
-            console.log('canRestockNow:', canRestockNow);
             setCanRestock(canRestockNow);
           }
         } catch (error) {
@@ -91,10 +85,6 @@ export function MerchantShopModal({
 
   // Handle manual restock
   const handleRestock = async () => {
-    console.log('handleRestock called!');
-    console.log('onRestockShop:', !!onRestockShop);
-    console.log('locationId prop:', locationId);
-    console.log('isRestocking:', isRestocking);
     
     // Get locationId from player_location if not provided
     let actualLocationId = locationId;
@@ -104,26 +94,21 @@ export function MerchantShopModal({
         if (playerLocationStr) {
           const playerLocation = JSON.parse(playerLocationStr);
           actualLocationId = playerLocation.currentLocationId;
-          console.log('Got locationId from player_location:', actualLocationId);
         }
       } catch (error) {
         console.error('Error getting locationId from player_location:', error);
       }
     }
     
-    console.log('Final locationId:', actualLocationId);
     
     if (!onRestockShop || !actualLocationId || isRestocking) {
-      console.log('Early return - missing props or already restocking');
       return;
     }
     
-    console.log('Starting restock process...');
     setIsRestocking(true);
     try {
       await onRestockShop(actualLocationId);
       setCanRestock(false); // Disable restock until next day
-      console.log('Restock completed successfully');
     } catch (error) {
       console.error('Error restocking shop:', error);
     } finally {
@@ -450,9 +435,6 @@ export function MerchantShopModal({
             <div className="flex justify-center">
                <button
                  onClick={() => {
-                   console.log('Restock button clicked!');
-                   console.log('canRestock:', canRestock);
-                   console.log('isRestocking:', isRestocking);
                    handleRestock();
                  }}
                  disabled={!canRestock || isRestocking}

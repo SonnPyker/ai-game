@@ -30,25 +30,21 @@ class AccessoryEffectService {
 
     const parts = effectString.split(':');
     if (parts.length !== 4) {
-      console.warn('Invalid accessory effect format:', effectString);
       return null;
     }
 
     const [type, statType, valueStr, duration] = parts;
 
     if (type !== 'stat_buff') {
-      console.warn('Accessory effects only support stat_buff type:', effectString);
       return null;
     }
 
     if (duration !== 'permanent') {
-      console.warn('Accessory effects must be permanent:', effectString);
       return null;
     }
 
     const validStats = ['strength', 'agility', 'intelligence', 'constitution', 'wisdom', 'charisma'];
     if (!validStats.includes(statType)) {
-      console.warn(`Invalid stat type for accessory effect: ${statType}. Only D&D core stats allowed: ${validStats.join(', ')}`);
       return null;
     }
 
@@ -57,7 +53,6 @@ class AccessoryEffectService {
     const value = parseInt(cleanValueStr, 10);
     
     if (isNaN(value) || value <= 0) {
-      console.warn('Invalid value for accessory effect:', valueStr);
       return null;
     }
 
@@ -138,7 +133,6 @@ class AccessoryEffectService {
     const currentValue = character.coreStats[effect.statType] || 0;
     character.coreStats[effect.statType] = currentValue + effect.value;
     
-    console.log(`✅ Applied accessory effect: +${effect.value} ${effect.statType}`);
     return true;
   }
 
@@ -151,7 +145,6 @@ class AccessoryEffectService {
     const currentValue = character.coreStats[effect.statType] || 0;
     character.coreStats[effect.statType] = Math.max(0, currentValue - effect.value);
     
-    console.log(`❌ Removed accessory effect: -${effect.value} ${effect.statType}`);
     return true;
   }
 
@@ -190,7 +183,6 @@ class AccessoryEffectService {
     character.health.max = newMaxHp;
     character.health.current = Math.floor(newMaxHp * hpRatio);
     
-    console.log(`🔄 Recalculated HP: ${oldMaxHp} -> ${newMaxHp} (constitution modifier: ${constitutionModifier})`);
   }
 
   /**

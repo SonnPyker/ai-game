@@ -152,8 +152,6 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
     }
 
     // Debug logging
-    console.log('🎯 SaveManager handleSave called with currentGameData:', currentGameData);
-    console.log('🎯 combatHistory from currentGameData:', currentGameData.combatHistory);
 
     // Kiểm tra nếu đang có tiến trình xử lý nào đang chạy
     if (isProcessing) {

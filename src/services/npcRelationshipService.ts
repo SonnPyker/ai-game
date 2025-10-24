@@ -689,22 +689,14 @@ QUAN TRỌNG:
         this.isNPCMentionedInContext(npc.name, narrative, additionalContext)
       );
 
-      console.log('🔍 NPC Detection Debug:', {
-        totalNPCs: allRelationships.length,
-        mentionedNPCs: mentionedNPCs.length,
-        playerAction: additionalContext?.playerAction || 'No player action',
-        mentionedNPCNames: mentionedNPCs.map(npc => npc.name)
-      });
 
       if (mentionedNPCs.length === 0) {
-        console.log('❌ No NPCs mentioned in narrative');
         return;
       }
 
       // AUTO-SELECTOR: Nếu chỉ có 1 NPC được nhắc đến, tự động chọn làm selectedNPC
       if (mentionedNPCs.length === 1) {
         const autoSelectedNPC = mentionedNPCs[0];
-        console.log('🎯 Auto-selecting NPC:', autoSelectedNPC.name, 'ID:', autoSelectedNPC.id);
         
         // Trigger auto-selection event để UI cập nhật
         if (typeof window !== 'undefined') {
@@ -714,10 +706,8 @@ QUAN TRỌNG:
               npcName: autoSelectedNPC.name
             }
           }));
-          console.log('📡 Dispatched npcAutoSelected event');
         }
       } else {
-        console.log('⚠️ Multiple NPCs mentioned, no auto-selection');
       }
 
       // Analyze each mentioned NPC individually
@@ -1252,7 +1242,6 @@ OUTPUT JSON:
     // CHỈ CHECK PLAYER ACTION - nhanh và chính xác nhất
     // Check exact match first
     if (playerAction.includes(lowerName)) {
-      console.log(`✅ NPC "${npcName}" found in player action (exact): "${additionalContext?.playerAction}"`);
       return true;
     }
     
@@ -1261,18 +1250,15 @@ OUTPUT JSON:
     const hasAllWords = nameWords.every(word => playerAction.includes(word));
     
     if (hasAllWords) {
-      console.log(`✅ NPC "${npcName}" found in player action (partial): "${additionalContext?.playerAction}"`);
       return true;
     }
     
     // Fuzzy match - check if any significant part of the name appears in player action
     const fuzzyMatch = this.fuzzyMatchNPC(npcName, playerAction);
     if (fuzzyMatch) {
-      console.log(`✅ NPC "${npcName}" found in player action (fuzzy): "${additionalContext?.playerAction}"`);
       return true;
     }
     
-    console.log(`❌ NPC "${npcName}" not found in player action: "${additionalContext?.playerAction}"`);
     return false;
   }
 
@@ -1285,7 +1271,6 @@ OUTPUT JSON:
     const matchingWords = nameWords.filter(word => playerAction.includes(word));
     
     if (matchingWords.length >= 2) {
-      console.log(`🔍 Fuzzy match: Found ${matchingWords.length} words: [${matchingWords.join(', ')}]`);
       return true;
     }
     
@@ -1294,7 +1279,6 @@ OUTPUT JSON:
       const playerWords = playerAction.split(/\s+/);
       for (const playerWord of playerWords) {
         if (playerWord.length > 2 && this.calculateSimilarity(nameWord, playerWord) > 0.8) {
-          console.log(`🔍 Fuzzy match: Similar words "${nameWord}" ~ "${playerWord}"`);
           return true;
         }
       }
@@ -1663,11 +1647,9 @@ OUTPUT JSON:
   parseNPCsFromAIResponse(aiResponse: any, currentLocation?: string): void {
     // ƯU TIÊN: Xử lý sceneState.npcs trước tiên nếu có
     if (aiResponse.sceneState && aiResponse.sceneState.npcs && Array.isArray(aiResponse.sceneState.npcs)) {
-      console.log('🚀 PRIORITY: Processing sceneState.npcs first:', aiResponse.sceneState.npcs);
       this.processNPCs(aiResponse.sceneState.npcs, currentLocation);
       // Force save ngay lập tức sau khi xử lý sceneState.npcs
       this.saveToStorage();
-      console.log('🚀 PRIORITY: sceneState.npcs processed and saved immediately');
     }
 
     // Tìm tất cả các trường có chứa "npc" (case insensitive) - fallback
@@ -1729,18 +1711,14 @@ OUTPUT JSON:
 
   // Helper method to process NPCs array
   private processNPCs(npcs: any[], currentLocation?: string): void {
-    console.log('Processing NPCs:', npcs, 'at location:', currentLocation);
     npcs.forEach((npc: any) => {
-      console.log('Processing NPC:', npc.name, 'isMerchantSignature:', npc.isMerchantSignature);
       
       // Check if NPC is valid
       const isValid = npc.name && this.isValidIndividualNPC(npc.name);
-      console.log('NPC valid check:', npc.name, 'isValid:', isValid);
       
       if (isValid) {
         // Tìm NPC existing bằng tên chính xác hoặc tên tương tự
         const existing = this.findRelationshipByNameOrSimilar(npc.name);
-        console.log('Found existing NPC:', existing ? existing.name : 'None');
         
         if (existing) {
           // Update existing NPC - cập nhật tên nếu có tên mới chi tiết hơn
@@ -1789,10 +1767,8 @@ OUTPUT JSON:
           // Save updated NPC
           this.relationships.set(existing.id, existing);
           this.saveToStorage();
-          console.log('Successfully updated existing NPC:', existing.name);
         } else {
           // Create new NPC relationship
-          console.log('Creating new NPC relationship for:', npc.name);
           const newNPCData: Partial<NPCRelationship> = {
             name: npc.name,
             description: npc.description || '',
@@ -1814,7 +1790,6 @@ OUTPUT JSON:
             merchantSignatureLocationId: npc.merchantSignatureLocationId || undefined,
             merchantShopId: npc.merchantShopId || undefined
           };
-          console.log('New NPC data:', newNPCData);
           
           // Validate signature exclusivity before creating
           if (!this.validateNPCSignatureExclusivity(newNPCData)) {
@@ -1823,7 +1798,6 @@ OUTPUT JSON:
           }
           
           this.addOrUpdateRelationship(newNPCData);
-          console.log('Successfully created NPC relationship for:', npc.name);
         }
       }
     });
@@ -1902,7 +1876,6 @@ OUTPUT JSON:
       npc.isLocationSignature = false; // Ensure not both
       
       this.relationships.set(npc.id, npc);
-      console.log(`Auto-updated NPC ${npc.name} to merchant signature NPC for shop location ${shopLocationId}`);
     });
 
     if (merchantNPCs.length > 0) {

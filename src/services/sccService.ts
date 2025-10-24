@@ -89,7 +89,6 @@ class SCCService {
     const shouldSum = context.turnCounter % this.SUMMARY_THRESHOLD === 0 && context.turnCounter > 0;
     
     // Debug log for SCC
-    console.log(`🔍 SCC Check - Turn: ${context.turnCounter}, Threshold: ${this.SUMMARY_THRESHOLD}, Modulo: ${context.turnCounter % this.SUMMARY_THRESHOLD}, Should Summarize: ${shouldSum}`);
     
     return shouldSum;
   }

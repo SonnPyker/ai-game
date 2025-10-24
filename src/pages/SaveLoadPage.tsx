@@ -144,7 +144,6 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         const { skillTreeService } = await import('../services/skillTreeService');
         const skillResult = skillTreeService.recalculateSkillPointsForExistingSave(saveGame.character);
         if (skillResult.combatPointsAdded > 0 || skillResult.socialPointsAdded > 0) {
-          console.log(`Added ${skillResult.combatPointsAdded} combat + ${skillResult.socialPointsAdded} social skill points`);
         }
         localStorage.setItem('rp_chat', JSON.stringify(saveGame.chat));
         localStorage.setItem('game_turn_counter', saveGame.turnCounter.toString());

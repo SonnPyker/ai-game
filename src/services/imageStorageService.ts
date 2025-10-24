@@ -29,7 +29,6 @@ class ImageStorageService {
       
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('ImageStorageService: Using IndexedDB for image storage');
         resolve();
       };
       
@@ -181,7 +180,6 @@ class ImageStorageService {
           await this.deleteImage(imagePath);
         }
         
-        console.log(`Cleaned up ${imagesToDelete.length} old images`);
       }
     } catch (error) {
       console.error('Failed to cleanup old images:', error);
@@ -257,7 +255,6 @@ class ImageStorageService {
         request.onerror = () => reject(request.error);
       });
       
-      console.log('Cleared all images from IndexedDB');
     } catch (error) {
       console.error('Failed to clear all images:', error);
     }

@@ -66,7 +66,6 @@ export function DeliveryButton({
             onDeliveryComplete(quest.id, objective.id);
             
             // Show success message
-            console.log(`✅ Đã giao ${selectedItem.name} cho ${npcName}`);
             
             // Close panel
             setShowDeliveryPanel(false);

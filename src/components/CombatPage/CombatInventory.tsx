@@ -49,7 +49,6 @@ export function CombatInventory({
   }, [inventory]);
 
   const handleUseItem = (item: InventoryItem) => {
-    console.log('handleUseItem called with item:', item);
     
     // Check if item requires a target (damaging items or debuff items)
     let requiresTarget = !!item.damage;
@@ -74,14 +73,12 @@ export function CombatInventory({
       }
     }
     
-    console.log('requiresTarget:', requiresTarget, 'enemies.length:', enemies.length);
     
     if (requiresTarget && enemies.length > 0) {
       setPendingItem(item);
       setShowTargetSelection(true);
     } else {
       // Use item directly (healing items, buffs, etc.)
-      console.log('Using item directly:', item.id);
       onUseItem(item.id);
       onClose();
     }

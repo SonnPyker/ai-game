@@ -73,7 +73,6 @@ class CombatDataService {
         // Save cleaned history
         localStorage.setItem(this.HISTORY_KEY, JSON.stringify(limitedHistory));
         
-        console.log(`🧹 Cleaned combat history: ${history.length - limitedHistory.length} old entries removed`);
       }
     } catch (error) {
       console.error('Error cleaning up combat history:', error);

@@ -389,7 +389,6 @@ class CombatAnimationService extends SimpleEventEmitter {
   public triggerDamageText(combatantId: string, value: number, type: CombatAnimationType.DAMAGE | CombatAnimationType.HEAL | CombatAnimationType.MISS | CombatAnimationType.CRITICAL, position: { x: number; y: number }): string | null {
     // Check cooldown for damage text
     if (!this.canTriggerDamageText(combatantId)) {
-      console.log(`Damage text blocked for ${combatantId} - cooldown active`);
       return null;
     }
 

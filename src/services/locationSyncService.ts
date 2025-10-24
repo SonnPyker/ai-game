@@ -50,7 +50,6 @@ class LocationSyncService {
       criticalProperties.forEach(prop => {
         if ((originalLocation as any)[prop] !== undefined) {
           if ((syncedLocation as any)[prop] !== (originalLocation as any)[prop]) {
-            console.log(`🔄 [LocationSync] Syncing ${prop} for ${originalLocation.name}: ${(syncedLocation as any)[prop]} → ${(originalLocation as any)[prop]}`);
             (syncedLocation as any)[prop] = (originalLocation as any)[prop];
           }
         }
@@ -58,7 +57,6 @@ class LocationSyncService {
 
       // Đặc biệt quan trọng: Đảm bảo locationType được giữ nguyên
       if (originalLocation.locationType && syncedLocation.locationType !== originalLocation.locationType) {
-        console.log(`🚨 [LocationSync] CRITICAL: Restoring locationType for ${originalLocation.name}: ${syncedLocation.locationType} → ${originalLocation.locationType}`);
         syncedLocation.locationType = originalLocation.locationType;
       }
 
@@ -99,7 +97,6 @@ class LocationSyncService {
     try {
       const originalLocation = locationService.getLocationById(location.id);
       if (originalLocation && originalLocation.locationType === 'shop') {
-        console.log(`🔄 [LocationSync] Using original world data for shop detection: ${location.name}`);
         return true;
       }
     } catch (error) {
@@ -130,7 +127,6 @@ class LocationSyncService {
 
       // Nếu location có ID bắt đầu bằng 'loc_shop' nhưng không có locationType
       if (location.id && location.id.startsWith('loc_shop') && !location.locationType) {
-        console.log(`🔄 [LocationSync] Adding missing locationType for shop: ${location.name}`);
         syncedLocation.locationType = 'shop';
         fixedCount++;
       }
@@ -138,12 +134,10 @@ class LocationSyncService {
       // 🚨 CRITICAL: Đảm bảo shop locations có type: "shop" thay vì "secondary"
       if (location.id && location.id.startsWith('loc_shop')) {
         if (syncedLocation.type !== 'shop') {
-          console.log(`🔄 [LocationSync] Fixing shop type for ${location.name}: ${syncedLocation.type} → shop`);
           syncedLocation.type = 'shop';
           fixedCount++;
         }
         if (syncedLocation.locationType !== 'shop') {
-          console.log(`🔄 [LocationSync] Fixing shop locationType for ${location.name}: ${syncedLocation.locationType} → shop`);
           syncedLocation.locationType = 'shop';
           fixedCount++;
         }
@@ -151,7 +145,6 @@ class LocationSyncService {
 
       // 🚨 NEW: Tự động sửa các địa điểm có tên shop nhưng type sai
       if (isShopByName && syncedLocation.type !== 'shop') {
-        console.log(`🔄 [LocationSync] Auto-fixing shop type for ${location.name}: ${syncedLocation.type} → shop`);
         syncedLocation.type = 'shop';
         syncedLocation.locationType = 'shop';
         fixedCount++;
@@ -161,7 +154,6 @@ class LocationSyncService {
     });
 
     if (fixedCount > 0) {
-      console.log(`✅ [LocationSync] Fixed ${fixedCount} location(s) to ensure proper shop classification`);
     }
 
     return syncedWorldData;

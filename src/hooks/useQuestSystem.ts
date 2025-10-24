@@ -21,25 +21,20 @@ const processRewardClaim = (reward: any) => {
       case 'currency':
         // Thêm tiền vào character
         currencyService.addCurrency(character, reward.amount);
-        console.log(`✅ Đã nhận ${reward.amount} tiền tệ`);
         break;
 
       case 'secondary_currency':
         // Thêm tiền phụ vào character
         currencyService.addSecondaryCurrency(character, reward.amount);
-        console.log(`✅ Đã nhận ${reward.amount} tiền phụ`);
         break;
 
       case 'experience':
         // Thêm kinh nghiệm và kiểm tra level up
         const levelResult = levelSystemService.addExperience(character, reward.amount);
-        console.log(`✅ Đã nhận ${reward.amount} kinh nghiệm`);
         
         if (levelResult.leveledUp) {
           if (levelResult.levelsGained > 1) {
-            console.log(`🎉 Level up! Từ level ${levelResult.previousLevel} lên level ${levelResult.newLevel} (+${levelResult.levelsGained} levels)!`);
           } else {
-            console.log(`🎉 Level up! Từ level ${levelResult.previousLevel} lên level ${levelResult.newLevel}!`);
           }
           // Có thể hiển thị notification level up ở đây
         }
@@ -48,8 +43,6 @@ const processRewardClaim = (reward: any) => {
       case 'item':
         // Tạo item reward và thêm trực tiếp vào currentCharacter.inventory
         if (reward.items && reward.items.length > 0) {
-          console.log('🎁 Đang thêm items vào character inventory:', reward.items);
-          console.log('🎁 Reward type:', reward.type, 'Reward description:', reward.description);
           reward.items.forEach((item: any) => {
             // Đảm bảo item có tags phù hợp để phân biệt với scene items
             if (!item.tags) {
@@ -81,12 +74,9 @@ const processRewardClaim = (reward: any) => {
               character.inventory.push(item);
             }
             
-            console.log('🎁 Thêm item vào character:', item);
           });
-          console.log(`✅ Đã nhận ${reward.items.length} vật phẩm`);
         } else {
           // Tạo item cụ thể từ description nếu không có items
-          console.log('🎁 Không có items cụ thể, tạo từ description:', reward.description);
           
           // Parse description để lấy tên item và số lượng
           const match = reward.description.match(/(.+?)\s*\([+\-]?(\d+)\)/);
@@ -106,7 +96,6 @@ const processRewardClaim = (reward: any) => {
               icon: '🎁'
             };
             
-            console.log('🎁 Thêm specific item vào character:', specificItem);
             
             // Thêm trực tiếp vào character inventory
             if (!character.inventory) {
@@ -114,12 +103,10 @@ const processRewardClaim = (reward: any) => {
             }
             character.inventory.push(specificItem);
             
-            console.log(`✅ Đã nhận vật phẩm: ${specificItem.name} (x${quantity})`);
           } else {
             // Fallback: tạo item ngẫu nhiên nếu không parse được
             const randomItem = generateRandomRewardItem(reward.factionName);
             if (randomItem) {
-              console.log('🎁 Thêm random item vào character:', randomItem);
               
               // Thêm trực tiếp vào character inventory
               if (!character.inventory) {
@@ -127,7 +114,6 @@ const processRewardClaim = (reward: any) => {
               }
               character.inventory.push(randomItem);
               
-              console.log(`✅ Đã nhận vật phẩm: ${randomItem.name}`);
             }
           }
         }
@@ -137,12 +123,10 @@ const processRewardClaim = (reward: any) => {
         // Thêm danh tiếng phe phái
         if (reward.factionName) {
           npcRelationshipService.adjustFactionReputation(reward.factionName, reward.amount);
-          console.log(`✅ Đã nhận ${reward.amount} danh tiếng phe phái ${reward.factionName}`);
         }
         break;
 
       default:
-        console.log(`⚠️ Loại reward không được hỗ trợ: ${reward.type}`);
     }
 
     // Cập nhật character data trong localStorage
@@ -314,7 +298,6 @@ const loadQuestsFromWorldData = (): { mainQuests: QuestProgress[], sideQuests: Q
   try {
     const worldData = localStorage.getItem('world_gen_result');
     if (!worldData) {
-      console.log('Không tìm thấy world_gen_result');
       return { mainQuests: [], sideQuests: [] };
     }
 
@@ -340,7 +323,6 @@ const loadQuestsFromWorldData = (): { mainQuests: QuestProgress[], sideQuests: Q
 
     // Không load sideQuests từ world data - sidequest chỉ được tạo khi accept từ chat
 
-    console.log('Loaded quests from world data:', { mainQuests: mainQuests.length, sideQuests: sideQuests.length });
     return { mainQuests, sideQuests };
   } catch (error) {
     console.error('Lỗi load quest từ world data:', error);
@@ -391,8 +373,7 @@ export function useQuestSystem() {
 
   // Listen for quest system updates
   useEffect(() => {
-    const handleQuestSystemUpdate = (event: CustomEvent) => {
-      console.log('🔄 Quest system update event received:', event.detail);
+    const handleQuestSystemUpdate = (_event: CustomEvent) => {
       
       // Reload quest system từ localStorage để cập nhật UI
       const savedQuestSystem = localStorage.getItem(QUEST_SYSTEM_KEY);
@@ -461,7 +442,6 @@ export function useQuestSystem() {
           };
           
           setQuestSystem(questSystemWithDates);
-          console.log('🔄 Quest system UI updated from localStorage');
         } catch (error) {
           console.error('Error reloading quest system from localStorage:', error);
         }
@@ -830,7 +810,6 @@ export function useQuestSystem() {
           
           // Kiểm tra xem reward đã được claim chưa
           if (reward.claimed) {
-            console.log('Reward đã được claim rồi');
             return newSystem;
           }
           
@@ -877,11 +856,9 @@ export function useQuestSystem() {
       // Nếu là starter quest (không có act), unlock Act 1
       if (!completedQuest.act) {
         nextAct = 1;
-        console.log('🎬 Hoàn thành quest mở đầu, unlock Act 1');
       } else {
         // Nếu là main quest của act, unlock act tiếp theo
         nextAct = completedQuest.act + 1;
-        console.log(`📖 Hoàn thành Act ${completedQuest.act}, unlock Act ${nextAct}`);
       }
       
       if (nextAct <= questSystem.totalActs && !questSystem.unlockedActs.includes(nextAct)) {
@@ -900,7 +877,6 @@ export function useQuestSystem() {
           if (questSystem.mainQuests[existingQuestIndex].objectives.length > 0) {
             questSystem.mainQuests[existingQuestIndex].objectives[0].unlocked = true;
           }
-          console.log(`✅ Unlocked existing quest for Act ${nextAct}:`, questSystem.mainQuests[existingQuestIndex].title);
         } else {
           // Nếu không tìm thấy quest có sẵn, tìm từ world data
           const worldQuests = loadQuestsFromWorldData();
@@ -914,7 +890,6 @@ export function useQuestSystem() {
               nextActQuest.objectives[0].unlocked = true;
             }
             questSystem.mainQuests.push(nextActQuest);
-            console.log(`📥 Loaded quest from world data for Act ${nextAct}:`, nextActQuest.title);
           } else {
             // Fallback: tạo quest mặc định nếu không tìm thấy
             console.warn(`⚠️ No quest found for Act ${nextAct}, creating fallback quest`);
@@ -973,7 +948,6 @@ export function useQuestSystem() {
       }
       
       newSystem.sideQuests.push(quest);
-      console.log(`✅ Added side quest: ${quest.title} (${quest.id})`);
       saveQuestSystem(newSystem);
       return newSystem;
     });

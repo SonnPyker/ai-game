@@ -22,23 +22,19 @@ class NarrativeEnemyExtractionService {
    */
   async extractEnemiesFromNarrative(narrative: string, sceneState: any): Promise<ExtractedEnemy[]> {
     try {
-      console.log('🔍 Extracting enemies from narrative...');
       
       // First try to extract from sceneState.dangers.monsters if available
       const sceneEnemies = this.extractEnemiesFromSceneState(sceneState);
       if (sceneEnemies.length > 0) {
-        console.log('✅ Found enemies in sceneState.dangers.monsters:', sceneEnemies);
         return sceneEnemies;
       }
 
       // If no enemies in sceneState, use AI to extract from narrative
       const aiExtractedEnemies = await this.extractEnemiesWithAI(narrative, sceneState);
       if (aiExtractedEnemies.length > 0) {
-        console.log('✅ AI extracted enemies from narrative:', aiExtractedEnemies);
         return aiExtractedEnemies;
       }
 
-      console.log('❌ No enemies found in narrative or sceneState');
       return [];
     } catch (error) {
       console.error('Error extracting enemies from narrative:', error);

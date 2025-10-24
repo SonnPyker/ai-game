@@ -489,7 +489,6 @@ class CombatService {
     if (!this.currentCombat) return;
     const tempStats = this.calculateTemporaryPlayerStats();
     this.currentCombat.temporaryPlayerStats = tempStats || undefined;
-    console.log('Updated temporaryPlayerStats:', tempStats);
   }
 
   // Get player attacks from equipped weapons
@@ -835,15 +834,12 @@ class CombatService {
 
   // Use item in combat (extra action)
   public useItem(combatantId: string, item: InventoryItem, targetId?: string): boolean {
-    console.log('combatService.useItem called:', { combatantId, item, targetId });
     if (!this.currentCombat) {
-      console.log('No current combat');
       return false;
     }
     
     const combatant = this.getCombatant(combatantId);
     if (!combatant || !combatant.isAlive) {
-      console.log('Combatant not found or not alive:', combatantId);
       return false;
     }
     
@@ -1056,14 +1052,12 @@ class CombatService {
     
     if (!player || !player.isAlive) {
       // Player defeated
-      console.log('💀 Player defeated, ending combat');
       this.currentCombat.isActive = false;
       this.currentCombat.winner = 'enemies';
       this.calculateRewards(); // Calculate rewards even for defeat
       this.addTurnAction('defeat', 'Bạn đã bị đánh bại!');
     } else if (enemies.length === 0) {
       // All enemies defeated
-      console.log('🏆 All enemies defeated, ending combat');
       this.currentCombat.isActive = false;
       this.currentCombat.winner = 'player';
       this.calculateRewards();
@@ -2206,7 +2200,6 @@ class CombatService {
       this.currentCombat.turnOrder.push(enemyCombatant.id);
     }
     
-    console.log(`Added enemy ${enemy.name} to combat`);
   }
 
   // Save combat state to localStorage

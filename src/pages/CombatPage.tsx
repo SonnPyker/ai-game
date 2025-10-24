@@ -7,9 +7,7 @@ import {
   Pause,
   MessageSquare,
   Pin,
-  TestTube,
-  X,
-  Sword
+  X
 } from 'lucide-react';
 import { Character, Enemy, InventoryItem } from '../types';
 import { translateEffectFormat } from '../utils/skillEffectTranslator';
@@ -18,7 +16,6 @@ import { combatDataService } from '../services/combatDataService';
 import { inventoryService } from '../services/inventoryService';
 import { levelSystemService } from '../services/levelSystemService';
 import { questCombatService } from '../services/questCombatService';
-import { effectProcessingService } from '../services/effectProcessingService';
 import { MotionWrapper } from '../components/MotionWrapper';
 
 // Combat Components
@@ -48,17 +45,27 @@ export function CombatPage({}: CombatPageProps) {
   
   // Combat Log visibility states
   const [showCombatLog, setShowCombatLog] = useState(false);
-  const [showActionMenu, setShowActionMenu] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const processingRef = useRef(false);
   const lastActionTimeRef = useRef(0);
   const currentActionIdRef = useRef<string | null>(null);
   // Combat log is always visible and pinned
   
-  // Screen size detection and combat log management
+  // Mobile detection state
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  
+  // Mobile enemy display states
+  const [currentEnemyIndex, setCurrentEnemyIndex] = useState(0);
+  const [showCompactEnemyView, setShowCompactEnemyView] = useState(false);
+
+  // Screen size detection and responsive management
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsLargeScreen(window.innerWidth >= 1024); // Tailwind's 'lg' breakpoint
+      const width = window.innerWidth;
+      setIsLargeScreen(width >= 1024); // Tailwind's 'lg' breakpoint
+      setIsTablet(width >= 768 && width < 1024); // Tailwind's 'md' to 'lg' breakpoint
+      setIsMobile(width < 768); // Tailwind's 'md' breakpoint
     };
 
     checkScreenSize(); // Check initially
@@ -81,12 +88,7 @@ export function CombatPage({}: CombatPageProps) {
     }
   }, [isLargeScreen]);
 
-  // Toggle action menu function for mobile
-  const toggleActionMenu = useCallback(() => {
-    if (!isLargeScreen) {
-      setShowActionMenu(prev => !prev);
-    }
-  }, [isLargeScreen]);
+
   
   // Combat confirmation modal states
   const [showCombatConfirmation, setShowCombatConfirmation] = useState(false);
@@ -127,7 +129,6 @@ export function CombatPage({}: CombatPageProps) {
             const combatData = JSON.parse(savedCombatState);
             combatService.restoreCombatState(combatData);
             setCombatState({ ...combatService.getCurrentCombat()! });
-            console.log('✅ Restored combat state from localStorage');
             return;
           } catch (error) {
             console.error('Error restoring combat state:', error);
@@ -260,7 +261,6 @@ export function CombatPage({}: CombatPageProps) {
   // Check for combat end and show results
   useEffect(() => {
     if (combatState && !combatState.isActive) {
-      console.log('🎯 Combat ended, showing results. Winner:', combatState.winner);
       setShowResults(true);
     }
   }, [combatState?.isActive]);
@@ -270,7 +270,6 @@ export function CombatPage({}: CombatPageProps) {
     const fallbackInterval = setInterval(() => {
       const currentCombat = combatService.getCurrentCombat();
       if (currentCombat && !currentCombat.isActive && !showResults) {
-        console.log('🔄 Fallback: Combat ended, showing results. Winner:', currentCombat.winner);
         setCombatState({ ...currentCombat });
         setShowResults(true);
       }
@@ -705,7 +704,6 @@ export function CombatPage({}: CombatPageProps) {
     // Check if player has already performed an action this turn
     const turnState = combatService.getTurnState();
     if (turnState?.hasPerformedAction) {
-      console.log('Player has already performed an action this turn');
       return;
     }
 
@@ -774,7 +772,6 @@ export function CombatPage({}: CombatPageProps) {
   const handleUseItem = useCallback(async (itemId: string, targetId?: string) => {
     if (!combatState || !combatState.isPlayerTurn || isProcessing) return;
 
-    console.log('handleUseItem called with itemId:', itemId, 'targetId:', targetId);
     setIsProcessing(true);
     
     try {
@@ -788,11 +785,9 @@ export function CombatPage({}: CombatPageProps) {
       }
       
       if (!item) {
-        console.log('Item not found:', itemId);
         return;
       }
 
-      console.log('Using item:', item);
       const success = combatService.useItem('player', item, targetId);
       
       if (success) {
@@ -801,18 +796,11 @@ export function CombatPage({}: CombatPageProps) {
           item.quantity -= 1;
           
           // CRITICAL: Sync with inventoryService to ensure main inventory is updated
-          console.log('🔄 Syncing consumable usage with main inventory:', {
-            itemId: item.id,
-            itemName: item.name,
-            itemType: item.type,
-            newQuantity: item.quantity
-          });
           
           // Update through inventoryService to ensure consistency
           if (item.quantity <= 0) {
             // Remove item completely if quantity reaches 0
             inventoryService.removeItem(item.id, 1);
-            console.log('🗑️ Removed consumable from main inventory:', item.name);
           } else {
             // Update quantity in main inventory
             const mainInventoryItem = inventoryService.findItemInInventory(item.id);
@@ -825,7 +813,6 @@ export function CombatPage({}: CombatPageProps) {
                 inventoryItem.quantity = item.quantity;
                 localStorage.setItem('currentCharacter', JSON.stringify(characterData));
               }
-              console.log('📝 Updated consumable quantity in main inventory:', item.name, 'new quantity:', item.quantity);
             }
           }
           
@@ -893,7 +880,6 @@ export function CombatPage({}: CombatPageProps) {
     // Check if player has already performed an action this turn
     const turnState = combatService.getTurnState();
     if (turnState?.hasPerformedAction) {
-      console.log('Player has already performed an action this turn');
       return;
     }
 
@@ -947,7 +933,6 @@ export function CombatPage({}: CombatPageProps) {
               current: playerCombatant.health.current,
               max: playerCombatant.health.max
             };
-            console.log('Updated character HP from combat:', playerCombatant.health, 'to character:', character.health);
           }
           
           // Load current inventory into inventoryService
@@ -959,7 +944,6 @@ export function CombatPage({}: CombatPageProps) {
           character.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
           localStorage.setItem('currentCharacter', JSON.stringify(character));
           
-          console.log('✅ Updated character data before fleeing');
         }
       } catch (error) {
         console.error('Error updating character data before fleeing:', error);
@@ -980,7 +964,6 @@ export function CombatPage({}: CombatPageProps) {
             }
           };
           localStorage.setItem('rp_scene_state', JSON.stringify(updatedSceneState));
-          console.log('✅ Cleared enemies from sceneState after fleeing from combat');
         }
       } catch (error) {
         console.error('Error clearing enemies from sceneState after fleeing:', error);
@@ -1001,7 +984,6 @@ export function CombatPage({}: CombatPageProps) {
         combatDataService.addToCombatHistory(combatResultData);
         localStorage.setItem('combat_result', JSON.stringify(combatResultData));
         
-        console.log('🏃 Player fled from combat - combat history saved with turn:', currentTurn);
       }
       
       // Run away (end combat)
@@ -1022,7 +1004,6 @@ export function CombatPage({}: CombatPageProps) {
 
     // Check if player can end turn
     if (!combatService.canEndTurn()) {
-      console.log('Player cannot end turn yet');
       return;
     }
 
@@ -1045,341 +1026,6 @@ export function CombatPage({}: CombatPageProps) {
     }
   }, [combatState, isProcessing]);
 
-  // Test function: Add specific goblin by threat level
-  const handleAddSpecificGoblin = useCallback(async (threatLevel: 'low' | 'medium' | 'high' | 'extreme') => {
-    if (!combatState || isProcessing) return;
-
-    try {
-      setIsProcessing(true);
-      
-      // Get the specific goblin from test enemies
-      const testEnemies: Enemy[] = [
-        // Low threat goblin (no skills)
-        {
-          id: 'test_goblin_low',
-          name: 'Goblin Thường',
-          description: 'Một goblin yếu ớt, chỉ có basic attacks.',
-          type: 'humanoid',
-          level: 1,
-          combatLevel: 1,
-          threatLevel: 'low',
-          stats: {
-            strength: 10,
-            agility: 12,
-            constitution: 8,
-            intelligence: 6,
-            wisdom: 8,
-            charisma: 6,
-            modifiers: {
-              strength: 0,
-              agility: 1,
-              constitution: -1,
-              intelligence: -2,
-              wisdom: -1,
-              charisma: -2
-            }
-          },
-          health: { current: 20, max: 20 },
-          armorClass: 6,
-          attacks: [
-            {
-              name: 'Rusty Dagger',
-              attackBonus: 2,
-              damage: '1d4',
-              damageType: 'physical'
-            }
-          ],
-          experienceReward: 15
-        },
-        // Medium threat goblin (1 skill)
-        {
-          id: 'test_goblin_medium',
-          name: 'Goblin Chiến Binh',
-          description: 'Một goblin có kinh nghiệm chiến đấu, biết sử dụng skills.',
-          type: 'humanoid',
-          level: 3,
-          combatLevel: 3,
-          threatLevel: 'medium',
-          stats: {
-            strength: 14,
-            agility: 16,
-            constitution: 12,
-            intelligence: 10,
-            wisdom: 12,
-            charisma: 8,
-            modifiers: {
-              strength: 2,
-              agility: 3,
-              constitution: 1,
-              intelligence: 0,
-              wisdom: 1,
-              charisma: -1
-            }
-          },
-          health: { current: 35, max: 35 },
-          armorClass: 10,
-          attacks: [
-            {
-              name: 'Scimitar',
-              attackBonus: 5,
-              damage: '1d6+2',
-              damageType: 'physical'
-            }
-          ],
-          skills: [
-            {
-              id: 'goblin_power_strike',
-              name: 'Power Strike',
-              description: 'Tấn công mạnh mẽ với sát thương tăng thêm.',
-              level: 2,
-              skillType: 'damage',
-              effects: ['damage_buff:+1d4:3turns'],
-              cooldown: 3,
-              currentCooldown: 0,
-              icon: '⚔️',
-              requiresTarget: true
-            }
-          ],
-          experienceReward: 50
-        },
-        // High threat goblin (2 skills)
-        {
-          id: 'test_goblin_high',
-          name: 'Goblin Shaman',
-          description: 'Một goblin pháp sư mạnh mẽ với nhiều kỹ năng.',
-          type: 'humanoid',
-          level: 5,
-          combatLevel: 5,
-          threatLevel: 'high',
-          stats: {
-            strength: 12,
-            agility: 14,
-            constitution: 14,
-            intelligence: 16,
-            wisdom: 18,
-            charisma: 10,
-            modifiers: {
-              strength: 1,
-              agility: 2,
-              constitution: 2,
-              intelligence: 3,
-              wisdom: 4,
-              charisma: 0
-            }
-          },
-          health: { current: 45, max: 45 },
-          armorClass: 12,
-          attacks: [
-            {
-              name: 'Staff',
-              attackBonus: 4,
-              damage: '1d6+1',
-              damageType: 'physical'
-            }
-          ],
-          skills: [
-            {
-              id: 'goblin_fire_blast',
-              name: 'Fire Blast',
-              description: 'Tạo ra ngọn lửa tấn công kẻ thù.',
-              level: 3,
-              skillType: 'damage',
-              effects: ['damage:2d6:instant'],
-              cooldown: 4,
-              currentCooldown: 0,
-              icon: '🔥',
-              requiresTarget: true
-            },
-            {
-              id: 'goblin_heal_self',
-              name: 'Heal Self',
-              description: 'Hồi phục HP cho bản thân.',
-              level: 2,
-              skillType: 'healing',
-              effects: ['heal:2d4:+2:instant'],
-              cooldown: 3,
-              currentCooldown: 0,
-              icon: '💚',
-              requiresTarget: false
-            }
-          ],
-          experienceReward: 100
-        },
-        // Extreme threat goblin (3 skills)
-        {
-          id: 'test_goblin_extreme',
-          name: 'Goblin Warlord',
-          description: 'Một goblin tướng lĩnh cực kỳ nguy hiểm với đầy đủ kỹ năng.',
-          type: 'humanoid',
-          level: 8,
-          combatLevel: 8,
-          threatLevel: 'extreme',
-          stats: {
-            strength: 18,
-            agility: 16,
-            constitution: 18,
-            intelligence: 14,
-            wisdom: 16,
-            charisma: 12,
-            modifiers: {
-              strength: 4,
-              agility: 3,
-              constitution: 4,
-              intelligence: 2,
-              wisdom: 3,
-              charisma: 1
-            }
-          },
-          health: { current: 80, max: 80 },
-          armorClass: 16,
-          attacks: [
-            {
-              name: 'War Axe',
-              attackBonus: 8,
-              damage: '2d6+4',
-              damageType: 'physical'
-            }
-          ],
-          skills: [
-            {
-              id: 'goblin_berserker_rage',
-              name: 'Berserker Rage',
-              description: 'Kích hoạt cơn thịnh nộ, tăng sức mạnh và tốc độ.',
-              level: 4,
-              skillType: 'damage',
-              effects: ['stat_buff:strength:+3:4turns', 'stat_buff:agility:+2:4turns'],
-              cooldown: 5,
-              currentCooldown: 0,
-              icon: '😡',
-              requiresTarget: false
-            },
-            {
-              id: 'goblin_heal_self_advanced',
-              name: 'Greater Heal',
-              description: 'Hồi phục HP mạnh mẽ cho bản thân.',
-              level: 4,
-              skillType: 'healing',
-              effects: ['heal:3d6:+3:instant'],
-              cooldown: 4,
-              currentCooldown: 0,
-              icon: '💚',
-              requiresTarget: false
-            },
-            {
-              id: 'goblin_defensive_stance',
-              name: 'Defensive Stance',
-              description: 'Tăng khả năng phòng thủ tạm thời.',
-              level: 3,
-              skillType: 'healing',
-              effects: ['stat_buff:ac:+3:5turns'],
-              cooldown: 3,
-              currentCooldown: 0,
-              icon: '🛡️',
-              requiresTarget: false
-            }
-          ],
-          experienceReward: 200
-        }
-      ];
-      
-      const selectedGoblin = testEnemies.find(enemy => enemy.threatLevel === threatLevel);
-      if (!selectedGoblin) {
-        console.error('Goblin not found for threat level:', threatLevel);
-        return;
-      }
-      
-      // Add unique ID to avoid conflicts
-      const uniqueGoblin = {
-        ...selectedGoblin,
-        id: `${selectedGoblin.id}_${Date.now()}`
-      };
-      
-      // Add enemy to combat
-      combatService.addEnemyToCombat(uniqueGoblin);
-      
-      // Update combat state
-      setCombatState({ ...combatService.getCurrentCombat()! });
-      
-      console.log('✅ Added goblin:', uniqueGoblin.name, `(${threatLevel} threat)`);
-    } catch (error) {
-      console.error('Error adding goblin:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [combatState, isProcessing]);
-
-
-  // Test function: Add consumable to player
-  const handleAddTestConsumable = useCallback(async () => {
-    if (!combatState || isProcessing) return;
-
-    try {
-      setIsProcessing(true);
-      
-      // Get current character
-      const characterData = JSON.parse(localStorage.getItem('currentCharacter') || '{}');
-      if (!characterData.inventory) {
-        characterData.inventory = [];
-      }
-      
-      // Generate test consumables
-      const testConsumables = effectProcessingService.generateEnemyConsumables(
-        combatState.currentTurn + 1,
-        'medium'
-      );
-      
-      console.log('Generated consumables:', testConsumables);
-      
-      // Add first consumable to player inventory
-      if (testConsumables.length > 0) {
-        const newItem = testConsumables[0];
-        // Find existing item by name and effect (not by id)
-        const existingItem = characterData.inventory.find((item: any) => 
-          item.name === newItem.name && 
-          item.effect === newItem.effect &&
-          item.type === 'consumable'
-        );
-        
-        if (existingItem) {
-          existingItem.quantity += 1;
-          console.log('Merged with existing item:', existingItem.name, 'New quantity:', existingItem.quantity);
-        } else {
-          characterData.inventory.push({
-            ...newItem,
-            quantity: 1
-          });
-          console.log('Added new item:', newItem.name);
-        }
-        
-        // Save updated character
-        localStorage.setItem('currentCharacter', JSON.stringify(characterData));
-        console.log('Updated character inventory:', characterData.inventory);
-        
-        // Update player combatant inventory in combat state
-        const currentCombat = combatService.getCurrentCombat();
-        if (currentCombat) {
-          const playerCombatant = currentCombat.combatants.find(c => c.id === 'player');
-          if (playerCombatant) {
-            playerCombatant.inventory = characterData.inventory;
-            console.log('Updated player combatant inventory:', playerCombatant.inventory);
-          }
-          
-          // Update playerInventory in combat state
-          currentCombat.playerInventory = characterData.inventory;
-          console.log('Updated combat state playerInventory:', currentCombat.playerInventory);
-        }
-        
-        // Update combat state to reflect inventory changes
-        setCombatState({ ...combatService.getCurrentCombat()! });
-        
-        console.log('✅ Added test consumable:', testConsumables[0].name);
-      }
-    } catch (error) {
-      console.error('Error adding test consumable:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [combatState, isProcessing]);
 
   // Handle combat end with selected items
   const handleCombatEndWithItems = useCallback((selectedItems: InventoryItem[]) => {
@@ -1396,7 +1042,6 @@ export function CombatPage({}: CombatPageProps) {
           combatResultData.enemiesDefeated.forEach(enemy => {
             const questUpdated = questCombatService.updateCombatObjectiveProgress(enemy.name);
             if (questUpdated) {
-              console.log(`🎯 Quest progress updated for defeating: ${enemy.name}`);
             }
           });
         }
@@ -1413,7 +1058,6 @@ export function CombatPage({}: CombatPageProps) {
         
         // Save to combat_history for encounter chance reset
         combatDataService.addToCombatHistory(combatResultData);
-        console.log('📝 Updated combat_history with gameTurn:', currentTurn);
       }
       
       // Update character data with current HP and experience
@@ -1429,7 +1073,6 @@ export function CombatPage({}: CombatPageProps) {
               current: playerCombatant.health.current,
               max: playerCombatant.health.max
             };
-            console.log('Updated character HP after combat:', character.health);
             
             // Update combat level data from combat service
             if (playerCombatant.characterData) {
@@ -1437,7 +1080,6 @@ export function CombatPage({}: CombatPageProps) {
               character.combatLevel = playerCombatant.characterData.combatLevel;
               character.combatExperience = playerCombatant.characterData.combatExperience;
               
-              console.log(`⚔️ Combat Level: ${character.combatLevel}, Combat XP: ${character.combatExperience}`);
             }
           }
           
@@ -1449,11 +1091,8 @@ export function CombatPage({}: CombatPageProps) {
             // Add full experience to regular character level
             const regularLevelResult = levelSystemService.addExperience(character, experienceGained);
             
-            console.log(`💚 Experience gained: ${experienceGained} XP`);
-            console.log(`⭐ Character Level: ${regularLevelResult.previousLevel} → ${regularLevelResult.newLevel}`);
             
             if (regularLevelResult.leveledUp) {
-              console.log(`🎉 Character Level Up! ${regularLevelResult.previousLevel} → ${regularLevelResult.newLevel}`);
             }
           }
           
@@ -1461,7 +1100,6 @@ export function CombatPage({}: CombatPageProps) {
           if (currencyGained > 0) {
             const currentCurrency = character.currency || 0;
             character.currency = currentCurrency + currencyGained;
-            console.log(`💰 Currency gained: ${currencyGained} gold (Total: ${character.currency})`);
           }
           
           // Save updated character
@@ -1484,7 +1122,6 @@ export function CombatPage({}: CombatPageProps) {
         
         // CRITICAL: Sync combat inventory changes with main inventory before adding rewards
         // Only sync consumable items since combat inventory only contains consumables
-        console.log('🔄 Syncing combat consumable changes with main inventory...');
         const combatInventory = combatState?.playerInventory || [];
         const consumableItems = combatInventory.filter(item => item.type === 'consumable');
         
@@ -1493,11 +1130,6 @@ export function CombatPage({}: CombatPageProps) {
           if (mainItem && mainItem.type === 'consumable') {
             // Update quantity to match combat state
             if (mainItem.quantity !== combatItem.quantity) {
-              console.log('📝 Syncing consumable quantity:', {
-                name: combatItem.name,
-                combatQuantity: combatItem.quantity,
-                mainQuantity: mainItem.quantity
-              });
               mainItem.quantity = combatItem.quantity;
             }
           }
@@ -1525,14 +1157,12 @@ export function CombatPage({}: CombatPageProps) {
               current: playerCombatant.health.current,
               max: playerCombatant.health.max
             };
-            console.log('Updated character HP after combat (inventory section):', character.health);
           }
           
           character.inventory = inventoryService.getInventory();
           character.equipment = inventoryService.getEquipment();
           character.equipped_stats_bonuses = inventoryService.getEquippedStatsBonuses();
           localStorage.setItem('currentCharacter', JSON.stringify(character));
-          console.log('✅ Updated character inventory after combat rewards and sync');
         }
       } catch (error) {
         console.error('Error adding items to inventory:', error);
@@ -1554,7 +1184,6 @@ export function CombatPage({}: CombatPageProps) {
           }
         };
         localStorage.setItem('rp_scene_state', JSON.stringify(updatedSceneState));
-        console.log('✅ Cleared enemies from sceneState after combat ended');
       }
     } catch (error) {
       console.error('Error clearing enemies from sceneState after combat ended:', error);
@@ -1572,6 +1201,58 @@ export function CombatPage({}: CombatPageProps) {
   const playerCombatants = combatState ? combatService.getAlivePlayers() : [];
   const aliveEnemies = combatState ? combatService.getAliveEnemies() : [];
   const allyCombatants = combatState ? combatState.combatants.filter(c => c.type === 'ally' && c.isAlive) : [];
+  
+  // Mobile enemy navigation functions
+  const goToNextEnemy = useCallback(() => {
+    if (aliveEnemies.length > 0) {
+      setCurrentEnemyIndex(prev => (prev + 1) % aliveEnemies.length);
+    }
+  }, [aliveEnemies.length]);
+
+  const goToPreviousEnemy = useCallback(() => {
+    if (aliveEnemies.length > 0) {
+      setCurrentEnemyIndex(prev => prev === 0 ? aliveEnemies.length - 1 : prev - 1);
+    }
+  }, [aliveEnemies.length]);
+
+  const goToEnemy = useCallback((index: number) => {
+    if (index >= 0 && index < aliveEnemies.length) {
+      setCurrentEnemyIndex(index);
+    }
+  }, [aliveEnemies.length]);
+
+
+  // Touch event handlers for swipe gestures
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isMobile) {
+      setTouchEnd(null);
+      setTouchStart(e.targetTouches[0].clientX);
+    }
+  }, [isMobile]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (isMobile) {
+      setTouchEnd(e.targetTouches[0].clientX);
+    }
+  }, [isMobile]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!isMobile || !touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      goToNextEnemy();
+    }
+    if (isRightSwipe) {
+      goToPreviousEnemy();
+    }
+  }, [isMobile, touchStart, touchEnd, goToNextEnemy, goToPreviousEnemy]);
   
   // Get next combatant name for turn indicator
   const nextCombatantName = useMemo(() => {
@@ -1595,6 +1276,64 @@ export function CombatPage({}: CombatPageProps) {
     if (!combatState || !combatState.turnOrder) return null;
     return combatState.turnOrder[combatState.currentCombatantIndex];
   }, [combatState]);
+
+  // Auto-scroll to active enemy with improved logic
+  useEffect(() => {
+    if (isMobile && currentCombatantId && aliveEnemies.length > 0) {
+      const activeEnemyIndex = aliveEnemies.findIndex(enemy => enemy.id === currentCombatantId);
+      if (activeEnemyIndex !== -1) {
+        // Always auto switch to the enemy whose turn it is on mobile
+        if (activeEnemyIndex !== currentEnemyIndex) {
+          setCurrentEnemyIndex(activeEnemyIndex);
+        }
+        
+        // Auto-select the active enemy as target on mobile for better UX
+        if (!selectedTarget) {
+          setSelectedTarget(currentCombatantId);
+        }
+      }
+    }
+  }, [currentCombatantId, isMobile, aliveEnemies, currentEnemyIndex, selectedTarget]);
+
+  // Reset enemy index when combat starts or enemies change
+  useEffect(() => {
+    if (isMobile && aliveEnemies.length > 0) {
+      // If current index is out of bounds, reset to 0
+      if (currentEnemyIndex >= aliveEnemies.length) {
+        setCurrentEnemyIndex(0);
+      }
+      // If no enemy is selected and there are enemies, select the first one
+      if (currentEnemyIndex < 0 && aliveEnemies.length > 0) {
+        setCurrentEnemyIndex(0);
+      }
+    }
+  }, [aliveEnemies.length, currentEnemyIndex, isMobile]);
+
+  // Auto-adjust view mode based on enemy count
+  useEffect(() => {
+    if (isMobile) {
+      if (aliveEnemies.length <= 1) {
+        // Single enemy - always use detail view
+        setShowCompactEnemyView(false);
+      } else if (aliveEnemies.length > 4) {
+        // Many enemies - suggest compact view
+        if (!showCompactEnemyView) {
+          // Only auto-switch to compact view if user hasn't manually chosen detail view
+          setShowCompactEnemyView(true);
+        }
+      }
+    }
+  }, [aliveEnemies.length, isMobile, showCompactEnemyView]);
+
+  // Backup auto-switch mechanism - force switch when combat state changes
+  useEffect(() => {
+    if (isMobile && combatState && aliveEnemies.length > 0 && currentCombatantId) {
+      const activeEnemyIndex = aliveEnemies.findIndex(enemy => enemy.id === currentCombatantId);
+      if (activeEnemyIndex !== -1 && activeEnemyIndex !== currentEnemyIndex) {
+        setCurrentEnemyIndex(activeEnemyIndex);
+      }
+    }
+  }, [combatState, isMobile, aliveEnemies, currentEnemyIndex, currentCombatantId]);
   
   // Get skills from combat state (already migrated)
   const playerSkills = playerCombatants[0]?.skills || [];
@@ -1632,123 +1371,250 @@ export function CombatPage({}: CombatPageProps) {
       {/* Header with Turn Indicator */}
       <div className="bg-gray-900/50 border-b border-gray-700 p-4">
         <div className="flex items-center justify-between">
-          {/* Turn Indicator */}
-          <TurnIndicator
-            turnNumber={combatState?.currentTurn || 0}
-            isPlayerTurn={combatState?.isPlayerTurn || false}
-            currentCombatantName={combatState?.isPlayerTurn ? 'Player' : aliveEnemies[0]?.name}
-            nextCombatantName={nextCombatantName}
-            isProcessing={isProcessing}
-            turnOrder={combatState?.turnOrder || []}
-            currentCombatantIndex={combatState?.currentCombatantIndex || 0}
-          />
+          {/* Left side - Combat Log Button for mobile */}
+          <div className="flex items-center">
+            {isMobile && (
+              <button
+                onClick={toggleCombatLog}
+                className="p-1.5 text-gray-400 hover:text-white transition-colors"
+                title="Toggle Combat Log"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Center - Turn Indicator */}
+          <div className="flex-1 flex justify-center">
+            {isMobile ? (
+              // Mobile: Simple turn indicator
+              <div className="flex items-center space-x-2 text-sm">
+                <span className="text-gray-400">T{combatState?.currentTurn || 0}</span>
+                <span className={`px-2 py-1 rounded text-xs ${
+                  combatState?.isPlayerTurn 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-600 text-gray-300'
+                }`}>
+                  {combatState?.isPlayerTurn ? 'Bạn' : 'Enemy'}
+                </span>
+                {nextCombatantName && (
+                  <span className="text-xs text-gray-500">
+                    Tiếp: {nextCombatantName}
+                  </span>
+                )}
+              </div>
+            ) : (
+              // Desktop: Full turn indicator
+              <TurnIndicator
+                turnNumber={combatState?.currentTurn || 0}
+                isPlayerTurn={combatState?.isPlayerTurn || false}
+                currentCombatantName={combatState?.isPlayerTurn ? 'Player' : aliveEnemies[0]?.name}
+                nextCombatantName={nextCombatantName}
+                isProcessing={isProcessing}
+                turnOrder={combatState?.turnOrder || []}
+                currentCombatantIndex={combatState?.currentCombatantIndex || 0}
+              />
+            )}
+          </div>
           
-          {/* Control Buttons */}
-          <div className="flex items-center space-x-2">
-            {/* Combat Log Button - Always Pinned */}
-            <div
-              className="p-2 border rounded-lg bg-blue-600/30 border-blue-500/50 text-blue-200"
-              title="Combat Log (Luôn hiển thị)"
-            >
-              <MessageSquare className="w-4 h-4" />
-            </div>
+          {/* Right side - Control Buttons */}
+          <div className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
+            {/* Combat Log Button - Always Pinned (for desktop) */}
+            {!isMobile && (
+              <div
+                className={`border rounded-lg bg-blue-600/30 border-blue-500/50 text-blue-200 ${isMobile ? 'p-1.5' : 'p-2'}`}
+                title="Combat Log (Luôn hiển thị)"
+              >
+                <MessageSquare className={isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
+              </div>
+            )}
             
             {/* Pause/Play Button */}
             <button
               onClick={() => setIsPaused(!isPaused)}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
+              className={`text-gray-400 hover:text-white transition-colors ${isMobile ? 'p-1.5' : 'p-2'}`}
               title={isPaused ? "Tiếp tục" : "Tạm dừng"}
             >
-              {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+              {isPaused ? <Play className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} /> : <Pause className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />}
             </button>
-
-            {/* Test Buttons */}
-            <div className="flex items-center space-x-1 border-l border-gray-600 pl-2">
-              {/* Goblin Test Buttons */}
-              <button
-                onClick={() => handleAddSpecificGoblin('low')}
-                disabled={isProcessing}
-                className="p-2 text-gray-400 hover:text-gray-300 transition-colors disabled:opacity-50"
-                title="Thêm Goblin Thường (Low Threat)"
-              >
-                <Sword className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={() => handleAddSpecificGoblin('medium')}
-                disabled={isProcessing}
-                className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors disabled:opacity-50"
-                title="Thêm Goblin Chiến Binh (Medium Threat)"
-              >
-                <Sword className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={() => handleAddSpecificGoblin('high')}
-                disabled={isProcessing}
-                className="p-2 text-orange-400 hover:text-orange-300 transition-colors disabled:opacity-50"
-                title="Thêm Goblin Shaman (High Threat)"
-              >
-                <Zap className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={() => handleAddSpecificGoblin('extreme')}
-                disabled={isProcessing}
-                className="p-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
-                title="Thêm Goblin Warlord (Extreme Threat)"
-              >
-                <Sword className="w-4 h-4" />
-              </button>
-              
-              {/* Add Consumable Test Button */}
-              <button
-                onClick={handleAddTestConsumable}
-                disabled={isProcessing}
-                className="p-2 text-green-400 hover:text-green-300 transition-colors disabled:opacity-50"
-                title="Thêm Consumable Test"
-              >
-                <TestTube className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
       <div className={`flex flex-col min-h-[calc(100vh-80px)] transition-all duration-300 justify-between ${isLargeScreen && showCombatLog ? 'lg:mr-96' : ''}`}>
-        {/* Enemy Cards - PC Optimized Layout */}
-        <div className="p-2 sm:p-4 lg:max-h-[50vh] lg:overflow-y-auto">
-          {/* Mobile: Horizontal scroll, Desktop: Flex wrap with height limit */}
-          <div className="relative">
-            {/* Scroll indicator for mobile */}
-            {aliveEnemies.length > 1 && (
-              <div className="sm:hidden absolute top-0 right-0 z-10 bg-gray-800/80 px-2 py-1 rounded-bl text-xs text-gray-400">
-                ← Kéo để xem thêm →
-              </div>
-            )}
-            <div className="flex overflow-x-auto gap-2 sm:gap-4 sm:flex-wrap sm:justify-center sm:overflow-x-visible scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-              {aliveEnemies.map((enemy) => (
-                <div key={enemy.id} className="flex-shrink-0 w-[280px] sm:w-auto sm:min-w-[300px] sm:max-w-[400px]">
-                  <CombatantCard
-                    combatant={enemy}
-                    isEnemy={true}
-                    isSelected={selectedTarget === enemy.id}
-                    onSelect={() => setSelectedTarget(enemy.id)}
-                    isPlayerTurn={combatState?.isPlayerTurn || false}
-                    isCurrentTurn={currentCombatantId === enemy.id}
-                  />
+        {/* Enemy Cards - Optimized Mobile Layout */}
+        <div className={`${isMobile ? 'p-1' : 'p-2'} sm:p-4 lg:max-h-[50vh] lg:overflow-y-auto`}>
+          {isMobile && aliveEnemies.length > 0 ? (
+            // Mobile: Smart enemy display
+            <div className="relative">
+              {/* Mobile Enemy Header - Simplified */}
+              <div className="flex items-center justify-between mb-2 px-1">
+                <div className="flex items-center space-x-2">
+                  {currentCombatantId === aliveEnemies[currentEnemyIndex]?.id && (
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                  )}
+                  <span className="text-xs text-gray-400">
+                    {currentEnemyIndex + 1}/{aliveEnemies.length}
+                  </span>
                 </div>
-              ))}
+                
+                {/* View Toggle Button */}
+                {aliveEnemies.length > 1 && (
+                  <button
+                    onClick={() => setShowCompactEnemyView(!showCompactEnemyView)}
+                    className="text-xs text-blue-400 hover:text-blue-300 px-2 py-1 rounded bg-blue-900/30 border border-blue-700/50"
+                  >
+                    {showCompactEnemyView ? 'Chi tiết' : 'Tất cả'}
+                  </button>
+                )}
+              </div>
+
+              {showCompactEnemyView ? (
+                // Compact View: Show all enemies in a grid
+                <div className="grid grid-cols-2 gap-1">
+                  {aliveEnemies.map((enemy, index) => (
+                    <div 
+                      key={enemy.id}
+                      className={`p-2 bg-gray-800/50 rounded border cursor-pointer transition-all ${
+                        currentCombatantId === enemy.id 
+                          ? 'border-yellow-400 bg-yellow-900/20 ring-2 ring-yellow-400/50' 
+                          : selectedTarget === enemy.id
+                          ? 'border-blue-400 bg-blue-900/20'
+                          : 'border-gray-600 hover:border-gray-500'
+                      }`}
+                      onClick={() => {
+                        setSelectedTarget(enemy.id);
+                        setCurrentEnemyIndex(index);
+                        setShowCompactEnemyView(false);
+                      }}
+                    >
+                      <div className="text-xs font-medium text-white truncate">
+                        {enemy.name}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        HP: {enemy.health.current}/{enemy.health.max}
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-1 mt-1">
+                        <div 
+                          className="bg-green-500 h-1 rounded-full transition-all"
+                          style={{ width: `${(enemy.health.current / enemy.health.max) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // Detail View: Show single enemy with navigation
+                <div className="space-y-2">
+                  {/* Single Enemy Display with Swipe Support */}
+                  <div 
+                    className="w-full"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    <CombatantCard
+                      combatant={aliveEnemies[currentEnemyIndex]}
+                      isEnemy={true}
+                      isSelected={selectedTarget === aliveEnemies[currentEnemyIndex]?.id}
+                      onSelect={() => setSelectedTarget(aliveEnemies[currentEnemyIndex]?.id)}
+                      isPlayerTurn={combatState?.isPlayerTurn || false}
+                      isCurrentTurn={currentCombatantId === aliveEnemies[currentEnemyIndex]?.id}
+                    />
+                  </div>
+
+                  {/* Navigation Controls */}
+                  {aliveEnemies.length > 1 && (
+                    <div className="flex items-center justify-center space-x-4">
+                      <button
+                        onClick={goToPreviousEnemy}
+                        className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                      >
+                        ←
+                      </button>
+                      
+                      {/* Pagination Dots */}
+                      <div className="flex items-center space-x-1">
+                        {aliveEnemies.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToEnemy(index)}
+                            className={`w-2 h-2 rounded-full transition-colors ${
+                              index === currentEnemyIndex 
+                                ? 'bg-blue-400' 
+                                : 'bg-gray-600 hover:bg-gray-500'
+                            }`}
+                          />
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={goToNextEnemy}
+                        className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                      >
+                        →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            // Desktop/Tablet: Original layout
+            <div className="relative">
+              {/* Desktop scroll indicator */}
+              {aliveEnemies.length > 1 && (
+                <div className="sm:hidden absolute top-0 right-0 z-10 bg-gray-800/90 px-2 py-1 rounded-bl text-xs text-gray-400">
+                  ← Kéo để xem thêm →
+                </div>
+              )}
+              
+              {/* Responsive enemy grid */}
+              <div className={`
+                ${isTablet ? 'flex flex-wrap gap-3 justify-center' : ''}
+                ${isLargeScreen ? 'flex flex-wrap gap-4 justify-center overflow-x-visible' : ''}
+                scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800
+              `}>
+                {aliveEnemies.map((enemy) => (
+                  <div 
+                    key={enemy.id} 
+                    className={`
+                      ${isTablet ? 'w-auto min-w-[280px] max-w-[350px]' : ''}
+                      ${isLargeScreen ? 'w-auto min-w-[300px] max-w-[400px]' : ''}
+                    `}
+                  >
+                    <CombatantCard
+                      combatant={enemy}
+                      isEnemy={true}
+                      isSelected={selectedTarget === enemy.id}
+                      onSelect={() => setSelectedTarget(enemy.id)}
+                      isPlayerTurn={combatState?.isPlayerTurn || false}
+                      isCurrentTurn={currentCombatantId === enemy.id}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Ally Cards - Between Enemy and Player */}
         {allyCombatants.length > 0 && (
-          <div className="p-2 sm:p-4 border-t border-green-700/30">
-            <div className="flex gap-2 sm:gap-4 flex-wrap justify-center">
+          <div className={`${isMobile ? 'p-1' : 'p-2'} sm:p-4 border-t border-green-700/30`}>
+            <div className={`
+              ${isMobile ? 'flex overflow-x-auto gap-1 snap-x snap-mandatory' : ''}
+              ${isTablet ? 'flex flex-wrap gap-3 justify-center' : ''}
+              ${isLargeScreen ? 'flex gap-2 sm:gap-4 flex-wrap justify-center' : ''}
+            `}>
               {allyCombatants.map((ally) => (
-                <div key={ally.id} className="w-[280px] sm:w-auto sm:min-w-[300px] sm:max-w-[400px]">
+                <div 
+                  key={ally.id} 
+                  className={`
+                    ${isMobile ? 'flex-shrink-0 w-[260px] snap-center' : ''}
+                    ${isTablet ? 'w-auto min-w-[280px] max-w-[350px]' : ''}
+                    ${isLargeScreen ? 'w-[280px] sm:w-auto sm:min-w-[300px] sm:max-w-[400px]' : ''}
+                  `}
+                >
                   <CombatantCard
                     combatant={ally}
                     isEnemy={false}
@@ -1762,11 +1628,11 @@ export function CombatPage({}: CombatPageProps) {
         )}
 
         {/* Player Card and Actions */}
-        <div className="bg-gray-900/50 border-t border-gray-700 p-2 sm:p-4 flex-shrink-0">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4">
+        <div className={`bg-gray-900/50 border-t border-gray-700 ${isMobile ? 'p-1' : 'p-2'} sm:p-4 flex-shrink-0`}>
+          <div className={`${isMobile ? 'flex flex-col space-y-2' : 'grid grid-cols-1 lg:grid-cols-3'} gap-2 sm:gap-4`}>
             {/* Player Cards - Support Multiple Players */}
-            <div className="lg:col-span-1">
-              <div className="space-y-2 sm:space-y-3">
+            <div className={isMobile ? 'w-full' : 'lg:col-span-1'}>
+              <div className={`${isMobile ? 'space-y-1' : 'space-y-2'} sm:space-y-3`}>
                 {playerCombatants.map((player: Combatant) => (
                   <CombatantCard
                     key={player.id}
@@ -1781,9 +1647,9 @@ export function CombatPage({}: CombatPageProps) {
             </div>
 
             {/* Action Menu and Inventory */}
-            <div className="lg:col-span-2">
+            <div className={isMobile ? 'w-full' : 'lg:col-span-2'}>
               {combatState?.isPlayerTurn ? (
-                <div className="space-y-4">
+                <div className={isMobile ? 'space-y-2' : 'space-y-4'}>
                   {/* Desktop Action Menu */}
                   <div className="hidden lg:block">
                     <ActionMenu
@@ -1807,6 +1673,61 @@ export function CombatPage({}: CombatPageProps) {
                       temporaryPlayerStats={combatState?.temporaryPlayerStats}
                     />
                   </div>
+
+                  {/* Mobile Action Buttons */}
+                  {isMobile && (
+                    <div className="space-y-2">
+                      {/* Action Grid */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => handleAttack(0, selectedTarget || undefined)}
+                          disabled={isProcessing || !selectedTarget || turnState?.mainActionUsed}
+                          className={`p-3 rounded-lg transition-colors text-sm font-medium ${
+                            !selectedTarget 
+                              ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                              : 'bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:text-gray-400 text-white'
+                          }`}
+                        >
+                          Tấn Công
+                        </button>
+                        <button
+                          onClick={handleDefend}
+                          disabled={isProcessing || turnState?.mainActionUsed}
+                          className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:text-gray-400 text-white rounded-lg transition-colors text-sm font-medium"
+                        >
+                          Phòng Thủ
+                        </button>
+                        <button
+                          onClick={() => setShowSkills(true)}
+                          disabled={isProcessing || turnState?.skillActionUsed}
+                          className="p-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:text-gray-400 text-white rounded-lg transition-colors text-sm font-medium"
+                        >
+                          Kỹ Năng
+                        </button>
+                        <button
+                          onClick={() => setShowInventory(true)}
+                          disabled={isProcessing}
+                          className="p-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:text-gray-400 text-white rounded-lg transition-colors text-sm font-medium"
+                        >
+                          Đồ Dùng
+                        </button>
+                        <button
+                          onClick={handleRun}
+                          disabled={isProcessing}
+                          className="p-3 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 disabled:text-gray-400 text-white rounded-lg transition-colors text-sm font-medium col-span-1"
+                        >
+                          Chạy
+                        </button>
+                        <button
+                          onClick={handleEndTurn}
+                          disabled={isProcessing || !canEndTurn}
+                          className="p-3 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-500 disabled:text-gray-300 text-white rounded-lg transition-colors text-sm font-medium col-span-1"
+                        >
+                          Kết Thúc
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   
                 </div>
               ) : (
@@ -1829,17 +1750,17 @@ export function CombatPage({}: CombatPageProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 ${isMobile ? 'p-2' : 'p-4'}`}
             onClick={() => setShowSkills(false)}
           >
             <MotionWrapper
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900 rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+              className={`bg-gray-900 rounded-lg shadow-2xl w-full ${isMobile ? 'max-w-full max-h-[90vh]' : 'max-w-2xl max-h-[80vh]'} overflow-hidden`}
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
-              <div className="p-6">
+              <div className={`${isMobile ? 'p-4' : 'p-6'}`}>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold text-white">Kỹ Năng Nhân Vật</h2>
                   <button
@@ -1918,14 +1839,14 @@ export function CombatPage({}: CombatPageProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 ${isMobile ? 'p-2' : 'p-4'}`}
             onClick={() => setShowInventory(false)}
           >
             <MotionWrapper
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900 rounded-lg shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
+              className={`bg-gray-900 rounded-lg shadow-2xl w-full ${isMobile ? 'max-w-full max-h-[90vh]' : 'max-w-4xl max-h-[80vh]'} overflow-hidden`}
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <CombatInventory
@@ -1949,7 +1870,7 @@ export function CombatPage({}: CombatPageProps) {
            className={`bg-gray-800 border border-gray-600 rounded-lg shadow-2xl z-40 flex flex-col ${
              isLargeScreen 
                ? 'fixed top-20 right-4 w-96 h-[calc(100vh-120px)]' 
-               : 'fixed bottom-0 left-0 w-full h-1/2'
+               : `fixed bottom-0 left-0 w-full ${isMobile ? 'h-3/4' : 'h-1/2'}`
            }`}
          >
             {/* Combat Log Header */}
@@ -1991,94 +1912,6 @@ export function CombatPage({}: CombatPageProps) {
           </MotionWrapper>
        )}
 
-      {/* Mobile Action Menu Bong Bóng */}
-      {!isLargeScreen && showActionMenu && combatState?.isPlayerTurn && (
-        <MotionWrapper
-          initial={{ opacity: 0, y: '100%' }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: '100%' }}
-          className="fixed bottom-0 left-0 w-full h-2/3 bg-gray-800 border border-gray-600 rounded-t-lg shadow-2xl z-40 flex flex-col"
-        >
-          {/* Action Menu Header */}
-          <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700 rounded-t-lg flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Sword className="w-5 h-5 text-green-400" />
-                <h3 className="text-lg font-semibold text-white">Action Menu</h3>
-              </div>
-              <button
-                onClick={toggleActionMenu}
-                className="flex items-center space-x-1 px-2 py-1 rounded bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 hover:text-blue-300 transition-colors text-xs"
-                title="Đóng Action Menu"
-              >
-                <X className="w-3 h-3" />
-                <span>Đóng</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Action Menu Content */}
-          <div className="flex-1 overflow-y-auto min-h-0 p-4 pb-8">
-            <ActionMenu
-              combatant={playerCombatants[0] || null}
-              enemies={aliveEnemies}
-              onAttack={handleAttack}
-              onDefend={handleDefend}
-              onUseItem={handleUseItem}
-              onInventory={() => setShowInventory(!showInventory)}
-              onSkills={() => setShowSkills(!showSkills)}
-              onEndTurn={handleEndTurn}
-              onRun={handleRun}
-              isProcessing={isProcessing}
-              selectedTarget={selectedTarget}
-              onSelectTarget={setSelectedTarget}
-              canEndTurn={canEndTurn}
-              mainActionUsed={turnState?.mainActionUsed || false}
-              extraActionUsed={turnState?.extraActionUsed || false}
-              skillActionUsed={turnState?.skillActionUsed || false}
-              skills={playerSkills}
-              temporaryPlayerStats={combatState?.temporaryPlayerStats}
-            />
-          </div>
-        </MotionWrapper>
-      )}
-
-      {/* Floating Action Buttons for Mobile */}
-      {!isLargeScreen && (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2">
-          {/* Combat Log Button */}
-          {!showCombatLog && (
-            <MotionWrapper
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-            >
-              <button
-                onClick={toggleCombatLog}
-                className="p-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-colors"
-                title="Mở Combat Log"
-              >
-                <MessageSquare className="w-6 h-6" />
-              </button>
-            </MotionWrapper>
-          )}
-          
-          {/* Action Menu Button */}
-          {combatState?.isPlayerTurn && !showActionMenu && (
-            <MotionWrapper
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-            >
-              <button
-                onClick={toggleActionMenu}
-                className="p-3 rounded-full bg-green-600 text-white shadow-lg hover:bg-green-700 transition-colors"
-                title="Mở Action Menu"
-              >
-                <Sword className="w-6 h-6" />
-              </button>
-            </MotionWrapper>
-          )}
-        </div>
-      )}
 
       {/* Combat Confirmation Modal */}
       {selectedNPCForCombat && (

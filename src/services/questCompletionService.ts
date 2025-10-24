@@ -231,7 +231,6 @@ class QuestCompletionService {
 
     // Validate and limit requiredKills to maximum 3
     if (objective.requiredKills > 3) {
-      console.log(`⚠️ Limiting requiredKills from ${objective.requiredKills} to 3 for objective: ${objective.description}`);
       objective.requiredKills = 3;
     }
 
@@ -285,21 +284,10 @@ class QuestCompletionService {
         }
       }
       
-      console.log(`🔍 checkCombatObjective - Objective: ${objective.targetEnemyName}, Required: ${requiredKills}`);
-      console.log(`🔍 checkCombatObjective - Defeated enemies from localStorage:`, defeatedEnemies.length);
-      
       for (const defeatedEnemy of defeatedEnemies) {
         const enemyName = defeatedEnemy.name?.toLowerCase().trim() || '';
         
-        console.log(`🔍 Comparing enemy names:`, {
-          defeatedEnemyName: defeatedEnemy.name,
-          enemyNameLower: enemyName,
-          targetEnemyName: objective.targetEnemyName,
-          targetNameLower: targetName,
-          enemyType: defeatedEnemy.type,
-          targetEnemyType: objective.targetEnemyType
-        });
-        
+      
         // Check if enemy name matches with improved algorithm
         const nameMatches = this.fuzzyMatch(enemyName, targetName);
         
@@ -312,23 +300,13 @@ class QuestCompletionService {
         const idMatches = !objective.targetEnemyId || 
           defeatedEnemy.enemyId === objective.targetEnemyId;
 
-        console.log(`🔍 Match results:`, {
-          nameMatches,
-          typeMatches,
-          idMatches,
-          finalMatch: nameMatches && typeMatches && idMatches
-        });
-
         if (nameMatches && typeMatches && idMatches) {
           currentKills++;
           matchedEnemies.push(defeatedEnemy.name);
-          console.log(`✅ Combat objective match found: ${defeatedEnemy.name} (${defeatedEnemy.type})`);
         } else {
-          console.log(`❌ No match for: ${defeatedEnemy.name}`);
         }
       }
       
-      console.log(`🎯 checkCombatObjective - Current kills: ${currentKills}/${requiredKills}`);
       
       // Cập nhật currentKills vào quest system trong localStorage
       if (currentKills > 0) {
@@ -348,7 +326,6 @@ class QuestCompletionService {
                     obj.status = 'completed';
                   }
                   questSystemUpdated = true;
-                  console.log(`🔄 Updated starterQuest objective ${obj.id}: ${obj.currentKills}/${obj.requiredKills}`);
                 }
               });
             }
@@ -365,7 +342,6 @@ class QuestCompletionService {
                         obj.status = 'completed';
                       }
                       questSystemUpdated = true;
-                      console.log(`🔄 Updated mainQuest objective ${obj.id}: ${obj.currentKills}/${obj.requiredKills}`);
                     }
                   });
                 }
@@ -384,7 +360,6 @@ class QuestCompletionService {
                         obj.status = 'completed';
                       }
                       questSystemUpdated = true;
-                      console.log(`🔄 Updated sideQuest objective ${obj.id}: ${obj.currentKills}/${obj.requiredKills}`);
                     }
                   });
                 }
@@ -403,7 +378,6 @@ class QuestCompletionService {
                         obj.status = 'completed';
                       }
                       questSystemUpdated = true;
-                      console.log(`🔄 Updated factionQuest objective ${obj.id}: ${obj.currentKills}/${obj.requiredKills}`);
                     }
                   });
                 }
@@ -412,7 +386,6 @@ class QuestCompletionService {
             
             if (questSystemUpdated) {
               localStorage.setItem('quest_system', JSON.stringify(questSystem));
-              console.log(`💾 Quest system updated in localStorage with currentKills: ${currentKills}`);
               
               // Dispatch event để trigger UI update
               const questUpdateEvent = new CustomEvent('questSystemUpdated', {
@@ -424,7 +397,6 @@ class QuestCompletionService {
                 }
               });
               window.dispatchEvent(questUpdateEvent);
-              console.log(`📡 Dispatched questSystemUpdated event for objective ${objective.id}`);
             }
           }
         } catch (error) {
@@ -580,7 +552,6 @@ class QuestCompletionService {
 
     // Validate and limit requiredKills to maximum 3
     if (objective.requiredKills > 3) {
-      console.log(`⚠️ Limiting requiredKills from ${objective.requiredKills} to 3 for objective: ${objective.description}`);
       objective.requiredKills = 3;
     }
 
@@ -624,8 +595,6 @@ class QuestCompletionService {
         }
       }
       
-      console.log(`🔍 getCombatProgress - Objective: ${objective.targetEnemyName}, Required: ${requiredKills}`);
-      console.log(`🔍 getCombatProgress - Defeated enemies from localStorage:`, defeatedEnemies.length);
       
       for (const defeatedEnemy of defeatedEnemies) {
         const enemyName = defeatedEnemy.name?.toLowerCase().trim() || '';
@@ -644,11 +613,9 @@ class QuestCompletionService {
 
         if (nameMatches && typeMatches && idMatches) {
           currentKills++;
-          console.log(`✅ Match found: ${defeatedEnemy.name} (${defeatedEnemy.type})`);
         }
       }
       
-      console.log(`🎯 getCombatProgress - Current kills: ${currentKills}/${requiredKills}`);
       
     } catch (error) {
       console.error('Error reading combat history from localStorage:', error);

@@ -64,7 +64,6 @@ class NPCHealthUpdateService {
             npc.status = 'hostile';
           }
 
-          console.log(`Updated NPC ${npc.name} health to 0 after combat defeat`);
         }
       });
 
@@ -108,7 +107,6 @@ class NPCHealthUpdateService {
         }
 
         npcRelationshipService.saveData();
-        console.log(`Restored NPC ${npc.name} health to ${newHealth}/${maxHealth}`);
       }
     } catch (error) {
       console.error('Error restoring NPC health:', error);

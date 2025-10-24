@@ -97,26 +97,19 @@ class SkillEffectService {
     const results: SkillEffectResult[] = [];
     
     // Debug logging
-    console.log(`🔍 Applying skill effects for: ${skill.name}`);
-    console.log(`🔍 Skill effects:`, skill.effects);
-    console.log(`🔍 Target IDs:`, targetIds);
-    console.log(`🔍 Caster:`, caster.name);
     
     // Parse all effects
     const parsedEffects = skill.effects.map(effect => {
       const parsed = this.parseSkillEffect(effect);
-      console.log(`🔍 Parsed effect "${effect}":`, parsed);
       return parsed;
     }).filter(Boolean) as ParsedSkillEffect[];
     
     if (parsedEffects.length === 0) {
-      console.warn(`🔍 No valid effects found for skill: ${skill.name}`);
       return results;
     }
 
     // Apply each effect
     for (const effect of parsedEffects) {
-      console.log(`🔍 Applying effect:`, effect);
       const effectResults = this.applySingleEffect(effect, caster, targetIds, allCombatants);
       results.push(...effectResults);
     }
@@ -219,9 +212,7 @@ class SkillEffectService {
     if (!effect.value) return results;
 
     // Calculate heal amount with dice details
-    console.log(`🔍 Healing effect value: ${effect.value}`);
     const healResult = this.calculateHeal(effect.value);
-    console.log(`🔍 Heal result:`, healResult);
     const healAmount = healResult.total;
     
     // Apply to targets
@@ -301,8 +292,6 @@ class SkillEffectService {
     // Apply to targets
     const targets = this.getTargets(effect.target, targetIds, allCombatants, caster);
     
-    console.log(`🔍 Applying stat effect: ${effect.statType} +${statValue} for ${effect.duration} turns`);
-    console.log(`🔍 Targets:`, targets.map(t => t.name));
     
     for (const target of targets) {
       if (!target.isAlive) continue;
@@ -321,7 +310,6 @@ class SkillEffectService {
       };
       
       target.statusEffects.push(statusEffect);
-      console.log(`🔍 Applied status effect to ${target.name}:`, statusEffect);
       
       results.push({
         logType: effect.type === 'stat_buff' ? 'buff' : 'debuff',
@@ -350,7 +338,6 @@ class SkillEffectService {
         return allCombatants.filter(c => c.id !== caster.id && c.type !== 'player' && c.isAlive);
       default:
         // Log warning for invalid target type
-        console.warn(`Invalid target type: ${targetType}. Defaulting to self.`);
         return [caster];
     }
   }

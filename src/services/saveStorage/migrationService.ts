@@ -19,12 +19,10 @@ export class MigrationService {
   // Thực hiện migration từ localStorage cũ sang slot1
   async migrateToSlot1(): Promise<SaveGame | null> {
     if (!this.needsMigration()) {
-      console.log('Không có dữ liệu cũ cần migrate');
       return null;
     }
 
     try {
-      console.log('🔄 Bắt đầu migration từ localStorage cũ...');
 
       const legacyData = this.localStore.getLegacyData();
       
@@ -122,7 +120,6 @@ export class MigrationService {
       // Xóa dữ liệu cũ
       this.localStore.clearLegacyData();
 
-      console.log('✅ Migration hoàn thành - dữ liệu đã chuyển vào slot1');
       return saveGame;
 
     } catch (error) {
@@ -164,7 +161,6 @@ export class MigrationService {
         return false;
       }
 
-      console.log('✅ SaveGame validation thành công');
       return true;
 
     } catch (error) {
@@ -193,7 +189,6 @@ export class MigrationService {
     merchantShopsData?: any
   ): SaveGame {
     // Debug logging
-    console.log('🎯 createSaveGameFromRuntime called with combatHistory:', combatHistory);
     
     // Cập nhật sceneState vào summary
     const updatedSummary = {
@@ -240,7 +235,6 @@ export class MigrationService {
       merchantShops: merchantShopsData?.shops || {}
     };
     
-    console.log('🎯 Created SaveGame with combatHistory:', saveGame.combatHistory);
     return saveGame;
   }
 

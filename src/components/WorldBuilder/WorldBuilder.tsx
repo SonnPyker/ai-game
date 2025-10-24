@@ -172,7 +172,6 @@ export function WorldBuilder() {
             parsedPrinciples = JSON.parse(jsonMatch[0]).slice(0, 5);
           }
         } catch (error) {
-          console.warn('Failed to parse principles:', error);
         }
         
         // Parse entities
@@ -187,7 +186,6 @@ export function WorldBuilder() {
             }));
           }
         } catch (error) {
-          console.warn('Failed to parse entities:', error);
         }
         
         // Parse world details
@@ -198,7 +196,6 @@ export function WorldBuilder() {
             parsedDetails = JSON.parse(jsonMatch[0]);
           }
         } catch (error) {
-          console.warn('Failed to parse world details:', error);
         }
         
         setWorldData(prev => ({ 
@@ -228,7 +225,6 @@ export function WorldBuilder() {
             throw new Error('No JSON found');
           }
         } catch (error) {
-          console.warn('Failed to parse principles as JSON, using fallback:', error);
           // Fallback: parse as text
           const sections = principlesText.split(/Tên:|Mô tả:/).filter(s => s.trim());
           
@@ -342,7 +338,6 @@ export function WorldBuilder() {
             throw new Error('No JSON found');
           }
         } catch (error) {
-          console.warn('Failed to parse entities as JSON, using fallback:', error);
           // Fallback: parse as text
           const sections = entitiesText.split(/Tên:|Mô tả:|Loại:/).filter(s => s.trim());
           
@@ -509,15 +504,7 @@ export function WorldBuilder() {
          
          // Ensure we have at least 5 locations
          if (worldJson.locations.length < 5) {
-           console.warn(`Chỉ có ${worldJson.locations.length} locations, cần tối thiểu 5`);
          }
-         
-         // Log location info
-         console.log('Generated locations:', worldJson.locations.map((loc: any) => ({
-           name: loc.name,
-           type: loc.type,
-           position: loc.gridPosition
-         })));
        }
        
        // Merge contentFlags vào world data

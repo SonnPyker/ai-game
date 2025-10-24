@@ -26,7 +26,6 @@ class EnemyFromContextService {
     playerLevel: number
   ): Promise<EnemyCreationResult> {
     try {
-      console.log(`🔍 Creating enemy from context: ${enemyName}`);
       
       // Tìm enemy trong scene.npcs[] trước
       const sceneNPC = this.findEnemyInScene(enemyName, sceneState);
@@ -65,7 +64,6 @@ class EnemyFromContextService {
         combatStats: combatStats
       };
       
-      console.log(`✅ Enemy created: ${enemyName}, shouldSave: ${shouldSave}`);
       return { enemy, shouldSaveToRelationships: shouldSave };
       
     } catch (error) {
@@ -99,7 +97,6 @@ class EnemyFromContextService {
     
     for (const pattern of genericPatterns) {
       if (pattern.test(enemyName)) {
-        console.log(`🚫 Generic enemy name detected: ${enemyName}`);
         return false;
       }
     }
@@ -111,11 +108,9 @@ class EnemyFromContextService {
     
     // Nếu có sceneNPC với description chi tiết, ưu tiên lưu
     if (sceneNPC?.description && sceneNPC.description.length > 20) {
-      console.log(`💾 Detailed scene NPC, saving: ${enemyName}`);
       return true;
     }
     
-    console.log(`🔍 Enemy name analysis: ${enemyName}, isSpecific: ${isSpecificName}`);
     return isSpecificName;
   }
 
@@ -133,7 +128,6 @@ class EnemyFromContextService {
     );
     
     if (sceneNPC) {
-      console.log(`🎯 Found exact match in scene: ${sceneNPC.name}`);
       return sceneNPC;
     }
     
@@ -146,11 +140,9 @@ class EnemyFromContextService {
     );
     
     if (sceneNPC) {
-      console.log(`🔍 Found partial match in scene: ${sceneNPC.name}`);
       return sceneNPC;
     }
     
-    console.log(`❌ No match found in scene for: ${enemyName}`);
     return null;
   }
 
@@ -166,12 +158,10 @@ class EnemyFromContextService {
     try {
       // Nếu có sceneNPC với đủ thông tin, dùng thông tin đó
       if (sceneNPC && sceneNPC.description && sceneNPC.role) {
-        console.log(`📝 Using scene NPC info for: ${enemyName}`);
         return this.generateStatsFromSceneNPC(sceneNPC, playerLevel);
       }
       
       // Nếu không có sceneNPC, dùng AI với context
-      console.log(`🤖 Using AI to generate stats for: ${enemyName}`);
       const prompt = this.buildEnemyStatsPrompt(enemyName, sceneState, playerLevel);
       
       const gemini = geminiService;
@@ -192,7 +182,6 @@ class EnemyFromContextService {
       console.error('Error generating enemy combat stats with AI:', error);
       
       // Fallback: tạo stats cơ bản
-      console.log(`🔄 Falling back to basic stats for: ${enemyName}`);
       return this.generateBasicEnemyStats(enemyName, playerLevel);
     }
   }

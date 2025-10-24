@@ -239,7 +239,6 @@ export class AllyManagementService {
         ally.isInjured = false;
         ally.injuredUntilTurn = undefined;
         npcRelationshipService.addOrUpdateRelationship(ally);
-        console.log(`${ally.name} đã hồi phục từ chấn thương!`);
       }
     });
   }
@@ -285,7 +284,6 @@ export class AllyManagementService {
       };
       localStorage.setItem('currentCharacter', JSON.stringify(updatedCharacter));
       
-      console.log(`Cleaned allies: ${currentAllies.length} -> ${validAllies.length}`);
     }
   }
 

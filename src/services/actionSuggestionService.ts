@@ -188,12 +188,10 @@ class ActionSuggestionService {
     
     for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
       try {
-        console.log(`🔄 ${operationName} - Lần thử ${attempt + 1}/${this.retryConfig.maxRetries + 1}`);
         
         const result = await operation();
         
         if (attempt > 0) {
-          console.log(`✅ ${operationName} - Thành công sau ${attempt + 1} lần thử`);
         }
         
         return result;
@@ -209,7 +207,6 @@ class ActionSuggestionService {
         
         // Tính toán delay cho lần thử tiếp theo
         const delay = this.calculateRetryDelay(attempt);
-        console.log(`⏳ ${operationName} - Chờ ${delay}ms trước khi thử lại...`);
         
         await this.sleep(delay);
       }
@@ -217,7 +214,6 @@ class ActionSuggestionService {
     
     // Nếu có fallback operation, sử dụng nó
     if (fallbackOperation) {
-      console.log(`🔄 ${operationName} - Sử dụng fallback operation`);
       return fallbackOperation();
     }
     
@@ -707,14 +703,12 @@ QUAN TRỌNG VỀ CẢNH 18+:
     const cacheKey = this.generateCacheKey(message);
     const cachedDuration = this.getCachedDuration(cacheKey);
     if (cachedDuration) {
-      console.log(`💾 Cache hit: ${cachedDuration} phút cho hành động "${message}"`);
       return cachedDuration;
     }
 
     // Trước tiên, thử phân loại hành động bằng từ khóa đơn giản (đã được mở rộng)
     const simpleDuration = this.estimateDurationByKeywords(message);
     if (simpleDuration) {
-      console.log(`🎯 Ước tính thời gian bằng từ khóa: ${simpleDuration} phút cho hành động "${message}"`);
       this.cacheDuration(cacheKey, simpleDuration);
       return simpleDuration;
     }
@@ -722,7 +716,6 @@ QUAN TRỌNG VỀ CẢNH 18+:
     // Thử phân tích nâng cao bằng pattern matching
     const advancedDuration = this.estimateDurationByPatterns(message);
     if (advancedDuration) {
-      console.log(`🔍 Ước tính thời gian bằng pattern: ${advancedDuration} phút cho hành động "${message}"`);
       this.cacheDuration(cacheKey, advancedDuration);
       return advancedDuration;
     }
@@ -744,7 +737,6 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
         
         // Nếu AI trả về số hợp lệ, sử dụng nó
         if (!isNaN(minutes) && minutes >= 5 && minutes <= 60) {
-          console.log(`🤖 AI ước tính thời gian: ${minutes} phút cho hành động "${message}"`);
           this.cacheDuration(cacheKey, minutes);
           return minutes;
         }
@@ -765,7 +757,6 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
           fallbackDuration = Math.floor(Math.random() * 31) + 30; // 30-60 phút
         }
         
-        console.log(`🎲 Fallback thời gian: ${fallbackDuration} phút cho hành động "${message}"`);
         this.cacheDuration(cacheKey, fallbackDuration);
         return fallbackDuration;
       }
@@ -782,20 +773,17 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
     contentFlags: ContentFlags
   ): Promise<{ duration: number; message: string }> {
     try {
-      console.log(`🔄 [Parallel] Bắt đầu ước tính thời gian cho hành động: "${message}"`);
       
       // Kiểm tra cache trước
       const cacheKey = this.generateCacheKey(message);
       const cachedDuration = this.getCachedDuration(cacheKey);
       if (cachedDuration) {
-        console.log(`💾 [Parallel] Cache hit: ${cachedDuration} phút cho hành động "${message}"`);
         return { duration: cachedDuration, message };
       }
 
       // Trước tiên, thử phân loại hành động bằng từ khóa đơn giản
       const simpleDuration = this.estimateDurationByKeywords(message);
       if (simpleDuration) {
-        console.log(`🎯 [Parallel] Ước tính thời gian bằng từ khóa: ${simpleDuration} phút cho hành động "${message}"`);
         this.cacheDuration(cacheKey, simpleDuration);
         return { duration: simpleDuration, message };
       }
@@ -803,7 +791,6 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
       // Thử phân tích nâng cao bằng pattern matching
       const advancedDuration = this.estimateDurationByPatterns(message);
       if (advancedDuration) {
-        console.log(`🔍 [Parallel] Ước tính thời gian bằng pattern: ${advancedDuration} phút cho hành động "${message}"`);
         this.cacheDuration(cacheKey, advancedDuration);
         return { duration: advancedDuration, message };
       }
@@ -823,7 +810,6 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
       
       // Nếu AI trả về số hợp lệ, sử dụng nó
       if (!isNaN(minutes) && minutes >= 5 && minutes <= 60) {
-        console.log(`🤖 [Parallel] AI ước tính thời gian: ${minutes} phút cho hành động "${message}"`);
         this.cacheDuration(cacheKey, minutes);
         return { duration: minutes, message };
       }
@@ -840,7 +826,6 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
         fallbackDuration = Math.floor(Math.random() * 31) + 30; // 30-60 phút
       }
       
-      console.log(`🎲 [Parallel] Fallback thời gian: ${fallbackDuration} phút cho hành động "${message}"`);
       this.cacheDuration(cacheKey, fallbackDuration);
       return { duration: fallbackDuration, message };
       
@@ -859,7 +844,6 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
         fallbackDuration = Math.floor(Math.random() * 31) + 30; // 30-60 phút
       }
       
-      console.log(`🆘 [Parallel] Emergency fallback: ${fallbackDuration} phút cho hành động "${message}"`);
       return { duration: fallbackDuration, message };
     }
   }
@@ -1052,7 +1036,6 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
    * Retry thủ công để sinh lại suggestions
    */
   async retryGenerateSuggestions(context: ActionContext, contentFlags: ContentFlags): Promise<SuggestedAction[]> {
-    console.log('🔄 Retry thủ công - Sinh lại action suggestions...');
     return this.generateSuggestions(context, contentFlags);
   }
 
@@ -1061,7 +1044,6 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
    */
   updateRetryConfig(config: Partial<typeof this.retryConfig>): void {
     this.retryConfig = { ...this.retryConfig, ...config };
-    console.log('⚙️ Cấu hình retry đã được cập nhật:', this.retryConfig);
   }
 
   /**

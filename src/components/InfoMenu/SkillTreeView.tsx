@@ -6,7 +6,6 @@ import { levelSystemService } from '../../services/levelSystemService';
 import { 
   Sword, 
   Heart, 
-  Zap, 
   Star, 
   RotateCcw,
   Check,
@@ -192,70 +191,6 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
     );
   };
 
-  // Test buttons for leveling up
-  const renderTestButtons = () => (
-    <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-      <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-        <Zap className="w-5 h-5 mr-2" />
-        Test Level Up
-      </h3>
-      <div className="flex space-x-3">
-        <button
-          onClick={() => {
-            // Add combat experience to trigger combat level up
-            const result = combatLevelService.addCombatExperience(character, 1);
-            if (result.leveledUp) {
-              alert(`Combat Level Up! New Level: ${result.newCombatLevel}\nSkill Points Earned: ${result.skillPointsEarned}\nHP Bonus: +${result.hpBonusEarned}`);
-              onCharacterUpdate?.(character);
-            } else {
-              alert(`Combat XP added. Progress: ${result.newCombatXP}/${combatLevelService.getXPForCombatLevel(character.combatLevel || 1)} XP to next level`);
-            }
-          }}
-          className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm"
-        >
-          +1 Combat XP
-        </button>
-        <button
-          onClick={() => {
-            // Add regular experience to trigger character level up
-            const result = levelSystemService.addExperience(character, 300);
-            if (result.leveledUp) {
-              alert(`Character Level Up! New Level: ${result.newLevel}\nSocial Skill Points Earned: ${result.socialSkillPointsEarned}`);
-              onCharacterUpdate?.(character);
-            } else {
-              alert(`XP added. Current Level: ${result.newLevel}`);
-            }
-          }}
-          className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors text-sm"
-        >
-          +300 XP
-        </button>
-        <button
-          onClick={() => {
-            // Add both types of experience
-            const combatResult = combatLevelService.addCombatExperience(character, 1);
-            const levelResult = levelSystemService.addExperience(character, 300);
-            
-            let message = '';
-            if (combatResult.leveledUp) {
-              message += `Combat Level Up! Level: ${combatResult.newCombatLevel}\nCombat Skill Points: +${combatResult.skillPointsEarned}\nHP Bonus: +${combatResult.hpBonusEarned}\n\n`;
-            }
-            if (levelResult.leveledUp) {
-              message += `Character Level Up! Level: ${levelResult.newLevel}\nSocial Skill Points: +${levelResult.socialSkillPointsEarned}`;
-            }
-            if (!message) {
-              message = 'XP added. Check progress in character info.';
-            }
-            alert(message);
-            onCharacterUpdate?.(character);
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
-        >
-          +Both
-        </button>
-      </div>
-    </div>
-  );
 
   // Render active bonuses summary
   const renderActiveBonuses = () => (
@@ -315,9 +250,6 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
 
   return (
     <div className="space-y-6">
-      {/* Test Buttons */}
-      {renderTestButtons()}
-      
       {/* Active Bonuses */}
       {renderActiveBonuses()}
 

@@ -287,7 +287,6 @@ export function updateCharacterTitle(character: any, title: string): void {
     // Lưu vào localStorage
     try {
       localStorage.setItem('currentCharacter', JSON.stringify(character));
-      console.log('✅ Đã cập nhật danh hiệu nhân vật:', title);
     } catch (error) {
       console.warn('Không thể lưu danh hiệu vào localStorage:', error);
     }

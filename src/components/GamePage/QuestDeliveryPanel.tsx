@@ -71,7 +71,6 @@ export function QuestDeliveryPanel({
             onDeliveryComplete(quest.id, objective.id);
             
             // Show success message
-            console.log(`✅ Đã giao ${selectedItem.name} cho ${npcName}`);
             
             // Update delivery items list
             const updatedItems = inventoryService.getDeliveryItems(npcId);

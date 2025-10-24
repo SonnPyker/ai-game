@@ -81,7 +81,6 @@ class EffectProcessingService {
    * Apply consumable effect to combatant
    */
   public applyConsumableEffect(combatant: Combatant, item: InventoryItem, targetId?: string, allCombatants?: Combatant[]): StatusEffect[] {
-    console.log('applyConsumableEffect called:', { combatant: combatant.name, item: item.name, effect: item.effect });
     const effects: StatusEffect[] = [];
     
     // STRONG VALIDATION for consumables
@@ -126,17 +125,14 @@ class EffectProcessingService {
     }
 
     const effectString = item.effect;
-    console.log('Effect string:', effectString);
     
     // Try new format first
     const parsedEffect = this.parseEffectString(effectString);
     if (parsedEffect) {
-      console.log('Using new format, parsed effect:', parsedEffect);
       return this.applyParsedEffect(parsedEffect, combatant, targetId, allCombatants);
     }
     
     // Fallback to old format for backward compatibility
-    console.log('Using legacy format');
     return this.applyLegacyEffect(effectString, combatant, targetId, allCombatants);
   }
 
@@ -273,7 +269,6 @@ class EffectProcessingService {
     const bonus = parseInt(diceMatch[3]) || 0;
     
     const healAmount = DiceRoller.roll(`${diceCount}d${diceSize}+${bonus}`, 'Healing potion').total;
-    console.log(`createHealEffect: ${diceCount}d${diceSize}+${bonus} = ${healAmount} HP`);
 
     return {
       id: this.generateEffectId(),
@@ -668,7 +663,6 @@ class EffectProcessingService {
       );
     }
     
-    console.log(`Healing applied: ${combatant.name} ${oldHP} -> ${combatant.health.current} (+${actualHeal})`);
   }
 
   /**
@@ -790,13 +784,10 @@ class EffectProcessingService {
     
     for (let i = 0; i < count; i++) {
       const template = consumableDatabase.getRandomConsumable(level, consumableTypes);
-      console.log('Generated template:', template);
       if (template) {
         const item = consumableDatabase.createInventoryItem(template, 1);
-        console.log('Created item:', item);
         consumables.push(item);
       } else {
-        console.log('No template found for level:', level);
       }
     }
     

@@ -36,7 +36,6 @@ class GeminiService {
           }
         } catch (parseError) {
           // Nếu tất cả đều fail, log và return fallback với thông báo lỗi cụ thể
-          console.warn('⚠️ JSON parse failed, using fallback data:', parseError);
           return fallbackData;
         }
       }
@@ -374,7 +373,6 @@ class GeminiService {
     if (this.useMultiKeyService) {
       multiApiKeyService.debugKeysStatus();
     } else {
-      console.log('Single key mode - no multi-key debugging available');
     }
   }
 
@@ -3904,7 +3902,6 @@ QUAN TRỌNG VỀ OUTPUT:
       );
       
       if (playerJustFled) {
-        console.log('🏃 Player fled from combat - enemies may pursue based on narrative context');
         // Don't automatically clear enemies - let AI decide if they should pursue
         // AI will determine if enemies chase player based on narrative context
       }
@@ -3913,17 +3910,14 @@ QUAN TRỌNG VỀ OUTPUT:
       // Combine both monsters and enemies arrays if they exist
       let allEnemies: any[] = [];
       if (monsters && Array.isArray(monsters) && monsters.length > 0) {
-        console.log('⚔️ Detected monsters in sceneState.dangers.monsters:', monsters);
         allEnemies = [...allEnemies, ...monsters];
       }
       
       if (enemies && Array.isArray(enemies) && enemies.length > 0) {
-        console.log('⚔️ Detected enemies in sceneState.dangers.enemies:', enemies);
         allEnemies = [...allEnemies, ...enemies];
       }
       
       if (allEnemies.length > 0) {
-        console.log(`⚔️ Total enemies detected: ${allEnemies.length} (${monsters?.length || 0} monsters + ${enemies?.length || 0} enemies)`);
         
         try {
           // Create enemies from combined data
@@ -3945,7 +3939,6 @@ QUAN TRỌNG VỀ OUTPUT:
                 turn: turnCounter || 0
               };
             
-            console.log(`✅ Combat initiated with ${generatedEnemies.length} enemy/enemies from dangers data`);
           }
         } catch (error) {
           console.error('Error creating enemies from dangers data:', error);
@@ -3984,7 +3977,6 @@ QUAN TRỌNG VỀ OUTPUT:
     characterJson: string
   ): Promise<any> {
     try {
-      console.log('🎯 Generating enemy from narrative context:', extractedEnemy.name);
       
       // Parse character data
       const characterData = JSON.parse(characterJson);
@@ -4299,7 +4291,6 @@ Trả về JSON format:
    * Tạo dữ liệu merchant shop bằng AI
    */
   async generateMerchantShopData(prompt: string): Promise<any> {
-    console.log('Generating merchant shop data with AI...');
     
     try {
       const response = await this.generateContent(prompt, undefined);
@@ -4309,7 +4300,6 @@ Trả về JSON format:
         const jsonMatch = response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const shopData = JSON.parse(jsonMatch[0]);
-          console.log('AI generated merchant shop data:', shopData);
           return shopData;
         } else {
           console.warn('No valid JSON found in AI response');
@@ -4411,16 +4401,6 @@ Trả về JSON format:
       enemyCount = Math.min(4, enemyCount + 1);
     }
     
-    console.log(`🎲 Enemy Count Calculation:`, {
-      worldDifficulty,
-      playerLevel,
-      locationType,
-      finalChance: (finalChance * 100).toFixed(1) + '%',
-      contextMultiplier,
-      locationMultiplier,
-      levelMultiplier,
-      result: enemyCount
-    });
     
     return enemyCount;
   }
@@ -4518,14 +4498,6 @@ Trả về JSON format:
       threatLevel = 'extreme';
     }
     
-    console.log(`🎯 Threat Level Calculation:`, {
-      worldDifficulty,
-      playerLevel,
-      locationType,
-      enemyName,
-      distribution: normalizedDistribution,
-      result: threatLevel
-    });
     
     return threatLevel;
   }
@@ -4610,7 +4582,6 @@ Trả về JSON format:
       currentTurn
     );
     
-    console.log(`🎯 Target enemy count: ${targetEnemyCount} (from ${enemiesData.length} available)`);
     
     // Limit enemies to calculated count
     const enemiesToProcess = enemiesData.slice(0, targetEnemyCount);
@@ -4644,14 +4615,12 @@ Trả về JSON format:
         const isValid = this.validateEnemyCombatStats(enemy);
         if (isValid) {
           enemies.push(enemy);
-          console.log(`✅ Valid enemy created: ${enemy.name} (Level ${enemy.level}, Threat: ${calculatedThreatLevel})`);
         } else {
           console.warn(`⚠️ Enemy ${enemyName} has invalid combat stats, skipping`);
         }
       }
     }
     
-    console.log(`Generated ${enemies.length} valid enemies from ${enemiesToProcess.length} processed enemies`);
     return enemies;
   }
 

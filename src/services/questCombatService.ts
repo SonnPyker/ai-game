@@ -30,7 +30,6 @@ class QuestCombatService {
   private validateCombatObjective(objective: any): void {
     if (objective && objective.type === 'combat' && objective.requiredKills) {
       if (objective.requiredKills > 3) {
-        console.log(`⚠️ Limiting requiredKills from ${objective.requiredKills} to 3 for objective: ${objective.description}`);
         objective.requiredKills = 3;
       }
     }
@@ -43,7 +42,6 @@ class QuestCombatService {
     try {
       const questSystemData = localStorage.getItem('quest_system');
       if (!questSystemData) {
-        console.log('🔍 No quest_system data found for validation');
         return;
       }
 
@@ -54,7 +52,6 @@ class QuestCombatService {
       if (questSystem.starterQuest && questSystem.starterQuest.objectives) {
         Object.values(questSystem.starterQuest.objectives).forEach((objective: any) => {
           if (objective && objective.type === 'combat' && objective.requiredKills > 3) {
-            console.log(`⚠️ Fixing starterQuest objective: ${objective.description} (${objective.requiredKills} -> 3)`);
             objective.requiredKills = 3;
             updated = true;
           }
@@ -67,7 +64,6 @@ class QuestCombatService {
           if (quest && quest.objectives) {
             Object.values(quest.objectives).forEach((objective: any) => {
               if (objective && objective.type === 'combat' && objective.requiredKills > 3) {
-                console.log(`⚠️ Fixing mainQuest objective: ${objective.description} (${objective.requiredKills} -> 3)`);
                 objective.requiredKills = 3;
                 updated = true;
               }
@@ -82,7 +78,6 @@ class QuestCombatService {
           if (quest && quest.objectives) {
             Object.values(quest.objectives).forEach((objective: any) => {
               if (objective && objective.type === 'combat' && objective.requiredKills > 3) {
-                console.log(`⚠️ Fixing sideQuest objective: ${objective.description} (${objective.requiredKills} -> 3)`);
                 objective.requiredKills = 3;
                 updated = true;
               }
@@ -97,7 +92,6 @@ class QuestCombatService {
           if (quest && quest.objectives) {
             Object.values(quest.objectives).forEach((objective: any) => {
               if (objective && objective.type === 'combat' && objective.requiredKills > 3) {
-                console.log(`⚠️ Fixing factionQuest objective: ${objective.description} (${objective.requiredKills} -> 3)`);
                 objective.requiredKills = 3;
                 updated = true;
               }
@@ -108,9 +102,7 @@ class QuestCombatService {
 
       if (updated) {
         localStorage.setItem('quest_system', JSON.stringify(questSystem));
-        console.log('✅ All quest objectives validated and fixed');
       } else {
-        console.log('✅ All quest objectives are already within limits');
       }
     } catch (error) {
       console.error('❌ Error validating quests:', error);
@@ -124,7 +116,6 @@ class QuestCombatService {
     try {
       const questSystemData = localStorage.getItem('quest_system');
       if (!questSystemData) {
-        console.log('🔍 questCombatService: No quest_system data found');
         return [];
       }
 
@@ -224,7 +215,6 @@ class QuestCombatService {
     try {
       const questSystemData = localStorage.getItem('quest_system');
       if (!questSystemData) {
-        console.log('🔍 No quest_system data found in localStorage');
         return false;
       }
 
@@ -232,21 +222,12 @@ class QuestCombatService {
       let updated = false;
       let foundObjectives = 0;
 
-      console.log('🔍 questCombatService.updateCombatObjectiveProgress called with enemy:', enemyName);
-      console.log('🔍 Quest system data:', questSystem);
 
       // Duyệt qua tất cả quests để tìm objective phù hợp
       // Xử lý starterQuest
       if (questSystem.starterQuest && questSystem.starterQuest.objectives) {
         Object.values(questSystem.starterQuest.objectives).forEach((objective: any) => {
           foundObjectives++;
-          console.log('🔍 Checking starterQuest objective:', {
-            targetEnemyName: objective.targetEnemyName,
-            type: objective.type,
-            status: objective.status,
-            completed: objective.completed,
-            matches: objective.targetEnemyName === enemyName
-          });
           
           if (objective && 
               objective.type === 'combat' && 
@@ -264,11 +245,9 @@ class QuestCombatService {
             if (objective.currentKills >= objective.requiredKills) {
               objective.completed = true;
               objective.status = 'completed';
-              console.log(`🎯 Quest objective completed: ${objective.description}`);
             }
             
             updated = true;
-            console.log(`⚔️ Quest progress updated: ${objective.targetEnemyName} (${objective.currentKills}/${objective.requiredKills})`);
           }
         });
       }
@@ -279,13 +258,6 @@ class QuestCombatService {
           if (quest && quest.objectives) {
             Object.values(quest.objectives).forEach((objective: any) => {
               foundObjectives++;
-              console.log('🔍 Checking mainQuest objective:', {
-                targetEnemyName: objective.targetEnemyName,
-                type: objective.type,
-                status: objective.status,
-                completed: objective.completed,
-                matches: objective.targetEnemyName === enemyName
-              });
               
               if (objective && 
                   objective.type === 'combat' && 
@@ -303,11 +275,9 @@ class QuestCombatService {
                 if (objective.currentKills >= objective.requiredKills) {
                   objective.completed = true;
                   objective.status = 'completed';
-                  console.log(`🎯 Quest objective completed: ${objective.description}`);
                 }
                 
                 updated = true;
-                console.log(`⚔️ Quest progress updated: ${objective.targetEnemyName} (${objective.currentKills}/${objective.requiredKills})`);
               }
             });
           }
@@ -320,13 +290,6 @@ class QuestCombatService {
           if (quest && quest.objectives) {
             Object.values(quest.objectives).forEach((objective: any) => {
               foundObjectives++;
-              console.log('🔍 Checking sideQuest objective:', {
-                targetEnemyName: objective.targetEnemyName,
-                type: objective.type,
-                status: objective.status,
-                completed: objective.completed,
-                matches: objective.targetEnemyName === enemyName
-              });
               
               if (objective && 
                   objective.type === 'combat' && 
@@ -344,11 +307,9 @@ class QuestCombatService {
                 if (objective.currentKills >= objective.requiredKills) {
                   objective.completed = true;
                   objective.status = 'completed';
-                  console.log(`🎯 Quest objective completed: ${objective.description}`);
                 }
                 
                 updated = true;
-                console.log(`⚔️ Quest progress updated: ${objective.targetEnemyName} (${objective.currentKills}/${objective.requiredKills})`);
               }
             });
           }
@@ -361,13 +322,6 @@ class QuestCombatService {
           if (quest && quest.objectives) {
             Object.values(quest.objectives).forEach((objective: any) => {
               foundObjectives++;
-              console.log('🔍 Checking factionQuest objective:', {
-                targetEnemyName: objective.targetEnemyName,
-                type: objective.type,
-                status: objective.status,
-                completed: objective.completed,
-                matches: objective.targetEnemyName === enemyName
-              });
               
               if (objective && 
                   objective.type === 'combat' && 
@@ -385,18 +339,15 @@ class QuestCombatService {
                 if (objective.currentKills >= objective.requiredKills) {
                   objective.completed = true;
                   objective.status = 'completed';
-                  console.log(`🎯 Quest objective completed: ${objective.description}`);
                 }
                 
                 updated = true;
-                console.log(`⚔️ Quest progress updated: ${objective.targetEnemyName} (${objective.currentKills}/${objective.requiredKills})`);
               }
             });
           }
         });
       }
 
-      console.log('🔍 Search results:', { foundObjectives, updated });
 
       if (updated) {
         // Lưu lại quest system

@@ -40,7 +40,6 @@ class ComfyUIService {
         };
       }
     } catch (error) {
-      console.warn('Failed to load ComfyUI settings:', error);
     }
 
     // Default settings
@@ -93,7 +92,6 @@ class ComfyUIService {
       const data = await response.json();
       return data.status === 'healthy';
     } catch (error) {
-      console.warn('ComfyUI server health check failed:', error);
       return false;
     }
   }
@@ -117,7 +115,6 @@ class ComfyUIService {
       if (!availableCheckpoints.includes(checkpointToUse)) {
         if (availableCheckpoints.length > 0) {
           checkpointToUse = availableCheckpoints[0];
-          console.warn(`Checkpoint '${this.settings.checkpoint}' not available. Using '${checkpointToUse}' instead.`);
         } else {
           throw new Error('No checkpoints available in ComfyUI');
         }
@@ -431,7 +428,6 @@ class ComfyUIService {
       if (checkpoints.length > 0 && !checkpoints.includes(this.settings.checkpoint)) {
         updatedSettings.checkpoint = checkpoints[0];
         needsUpdate = true;
-        console.log(`Auto-updated checkpoint to: ${checkpoints[0]}`);
       }
 
       // Validate LoRAs
@@ -441,15 +437,12 @@ class ComfyUIService {
       if (validLoras.length !== this.settings.loras.length) {
         updatedSettings.loras = validLoras;
         needsUpdate = true;
-        console.log(`Auto-updated LoRAs, removed unavailable ones`);
       }
 
       if (needsUpdate) {
         this.saveSettings(updatedSettings);
-        console.log('ComfyUI settings auto-updated with available models');
       }
     } catch (error) {
-      console.warn('Failed to auto-update ComfyUI settings:', error);
     }
   }
 

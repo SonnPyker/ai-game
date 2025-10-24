@@ -24,22 +24,18 @@ class MerchantService {
   private loadMerchantShopsFromLocalStorage(): void {
     try {
       const merchantShopsData = localStorage.getItem('merchant_shops');
-      console.log('🔍 Loading merchant shops from localStorage:', merchantShopsData);
       
       if (merchantShopsData) {
         const data = JSON.parse(merchantShopsData);
-        console.log('🔍 Parsed merchant shops data:', data);
         
         if (data && typeof data === 'object' && !Array.isArray(data)) {
           // Convert object to Map (new format only)
           Object.entries(data).forEach(([locationId, shop]) => {
             this.merchantShops.set(locationId, shop as MerchantShop);
-            console.log('🔍 Loaded shop:', locationId, shop);
           });
         }
       }
       
-      console.log('🔍 Loaded merchant shops count:', this.merchantShops.size);
     } catch (error) {
       console.error('Error loading merchant shops from localStorage:', error);
     }
@@ -72,13 +68,10 @@ class MerchantService {
    * Tự động tạo merchant shop cho location nếu chưa có
    */
   public async ensureMerchantShopExists(locationId: string): Promise<MerchantShop | null> {
-    console.log('🔍 ensureMerchantShopExists called for location:', locationId);
-    console.log('🔍 Current merchantShops count:', this.merchantShops.size);
     
     // Kiểm tra xem shop đã tồn tại chưa
     let shop = this.merchantShops.get(locationId);
     if (shop) {
-      console.log('🔍 Shop already exists for location:', locationId);
       // Kiểm tra xem có cần reroll items không (sang ngày mới)
       const currentTime = this.getCurrentWorldTime();
       const needsReroll = this.shouldRerollShopItems(shop, currentTime);
@@ -109,9 +102,7 @@ class MerchantService {
       }
 
       // Tạo shop mới bằng AI
-      console.log('🔍 Creating new shop for location:', locationId);
       const shop = await this.generateMerchantShopWithAI(location, worldData);
-      console.log('🔍 Created shop:', shop);
       return shop;
     } catch (error) {
       console.error('Error creating merchant shop:', error);
@@ -502,9 +493,7 @@ MÔ TẢ VÀ TÊN:
       const { geminiService } = await import('./geminiService');
       
       // Gọi AI để tạo shop data
-      console.log('Calling AI to generate shop...');
       const aiResponse = await geminiService.generateMerchantShopData(prompt);
-      console.log('AI Response received:', aiResponse);
       
       if (aiResponse && aiResponse.merchantShop && aiResponse.merchantShop.inventory) {
         const shop: MerchantShop = {
@@ -522,18 +511,12 @@ MÔ TẢ VÀ TÊN:
         this.merchantShops.set(location.id, shop);
         this.saveMerchantShops();
         
-        console.log('🔍 Generated shop and saved to Map:', location.id, shop);
-        console.log('🔍 Current merchantShops Map size:', this.merchantShops.size);
         
         return shop;
        } else {
-         console.error('AI failed to generate shop data - NO FALLBACK!');
-         console.error('AI Response:', aiResponse);
          throw new Error('AI shop generation failed - no fallback available');
        }
     } catch (error) {
-      console.error('Error calling AI for shop generation:', error);
-      console.error('NO FALLBACK - AI MUST WORK!');
       throw error;
     }
   }
@@ -543,16 +526,11 @@ MÔ TẢ VÀ TÊN:
    * Delete merchant shop by location ID
    */
   public deleteMerchantShop(locationId: string): void {
-    console.log('Before delete - merchantShops size:', this.merchantShops.size);
-    console.log('Before delete - merchantShops keys:', Array.from(this.merchantShops.keys()));
     
     const deleted = this.merchantShops.delete(locationId);
     console.log('Delete result:', deleted);
     
     this.saveMerchantShops();
-    console.log('After delete - merchantShops size:', this.merchantShops.size);
-    console.log('After delete - merchantShops keys:', Array.from(this.merchantShops.keys()));
-    console.log('Deleted merchant shop for location:', locationId);
   }
 
   /**
@@ -576,7 +554,6 @@ MÔ TẢ VÀ TÊN:
       }
 
       // Tạo shop mới hoàn toàn với skillBookChance tăng dần
-      console.log('Generating new shop with AI...');
       const newShop = await this.generateMerchantShopWithAI(location, worldData);
       
       if (newShop) {
@@ -584,26 +561,14 @@ MÔ TẢ VÀ TÊN:
         const oldShop = this.merchantShops.get(locationId);
         if (oldShop) {
           newShop.skillBookChance = Math.min(70, oldShop.skillBookChance + 10);
-          console.log(`🔍 SkillBookChance increased: ${oldShop.skillBookChance}% → ${newShop.skillBookChance}%`);
         } else {
           newShop.skillBookChance = 10; // Bắt đầu từ 10% nếu là shop mới
-          console.log(`🔍 New shop skillBookChance: ${newShop.skillBookChance}%`);
         }
-        
-        console.log('New shop generated successfully');
-        console.log('New shop inventory:', {
-          weapons: newShop.inventory.weapons.length,
-          armor: newShop.inventory.armor.length,
-          accessories: newShop.inventory.accessories.length,
-          consumables: newShop.inventory.consumables.length
-        });
-        console.log('New shop weapons:', newShop.inventory.weapons.map(w => ({ name: w.name, price: w.buyPrice })));
         
         // Cập nhật shop với dữ liệu mới
         this.merchantShops.set(locationId, newShop);
         this.saveMerchantShops();
         
-        console.log('Shop restocked successfully');
         return true;
       } else {
         console.error('Failed to generate new shop');
@@ -667,11 +632,9 @@ MÔ TẢ VÀ TÊN:
         
         return true;
       } else {
-        console.error('AI failed to restock shop - NO FALLBACK!');
         return false;
       }
     } catch (error) {
-      console.error('Error restocking shop with AI:', error);
       return false;
     }
   }
@@ -698,10 +661,7 @@ MÔ TẢ VÀ TÊN:
    * Lấy merchant shop theo location ID
    */
   public getMerchantShopByLocation(locationId: string): MerchantShop | null {
-    console.log('getMerchantShopByLocation called with locationId:', locationId);
-    console.log('Available locationIds in merchantShops:', Array.from(this.merchantShops.keys()));
     const shop = this.merchantShops.get(locationId);
-    console.log('Found shop:', shop ? 'YES' : 'NO');
     return shop || null;
   }
 
@@ -723,7 +683,6 @@ MÔ TẢ VÀ TÊN:
         shopsObject[locationId] = shop;
       });
       localStorage.setItem('merchant_shops', JSON.stringify(shopsObject));
-      console.log('🔍 Saved merchant shops to localStorage:', shopsObject);
     } catch (error) {
       console.error('Error saving merchant shops:', error);
     }
@@ -734,14 +693,11 @@ MÔ TẢ VÀ TÊN:
    */
   public loadFromSaveGame(merchantShopData: { shops: { [key: string]: MerchantShop } }): void {
     try {
-      console.log('🔍 loadFromSaveGame called with:', merchantShopData);
       if (merchantShopData && merchantShopData.shops) {
         this.merchantShops.clear();
         Object.entries(merchantShopData.shops).forEach(([locationId, shop]) => {
           this.merchantShops.set(locationId, shop);
-          console.log('🔍 Loaded shop from save game:', locationId, shop);
         });
-        console.log('🔍 Loaded merchant shops count:', this.merchantShops.size);
       }
     } catch (error) {
       console.error('Error loading merchant shops from save game:', error);
@@ -760,16 +716,11 @@ MÔ TẢ VÀ TÊN:
    */
   public exportForSaveGame(): { shops: { [key: string]: MerchantShop } } {
     const shops: { [key: string]: MerchantShop } = {};
-    console.log('🔍 Exporting merchant shops, current count:', this.merchantShops.size);
-    console.log('🔍 Merchant shops keys:', Array.from(this.merchantShops.keys()));
     
     this.merchantShops.forEach((shop, locationId) => {
       shops[locationId] = shop;
-      console.log('🔍 Exported shop:', locationId, shop);
     });
     
-    console.log('🔍 Final export result:', { shops });
-    console.log('🔍 Export result type:', typeof shops, Array.isArray(shops) ? 'ARRAY' : 'OBJECT');
     return { shops };
   }
 
@@ -796,12 +747,10 @@ MÔ TẢ VÀ TÊN:
     const skillBookChance = shop.skillBookChance;
     const random = Math.random() * 100;
     
-    console.log(`🔍 Skill book generation: ${random.toFixed(2)}% vs ${skillBookChance}% chance`);
     
     if (random <= skillBookChance) {
       // Tạo 1-2 skill books
       const numSkillBooks = Math.random() < 0.5 ? 1 : 2;
-      console.log(`🔍 Generating ${numSkillBooks} skill book(s)`);
       
       for (let i = 0; i < numSkillBooks; i++) {
         const skillBook = await this.createRandomSkillBook();
@@ -809,7 +758,6 @@ MÔ TẢ VÀ TÊN:
         shop.inventory.skillBooks.push(skillBook);
       }
     } else {
-      console.log('🔍 No skill books generated this time');
     }
   }
 

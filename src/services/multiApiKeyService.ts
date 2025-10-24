@@ -400,8 +400,6 @@ class MultiApiKeyService {
     const availableKeys = this.apiKeys.filter(key => key.isActive && !this.activeRequests.has(key.id));
     if (availableKeys.length === 0) return null;
     
-    console.log(`🔍 [Round-Robin] Available keys: ${availableKeys.map(k => `${k.accountName}(${k.name})`).join(', ')}`);
-    console.log(`🔍 [Round-Robin] Current index: ${this.currentKeyIndex}, Total keys: ${this.apiKeys.length}`);
     
     // Round-robin: chọn key theo thứ tự, bắt đầu từ currentKeyIndex
     let startIndex = this.currentKeyIndex;
@@ -409,17 +407,14 @@ class MultiApiKeyService {
       const keyIndex = (startIndex + i) % this.apiKeys.length;
       const key = this.apiKeys[keyIndex];
       
-      console.log(`🔍 [Round-Robin] Checking key ${keyIndex}: ${key.accountName}(${key.name}) - Active: ${key.isActive}, HasRequest: ${this.activeRequests.has(key.id)}`);
       
       if (key.isActive && !this.activeRequests.has(key.id)) {
         this.currentKeyIndex = (keyIndex + 1) % this.apiKeys.length; // Update for next round
-        console.log(`✅ [Round-Robin] Selected: ${key.accountName}(${key.name}) at index ${keyIndex}`);
         return key;
       }
     }
     
     // Fallback: nếu không tìm được key theo round-robin, lấy key đầu tiên available
-    console.log(`⚠️ [Round-Robin] Fallback to: ${availableKeys[0].accountName}(${availableKeys[0].name})`);
     return availableKeys[0];
   }
 
@@ -442,7 +437,6 @@ class MultiApiKeyService {
         timestamp
       };
 
-      console.log(`📝 [Request] Created ${requestId.substring(0, 12)} for: ${prompt.substring(0, 50)}...`);
       
       this.requestQueue.push(queueItem);
       this.processQueue();
@@ -469,7 +463,6 @@ class MultiApiKeyService {
     this.activeRequests.set(key.id, queueItem);
     this.requestToKeyMap.set(queueItem.id, key.id); // Track which key is used
     
-    console.log(`🔄 [Assign] ${queueItem.id.substring(0, 12)} → ${key.accountName} (${key.name})`);
 
     try {
       const startTime = Date.now();
@@ -481,7 +474,6 @@ class MultiApiKeyService {
         this.responseTimes.shift(); // Keep only last 100 response times
       }
       
-      console.log(`✅ [Complete] ${queueItem.id.substring(0, 12)} by ${key.accountName} (${key.name}) in ${duration}ms`);
       queueItem.resolve(result);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -692,18 +684,12 @@ class MultiApiKeyService {
 
   // Debug method to check all keys status
   debugKeysStatus(): void {
-    console.log('🔍 [Debug] All API Keys Status:');
     this.apiKeys.forEach((key, index) => {
       const isActive = this.activeRequests.has(key.id);
-      console.log(`  ${index}: ${key.accountName}(${key.name}) - Active: ${key.isActive}, HasRequest: ${isActive}, Usage: ${key.usageCount}, Errors: ${key.errorCount}`);
     });
-    console.log(`Current key index: ${this.currentKeyIndex}`);
-    console.log(`Queue length: ${this.requestQueue.length}`);
-    console.log(`Active requests: ${this.activeRequests.size}`);
     
     // Check if only one account is active
     const accounts = [...new Set(this.apiKeys.filter(k => k.isActive).map(k => k.accountName))];
-    console.log(`📊 [Debug] Active accounts: ${accounts.join(', ')}`);
     if (accounts.length === 1) {
       console.warn(`⚠️ [Debug] Only one account active: ${accounts[0]}. Check if other accounts are disabled.`);
     }

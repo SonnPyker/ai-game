@@ -452,7 +452,6 @@ export function GamePage() {
         
       } catch (error) {
         retryCount++;
-        console.warn(`⚠️ NPC analysis failed (attempt ${retryCount}/${maxRetries}):`, error);
         
         if (retryCount < maxRetries) {
           // Wait before retry
@@ -548,7 +547,6 @@ export function GamePage() {
           });
         }
       } catch (error) {
-        console.warn('Error parsing npc_relationships from localStorage:', error);
       }
       
       setAvailableNPCs(npcs);
@@ -1499,25 +1497,21 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
 
       // Kiểm tra sceneState
       if (typeof response.sceneState !== 'object' || response.sceneState === null) {
-        console.warn('⚠️ AI response sceneState không hợp lệ, sử dụng fallback');
         response.sceneState = {};
       }
 
       // Kiểm tra storyProgress
       if (typeof response.storyProgress !== 'object' || response.storyProgress === null) {
-        console.warn('⚠️ AI response storyProgress không hợp lệ, sử dụng fallback');
         response.storyProgress = {};
       }
 
       // Kiểm tra softGuidance (có thể rỗng)
       if (response.softGuidance && typeof response.softGuidance !== 'string') {
-        console.warn('⚠️ AI response softGuidance không hợp lệ, sử dụng fallback');
         response.softGuidance = '';
       }
 
       // Kiểm tra sideQuestOffer (có thể null)
       if (response.sideQuestOffer && typeof response.sideQuestOffer !== 'object') {
-        console.warn('⚠️ AI response sideQuestOffer không hợp lệ, sử dụng fallback');
         response.sideQuestOffer = null;
       }
 
@@ -1585,7 +1579,6 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
         console.warn(`⚠️ [LocationSync] Found ${validationReport.misclassifiedShops.length} misclassified shop locations:`, 
           validationReport.misclassifiedShops.map(loc => `${loc.name} (${loc.type})`));
       }
-      console.log(`✅ [LocationSync] Location validation complete: ${validationReport.validShops.length} valid shops, ${validationReport.misclassifiedShops.length} misclassified`);
       
       const currentTime = validatedWorldData.currentTime || worldTimeService.initializeWorldTime(validatedWorldData.startYear || 1);
 
@@ -2918,28 +2911,19 @@ ${enhancedMessage}`;
 
       // Get current merchant shops data from service (like combat_history)
       const currentMerchantShops = merchantService.exportForSaveGame();
-      console.log('🔍 Current merchant shops from service:', currentMerchantShops);
-      console.log('🔍 Merchant shops count:', Object.keys(currentMerchantShops.shops).length);
-      console.log('🔍 Merchant shops keys:', Object.keys(currentMerchantShops.shops));
       
       // Check if we have any shops, if not, try to create one for current location
       if (Object.keys(currentMerchantShops.shops).length === 0) {
-        console.log('🔍 No shops found, checking current location...');
         const playerLocationStr = localStorage.getItem('player_location');
         if (playerLocationStr) {
           const playerLocation = JSON.parse(playerLocationStr);
           const currentLocationId = playerLocation.currentLocationId;
-          console.log('🔍 Current location ID:', currentLocationId);
           
           if (currentLocationId) {
-            console.log('🔍 Attempting to create shop for current location...');
             try {
-              const shop = await merchantService.ensureMerchantShopExists(currentLocationId);
-              console.log('🔍 Created shop:', shop);
               
               // Re-export after creating shop
               const updatedMerchantShops = merchantService.exportForSaveGame();
-              console.log('🔍 Updated merchant shops after creation:', updatedMerchantShops);
               currentMerchantShops.shops = updatedMerchantShops.shops;
             } catch (error) {
               console.error('🔍 Error creating shop:', error);
@@ -2950,7 +2934,6 @@ ${enhancedMessage}`;
       
       // Save to localStorage for compatibility
       localStorage.setItem('merchant_shops', JSON.stringify(currentMerchantShops.shops));
-      console.log('🔍 Saved merchant shops to localStorage');
       
       const merchantShopsData = currentMerchantShops.shops;
 
@@ -2992,8 +2975,6 @@ ${enhancedMessage}`;
         merchantShops: merchantShopsData
       };
 
-      console.log('🔍 Final SaveGame object merchantShops:', merchantShopsData);
-      console.log('🔍 SaveGame merchantShops type:', typeof merchantShopsData, Array.isArray(merchantShopsData) ? 'ARRAY' : 'OBJECT');
 
       // Determine if it's a local or cloud slot
       const isLocalSlot = slotId.startsWith('local');
@@ -3191,9 +3172,7 @@ ${enhancedMessage}`;
           // Update relationship
           tradingService.updateRelationshipAfterTrade(character, merchant, 'buy', price);
           
-          console.log(`Bought skill book ${item.name} for ${price} gold`);
         } else {
-          console.log(`Cannot buy ${item.name}: Not enough currency`);
         }
         return;
       }
@@ -3356,14 +3335,11 @@ ${enhancedMessage}`;
       
       // Check if it's a new day
       if (!worldTimeService.isNewDay(shop.lastRestockTime, currentTime)) {
-        console.log('Not a new day yet for restock');
         return;
       }
       
       // Delete current shop data first
-      console.log('Attempting to delete shop for locationId:', locationId);
       merchantService.deleteMerchantShop(locationId);
-      console.log('Deleted current shop data for:', locationId);
       
       // Generate new shop
       const restocked = await merchantService.restockShop(locationId);
@@ -3400,7 +3376,6 @@ ${enhancedMessage}`;
           source: 'manual'
         }, ...prev.slice(0, 99)]);
         
-        console.log('Shop restocked successfully');
       } else {
         console.error('Failed to restock shop');
       }
@@ -3650,7 +3625,6 @@ ${enhancedMessage}`;
       // Check if server is available
       const isHealthy = await comfyUIService.checkHealth();
       if (!isHealthy) {
-        console.warn('ComfyUI server not available, skipping image generation');
         aiMessage.isGeneratingImage = false;
         aiMessage.hasImageGenerationFailed = true;
         return;
@@ -3796,7 +3770,6 @@ ${enhancedMessage}`;
       const { skillTreeService } = await import('../services/skillTreeService');
       const result = skillTreeService.recalculateSkillPointsForExistingSave(saveGame.character);
       if (result.combatPointsAdded > 0 || result.socialPointsAdded > 0) {
-        console.log(`Added ${result.combatPointsAdded} combat + ${result.socialPointsAdded} social skill points`);
       }
       
       // Khôi phục quest system nếu có
@@ -3843,8 +3816,6 @@ ${enhancedMessage}`;
   const getCurrentGameData = () => {
     const combatHistory = JSON.parse(localStorage.getItem('combat_history') || '{"defeatedEnemies":[]}');
     const merchantShopsData = merchantService.exportForSaveGame().shops;
-    console.log('🔍 getCurrentGameData - merchantShopsData from service:', merchantShopsData);
-    console.log('🔍 getCurrentGameData - merchantShopsData keys:', Object.keys(merchantShopsData));
     
     const gameData = {
       worldData: gameState.worldTime ? JSON.parse(localStorage.getItem('world_gen_result') || '{}') : null,
@@ -4098,7 +4069,6 @@ ${enhancedMessage}`;
         }
       }
     } catch (error) {
-      console.warn('Error parsing action_suggestions from localStorage:', error);
     }
     
     // Kiểm tra nếu đang có AI error - trong trường hợp này cũng không cho phép resend suggestion
@@ -4131,7 +4101,6 @@ ${enhancedMessage}`;
         }
       }
     } catch (error) {
-      console.warn('Error parsing world data for travel check:', error);
     }
     
     // Kiểm tra các pattern phổ biến của suggestion actions
@@ -4353,7 +4322,6 @@ ${enhancedMessage}`;
       }
     }));
     
-    console.log('🏃 Player fled - enemies may pursue based on AI narrative decision');
   };
 
   const handleCloseRandomCombatModal = () => {
@@ -4373,7 +4341,6 @@ ${enhancedMessage}`;
       }
     }));
     
-    console.log('🚪 Modal closed - enemies may pursue based on AI narrative decision');
   };
 
   // Memoize InfoMenu data để tránh re-parse mỗi lần render

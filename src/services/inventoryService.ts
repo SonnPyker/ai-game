@@ -86,7 +86,6 @@ class InventoryService {
       
       // Save updated character to localStorage (with cache)
       storageCache.set('currentCharacter', character);
-      console.log('Migrated old save: Added armorClass to coreStats');
     }
   }
 
@@ -98,16 +97,10 @@ class InventoryService {
     const foundItems: InventoryItem[] = [];
     
     // CHỈ parse items từ sceneState.availableItems của AI response hiện tại
-    console.log('🔍 Debug Item Detection:', {
-      hasSceneState: !!sceneState,
-      hasAvailableItems: !!sceneState.availableItems,
-      availableItemsCount: sceneState.availableItems?.length || 0,
-      availableItems: sceneState.availableItems
-    });
+    
     
     if (sceneState.availableItems && Array.isArray(sceneState.availableItems)) {
-      sceneState.availableItems.forEach((itemData: any, index: number) => {
-        console.log(`🔍 Processing item ${index}:`, itemData);
+      sceneState.availableItems.forEach((itemData: any) => {
         
         if (this.isValidItemData(itemData)) {
           const item = this.createItemFromData(itemData);
@@ -121,20 +114,15 @@ class InventoryService {
             
             if (!isQuestReward) {
               foundItems.push(item);
-              console.log(`✅ Added item to foundItems:`, item.name);
             } else {
-              console.log(`❌ Skipped quest reward item:`, item.name);
             }
           } else {
-            console.log(`❌ Failed to create item from data:`, itemData);
           }
         } else {
-          console.log(`❌ Invalid item data:`, itemData);
         }
       });
     }
     
-    console.log('🔍 Final foundItems count:', foundItems.length);
 
     // REMOVED: findItemsInResponse - chỉ lấy từ sceneState.availableItems
     // Đảm bảo tuyệt đối chỉ lấy items từ availableItems trong scene
@@ -205,25 +193,11 @@ class InventoryService {
     if (itemData.type === 'consumable' || this.determineItemType(itemData) === 'consumable') {
       // Consumables MUST have effect field
       if (!itemData.effect || typeof itemData.effect !== 'string' || itemData.effect.trim() === '') {
-        console.warn('⚠️ Consumable missing effect field:', {
-          name: itemData.name,
-          effect: itemData.effect,
-          willGenerateDefault: true
-        });
         // Don't reject, will generate default effect
       }
       
       // Consumables should NOT have weapon/armor fields
       if (itemData.damage || itemData.damageType || itemData.attackBonus || itemData.armorClass) {
-        console.warn('⚠️ Consumable has invalid weapon/armor fields:', {
-          name: itemData.name,
-          invalidFields: {
-            damage: itemData.damage,
-            damageType: itemData.damageType,
-            attackBonus: itemData.attackBonus,
-            armorClass: itemData.armorClass
-          }
-        });
       }
     }
     
@@ -237,14 +211,7 @@ class InventoryService {
     }
 
     const itemType = this.determineItemType(itemData);
-    
-    console.log('🔍 Creating item from data:', {
-      name: itemData.name,
-      type: itemType,
-      originalData: itemData,
-      hasEffect: !!itemData.effect,
-      effectValue: itemData.effect
-    });
+
     
     const item: InventoryItem = {
       id: this.generateItemId(),
@@ -283,7 +250,6 @@ class InventoryService {
         
         // Tạo effect mặc định dựa trên tên
         item.effect = this.generateDefaultEffect(itemData.name);
-        console.warn('⚠️ Generated default effect:', item.effect);
       } else {
         item.effect = itemData.effect.trim();
       }
@@ -302,14 +268,6 @@ class InventoryService {
       if (itemData.location) (item as any).location = itemData.location;
       if (itemData.value) (item as any).value = itemData.value;
     }
-
-    console.log('✅ Created item:', {
-      name: item.name,
-      type: item.type,
-      effect: item.effect,
-      consumableType: item.consumableType,
-      finalItem: item
-    });
 
     return item;
   }
