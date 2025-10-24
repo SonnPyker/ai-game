@@ -3235,6 +3235,7 @@ LƯU Ý VỀ NGÔI KỂ:
     questSystem?: any,
     turnCounter?: number,
     worldTime?: any,
+    dcResult?: any,
     onChunk?: (chunk: string) => void
   ): Promise<{
     narrative: string;
@@ -3641,19 +3642,39 @@ LƯU Ý VỀ NGÔI KỂ:
 - Nếu narration = "Ngôi thứ ba": sử dụng "Anh ấy/Cô ấy" khi nói về nhân vật chính
 
 🎲 XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
-- Nếu PLAYER_ACTION chứa "[DC CHECK RESULT]" với Result: SUCCESS:
-  * NPC PHẢI tuân theo hành động của player một cách hợp lý và logic
+${dcResult ? `
+DC CHECK RESULT CHI TIẾT:
+- Stat: ${dcResult.stat.charAt(0).toUpperCase() + dcResult.stat.slice(1)}
+- Roll: ${dcResult.roll} + ${dcResult.modifier} = ${dcResult.total}
+- DC: ${dcResult.dc}
+- Result: ${dcResult.success ? 'SUCCESS' : 'FAILURE'}
+
+QUY TẮC XỬ LÝ DC CHECK:
+` : ''}
+- Nếu DC CHECK RESULT = SUCCESS:
+  * NPC PHẢI tuân theo hành động của player một cách TUYỆT ĐỐI nhưng vẫn phải hợp lý và logic
   * Nếu player thuyết phục thành công → NPC đồng ý, thay đổi ý kiến, hoặc làm theo yêu cầu
   * Nếu player đe dọa thành công → NPC sợ hãi, nhượng bộ, hoặc chấp nhận
   * Nếu player lừa dối thành công → NPC tin tưởng, bị lừa, hoặc không phát hiện
   * Nếu player thực hiện kỹ năng thành công → NPC công nhận, ấn tượng, hoặc bị ảnh hưởng
   * Tích hợp kết quả thành công vào narrative một cách tự nhiên
-- Nếu PLAYER_ACTION chứa "[DC CHECK RESULT]" với Result: FAILURE:
+  * NPC phản ứng phù hợp với mức độ thành công (roll cao = hiệu quả tốt hơn)
+- Nếu DC CHECK RESULT = FAILURE:
   * NPC phản ứng tiêu cực hoặc không bị ảnh hưởng bởi hành động
   * NPC có thể từ chối, không tin tưởng, phát hiện sự lừa dối
   * NPC có thể tức giận, nghi ngờ, hoặc phản ứng mạnh mẽ
   * Hành động của player không có hiệu quả mong muốn
   * Tích hợp kết quả thất bại vào narrative một cách logic
+  * NPC phản ứng dựa trên mức độ thất bại (roll thấp = phản ứng tiêu cực hơn)
+
+QUAN TRỌNG VỀ DC CHECK:
+- Luôn xem xét stat được sử dụng để tạo phản ứng NPC phù hợp
+- Charisma check → NPC phản ứng về mặt xã hội, cảm xúc
+- Strength check → NPC phản ứng về mặt vật lý, sức mạnh
+- Intelligence check → NPC phản ứng về mặt trí tuệ, logic
+- Wisdom check → NPC phản ứng về mặt trực giác, nhận thức
+- Agility check → NPC phản ứng về mặt nhanh nhẹn, phản xạ
+- Constitution check → NPC phản ứng về mặt sức khỏe, chịu đựng
 
 QUAN TRỌNG VỀ OUTPUT:
 - CHỈ trả về JSON object thuần túy

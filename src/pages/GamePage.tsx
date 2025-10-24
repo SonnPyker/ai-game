@@ -300,6 +300,8 @@ export function GamePage() {
     const saved = localStorage.getItem('selectedNPCForDialogue');
     return saved || null;
   });
+  // Preserved for logic compatibility - UI removed but state kept
+  // @ts-ignore - Preserved for logic compatibility
   const [availableNPCs, setAvailableNPCs] = useState<Array<{id: string, name: string}>>([]);
   const [showNPCDropdown, setShowNPCDropdown] = useState(false);
   
@@ -1150,7 +1152,8 @@ export function GamePage() {
     }
   };
 
-  // Handle NPC selection for dialogue
+  // Handle NPC selection for dialogue - Preserved for logic compatibility
+  // @ts-ignore - Preserved for logic compatibility
   const handleNPCSelection = (npcId: string | null) => {
     setSelectedNPCForDialogue(npcId);
     
@@ -1966,6 +1969,7 @@ ${enhancedMessage}`;
         questSystem,
         turnCounter,
         gameState.worldTime, // Pass world time to AI
+        currentDcCheckResult || undefined, // Pass DC check result to AI
         (chunk: string) => {
           // Handle streaming chunks
           setStreamingNarrative(prev => prev + chunk);
@@ -4873,61 +4877,8 @@ ${enhancedMessage}`;
               disabled={!!selectedSuggestionId || isTravelActionSelected || hasMinimizedModals}
             />
             
-            {/* NPC Dialogue Selector Button */}
-            {availableNPCs.length > 0 && (
-              <div className="relative npc-dropdown-container">
-                <button
-                  onClick={() => setShowNPCDropdown(!showNPCDropdown)}
-                  className={`px-3 sm:px-4 py-3 border rounded-lg transition-colors duration-200 flex items-center justify-center ${
-                    shouldUseMobileLayout() ? 'min-h-[48px] min-w-[48px]' : 'mobile-button'
-                  } touch-feedback ${
-                    selectedNPCForDialogue
-                      ? 'bg-purple-800 border-purple-700 text-purple-100 hover:bg-purple-900'
-                      : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
-                  }`}
-                  title={
-                    selectedNPCForDialogue
-                      ? `Đang đối thoại với ${availableNPCs.find(npc => npc.id === selectedNPCForDialogue)?.name || 'NPC'} - Click để chọn`
-                      : 'Tất cả NPCs - Click để chọn NPC cụ thể'
-                  }
-                >
-                  <MessageSquare className="w-4 h-4" />
-                </button>
-                
-                {/* Dropdown Menu - Hiển thị phía trên, căn phải */}
-                {showNPCDropdown && (
-                  <div className="absolute bottom-full right-0 mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[200px]">
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          handleNPCSelection(null);
-                          setShowNPCDropdown(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors ${
-                          !selectedNPCForDialogue ? 'text-purple-300 bg-purple-900/30' : 'text-gray-300'
-                        }`}
-                      >
-                        Tất cả NPCs
-                      </button>
-                      {availableNPCs.map((npc) => (
-                        <button
-                          key={npc.id}
-                          onClick={() => {
-                            handleNPCSelection(npc.id);
-                            setShowNPCDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors ${
-                            selectedNPCForDialogue === npc.id ? 'text-purple-300 bg-purple-900/30' : 'text-gray-300'
-                          }`}
-                        >
-                          {npc.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* NPC Dialogue Selector Button - REMOVED UI */}
+            {/* Logic preserved but UI removed as requested */}
             
             <button
               onClick={throttledSendMessage}
