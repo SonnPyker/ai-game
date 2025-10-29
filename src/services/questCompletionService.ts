@@ -133,36 +133,48 @@ class QuestCompletionService {
     // Check cache first
     const cached = this.completionCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      console.log(`🔍 [FIND_ITEM] Using cached result for "${targetName}": ${cached.result}`);
       return cached.result;
     }
+
+    console.log(`🔍 [FIND_ITEM] Checking for item: "${targetName}"`);
+    console.log(`🔍 [FIND_ITEM] Available items:`, context.inventory.map(i => i.name));
 
     // Find item with improved matching
     const item = context.inventory.find(i => {
       const itemName = i.name.toLowerCase().trim();
       
       // Exact match first
-      if (itemName === targetName) return true;
+      if (itemName === targetName) {
+        console.log(`✅ [FIND_ITEM] Exact match found: "${itemName}" === "${targetName}"`);
+        return true;
+      }
       
-      // Contains match (more strict)
-      if (itemName.includes(targetName) || targetName.includes(itemName)) return true;
+      // Contains match (more strict) - only if one is contained in the other
+      if (itemName.includes(targetName)) {
+        console.log(`✅ [FIND_ITEM] Contains match found: "${itemName}" contains "${targetName}"`);
+        return true;
+      }
       
-      // Word boundary match for better accuracy
-      const words = targetName.split(/\s+/);
-      const itemWords = itemName.split(/\s+/);
-      return words.some(word => 
-        word.length > 2 && itemWords.some(itemWord => 
-          itemWord.includes(word) || word.includes(itemWord)
-        )
-      );
+      if (targetName.includes(itemName)) {
+        console.log(`✅ [FIND_ITEM] Contains match found: "${targetName}" contains "${itemName}"`);
+        return true;
+      }
+      
+      // REMOVED: Word boundary match - too loose and causes false positives
+      // Only use exact match and contains match for accuracy
+      
+      return false;
     });
 
     // Find item objectives chỉ cần có 1 item (không cần số lượng)
     const hasItem = !!(item && item.quantity > 0);
     objective.currentQuantity = hasItem ? 1 : 0;
 
+    console.log(`🔍 [FIND_ITEM] Result: hasItem=${hasItem}, item=${item?.name}, quantity=${item?.quantity}`);
+
     // Cache result
     this.completionCache.set(cacheKey, { result: hasItem, timestamp: Date.now() });
-
 
     return hasItem;
   }
@@ -185,34 +197,46 @@ class QuestCompletionService {
     // Check cache first
     const cached = this.completionCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      console.log(`🔍 [FIND_NPC] Using cached result for "${targetName}": ${cached.result}`);
       return cached.result;
     }
+
+    console.log(`🔍 [FIND_NPC] Checking for NPC: "${targetName}"`);
+    console.log(`🔍 [FIND_NPC] Available NPCs:`, context.npcRelationships.map(npc => ({ name: npc.name, interactions: npc.totalInteractions })));
 
     // Find NPC with improved matching
     const npc = context.npcRelationships.find(npc => {
       const npcName = npc.name.toLowerCase().trim();
       
       // Exact match first
-      if (npcName === targetName) return true;
+      if (npcName === targetName) {
+        console.log(`✅ [FIND_NPC] Exact match found: "${npcName}" === "${targetName}"`);
+        return true;
+      }
       
-      // Contains match (more strict)
-      if (npcName.includes(targetName) || targetName.includes(npcName)) return true;
+      // Contains match (more strict) - only if one is contained in the other
+      if (npcName.includes(targetName)) {
+        console.log(`✅ [FIND_NPC] Contains match found: "${npcName}" contains "${targetName}"`);
+        return true;
+      }
       
-      // Word boundary match for better accuracy
-      const words = targetName.split(/\s+/);
-      const npcWords = npcName.split(/\s+/);
-      return words.some(word => 
-        word.length > 2 && npcWords.some(npcWord => 
-          npcWord.includes(word) || word.includes(npcWord)
-        )
-      );
+      if (targetName.includes(npcName)) {
+        console.log(`✅ [FIND_NPC] Contains match found: "${targetName}" contains "${npcName}"`);
+        return true;
+      }
+      
+      // REMOVED: Word boundary match - too loose and causes false positives
+      // Only use exact match and contains match for accuracy
+      
+      return false;
     });
 
     const hasMetNPC = npc ? npc.totalInteractions > 0 : false;
 
+    console.log(`🔍 [FIND_NPC] Result: hasMetNPC=${hasMetNPC}, npc=${npc?.name}, interactions=${npc?.totalInteractions}`);
+
     // Cache result
     this.completionCache.set(cacheKey, { result: hasMetNPC, timestamp: Date.now() });
-
 
     return hasMetNPC;
   }

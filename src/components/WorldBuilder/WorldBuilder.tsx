@@ -274,20 +274,19 @@ export function WorldBuilder() {
               classification: entity.type || 'Nhân vật'
             }));
             
-            // Ensure we have exactly 6 entities with proper distribution
+            // Ensure we have entities with proper distribution
             const requiredTypes = ['Nhân vật', 'Địa điểm', 'Phe phái', 'Vật phẩm', 'Truyền thuyết'];
             const typeCounts: {[key: string]: number} = {};
             const finalEntities: any[] = [];
             
-            // First pass: collect one of each required type (except Phe phái which needs 2)
+            // First pass: collect entities by type
             for (const entity of entities) {
               const type = entity.classification;
               if (requiredTypes.includes(type)) {
                 if (type === 'Phe phái') {
-                  if (typeCounts[type] < 2) {
-                    typeCounts[type] = (typeCounts[type] || 0) + 1;
-                    finalEntities.push(entity);
-                  }
+                  // Allow multiple factions (no limit)
+                  typeCounts[type] = (typeCounts[type] || 0) + 1;
+                  finalEntities.push(entity);
                 } else if (!typeCounts[type]) {
                   typeCounts[type] = 1;
                   finalEntities.push(entity);
@@ -297,23 +296,22 @@ export function WorldBuilder() {
             
             // Second pass: fill remaining slots if needed
             for (const entity of entities) {
-              if (finalEntities.length >= 6) break;
               const type = entity.classification;
-              if (requiredTypes.includes(type)) {
-                if (type === 'Phe phái' && typeCounts[type] < 2) {
-                  typeCounts[type] = (typeCounts[type] || 0) + 1;
+              if (requiredTypes.includes(type) && !finalEntities.includes(entity)) {
+                if (type === 'Phe phái') {
+                  // Allow additional factions
                   finalEntities.push(entity);
-                } else if (type !== 'Phe phái' && !typeCounts[type]) {
+                } else if (!typeCounts[type]) {
                   typeCounts[type] = 1;
                   finalEntities.push(entity);
                 }
               }
             }
             
-            // If we still don't have 6, create fallback entities for missing types
+            // If we still don't have minimum required types, create fallback entities for missing types
             for (const requiredType of requiredTypes) {
-              if (finalEntities.length >= 6) break;
               if (requiredType === 'Phe phái' && (typeCounts[requiredType] || 0) < 2) {
+                // Ensure at least 2 factions
                 const count = typeCounts[requiredType] || 0;
                 finalEntities.push({
                   id: `entity_${requiredType.toLowerCase()}_${count + 1}`,
@@ -333,7 +331,7 @@ export function WorldBuilder() {
               }
             }
             
-            entities = finalEntities.slice(0, 6);
+            entities = finalEntities;
           } else {
             throw new Error('No JSON found');
           }
@@ -362,10 +360,10 @@ export function WorldBuilder() {
             const requiredTypes = ['Nhân vật', 'Địa điểm', 'Phe phái', 'Vật phẩm', 'Truyền thuyết'];
             const fallbackEntities = [];
             
-            // Add one of each type except Phe phái
+            // Add one of each type, with at least 2 factions
             for (const type of requiredTypes) {
               if (type === 'Phe phái') {
-                // Add 2 phe phái
+                // Add at least 2 phe phái
                 fallbackEntities.push({
                   id: `entity_phe_phai_1`,
                   name: `Phe phái 1`,

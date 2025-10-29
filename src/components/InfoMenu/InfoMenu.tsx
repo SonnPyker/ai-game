@@ -23,7 +23,8 @@ import {
   AlertTriangle,
   EyeOff,
   Coins,
-  TreePine
+  TreePine,
+  Info
 } from 'lucide-react';
 import { WorldData, Character, WorldTime, QuestSystem, QuestProgress, ContentFlags } from '../../types';
 import { npcRelationshipService } from '../../services/npcRelationshipService';
@@ -82,6 +83,8 @@ interface InfoMenuProps {
   onUseSkillBook?: (skillBook: any) => void;
   // NPC dialogue props
   selectedNPCForDialogue?: string | null;
+  // NPC info modal props
+  onOpenNPCInfo?: (npcId: string) => void;
 }
 
 interface MenuSection {
@@ -120,7 +123,8 @@ export function InfoMenu({
   onDropItem,
   onUseSkillBook,
   selectedNPCForDialogue,
-  onOpenShop
+  onOpenShop,
+  onOpenNPCInfo
 }: InfoMenuProps) {
   // Responsive design context
   const { shouldUseMobileLayout, getTransitionClass } = useResponsiveContext();
@@ -1373,87 +1377,6 @@ export function InfoMenu({
                         </span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      {/* Combat Button - only show if NPC can be combatant */}
-                      {relationship.canBeCombatant && relationship.combatStats && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCombatWithNPC(relationship);
-                          }}
-                          className={getTransitionClass("p-1 text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 rounded transition-colors")}
-                          title={`Tấn công ${relationship.name}`}
-                        >
-                          <Sword className="w-4 h-4" />
-                        </button>
-                      )}
-                      
-                      {/* Ally Management Buttons */}
-                      {(() => {
-                        const recruitStatus = allyManagementService.canRecruitAlly(relationship.id);
-                        
-                        if (relationship.isAlly) {
-                          // NPC is already an ally
-                          return (
-                            <div className="flex items-center space-x-1">
-                              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
-                                Đồng minh
-                              </span>
-                              {relationship.isInjured && (
-                                <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">
-                                  Bị thương
-                                </span>
-                              )}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveAlly(relationship);
-                                }}
-                                className={getTransitionClass("p-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded transition-colors")}
-                                title="Hủy đồng minh"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          );
-                        } else if (recruitStatus.canRecruit) {
-                          // NPC can be recruited
-                          return (
-                            <div className="flex items-center space-x-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRecruitAlly(relationship);
-                                }}
-                                className={getTransitionClass("p-1 text-green-400 hover:text-green-300 hover:bg-green-500/20 rounded transition-colors")}
-                                title={`Mời ${relationship.name} làm đồng minh`}
-                              >
-                                <Users className="w-4 h-4" />
-                              </button>
-                            </div>
-                          );
-                        } else {
-                          // NPC cannot be recruited
-                          return (
-                            <button
-                              disabled
-                              className={getTransitionClass("p-1 text-gray-500 cursor-not-allowed rounded")}
-                              title={recruitStatus.reason}
-                            >
-                              <Users className="w-4 h-4" />
-                            </button>
-                          );
-                        }
-                      })()}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveNPC(relationship.id, relationship.name);
-                        }}
-                        className={getTransitionClass("p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded transition-colors")}
-                        title={`Xóa quan hệ với ${relationship.name}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                       <span className="text-gray-400 text-xs">
                         {isExpanded ? 'Thu gọn' : 'Mở rộng'}
                       </span>
@@ -1466,58 +1389,36 @@ export function InfoMenu({
                   </div>
                   
                   {/* Chi tiết NPC - chỉ hiển thị khi expanded */}
-                  <div className={getTransitionClass(`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`)}>
+                  <div className={getTransitionClass(`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`)}>
                     <div className="mt-3 space-y-3 min-w-0">
-                      {relationship.description && (
-                        <p className="text-gray-300 text-sm break-words overflow-wrap-anywhere">
-                          {(() => {
-                            const description = typeof relationship.description === 'string' ? relationship.description : JSON.stringify(relationship.description);
-                            const highlightedParts = highlightNames(description);
-                            return highlightedParts.map((part, partIndex) => {
-                              if (part.type === 'highlight') {
-                                return (
-                                  <span 
-                                    key={partIndex}
-                                    className="text-yellow-300 font-semibold"
-                                  >
-                                    {part.content}
-                                  </span>
-                                );
-                              } else {
-                                return part.content;
-                              }
-                            });
-                          })()}
-                        </p>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-2 text-xs">
+                      {/* Relationship and Reputation Bars */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <span className="text-gray-400">Quan hệ:</span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-16 bg-gray-600 rounded-full h-2">
+                          <div className="flex items-center space-x-2 mt-1">
+                            <div className="w-20 bg-gray-600 rounded-full h-2">
                               <div 
                                 className={`h-2 rounded-full ${
                                   relationship.relationshipLevel > 0 ? 'bg-green-500' : 'bg-red-500'
                                 }`}
-                                style={{ width: `${Math.abs(relationship.relationshipLevel)}%` }}
+                                style={{ width: `${Math.min(Math.abs(relationship.relationshipLevel), 100)}%` }}
                               ></div>
                             </div>
-                            <span className="text-white">{Math.round(relationship.relationshipLevel)}</span>
+                            <span className="text-white text-xs">{Math.round(relationship.relationshipLevel)}</span>
                           </div>
                         </div>
                         <div>
                           <span className="text-gray-400">Danh tiếng:</span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-16 bg-gray-600 rounded-full h-2">
+                          <div className="flex items-center space-x-2 mt-1">
+                            <div className="w-20 bg-gray-600 rounded-full h-2">
                               <div 
                                 className={`h-2 rounded-full ${
                                   relationship.reputation > 0 ? 'bg-blue-500' : 'bg-red-500'
                                 }`}
-                                style={{ width: `${Math.abs(relationship.reputation)}%` }}
+                                style={{ width: `${Math.min(Math.abs(relationship.reputation), 100)}%` }}
                               ></div>
                             </div>
-                            <span className="text-white">{Math.round(relationship.reputation)}</span>
+                            <span className="text-white text-xs">{Math.round(relationship.reputation)}</span>
                           </div>
                         </div>
                       </div>
@@ -1527,98 +1428,11 @@ export function InfoMenu({
                         <NPCArousalBar 
                           npc={relationship} 
                           contentFlags={contentFlags}
-                          className="mt-3"
+                          className="mt-2"
                         />
                       )}
 
-
-                      {/* Combat Stats - chỉ hiển thị khi NPC có thể combat */}
-                      {relationship.canBeCombatant && relationship.combatStats && (
-                        <div className="bg-gray-600/30 rounded-lg p-3 mt-3">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <Sword className="w-4 h-4 text-orange-400" />
-                            <span className="text-orange-400 font-medium text-sm">Combat Stats</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3 text-xs">
-                            <div>
-                              <span className="text-gray-400">Combat Level:</span>
-                              <span className="text-orange-400 ml-1 font-semibold">
-                                {relationship.combatStats.combatLevel || relationship.combatStats.level || 1}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-400">Character Level:</span>
-                              <span className="text-green-400 ml-1 font-semibold">
-                                {relationship.combatStats.characterLevel || relationship.level || 'N/A'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-400">HP:</span>
-                              <span className="text-white ml-1">
-                                {relationship.combatStats.health.current}/{relationship.combatStats.health.max}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-400">AC:</span>
-                              <span className="text-white ml-1">{relationship.combatStats.armorClass}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-400">Attacks:</span>
-                              <span className="text-white ml-1">{relationship.combatStats.attacks.length}</span>
-                            </div>
-                          </div>
-                          {relationship.combatStats.attacks.length > 0 && (
-                            <div className="mt-2">
-                              <span className="text-gray-400 text-xs">Tấn công:</span>
-                              <div className="mt-1 space-y-1">
-                                {relationship.combatStats.attacks.slice(0, 2).map((attack: any, index: number) => (
-                                  <div key={index} className="text-xs text-white">
-                                    {attack.name}: +{attack.attackBonus} ({attack.damage} {attack.damageType})
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="text-xs text-gray-400 break-words overflow-wrap-anywhere">
-                        {relationship.location && (
-                          <div>
-                            Vị trí: {(() => {
-                              const location = typeof relationship.location === 'string' 
-                                ? relationship.location 
-                                : (typeof relationship.location === 'object' && relationship.location.name 
-                                  ? relationship.location.name 
-                                  : JSON.stringify(relationship.location));
-                              // Remove /.../ wrapper if present
-                              return location.replace(/^\/|\/$/g, '');
-                            })()}
-                          </div>
-                        )}
-                        {relationship.faction ? (
-                          <div>Phe phái: {(() => {
-                            const faction = typeof relationship.faction === 'string' ? relationship.faction : JSON.stringify(relationship.faction);
-                            // Remove /.../ wrapper if present
-                            return faction.replace(/^\/|\/$/g, '');
-                          })()}</div>
-                        ) : (
-                          <div className="text-gray-500 italic">Không thuộc phe phái nào</div>
-                        )}
-                      </div>
-
-
-                      {relationship.tags && relationship.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {relationship.tags.map((tag: any, index: number) => (
-                            <span key={index} className="px-2 py-1 bg-gray-600 rounded text-xs text-gray-300 break-words overflow-wrap-anywhere">
-                              {typeof tag === 'string' ? tag : JSON.stringify(tag)}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Merchant Signature NPC Component */}
+                      {/* Merchant Signature NPC Component - chỉ cho merchant type */}
                       {relationship.isMerchantSignature && (
                         <MerchantSignatureNPC
                           npc={relationship}
@@ -1627,6 +1441,108 @@ export function InfoMenu({
                         />
                       )}
 
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {/* Chi tiết button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenNPCInfo?.(relationship.id);
+                          }}
+                          className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 bg-blue-600/20 border border-blue-500/50 text-blue-300 rounded text-xs hover:bg-blue-600/30 transition-colors")}
+                          title="Xem chi tiết"
+                        >
+                          <Info className="w-3 h-3" />
+                          <span>Chi tiết</span>
+                        </button>
+
+                        {/* Combat Button - only show if NPC can be combatant */}
+                        {relationship.canBeCombatant && relationship.combatStats && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCombatWithNPC(relationship);
+                            }}
+                            className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 bg-orange-600/20 border border-orange-500/50 text-orange-300 rounded text-xs hover:bg-orange-600/30 transition-colors")}
+                            title={`Tấn công ${relationship.name}`}
+                          >
+                            <Sword className="w-3 h-3" />
+                            <span>Thách đấu</span>
+                          </button>
+                        )}
+                        
+                        {/* Ally Management Buttons */}
+                        {(() => {
+                          const recruitStatus = allyManagementService.canRecruitAlly(relationship.id);
+                          
+                          if (relationship.isAlly) {
+                            // NPC is already an ally
+                            return (
+                              <div className="flex items-center space-x-1">
+                                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
+                                  Đồng minh
+                                </span>
+                                {relationship.isInjured && (
+                                  <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">
+                                    Bị thương
+                                  </span>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveAlly(relationship);
+                                  }}
+                                  className={getTransitionClass("flex items-center space-x-1 px-2 py-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded text-xs transition-colors")}
+                                  title="Hủy đồng minh"
+                                >
+                                  <X className="w-3 h-3" />
+                                  <span>Hủy</span>
+                                </button>
+                              </div>
+                            );
+                          } else if (recruitStatus.canRecruit) {
+                            // NPC can be recruited
+                            return (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRecruitAlly(relationship);
+                                }}
+                                className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 text-green-400 hover:text-green-300 hover:bg-green-500/20 rounded text-xs transition-colors")}
+                                title={`Mời ${relationship.name} làm đồng minh`}
+                              >
+                                <Users className="w-3 h-3" />
+                                <span>Chiêu mộ</span>
+                              </button>
+                            );
+                          } else {
+                            // NPC cannot be recruited
+                            return (
+                              <button
+                                disabled
+                                className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 text-gray-500 cursor-not-allowed rounded text-xs")}
+                                title={recruitStatus.reason}
+                              >
+                                <Users className="w-3 h-3" />
+                                <span>Chiêu mộ</span>
+                              </button>
+                            );
+                          }
+                        })()}
+
+                        {/* Remove relationship button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveNPC(relationship.id, relationship.name);
+                          }}
+                          className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded text-xs transition-colors")}
+                          title={`Xóa quan hệ với ${relationship.name}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Xóa</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

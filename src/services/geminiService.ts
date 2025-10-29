@@ -5,6 +5,7 @@ import { npcRelationshipService } from './npcRelationshipService';
 import { nameGenerationService } from './nameGenerationService';
 import { locationService } from './locationService';
 import { armorGenerationService } from './armorGenerationService';
+import { enemyDatabaseService } from './enemyDatabaseService';
 
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
@@ -745,9 +746,10 @@ Lưu ý quan trọng về "Nhân vật":
 - Là những nhân vật mà người chơi sẽ tương tác trong game
 
 Lưu ý về "Phe phái":
-- Tạo 2 phe phái có thể đối lập nhau hoặc có tầm ảnh hưởng quan trọng đến cốt truyện
+- Tạo 2-4 phe phái có thể đối lập nhau hoặc có tầm ảnh hưởng quan trọng đến cốt truyện
 - Mỗi phe phái phải có mục tiêu và triết lý rõ ràng
 - Có thể tạo xung đột hoặc hợp tác trong cốt truyện
+- Số lượng phe phái phụ thuộc vào độ phức tạp của thế giới và cốt truyện
 
 Bối cảnh: "${coreIdea}"
 
@@ -4801,8 +4803,7 @@ Trả về JSON format:
    * Generate enemy skills based on threat level and type
    */
   private generateEnemySkills(level: number, threatLevel: string, enemyType: string): any[] {
-    // Import enemyDatabaseService to use skill generation
-    const { enemyDatabaseService } = require('./enemyDatabaseService');
+    // Use imported enemyDatabaseService for skill generation
     
     // Map threat level string to proper type
     const threatLevelMap: Record<string, 'low' | 'medium' | 'high' | 'extreme'> = {

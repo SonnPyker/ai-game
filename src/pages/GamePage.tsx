@@ -151,6 +151,7 @@ const NPCChallengeModal = lazy(() => import('../components/CombatPage/NPCChallen
 const QuestOfferModal = lazy(() => import('../components/QuestOfferModal/QuestOfferModal').then(module => ({ default: module.QuestOfferModal })));
 const ActionSuggestions = lazy(() => import('../components/ActionSuggestions/ActionSuggestions').then(module => ({ default: module.ActionSuggestions })));
 const ActionLog = lazy(() => import('../components/ActionSuggestions/ActionLog').then(module => ({ default: module.ActionLog })));
+const NPCInfoModal = lazy(() => import('../components/NPCInfoModal/NPCInfoModal').then(module => ({ default: module.NPCInfoModal })));
 
 interface GameState {
   scenarioSkeleton: any;
@@ -228,6 +229,10 @@ export function GamePage() {
   const [showQuestOfferModal, setShowQuestOfferModal] = useState(false);
   const [pendingQuestOffer, setPendingQuestOffer] = useState<any>(null);
   const [processedQuests, setProcessedQuests] = useState<Set<string>>(new Set());
+  
+  // NPC info modal state
+  const [showNPCInfoModal, setShowNPCInfoModal] = useState(false);
+  const [selectedNPCForInfo, setSelectedNPCForInfo] = useState<string | null>(null);
   
   // Resend message state
   const [resendingMessageIndex, setResendingMessageIndex] = useState<number | null>(null);
@@ -2016,12 +2021,7 @@ ${enhancedMessage}`;
         // Quest detection và generation
         try {
 
-          // Kiểm tra quest completion với questCompletionService
-          const activeQuests = [
-            ...questSystem.mainQuests.filter(q => q.status === 'active'),
-            ...questSystem.sideQuests.filter(q => q.status === 'active'),
-            ...questSystem.factionQuests.filter(q => q.status === 'active')
-          ];
+          // Quest completion check removed - now only manual check via button
 
           // Parse combat history with validation
           let combatHistory;
@@ -2038,15 +2038,7 @@ ${enhancedMessage}`;
             combatHistory = { defeatedEnemies: [] };
           }
 
-          const questCompletionContext = {
-            inventory: inventoryService.getInventory(),
-            npcRelationships: npcRelationshipService.getAllRelationships(),
-            combatHistory: combatHistory,
-            playerLocation: response.sceneState?.locationId,
-            playerPosition: response.sceneState?.gridPosition
-          };
-
-          await questCompletionService.checkAllActiveQuests(questCompletionContext, activeQuests);
+          // Auto quest completion check removed - now only manual check via button
           
           // Xử lý side quest offer từ AI response
           if (response.sideQuestOffer && response.sideQuestOffer.title) {
@@ -2284,7 +2276,10 @@ ${enhancedMessage}`;
           if (newSceneState.location) {
             // Sync location object if it exists
             if (typeof newSceneState.location === 'object') {
-              newSceneState.location = locationSyncService.syncLocationFromWorldData(newSceneState.location.id || newSceneState.location, newSceneState.location);
+              const locationId = newSceneState.location.id;
+              if (locationId) {
+                newSceneState.location = locationSyncService.syncLocationFromWorldData(locationId, newSceneState.location);
+              }
             }
             
             // Also sync locationType at sceneState level
@@ -3120,6 +3115,17 @@ ${enhancedMessage}`;
       console.error('Error in handleOpenShop:', error);
     }
   };
+
+  // NPC Info Modal handlers
+  const handleOpenNPCInfo = useCallback((npcId: string) => {
+    setSelectedNPCForInfo(npcId);
+    setShowNPCInfoModal(true);
+  }, []);
+
+  const handleCloseNPCInfo = useCallback(() => {
+    setShowNPCInfoModal(false);
+    setSelectedNPCForInfo(null);
+  }, []);
 
   const handleBuyItem = async (item: InventoryItem | SkillBook, shop: MerchantShop) => {
     try {
@@ -4959,6 +4965,7 @@ ${enhancedMessage}`;
             onUseSkillBook={handleUseSkillBook}
             selectedNPCForDialogue={selectedNPCForDialogue}
             onOpenShop={handleOpenShop}
+            onOpenNPCInfo={handleOpenNPCInfo}
           />
         </Suspense>
       )}
@@ -4997,6 +5004,16 @@ ${enhancedMessage}`;
           isOpen={showActionLog}
           onClose={() => setShowActionLog(false)}
           entries={actionLog}
+        />
+      </Suspense>
+
+      {/* NPC Info Modal */}
+      <Suspense fallback={null}>
+        <NPCInfoModal
+          isOpen={showNPCInfoModal}
+          onClose={handleCloseNPCInfo}
+          npcId={selectedNPCForInfo}
+          contentFlags={gameState.contentFlags || undefined}
         />
       </Suspense>
 

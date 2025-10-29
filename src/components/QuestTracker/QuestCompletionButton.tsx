@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import { questAutoCompletionService } from '../../services/questAutoCompletionService';
+import { questCompletionService } from '../../services/questCompletionService';
+import { inventoryService } from '../../services/inventoryService';
+import { npcRelationshipService } from '../../services/npcRelationshipService';
+import { locationService } from '../../services/locationService';
 import { QuestProgress } from '../../types';
 
 interface QuestCompletionButtonProps {
@@ -28,20 +31,50 @@ export function QuestCompletionButton({ activeQuests, onQuestUpdate, questId, qu
 
     setIsChecking(true);
     try {
+      // Tạo quest completion context
+      const questCompletionContext = {
+        inventory: inventoryService.getInventory(),
+        npcRelationships: npcRelationshipService.getAllRelationships(),
+        combatHistory: (() => {
+          try {
+            const combatHistoryData = localStorage.getItem('combat_history');
+            const parsed = combatHistoryData ? JSON.parse(combatHistoryData) : { defeatedEnemies: [] };
+            if (!Array.isArray(parsed.defeatedEnemies)) {
+              parsed.defeatedEnemies = [];
+            }
+            return parsed;
+          } catch (error) {
+            console.error('Error parsing combat history:', error);
+            return { defeatedEnemies: [] };
+          }
+        })(),
+        playerLocation: (() => {
+          try {
+            const playerLocation = JSON.parse(localStorage.getItem('player_location') || '{}');
+            const currentLocation = locationService.getLocationById(playerLocation.currentLocationId);
+            return currentLocation ? currentLocation.name : playerLocation.currentLocationId;
+          } catch (error) {
+            console.error('Error getting location name:', error);
+            return JSON.parse(localStorage.getItem('player_location') || '{}').currentLocationId;
+          }
+        })(),
+        playerPosition: JSON.parse(localStorage.getItem('player_location') || '{}').gridPosition
+      };
+
       let result;
       
       if (questId && questTitle) {
         // Kiểm tra một quest cụ thể
         const questToCheck = activeQuests?.find(q => q.id === questId);
         if (questToCheck) {
-          result = await questAutoCompletionService.forceCheckQuestCompletion([questToCheck]);
+          result = await questCompletionService.checkAllActiveQuests(questCompletionContext, [questToCheck]);
         } else {
           // Fallback: kiểm tra tất cả active quests
-          result = await questAutoCompletionService.forceCheckQuestCompletion(activeQuests || []);
+          result = await questCompletionService.checkAllActiveQuests(questCompletionContext, activeQuests || []);
         }
       } else {
         // Kiểm tra tất cả active quests
-        result = await questAutoCompletionService.forceCheckQuestCompletion(activeQuests || []);
+        result = await questCompletionService.checkAllActiveQuests(questCompletionContext, activeQuests || []);
       }
       
       // Process completed objectives
@@ -54,7 +87,6 @@ export function QuestCompletionButton({ activeQuests, onQuestUpdate, questId, qu
         suggestedCount: result.suggestedActions.length,
         timestamp: new Date()
       });
-
 
     } catch (error) {
       console.error('❌ Error checking quest completion:', error);
