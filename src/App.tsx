@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { Analytics } from '@vercel/analytics/react';
 import { Suspense, lazy } from 'react';
 import { Layout } from './components/Layout';
 import { ResponsiveProvider } from './contexts/ResponsiveContext';
@@ -45,6 +46,7 @@ function App() {
         </Suspense>
         <MinimizedModalContainer />
         <SpeedInsights />
+        <Analytics />
       </Layout>
       </MinimizedModalProvider>
     </ResponsiveProvider>
