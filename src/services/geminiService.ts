@@ -3206,12 +3206,21 @@ VÍ DỤ TÔN TRỌNG SỰ TỰ DO CỦA NGƯỜI CHƠI:
 
 Quy tắc:
 - Nếu có xung đột thông tin: ưu tiên PLAYER_ACTION trước tiên, sau đó đến SCENE_STATE, rồi SUMMARY, cuối cùng mới tới CHAT_DELTA.
-- Văn xuôi 120–200 từ (TỐI ĐA 200 TỪ), không bullet/emoji/markdown, mô tả hệ quả cụ thể, cảm quan, và tiến độ cốt truyện.
+- Văn xuôi không giới hạn độ dài, tập trung vào chất lượng narrative phong phú và chi tiết. Không bullet/emoji/markdown, mô tả hệ quả cụ thể, cảm quan, và tiến độ cốt truyện.
 - Tôn trọng continuityRules, tone, mainThreads trong SCENARIO; định hướng mềm tới các keyBeats/twist/kết thúc, nhưng không ép buộc tự do người chơi.
 - KHÔNG nhắc đến "prompt/JSON/meta".
 - QUAN TRỌNG: Sử dụng đúng ngôi kể đã được cài đặt trong WORLD (narration field). Nếu narration là "Ngôi thứ hai", hãy kể bằng "Bạn" thay vì "Anh ấy/Cô ấy". Nếu narration là "Ngôi thứ nhất", hãy kể bằng "Tôi". Nếu narration là "Ngôi thứ ba", hãy kể bằng "Anh ấy/Cô ấy".
 - Nếu hành động của người chơi vi phạm chính sách nội dung, hãy từ chối lịch sự và đề xuất hướng thay thế an toàn.
 - TUYỆT ĐỐI KHÔNG sử dụng dấu * để nhấn mạnh hoặc highlight từ ngữ trong narrative. Sử dụng ngôn ngữ tự nhiên và mô tả sinh động thay vì dấu *.
+
+CÂN BẰNG NARRATIVE VÀ DIALOGUE:
+- ƯU TIÊN NARRATIVE: Tập trung vào mô tả chi tiết, cảm quan, môi trường, hành động, và cảm xúc của nhân vật.
+- GIẢM DIALOGUE: Chỉ sử dụng lời thoại khi thực sự cần thiết để truyền đạt thông tin quan trọng hoặc thể hiện tính cách nhân vật.
+- TỶ LỆ LÝ TƯỞNG: 70-80% narrative, 20-30% dialogue. Narrative nên chiếm phần lớn response.
+- KHI NÀO DÙNG DIALOGUE: Chỉ khi NPC cần truyền đạt thông tin quan trọng về quest, cốt truyện, hoặc tính cách rõ ràng.
+- KHI NÀO DÙNG NARRATIVE: Mô tả phản ứng, cảm xúc, môi trường, hành động, suy nghĩ của nhân vật, và tiến triển câu chuyện.
+- VÍ DỤ ĐÚNG: "Sensei Kenshin nhìn bạn với ánh mắt trầm tư, đôi tay run nhẹ khi cầm cuộn chú. Ông lão thở dài, dường như đang cân nhắc điều gì đó. Sau một lúc im lặng, ông mới lên tiếng: 'Cuộn chú này rất nguy hiểm.' Rồi ông tiếp tục giải thích về cách phong ấn..." (Narrative chiếm phần lớn, dialogue ngắn gọn)
+- VÍ DỤ SAI: "Sensei Kenshin nói: 'Cuộn chú này rất nguy hiểm. Nó được tạo ra từ những oán niệm sâu sắc của một Chú nguyền sư cổ đại, có khả năng xâm nhập vào tâm trí, gieo rắc sự hoài nghi và ảo ảnh. Đã từng có những chú thuật sư bị nó thao túng...'" (Dialogue quá dài, thiếu narrative)
 
 LƯU Ý VỀ NGÔI KỂ:
 - Kiểm tra trường "narration" trong WORLD để xác định ngôi kể
@@ -3632,10 +3641,23 @@ ${this.buildLocationContext(sceneState)}
 
 ⚠️ QUAN TRỌNG: PLAYER_ACTION là hành động người chơi vừa thực hiện. BẮT BUỘC phải phản hồi trực tiếp với hành động này. KHÔNG được bỏ qua hoặc làm lơ.
 
-QUY TẮC VỀ ĐỐI THOẠI:
+QUY TẮC VỀ ĐỐI THOẠI VÀ NARRATIVE:
 - Nếu PLAYER_ACTION chứa đối thoại, paraphrase thành hành động mô tả phù hợp với tình huống
 - Ví dụ: "Xin chào" → "Bạn chào hỏi một cách lịch sự"
 - Ví dụ: "Tôi muốn giúp đỡ" → "Bạn đề nghị hỗ trợ với thái độ chân thành"
+
+CÂN BẰNG NARRATIVE VÀ DIALOGUE TRONG RESPONSE:
+- ƯU TIÊN NARRATIVE: Tập trung vào mô tả chi tiết về hành động, môi trường, cảm xúc, phản ứng của nhân vật và thế giới xung quanh.
+- GIẢM DIALOGUE: Chỉ sử dụng lời thoại khi thực sự cần thiết để truyền đạt thông tin quan trọng hoặc thể hiện tính cách nhân vật một cách rõ ràng.
+- TỶ LỆ LÝ TƯỞNG: 70-80% narrative mô tả, 20-30% dialogue. Narrative nên chiếm phần lớn response.
+- KHI NÀO DÙNG DIALOGUE: Chỉ khi NPC cần truyền đạt thông tin quan trọng về quest, cốt truyện, hoặc khi lời nói thể hiện tính cách nhân vật một cách rõ ràng.
+- KHI NÀO DÙNG NARRATIVE: Mô tả phản ứng, cảm xúc, môi trường, hành động, suy nghĩ của nhân vật, và tiến triển câu chuyện. Đây là phần chính của response.
+- VÍ DỤ CẤU TRÚC ĐÚNG: 
+  * Narrative chiếm phần lớn: "Sensei Kenshin nhìn bạn với ánh mắt trầm tư, đôi tay run nhẹ khi cầm cuộn chú. Ông lão thở dài, dường như đang cân nhắc điều gì đó quan trọng. Ánh sáng từ ngọn nến chiếu qua khuôn mặt già nua của ông, làm nổi bật những nếp nhăn lo âu. Sau một lúc im lặng, ông mới lên tiếng, giọng điềm tĩnh nhưng chứa đựng sự cảnh báo..."
+  * Dialogue ngắn gọn và quan trọng: '"Cuộn chú này rất nguy hiểm," ông nói, đặt cuộn chú xuống bàn một cách cẩn thận.'
+  * Tiếp tục narrative: "Rồi ông tiếp tục giải thích về cách phong ấn, những cử chỉ tay của ông cho thấy sự hiểu biết sâu sắc về loại ma thuật này..."
+- VÍ DỤ CẤU TRÚC SAI (KHÔNG NÊN):
+  * Dialogue quá dài: "Sensei Kenshin nói: 'Cuộn chú này rất nguy hiểm. Nó được tạo ra từ những oán niệm sâu sắc của một Chú nguyền sư cổ đại, có khả năng xâm nhập vào tâm trí, gieo rắc sự hoài nghi và ảo ảnh. Đã từng có những chú thuật sư bị nó thao túng, trở thành kẻ phục tùng lời nguyền. Việc giữ nó ở đây rất nguy hiểm...'" (Quá nhiều dialogue, thiếu narrative mô tả)
 
 LƯU Ý VỀ NGÔI KỂ:
 - Kiểm tra trường "narration" trong WORLD để xác định ngôi kể
@@ -3688,7 +3710,7 @@ QUAN TRỌNG VỀ OUTPUT:
 
 ĐẦU RA (JSON, không thêm chữ khác):
 {
-  "narrative": "văn xuôi 105–170 từ (TỐI ĐA 170 TỪ), liền mạch, không bullet/emoji, KHÔNG sử dụng dấu *",
+  "narrative": "văn xuôi không giới hạn độ dài, tập trung vào chất lượng narrative phong phú và chi tiết. Ưu tiên narrative (70-80%) hơn dialogue (20-30%). Liền mạch, không bullet/emoji, KHÔNG sử dụng dấu *",
   "softGuidance": "1–2 câu định hướng kín đáo (có thể rỗng)",
   "sceneState": { 
     "location": { "name": "string", "description": "string", "type": "string", "atmosphere": "string", "features": ["string"] },

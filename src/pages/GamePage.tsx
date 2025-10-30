@@ -245,9 +245,6 @@ export function GamePage() {
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [isNPCAnalysisProcessing, setIsNPCAnalysisProcessing] = useState(false);
   
-  // Streaming narrative state
-  const [streamingNarrative, setStreamingNarrative] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
   
   // Action suggestions state
   const [actionSuggestions, setActionSuggestions] = useState<SuggestedAction[]>([]);
@@ -1958,10 +1955,7 @@ ${enhancedMessage}`;
       const deltaContext = buildContextForAI(turnCounter + 1); // +1 because we're about to add the current turn
       
       
-      // Generate AI response using delta context with streaming
-      setIsStreaming(true);
-      setStreamingNarrative('');
-      
+      // Generate AI response using delta context
       const response = await geminiService.generateTurnResponseWithDeltaStreaming(
         worldData,
         characterData,
@@ -1975,14 +1969,8 @@ ${enhancedMessage}`;
         turnCounter,
         gameState.worldTime, // Pass world time to AI
         currentDcCheckResult || undefined, // Pass DC check result to AI
-        (chunk: string) => {
-          // Handle streaming chunks
-          setStreamingNarrative(prev => prev + chunk);
-        }
+        undefined // No streaming callback
       );
-      
-      setIsStreaming(false);
-      setStreamingNarrative('');
       
 
       // Validate AI response using comprehensive validation function
@@ -4724,43 +4712,6 @@ ${enhancedMessage}`;
             </MotionWrapper>
           ))}
           
-          {isLoading && !isStreaming && (
-            <MotionWrapper
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex justify-start"
-            >
-              <div className="bg-gray-900 border border-gray-800 text-gray-100 px-4 py-3 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>AI đang suy nghĩ...</span>
-                </div>
-              </div>
-            </MotionWrapper>
-          )}
-
-          {/* Streaming narrative display */}
-          {isStreaming && streamingNarrative && (
-            <MotionWrapper
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex justify-start"
-            >
-              <div className="bg-gray-900 border border-gray-800 text-gray-100 px-4 py-3 rounded-lg max-w-3xl">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm text-gray-400">AI đang viết...</span>
-                </div>
-                <div className="leading-relaxed">
-                  <DialogueRenderer 
-                    content={streamingNarrative} 
-                    isPlayer={false} 
-                  />
-                  <span className="animate-pulse">|</span>
-                </div>
-              </div>
-            </MotionWrapper>
-          )}
 
           {/* NPC Analysis indicator */}
           {isNPCAnalysisProcessing && (

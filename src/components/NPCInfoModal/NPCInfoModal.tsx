@@ -665,9 +665,9 @@ export function NPCInfoModal({
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className={`bg-gray-900 rounded-lg border border-gray-700 shadow-2xl overflow-hidden ${
+        className={`bg-gray-900 rounded-lg border border-gray-700 shadow-2xl flex flex-col ${
           shouldUseMobileLayout() 
-            ? 'w-full max-w-full h-full max-h-full' 
+            ? 'w-full h-full' 
             : 'w-full max-w-2xl max-h-[90vh]'
         }`}
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
@@ -682,7 +682,7 @@ export function NPCInfoModal({
         />
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-gray-700/50">
+        <div className="flex border-b border-gray-700/50 flex-shrink-0">
           <button
             onClick={() => setActiveTab('info')}
             className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 flex-1 ${
@@ -708,7 +708,7 @@ export function NPCInfoModal({
         </div>
 
         {/* Content */}
-        <div className={`overflow-y-auto ${shouldUseMobileLayout() ? 'flex-1' : 'max-h-[calc(90vh-140px)]'}`}>
+        <div className="overflow-y-auto flex-1">
           <div className="p-4">
             {activeTab === 'info' && renderInfoTab()}
             {activeTab === 'relationship' && renderRelationshipTab()}

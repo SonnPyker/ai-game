@@ -12,6 +12,16 @@ interface DialogueSegment {
 }
 
 export function DialogueRenderer({ content, className = '', isPlayer = false }: DialogueRendererProps) {
+  // Function to normalize escape sequences (convert \n\n to actual newlines)
+  const normalizeText = (text: string): string => {
+    // Replace escape sequences with actual characters
+    return text
+      .replace(/\\n/g, '\n')      // Convert \n to actual newline
+      .replace(/\\r/g, '\r')      // Convert \r to actual carriage return
+      .replace(/\\t/g, '\t')      // Convert \t to actual tab
+      .replace(/\\\\/g, '\\');    // Convert \\ to single backslash
+  };
+
   // Function to highlight names and locations with /.../ syntax
   const highlightNames = (text: string) => {
     const nameRegex = /\/([^\/]+)\//g;
@@ -50,6 +60,8 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
 
   // Parse content to identify dialogue segments and highlight names
   const parseDialogue = (text: string): DialogueSegment[] => {
+    // Normalize escape sequences first
+    text = normalizeText(text);
     const segments: DialogueSegment[] = [];
     const dialogueRegex = /"([^"]+)"/g;
     let lastIndex = 0;
