@@ -3065,7 +3065,6 @@ OUTPUT JSON:
     averageReputation: number;
     members: Array<{ name: string; reputation: number; relationshipLevel: number }>;
   }> {
-    // Get all unique faction names from NPCs (normalized)
     const factionNames = new Set<string>();
     this.relationships.forEach(npc => {
       if (npc.faction) {
@@ -3076,111 +3075,125 @@ OUTPUT JSON:
       }
     });
 
-    // Calculate reputation for each faction
-    return Array.from(factionNames).map(factionName => ({
-      factionName,
-      ...this.calculateFactionReputation(factionName)
-    }));
+    return Array.from(factionNames).map(factionName => {
+      const data = this.calculateFactionReputation(factionName);
+      return {
+        factionName,
+        reputation: data.reputation,
+        memberCount: data.memberCount,
+        averageReputation: data.averageReputation,
+        members: data.members
+      };
+    });
   }
 
-  // Calculate combat level based on NPC background
   private calculateCombatLevelFromBackground(npcData: any, random: number): number {
-    if (!npcData) return 1; // Default for unknown NPCs
-    
-    let baseCombatLevel = 1; // Default minimum
-    const description = (npcData.description || '').toLowerCase();
-    const occupation = (npcData.personalInfo?.occupation?.value || '').toLowerCase();
-    const faction = (npcData.faction || '').toLowerCase();
-    const tags = (npcData.tags || []).map((tag: string) => tag.toLowerCase());
-    
-    // High-ranking military professions (very high combat level)
-    const leadershipProfessions = [
-      'commander', 'captain', 'general', 'colonel', 'major', 'lieutenant',
-      'chỉ huy', 'đại úy', 'trung úy', 'thiếu úy', 'sĩ quan', 'tướng lĩnh',
-      'giám sát', 'supervisor', 'overseer'
+    if (!npcData) return 1;
+
+    const description = typeof npcData.description === 'string' ? npcData.description.toLowerCase() : '';
+    const occupation = typeof npcData.personalInfo?.occupation?.value === 'string'
+      ? npcData.personalInfo.occupation.value.toLowerCase()
+      : '';
+    const faction = typeof npcData.faction === 'string' ? npcData.faction.toLowerCase() : '';
+    const tags = Array.isArray(npcData.tags) ? npcData.tags.map((tag: string) => tag.toLowerCase()) : [];
+
+    type ScoringRule = { patterns: string[]; delta: number };
+
+    const generalRules: ScoringRule[] = [
+      { patterns: ['commander', 'captain', 'general', 'colonel', 'major', 'lieutenant', 'chỉ huy', 'đại úy', 'trung úy', 'thiếu úy', 'sĩ quan', 'tướng', 'đội trưởng'], delta: 4 },
+      { patterns: ['knight', 'paladin', 'templar', 'hiệp sĩ', 'cận vệ', 'bodyguard', 'elite', 'tinh nhuệ', 'champion'], delta: 3 },
+      { patterns: ['soldier', 'guard', 'warrior', 'fighter', 'mercenary', 'gladiator', 'đấu sĩ', 'chiến binh', 'vệ binh', 'lính', 'binh sĩ'], delta: 2.5 },
+      { patterns: ['hunter', 'ranger', 'archer', 'scout', 'thợ săn', 'cung thủ'], delta: 2 },
+      { patterns: ['mage', 'wizard', 'sorcerer', 'warlock', 'spellcaster', 'pháp sư', 'phù thủy', 'thuật sĩ'], delta: 2.2 },
+      { patterns: ['assassin', 'rogue', 'spy', 'thief', 'sát thủ', 'trộm', 'gián điệp'], delta: 1.8 },
+      { patterns: ['cleric', 'priest', 'healer', 'medic', 'thầy tu', 'thầy thuốc', 'trị liệu'], delta: 1.2 },
+      { patterns: ['bandit', 'raider', 'pirate', 'outlaw', 'cướp', 'hải tặc', 'thổ phỉ'], delta: 1.5 },
+      { patterns: ['scholar', 'sage', 'alchemist', 'nhà giả kim', 'học giả'], delta: 0.8 },
+      { patterns: ['merchant', 'trader', 'shopkeeper', 'innkeeper', 'thương gia', 'chủ cửa hàng', 'nông dân', 'farmer', 'đầu bếp', 'chef', 'thợ may', 'artisan', 'craftsman', 'barkeep', 'bartender'], delta: -1.5 },
+      { patterns: ['pacifist', 'peaceful', 'dịu dàng', 'hiền lành', 'không thích bạo lực'], delta: -2 }
     ];
-    
-    // Combat professions (high combat level)
-    const combatProfessions = [
-      'guard', 'soldier', 'knight', 'warrior', 'fighter', 'mercenary', 
-      'guardian', 'protector', 'vệ binh', 'lính', 'hiệp sĩ', 'chiến binh',
-      'thợ săn', 'hunter', 'ranger', 'scout'
+
+    const factionRules: ScoringRule[] = [
+      { patterns: ["night's watch", 'hội tuần đêm', 'guard', 'militia', 'army', 'legion', 'đội cận vệ', 'lữ đoàn'], delta: 2.5 },
+      { patterns: ['bandit', 'raider', 'pirate', 'thieves', 'shadow', 'guild of shadows', 'hải tặc', 'thổ phỉ'], delta: 2 },
+      { patterns: ['mage guild', 'arcane', 'wizard', 'spellcaster', 'hội pháp sư', 'phù thủy'], delta: 1.8 },
+      { patterns: ['temple', 'church', 'order', 'holy', 'thánh', 'giáo hội'], delta: 1.2 },
+      { patterns: ['merchant guild', 'trader', 'civilians', 'thành phố', 'phố chợ'], delta: -0.8 },
+      { patterns: ['villager', 'peasant', 'nông dân', 'dân thường'], delta: -1.2 }
     ];
-    
-    // Civilian professions (low combat level)
-    const civilianProfessions = [
-      'merchant', 'trader', 'shopkeeper', 'thương gia', 'chủ cửa hàng',
-      'cook', 'chef', 'đầu bếp', 'nông dân', 'farmer',
-      'phục vụ', 'waitress', 'waiter', 'servant', 'người hầu',
-      'bartender', 'chủ quán', 'innkeeper', 'quản lý quán trọ'
+
+    const evaluateTextFactor = (text: string, baseScore = 3, rules: ScoringRule[] = generalRules) => {
+      if (!text || !text.trim()) {
+        return { score: 0, used: false };
+      }
+
+      const lower = text.toLowerCase();
+      let bestPositive: number | null = null;
+      let bestNegative: number | null = null;
+
+      for (const rule of rules) {
+        if (rule.patterns.some(pattern => lower.includes(pattern))) {
+          if (rule.delta >= 0) {
+            bestPositive = bestPositive !== null ? Math.max(bestPositive, rule.delta) : rule.delta;
+          } else {
+            bestNegative = bestNegative !== null ? Math.min(bestNegative, rule.delta) : rule.delta;
+          }
+        }
+      }
+
+      const delta = bestPositive !== null ? bestPositive : (bestNegative !== null ? bestNegative : 0);
+      const score = Math.max(1, baseScore + delta);
+      return { score, used: true };
+    };
+
+    const evaluateTagsFactor = (tagList: string[], baseScore = 3) => {
+      if (!tagList || tagList.length === 0) {
+        return { score: 0, used: false };
+      }
+
+      let bestPositive: number | null = null;
+      let bestNegative: number | null = null;
+
+      for (const tag of tagList) {
+        const lower = tag.toLowerCase();
+        for (const rule of generalRules) {
+          if (rule.patterns.some(pattern => lower.includes(pattern))) {
+            if (rule.delta >= 0) {
+              bestPositive = bestPositive !== null ? Math.max(bestPositive, rule.delta) : rule.delta;
+            } else {
+              bestNegative = bestNegative !== null ? Math.min(bestNegative, rule.delta) : rule.delta;
+            }
+          }
+        }
+      }
+
+      const delta = bestPositive !== null ? bestPositive : (bestNegative !== null ? bestNegative : 0);
+      const score = Math.max(1, baseScore + delta);
+      return { score, used: true };
+    };
+
+    const occupationFactor = evaluateTextFactor(occupation);
+    const descriptionFactor = evaluateTextFactor(description);
+    const factionFactor = evaluateTextFactor(faction, 3, factionRules);
+    const tagFactor = evaluateTagsFactor(tags);
+
+    const factors = [
+      { score: occupationFactor.score, weight: 0.45, used: occupationFactor.used },
+      { score: tagFactor.score, weight: 0.25, used: tagFactor.used },
+      { score: factionFactor.score, weight: 0.2, used: factionFactor.used },
+      { score: descriptionFactor.score, weight: 0.1, used: descriptionFactor.used }
     ];
-    
-    // Check occupation - leadership first
-    for (const prof of leadershipProfessions) {
-      if (occupation.includes(prof) || description.includes(prof)) {
-        baseCombatLevel = Math.floor(random * 4) + 6; // Level 6-9
-        break;
-      }
-    }
-    
-    // Check occupation - regular combat
-    for (const prof of combatProfessions) {
-      if (occupation.includes(prof) || description.includes(prof)) {
-        baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 4) + 4); // Level 4-7
-        break;
-      }
-    }
-    
-    for (const prof of civilianProfessions) {
-      if (occupation.includes(prof) || description.includes(prof)) {
-        baseCombatLevel = Math.floor(random * 2) + 1; // Level 1-2
-        break;
-      }
-    }
-    
-    // Check tags
-    for (const tag of tags) {
-      // High-ranking military tags (commander, captain, etc.)
-      if (['chỉ huy', 'commander', 'captain', 'đại úy', 'trung úy', 'thiếu úy', 'sĩ quan'].includes(tag)) {
-        baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 4) + 6); // Level 6-9
-      }
-      // Elite warrior tags
-      else if (['hiệp sĩ', 'knight', 'elite', 'tinh nhuệ', 'cận vệ', 'bodyguard'].includes(tag)) {
-        baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 3) + 5); // Level 5-7
-      }
-      // Regular military tags
-      else if (['vệ binh', 'lính', 'chiến binh', 'thợ săn', 'soldier', 'guard', 'warrior', 'fighter'].includes(tag)) {
-        baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 3) + 3); // Level 3-5
-      }
-      // Civilian tags
-      else if (['phục vụ', 'nhân viên quán trọ', 'đầu bếp', 'nông dân', 'merchant', 'trader'].includes(tag)) {
-        baseCombatLevel = Math.min(baseCombatLevel, Math.floor(random * 2) + 1); // Level 1-2
-      }
-    }
-    
-    // Check faction
-    if (faction.includes('hội tuần đêm') || faction.includes('night\'s watch')) {
-      baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 3) + 3); // Level 3-5
-    } else if (faction.includes('thành phố') || faction.includes('civilians')) {
-      baseCombatLevel = Math.min(baseCombatLevel, Math.floor(random * 2) + 1); // Level 1-2
-    }
-    
-    // Check description for combat keywords
-    const combatKeywords = ['võ thuật', 'chiến đấu', 'vũ khí', 'giáp', 'martial', 'combat', 'weapon', 'armor'];
-    const hasCombatKeywords = combatKeywords.some(keyword => description.includes(keyword));
-    
-    // Check for leadership/command keywords
-    const leadershipKeywords = ['chỉ huy', 'commander', 'captain', 'đại úy', 'trung úy', 'thiếu úy', 'sĩ quan', 'giám sát', 'supervise', 'oversee'];
-    const hasLeadershipKeywords = leadershipKeywords.some(keyword => description.includes(keyword));
-    
-    if (hasLeadershipKeywords) {
-      baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 4) + 6); // Level 6-9
-    } else if (hasCombatKeywords) {
-      baseCombatLevel = Math.max(baseCombatLevel, Math.floor(random * 2) + 2); // Level 2-3
-    }
-    
-    // Ensure reasonable range
-    return Math.max(1, Math.min(8, baseCombatLevel));
+
+    const totalWeight = factors.reduce((sum, factor) => factor.used ? sum + factor.weight : sum, 0);
+    const weightedScore = totalWeight > 0
+      ? factors.reduce((sum, factor) => factor.used ? sum + (factor.score * factor.weight) : sum, 0) / totalWeight
+      : 2.5;
+
+    const randomAdjustment = (random - 0.5) * 1.2;
+    let finalLevel = Math.round(weightedScore + randomAdjustment);
+    finalLevel = Math.max(1, Math.min(8, finalLevel));
+
+    return finalLevel;
   }
 
   // Generate NPC personality traits for more realistic analysis
@@ -3188,7 +3201,7 @@ OUTPUT JSON:
     // Use NPC name as seed for consistent personality
     const seed = npcName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const random = (seed * 9301 + 49297) % 233280 / 233280;
-    
+
     const personalities = [
       'Thận trọng, không dễ tin tưởng người lạ',
       'Nhiệt tình, dễ bị ảnh hưởng bởi cảm xúc',
@@ -3201,19 +3214,17 @@ OUTPUT JSON:
       'Cẩn thận, không thích rủi ro',
       'Tự tin, không dễ bị thuyết phục'
     ];
-    
+
     const selectedPersonality = personalities[Math.floor(random * personalities.length)];
     return selectedPersonality;
   }
-
-
 
   /**
    * Get all NPCs in a specific location
    */
   public getRelationshipsByLocation(locationId: string): NPCRelationship[] {
-    return Array.from(this.relationships.values()).filter(npc => 
-      npc.location === locationId || 
+    return Array.from(this.relationships.values()).filter(npc =>
+      npc.location === locationId ||
       (typeof npc.location === 'object' && npc.location && 'id' in npc.location && (npc.location as any).id === locationId)
     );
   }
@@ -3224,9 +3235,6 @@ OUTPUT JSON:
   public getAllRelationships(): NPCRelationship[] {
     return Array.from(this.relationships.values());
   }
-
-
-
 }
 
 export const npcRelationshipService = NPCRelationshipService.getInstance();

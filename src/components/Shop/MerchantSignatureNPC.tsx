@@ -1,4 +1,4 @@
-import { ShoppingBag, TrendingUp, Loader2 } from 'lucide-react';
+import { ShoppingBag, Loader2 } from 'lucide-react';
 import { NPCRelationship, MerchantShop } from '../../types';
 import { useState, useEffect } from 'react';
 import { locationService } from '../../services/locationService';
@@ -115,21 +115,6 @@ export function MerchantSignatureNPC({ npc, merchantShop, onOpenShop }: Merchant
               <span>Mở Cửa Hàng</span>
             </>
           )}
-        </button>
-        
-        <button
-          onClick={() => {
-            // TODO: Implement negotiation functionality
-          }}
-          disabled={!isPlayerAtMerchantLocation}
-          className={`px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm ${
-            !isPlayerAtMerchantLocation
-              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4" />
-          <span>{!isPlayerAtMerchantLocation ? 'Không ở đây' : 'Thương Lượng'}</span>
         </button>
       </div>
     </div>

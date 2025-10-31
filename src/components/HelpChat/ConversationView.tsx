@@ -32,13 +32,13 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ faq }) => {
           return part;
         });
         elements.push(
-          <p key={index} className="mb-2 last:mb-0">
+          <p key={index} className="mb-2 last:mb-0 break-words">
             {formattedParts}
           </p>
         );
       } else {
         elements.push(
-          <p key={index} className="mb-2 last:mb-0">
+          <p key={index} className="mb-2 last:mb-0 break-words">
             {line}
           </p>
         );
@@ -49,19 +49,19 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ faq }) => {
   };
 
   return (
-    <div className="flex flex-col space-y-4 h-full pb-8">
+    <div className="flex flex-col space-y-3 sm:space-y-4 h-full">
       {/* Question Bubble */}
-      <div className="flex items-start space-x-3">
-        <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-          <User className="w-4 h-4 text-white" />
+      <div className="flex items-start space-x-2 sm:space-x-3">
+        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-blue-500 rounded-full flex items-center justify-center">
+          <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
         </div>
-        <div className="flex-1">
-          <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-4 max-w-2xl">
+        <div className="flex-1 min-w-0">
+          <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-3 sm:p-4 max-w-2xl">
             <div className="flex items-center space-x-2 mb-2">
-              <MessageSquare className="w-4 h-4 text-blue-300" />
-              <span className="text-sm font-medium text-blue-200">Bạn hỏi</span>
+              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-300" />
+              <span className="text-xs sm:text-sm font-medium text-blue-200">Bạn hỏi</span>
             </div>
-            <p className="text-blue-100 leading-relaxed">
+            <p className="text-blue-100 leading-relaxed text-sm sm:text-base break-words">
               {faq.question}
             </p>
           </div>
@@ -69,28 +69,28 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ faq }) => {
       </div>
 
       {/* Answer Bubble */}
-      <div className="flex items-start space-x-3">
-        <div className="flex-shrink-0 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-          <Bot className="w-4 h-4 text-white" />
+      <div className="flex items-start space-x-2 sm:space-x-3">
+        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-gray-600 rounded-full flex items-center justify-center">
+          <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
         </div>
-        <div className="flex-1">
-          <div className="bg-gray-700/30 border border-gray-600/30 rounded-lg p-4 max-w-2xl">
-            <div className="flex items-center space-x-2 mb-3">
-              <Bot className="w-4 h-4 text-gray-300" />
-              <span className="text-sm font-medium text-gray-200">Trợ lý AI</span>
+        <div className="flex-1 min-w-0">
+          <div className="bg-gray-700/30 border border-gray-600/30 rounded-lg p-3 sm:p-4 max-w-2xl">
+            <div className="flex items-center space-x-2 mb-2 sm:mb-3">
+              <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300" />
+              <span className="text-xs sm:text-sm font-medium text-gray-200">Trợ lý AI</span>
             </div>
-            <div className="text-gray-100 leading-relaxed">
+            <div className="text-gray-100 leading-relaxed text-sm sm:text-base break-words">
               {formatAnswer(faq.answer)}
             </div>
             
             {/* Tags */}
             {faq.tags && faq.tags.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-gray-600/30">
-                <div className="flex flex-wrap gap-2">
+              <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-600/30">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {faq.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="px-2 py-1 bg-gray-600/50 text-gray-300 text-xs rounded-full"
+                      className="px-2 py-0.5 sm:py-1 bg-gray-600/50 text-gray-300 text-xs rounded-full"
                     >
                       #{tag}
                     </span>

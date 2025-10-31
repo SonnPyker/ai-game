@@ -2821,7 +2821,7 @@ QUAN TRỌNG VỀ NPCs:
 - Bao gồm tên, trạng thái hiện tại, mô tả ngắn, tags (thương gia, quý tộc, tội phạm, v.v.), và faction nếu có
 - QUAN TRỌNG: Tags phải bằng tiếng Việt (ví dụ: "thương gia", "quý tộc", "học giả", "chiến binh", "nông dân", "thợ thủ công", "tội phạm", "quan chức", "pháp sư", "thầy thuốc")
 - Tại các location có locationType: 'shop', AI có thể tạo NPC merchant với tags: ['merchant', 'shopkeeper']
-- Merchant NPCs có thể mua/bán items, skill books, và thương lượng giá
+- Merchant NPCs có thể mua/bán items và skill books
 - Khi player yêu cầu mua/bán, AI nên hướng dẫn sử dụng /shop command
 - QUAN TRỌNG VỀ FACTION: 
   * KHÔNG phải tất cả NPC đều có faction

@@ -479,15 +479,20 @@
   /* Global animation control based on body class */
   .animations-disabled * {
     transition: none !important;
+  }
+
+  .animations-disabled *:not(.animate-spin):not(.animate-pulse):not([class*="animate-"]) {
     animation: none !important;
     transform: none !important;
   }
 
   /* Always allow loading animations even when animations are disabled */
-  .animations-disabled .animate-spin,
-  .animations-disabled .animate-pulse,
-  .animations-disabled [class*="animate-"] {
-    animation: inherit !important;
+  .animations-disabled .animate-spin {
+    animation: spin 1s linear infinite !important;
+  }
+
+  .animations-disabled .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
   }
   
   /* Force loading animations to always work */

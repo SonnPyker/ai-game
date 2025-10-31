@@ -130,36 +130,6 @@ export function InventoryView({
 
   return (
     <div className="space-y-4">
-      {/* Header with Stats */}
-      <div className="bg-gray-800/50 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-white flex items-center">
-            <Package className="w-5 h-5 mr-2" />
-            Túi Đồ ({inventory.length} vật phẩm)
-          </h3>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div className="text-center">
-            <div className="text-white font-medium">{filterCounts.weapon}</div>
-            <div className="text-gray-400">Vũ khí</div>
-          </div>
-          <div className="text-center">
-            <div className="text-white font-medium">{filterCounts.armor}</div>
-            <div className="text-gray-400">Trang bị</div>
-          </div>
-          <div className="text-center">
-            <div className="text-white font-medium">{filterCounts.consumable}</div>
-            <div className="text-gray-400">Tiêu hao</div>
-          </div>
-          <div className="text-center">
-            <div className="text-white font-medium">{filterCounts.equipped}</div>
-            <div className="text-gray-400">Đã trang bị</div>
-          </div>
-        </div>
-      </div>
-
       {/* Search and Filters */}
       <div className="space-y-3">
         {/* Search Bar */}

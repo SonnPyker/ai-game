@@ -74,7 +74,7 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
       {/* Toggle Button - Outside sidebar, middle right */}
       <button
         onClick={onToggle}
-        className={`fixed top-1/2 -translate-y-1/2 z-50 p-2 bg-primary-500/20 border-2 border-primary-500/50 rounded-lg text-primary-300 hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 shadow-lg ${
+        className={`fixed top-1/2 -translate-y-1/2 z-[70] p-2 bg-primary-500/20 border-2 border-primary-500/50 rounded-lg text-primary-300 hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 shadow-lg ${
           isOpen && !shouldUseMobileLayout() ? 'left-64 sm:left-72' : 'left-2'
         }`}
         title={isOpen ? "Đóng menu" : "Mở menu"}
@@ -87,7 +87,7 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
       </button>
 
       <aside 
-        className={`fixed left-0 top-0 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-50 ${
+        className={`fixed left-0 top-0 h-full glass-effect border-r border-gray-700/50 overflow-y-auto scrollbar-hide z-[60] ${
           shouldUseMobileLayout() 
             ? 'w-80 sidebar-mobile' // Wider on mobile for better usability
             : 'w-64 sm:w-72'

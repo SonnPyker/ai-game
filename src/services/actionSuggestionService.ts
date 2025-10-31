@@ -901,7 +901,7 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
     const mediumActions = [
       'trò chuyện', 'nói chuyện', 'bắt chuyện', 'làm quen', 'giới thiệu',
       'khám phá', 'tìm kiếm', 'kiểm tra', 'xem xét', 'phân tích',
-      'thương lượng', 'đàm phán', 'thỏa thuận', 'giao dịch', 'mua bán',
+      'giao dịch', 'mua bán',
       'học', 'học hỏi', 'tập luyện', 'rèn luyện', 'cải thiện',
       'sửa chữa', 'làm', 'tạo', 'chế tạo', 'nấu', 'nướng'
     ];

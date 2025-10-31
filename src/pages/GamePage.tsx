@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Loader2, AlertCircle, Play, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History, Moon, Sword } from 'lucide-react';
+import { Send, Loader2, AlertCircle, Play, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History, Moon } from 'lucide-react';
 import { worldTimeService } from '../services/worldTimeService';
 import { sccService } from '../services/sccService';
 import { WorldTime, SCCContext, ChatMessage as ChatMessageType, ContentFlags, PlayerLocation, InventoryItem } from '../types';
@@ -38,7 +38,6 @@ import { tradingService } from '../services/tradingService';
 import { skillBookService } from '../services/skillBookService';
 import { MerchantShopModal } from '../components/Shop/MerchantShopModal';
 import { SkillBookPreview } from '../components/Shop/SkillBookPreview';
-import { NegotiationPanel } from '../components/Shop/NegotiationPanel';
 import { MerchantShop, SkillBook } from '../types';
 import { enemyFromContextService } from '../services/enemyFromContextService';
 import { HelpButton } from '../components/HelpChat/HelpButton';
@@ -320,12 +319,6 @@ export function GamePage() {
   const [currentShop, setCurrentShop] = useState<MerchantShop | null>(null);
   const [showSkillBookPreview, setShowSkillBookPreview] = useState(false);
   const [selectedSkillBook, setSelectedSkillBook] = useState<SkillBook | null>(null);
-  const [showNegotiationPanel, setShowNegotiationPanel] = useState(false);
-  const [negotiationData, setNegotiationData] = useState<{
-    item: InventoryItem | SkillBook;
-    basePrice: number;
-    type: 'buy' | 'sell';
-  } | null>(null);
 
   // Debouncing and throttling refs
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -356,6 +349,7 @@ export function GamePage() {
   
   // Responsive design context
   const { shouldUseMobileLayout } = useResponsiveContext();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [gameState, setGameState] = useState<GameState>({
     scenarioSkeleton: null,
     sceneState: {},
@@ -400,6 +394,8 @@ export function GamePage() {
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const shouldOffsetForSidebar = isSidebarOpen && !shouldUseMobileLayout();
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
@@ -575,6 +571,18 @@ export function GamePage() {
   }, [gameState.sceneState?.location, gameState.sceneState?.npcs, selectedNPCForDialogue]);
 
   // Load NPCs on component mount
+  useEffect(() => {
+    const handleSidebarStateChange = (event: CustomEvent<{ isOpen: boolean }>) => {
+      setIsSidebarOpen(event.detail.isOpen);
+    };
+
+    window.addEventListener('sidebarStateChange', handleSidebarStateChange as EventListener);
+
+    return () => {
+      window.removeEventListener('sidebarStateChange', handleSidebarStateChange as EventListener);
+    };
+  }, []);
+
   useEffect(() => {
     loadAvailableNPCs();
   }, []); // Empty dependency array - only run once on mount
@@ -3383,10 +3391,6 @@ ${enhancedMessage}`;
   };
 
 
-  const handleNegotiationComplete = (_newPrice: number) => {
-    setShowNegotiationPanel(false);
-    setNegotiationData(null);
-  };
 
   // Handle skip time
   const handleSkipTime = () => {
@@ -4414,7 +4418,11 @@ ${enhancedMessage}`;
   return (
     <div className="min-h-screen bg-black flex flex-col">
       {/* Fixed Header Section */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-black">
+      <div
+        className={`fixed top-0 right-0 z-40 bg-black transition-all duration-300 ${
+          shouldOffsetForSidebar ? 'left-64 sm:left-72' : 'left-0'
+        }`}
+      >
         {/* Summary Banner */}
         {gameState.showSummaryBanner && (
           <MotionWrapper
@@ -4589,8 +4597,8 @@ ${enhancedMessage}`;
                 <Save className="w-4 h-4" />
               </button>
               
-              {/* Combat Test Button */}
-              <button
+              {/* Combat Test Button - Hidden temporarily */}
+              {/* <button
                 onClick={() => navigate('/combat')}
                 disabled={isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions}
                 className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
@@ -4605,7 +4613,7 @@ ${enhancedMessage}`;
                 }
               >
                 <Sword className="w-4 h-4" />
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -4734,7 +4742,11 @@ ${enhancedMessage}`;
       </div>
 
       {/* Fixed Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-black">
+      <div
+        className={`fixed bottom-0 right-0 z-40 bg-black transition-all duration-300 ${
+          shouldOffsetForSidebar ? 'left-64 sm:left-72' : 'left-0'
+        }`}
+      >
         {/* Error Display */}
         {error && (
           <div className={`mx-4 mb-2 p-3 bg-red-800 border border-red-500 rounded-lg transition-all duration-300 ${
@@ -5169,25 +5181,6 @@ ${enhancedMessage}`;
         />
       )}
 
-      {/* Negotiation Panel Modal */}
-      {showNegotiationPanel && negotiationData && (
-        <NegotiationPanel
-          isOpen={showNegotiationPanel}
-          onClose={() => setShowNegotiationPanel(false)}
-          character={(() => {
-            try {
-              const characterData = localStorage.getItem('currentCharacter');
-              return characterData ? JSON.parse(characterData) : null;
-            } catch {
-              return null;
-            }
-          })()}
-          merchant={tradingService.getMerchantRelationship(currentShop?.locationId || '')}
-          basePrice={negotiationData.basePrice}
-          type={negotiationData.type}
-          onPriceChange={handleNegotiationComplete}
-        />
-      )}
     </div>
   );
 }

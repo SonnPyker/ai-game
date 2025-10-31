@@ -23,6 +23,12 @@ export function Layout({ children }: LayoutProps) {
     }
   }, [location.pathname]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sidebarStateChange', {
+      detail: { isOpen: sidebarOpen }
+    }));
+  }, [sidebarOpen]);
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };

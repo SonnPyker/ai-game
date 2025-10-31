@@ -91,7 +91,7 @@ Một trò chơi roleplay tiên tiến được hỗ trợ bởi AI với khả 
 - **Merchant Shops**: Cửa hàng với NPC merchant
 - **Dynamic Inventory**: Hàng hóa thay đổi theo thời gian
 - **Skill Books**: Sách kỹ năng có thể mua
-- **Negotiation System**: Hệ thống thương lượng giá
+- **Trading System**: Hệ thống mua bán với merchant
 - **Trading History**: Lịch sử giao dịch
 - **Currency System**: Hệ thống tiền tệ đa dạng
 

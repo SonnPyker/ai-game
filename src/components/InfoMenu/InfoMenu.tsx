@@ -423,13 +423,12 @@ export function InfoMenu({
     }
   }, [characterData, forceUpdate]); // Thêm forceUpdate để re-render khi có thay đổi
 
-  // Render section nhân vật
-  const renderCharacterSection = () => {
-    if (!characterData) return <div className="text-gray-400">Không có dữ liệu nhân vật</div>;
+  // Render character sub-navigation (fixed when scrolling)
+  const renderCharacterSubNavigation = () => {
+    if (!characterData) return null;
 
     return (
-      <div className="space-y-4">
-        {/* Character Sub-tabs */}
+      <div className="sticky top-0 z-10 bg-gray-900 border-b border-gray-700/50 -mx-4 px-4">
         <div className="flex border-b border-gray-700/50">
           <button
             onClick={() => setCharacterSubSection('info')}
@@ -476,36 +475,50 @@ export function InfoMenu({
             <span>Kỹ năng</span>
           </button>
         </div>
+      </div>
+    );
+  };
+
+  // Render section nhân vật
+  const renderCharacterSection = () => {
+    if (!characterData) return <div className="text-gray-400">Không có dữ liệu nhân vật</div>;
+
+    return (
+      <div className="space-y-4">
+        {/* Character Sub-tabs - Fixed when scrolling */}
+        {renderCharacterSubNavigation()}
         
         {/* Character Content */}
-        {characterSubSection === 'info' && renderCharacterInfo()}
-        {characterSubSection === 'inventory' && (
-          <InventoryView
-            inventory={characterData.inventory || []}
-            onEquipItem={onEquipItem}
-            onUnequipItem={onUnequipItem}
-            onDropItem={onDropItem}
-            onUseSkillBook={onUseSkillBook}
-          />
-        )}
-        {characterSubSection === 'equipment' && (
-          <div className="space-y-4">
-            {renderCurrencyInfo()}
-            <EquipmentView
-              equipment={characterData.equipment || {}}
+        <div className="pt-0">
+          {characterSubSection === 'info' && renderCharacterInfo()}
+          {characterSubSection === 'inventory' && (
+            <InventoryView
               inventory={characterData.inventory || []}
-              skills={characterData.skills || []}
               onEquipItem={onEquipItem}
               onUnequipItem={onUnequipItem}
+              onDropItem={onDropItem}
+              onUseSkillBook={onUseSkillBook}
             />
-          </div>
-        )}
-        {characterSubSection === 'skilltree' && characterData && (
-          <SkillTreeView
-            character={characterData}
-            onCharacterUpdate={handleCharacterUpdate}
-          />
-        )}
+          )}
+          {characterSubSection === 'equipment' && (
+            <div className="space-y-4">
+              {renderCurrencyInfo()}
+              <EquipmentView
+                equipment={characterData.equipment || {}}
+                inventory={characterData.inventory || []}
+                skills={characterData.skills || []}
+                onEquipItem={onEquipItem}
+                onUnequipItem={onUnequipItem}
+              />
+            </div>
+          )}
+          {characterSubSection === 'skilltree' && characterData && (
+            <SkillTreeView
+              character={characterData}
+              onCharacterUpdate={handleCharacterUpdate}
+            />
+          )}
+        </div>
       </div>
     );
   };
@@ -1254,15 +1267,6 @@ export function InfoMenu({
     };
     
 
-    const handleExpandAll = () => {
-      const allIds = relationships.map(r => r.id);
-      setExpandedNPCs(new Set(allIds));
-    };
-
-    const handleCollapseAll = () => {
-      setExpandedNPCs(new Set());
-    };
-
     const handleRemoveNPC = (npcId: string, npcName: string) => {
       if (confirm(`Bạn có chắc chắn muốn xóa quan hệ với "${npcName}"?\n\nThao tác này không thể hoàn tác.`)) {
         const success = npcRelationshipService.removeRelationship(npcId);
@@ -1281,33 +1285,6 @@ export function InfoMenu({
 
     return (
       <div className="space-y-4">
-        {/* Nút quản lý NPCs */}
-        {relationships.length > 0 && (
-          <div className="space-y-2">
-            {/* Nút expand/collapse all */}
-            <div className="flex justify-between items-center">
-              <div className="flex gap-2">
-                <button
-                  onClick={handleExpandAll}
-                  className={getTransitionClass("px-3 py-1 bg-green-600/20 border border-green-500/50 text-green-300 rounded text-sm hover:bg-green-600/30 transition-colors flex items-center space-x-1")}
-                >
-                  <span>Mở tất cả</span>
-                </button>
-                <button
-                  onClick={handleCollapseAll}
-                  className={getTransitionClass("px-3 py-1 bg-gray-600/20 border border-gray-500/50 text-gray-300 rounded text-sm hover:bg-gray-600/30 transition-colors flex items-center space-x-1")}
-                >
-                  <span>Thu tất cả</span>
-                </button>
-              </div>
-              <div className="text-xs text-gray-400">
-                {expandedNPCs.size}/{relationships.length} mở rộng
-              </div>
-            </div>
-            
-          </div>
-        )}
-
         {/* NPC Relationships */}
         <div className="bg-gray-800/50 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-white mb-3 flex items-center">

@@ -379,37 +379,24 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
     answer: `Các chỉ số combat chính:
 
 **HP (Hit Points)**:
-- Máu hiện tại / Máu tối đa
-- Khi HP = 0: Nhân vật bất tỉnh
-- Tăng theo Constitution modifier
-- Công thức: (Constitution - 10) / 2 + 20
+- Lấy trực tiếp từ combat stats của nhân vật/NPC (tạo dựa trên combat level và Constitution modifier)
+- Khi HP = 0: Nhân vật bất tỉnh hoặc bị loại khỏi combat
 
 **AC (Armor Class)**:
-- Khả năng phòng thủ, khó bị trúng đòn
-- Công thức: 10 + Agility Modifier + Armor Bonus
-- AC càng cao càng khó bị tấn công trúng
+- Dựa trên Agility modifier và giáp đang trang bị
+- Giáp nặng, buff hoặc status effect có thể tăng/giảm AC
 
-**Attack Bonus**:
-- Bonus khi tấn công
-- Công thức: Strength Modifier + Proficiency Bonus
-- Proficiency Bonus tăng theo level
-
-**Damage Modifier**:
-- Bonus sát thương
-- Thường = Strength Modifier (vũ khí cận chiến)
-- Hoặc = Agility Modifier (vũ khí tầm xa)
+**Attack Bonus & Damage Bonus**:
+- Được sinh ra từ vũ khí/kỹ năng + modifiers tương ứng (Strength cho cận chiến, Agility cho tầm xa)
+- Các hiệu ứng trạng thái và skill tree có thể cộng thêm
 
 **Initiative (Thứ tự lượt)**:
-- Dựa trên Agility
-- Quyết định ai đi trước trong combat
-- Agility cao = đi trước
+- Roll d20 + Agility modifier để xác định thứ tự hành động
 
-**Speed (Tốc độ di chuyển)**:
-- Khoảng cách di chuyển mỗi lượt
-- Thường = 30 feet (6 ô)
-- Có thể bị ảnh hưởng bởi armor nặng
+**Status Effects**:
+- Mỗi hiệu ứng có thể thay đổi AC, sát thương, bỏ lượt... nên cần theo dõi trong combat log
 
-**Mẹo**: Hiểu rõ các chỉ số giúp tối ưu chiến thuật combat.`,
+**Mẹo**: Kiểm tra combat stats trong Info Menu để hiểu rõ ngưỡng hiện tại thay vì nhớ công thức cố định.`,
     tags: ['HP', 'AC', 'attack bonus', 'damage', 'initiative', 'speed', 'chỉ số']
   },
   {
@@ -529,7 +516,7 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
     tags: ['sát thương', 'damage', 'AC', 'armor', 'resistance', 'vulnerability', 'temporary HP']
   },
   {
-    id: 'combat-9',
+    id: 'combat-10',
     category: 'combat',
     question: 'Các loại vũ khí và trang bị trong combat?',
     answer: `Hệ thống vũ khí và trang bị:
@@ -593,9 +580,9 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 - Nhận thưởng: XP, tiền, vật phẩm
 
 **Quest Tracker**:
-- Theo dõi tiến độ quest
-- Hiển thị mục tiêu hiện tại
-- Đánh dấu quest đã hoàn thành bằng cách ấn nút kiểm tra để xác nhận hoàn thành hay chưa`,
+- Theo dõi tiến độ quest và từng mục tiêu nhỏ
+- Khi hoàn thành, nhấn nút xác nhận để chuyển quest sang trạng thái hoàn tất
+- Quest đã hoàn tất sẽ lưu lại trong lịch sử để tra cứu sau`,
     tags: ['quest', 'nhiệm vụ', 'NPC', 'thưởng', 'tracker']
   },
   {
@@ -764,10 +751,76 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 **Trong game**:
 - AI sẽ tự động roll dice khi bạn thực hiện hành động
 - Kết quả sẽ hiển thị trong chat log
-- Thành công/thất bại ảnh hưởng đến kết quả hành động
+- Thành công/thất bại ảnh hưởng đến kết quả hành động, nhưng NPC vẫn có thể phản ứng theo bối cảnh câu chuyện
 
-**Mẹo**: - Chỉ số cao giúp tăng khả năng thành công trong các hành động khó. Nếu bạn DC check thành công NPC chắc chắn sẽ hành động theo ý bạn ngay cả nhưng yêu cầu phi lý nhất :)))`,
+**Mẹo**: Chỉ số cao giúp tăng xác suất thành công, nhưng hãy cân nhắc tình huống và mối quan hệ với NPC để đạt kết quả mong muốn.`,
     tags: ['DC check', 'difficulty class', 'roll', 'ability modifier', 'dice', 'thành công', 'thất bại']
+  },
+
+  {
+    id: 'combat-ally-1',
+    category: 'combat',
+    question: 'Làm thế nào để đồng minh NPC tham gia combat?',
+    answer: `Đồng minh có thể hỗ trợ trong combat:
+
+**Chiêu mộ đồng minh**:
+- Hoàn thành quest hoặc tăng Relationship để mở khóa trạng thái Ally cho NPC
+- Khi một NPC đã trở thành Ally, họ có thể được gọi hỗ trợ
+
+**Tự động tham gia**:
+- Hệ thống kiểm tra danh sách Ally đang hoạt động trước khi vào combat
+- Nếu Ally có combat stats hợp lệ, họ sẽ vào trận cùng bạn sau bước chuẩn bị
+
+**Chuẩn bị combat**:
+- Nếu Ally chưa có combat stats, hệ thống sẽ cố gắng tự tạo (stat, vũ khí, giáp)
+- Ally dùng lượt riêng và có thể bị thương, bất tỉnh tương tự player
+
+**Mẹo**: Giữ mối quan hệ tốt với NPC quan trọng để họ sẵn sàng hỗ trợ trong các trận chiến khó.`,
+    tags: ['ally', 'đồng minh', 'combat', 'hỗ trợ', 'NPC']
+  },
+
+  {
+    id: 'combat-level-1',
+    category: 'combat',
+    question: 'Combat level của NPC được tính dựa trên gì?',
+    answer: `Combat level được hệ thống xác định tự động khi tạo hoặc cập nhật NPC:
+
+**Nguồn dữ liệu**:
+- Nghề nghiệp/occupation và mô tả của NPC
+- Phe phái, tags đi kèm (ví dụ hiệp sĩ, lính gác, thương nhân)
+
+**Cách tính**:
+- Mỗi yếu tố được chấm điểm theo bảng quy tắc (chiến binh, pháp sư, thương gia...)
+- Hệ thống kết hợp điểm bằng trọng số: Occupation (45%), Tags (25%), Faction (20%), Mô tả (10%)
+- Có thêm biến thiên nhỏ để NPC cùng nền tảng không trùng level tuyệt đối
+
+**Kết quả**:
+- Combat level nằm trong khoảng 1-8 và được dùng để sinh HP, AC, vũ khí, kỹ năng
+
+**Mẹo**: NPC có background chiến đấu rõ ràng sẽ mạnh hơn, nên chuẩn bị phù hợp trước khi đối đầu.`,
+    tags: ['combat level', 'NPC', 'background', 'trọng số']
+  },
+
+  {
+    id: 'shop-1',
+    category: 'gameplay',
+    question: 'Cửa hàng restock khi nào và có gì thay đổi?',
+    answer: `Cơ chế restock shop:
+
+**Tự động mỗi ngày**:
+- Hệ thống kiểm tra thời gian thế giới, sang ngày mới là shop tự reroll hàng
+- Giữ nguyên Skill Books hiện có nhưng cập nhật weapon/armor/accessory/consumable
+
+**Skill Book Chance**:
+- Mỗi lần restock, tỉ lệ xuất hiện Skill Book tăng +10% (tối đa 70%)
+- Giúp người chơi có cơ hội mua được kỹ năng hiếm hơn theo thời gian
+
+**Restock thủ công**:
+- Người chơi có thể nhấn nút Restock (khi đủ điều kiện sang ngày mới)
+- Hệ thống xóa shop cũ và sinh shop mới từ dữ liệu thế giới, giữ lại tiến trình Merchant
+
+**Mẹo**: Ghé lại các shop thân quen mỗi ngày để săn vật phẩm mới và Skill Book hiếm.`,
+    tags: ['shop', 'restock', 'merchant', 'skill book', 'thời gian']
   },
   {
     id: 'game-8',
@@ -827,7 +880,7 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 **Bán hàng**:
 - Chọn vật phẩm từ inventory
 - Merchant sẽ đưa ra giá mua
-- Có thể thương lượng giá (nếu có kỹ năng)
+- Giá phụ thuộc vào relationship với merchant
 - Xác nhận bán để nhận tiền
 
 **Loại vật phẩm**:
@@ -836,9 +889,9 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 - **Consumable**: Thuốc hồi máu, thức ăn
 - **Skill Books**: Sách học kỹ năng mới
 
-**Thương lượng**:
-- Charisma cao giúp thương lượng tốt hơn
-- Có thể giảm giá mua hoặc tăng giá bán
+**Giá cả**:
+- Charisma cao giúp có giá tốt hơn từ skill bonuses
+- Giá phụ thuộc vào kỹ năng của bạn
 - Mối quan hệ với merchant ảnh hưởng giá
 
 **Restock**:
@@ -847,7 +900,7 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 - Shop restock sẽ có tỷ lệ bán đồ ngon hơn và cả Skill Books
 
 **Mẹo**: Luôn kiểm tra giá trước khi mua, và bán vật phẩm không cần thiết.`,
-    tags: ['shop', 'mua bán', 'merchant', 'thương lượng', 'giá cả', 'vật phẩm']
+    tags: ['shop', 'mua bán', 'merchant', 'giá cả', 'vật phẩm']
   },
   {
     id: 'game-11',
@@ -1010,7 +1063,7 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 - Gặp merchant NPC tại shop location
 - Nhấn "Mở Shop" để xem hàng hóa
 - Merchant sẽ đề xuất mua bán
-- Có thể thương lượng giá
+- Giá phụ thuộc vào relationship và skills
 
 **Mối quan hệ với merchant**:
 - Relationship level ảnh hưởng đến giá
@@ -1030,7 +1083,7 @@ Bạn cũng có thể tạo thể loại tùy chỉnh.`,
 - Restock có tỷ lệ bán đồ tốt hơn
 
 **Mẹo**: Xây dựng mối quan hệ tốt với merchant để có giá tốt.`,
-    tags: ['merchant', 'shop', 'NPC', 'mua bán', 'thương lượng', 'restock']
+    tags: ['merchant', 'shop', 'NPC', 'mua bán', 'restock']
   }
 ];
 

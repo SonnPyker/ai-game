@@ -3,16 +3,6 @@ import { skillTreeService } from './skillTreeService';
 import { npcRelationshipService } from './npcRelationshipService';
 import { inventoryService } from './inventoryService';
 
-interface NegotiationResult {
-  success: boolean;
-  roll: number;
-  total: number;
-  dc: number;
-  modifier: number;
-  priceAdjustment: number;
-  finalPrice: number;
-  message: string;
-}
 
 class TradingService {
   private static instance: TradingService;
@@ -119,95 +109,6 @@ class TradingService {
     return Math.min(0.5, modifier); // Tối đa 50%
   }
 
-  /**
-   * Thương lượng giá
-   */
-  public negotiatePrice(character: Character, merchant: NPCRelationship | null, basePrice: number, type: 'buy' | 'sell'): NegotiationResult {
-    const rollResult = this.rollNegotiation(character, merchant);
-    const dc = this.calculateNegotiationDC(merchant);
-    
-    const success = rollResult.total >= dc;
-    let priceAdjustment = 0;
-    let message = '';
-    
-    if (success) {
-      // Success: Giảm giá mua / Tăng giá bán
-      if (rollResult.roll === 20) {
-        // Critical Success
-        priceAdjustment = type === 'buy' ? -0.3 : 0.3; // 30%
-        message = 'Thương lượng thành công xuất sắc!';
-      } else {
-        // Normal Success
-        const adjustmentRange = 0.1 + (rollResult.total - dc) * 0.02; // 10-20%
-        priceAdjustment = type === 'buy' ? -adjustmentRange : adjustmentRange;
-        message = 'Thương lượng thành công!';
-      }
-    } else {
-      // Fail
-      if (rollResult.roll === 1) {
-        // Critical Fail
-        priceAdjustment = type === 'buy' ? 0.1 : -0.1; // 10% theo hướng xấu
-        message = 'Thương lượng thất bại hoàn toàn!';
-      } else {
-        // Normal Fail
-        priceAdjustment = 0;
-        message = 'Thương lượng thất bại.';
-      }
-    }
-    
-    const finalPrice = Math.floor(basePrice * (1 + priceAdjustment));
-    
-    return {
-      success,
-      roll: rollResult.roll,
-      total: rollResult.total,
-      dc,
-      modifier: rollResult.modifier,
-      priceAdjustment: Math.round(priceAdjustment * 100),
-      finalPrice: Math.max(1, finalPrice),
-      message
-    };
-  }
-
-  /**
-   * Roll thương lượng (D20 + charisma + relationship/10)
-   */
-  public rollNegotiation(character: Character, merchant: NPCRelationship | null): { roll: number; modifier: number; total: number } {
-    const roll = Math.floor(Math.random() * 20) + 1; // 1-20
-    
-    // Charisma modifier
-    const charismaModifier = character.coreStats?.modifiers?.charisma || 0;
-    
-    // Relationship modifier (relationship/10, rounded down)
-    const relationshipModifier = merchant ? Math.floor(merchant.relationshipLevel / 10) : 0;
-    
-    const totalModifier = charismaModifier + relationshipModifier;
-    const total = roll + totalModifier;
-    
-    return {
-      roll,
-      modifier: totalModifier,
-      total
-    };
-  }
-
-  /**
-   * Tính DC cho thương lượng
-   */
-  private calculateNegotiationDC(merchant: NPCRelationship | null): number {
-    let baseDC = 15; // Default DC
-    
-    if (merchant) {
-      // Relationship dương giảm DC
-      if (merchant.relationshipLevel >= 80) {
-        baseDC = 10;
-      } else if (merchant.relationshipLevel >= 50) {
-        baseDC = 13;
-      }
-    }
-    
-    return baseDC;
-  }
 
   /**
    * Xử lý giao dịch mua
