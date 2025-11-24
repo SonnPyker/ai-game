@@ -1,4 +1,4 @@
-
+﻿
 interface DialogueRendererProps {
   content: string;
   className?: string;
@@ -182,12 +182,12 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
             <div key={index} className="my-4">
               <div className={`${
                 isPlayer 
-                  ? 'bg-green-800 border-l-4 border-green-600 text-green-100 pl-4 py-3 italic rounded-r-lg shadow-sm' 
+                  ? 'bg-yellow-900 border-l-4 border-yellow-600 text-yellow-200 pl-4 py-3 italic rounded-r-lg shadow-sm' 
                   : 'text-gray-400 italic'
               }`}>
                 <div className="flex items-start">
                   <span className={`${
-                    isPlayer ? 'text-green-200' : 'text-gray-500'
+                    isPlayer ? 'text-yellow-200' : 'text-gray-500'
                   } mr-2 text-lg leading-none`}>"</span>
                   <span className="flex-1 leading-relaxed">
                     {highlightNames(segment.content).map((part, partIndex) => {
@@ -206,7 +206,7 @@ export function DialogueRenderer({ content, className = '', isPlayer = false }: 
                     })}
                   </span>
                   <span className={`${
-                    isPlayer ? 'text-green-200' : 'text-gray-500'
+                    isPlayer ? 'text-yellow-200' : 'text-gray-500'
                   } ml-2 text-lg leading-none`}>"</span>
                 </div>
               </div>

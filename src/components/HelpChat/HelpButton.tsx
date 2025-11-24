@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { HelpButtonVariant } from '../../types/helpChat';
 import { HelpChatModal } from './HelpChatModal';
@@ -22,8 +22,8 @@ export const HelpButton: React.FC<HelpButtonProps> = ({ variant, className = '' 
   const baseClasses = "p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback";
   
   const variantClasses = {
-    fixed: "fixed top-4 right-4 z-40 bg-blue-800 border-blue-700 text-white hover:bg-blue-900 shadow-lg",
-    inline: "bg-blue-800 border-blue-700 text-white hover:bg-blue-900"
+    fixed: "fixed top-4 right-4 z-40 bg-yellow-800 border-yellow-700 text-white hover:bg-yellow-900 shadow-lg",
+    inline: "bg-yellow-800 border-yellow-700 text-white hover:bg-yellow-900"
   };
 
   const buttonClasses = `${baseClasses} ${variantClasses[variant]} ${className}`;

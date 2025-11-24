@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
+﻿import { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, Loader2, AlertCircle, Play, Clock, MessageSquare, FileText, Undo2, Save, Shield, AlertTriangle, Info, EyeOff, RefreshCw, History, Moon } from 'lucide-react';
 import { worldTimeService } from '../services/worldTimeService';
@@ -74,7 +74,7 @@ const ImageDisplay = ({ filepath, prompt }: { filepath: string; prompt?: string 
     return (
       <div className="mb-3 p-4 bg-gray-800 rounded-lg border border-gray-700">
         <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-400"></div>
           <span className="text-sm text-gray-400">Loading image...</span>
         </div>
       </div>
@@ -83,8 +83,8 @@ const ImageDisplay = ({ filepath, prompt }: { filepath: string; prompt?: string 
 
   if (error || !imageUrl) {
     return (
-      <div className="mb-3 p-4 bg-red-900 rounded-lg border border-red-700">
-        <span className="text-sm text-red-300">Failed to load image</span>
+      <div className="mb-3 p-4 bg-gray-950 rounded-lg border border-gray-800">
+        <span className="text-sm text-white">Failed to load image</span>
       </div>
     );
   }
@@ -459,7 +459,7 @@ export function GamePage() {
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           // All retries failed
-          console.error('❌ NPC analysis failed after all retries');
+          console.error('✗ NPC analysis failed after all retries');
           setError('Không thể phân tích quan hệ NPC sau nhiều lần thử');
         }
       } finally {
@@ -782,7 +782,7 @@ export function GamePage() {
             const world = JSON.parse(worldData);
             const scenario = JSON.parse(scenarioData);
             
-            // 🚨 CRITICAL: Validate and sync world data to ensure locationType consistency
+            // ! CRITICAL: Validate and sync world data to ensure locationType consistency
             const syncedWorld = locationSyncService.validateAndSyncAllLocations(world);
             if (JSON.stringify(syncedWorld) !== JSON.stringify(world)) {
               localStorage.setItem('world_gen_result', JSON.stringify(syncedWorld));
@@ -855,7 +855,7 @@ export function GamePage() {
           setChatHistory(chatHistory);
           
         } catch (error) {
-          console.error('❌ Lỗi load game data:', error);
+          console.error('✗ Lỗi load game data:', error);
         }
       }
     };
@@ -1245,7 +1245,7 @@ export function GamePage() {
       
       // Show result to user
       // Don't show DC check result to player - only send to AI
-      // const resultText = `🎲 ${stat.charAt(0).toUpperCase() + stat.slice(1)} Check: ${roll.rolls[0]}+${modifier}=${total} vs DC ${dc} → ${success ? 'SUCCESS' : 'FAILURE'}`;
+      // const resultText = `□ ${stat.charAt(0).toUpperCase() + stat.slice(1)} Check: ${roll.rolls[0]}+${modifier}=${total} vs DC ${dc} → ${success ? 'SUCCESS' : 'FAILURE'}`;
       // setSaveMessage(resultText);
       // setTimeout(() => setSaveMessage(null), 5000);
       
@@ -1298,7 +1298,7 @@ export function GamePage() {
         if (fuzzyMatch) {
           npc = fuzzyMatch;
         } else {
-          // ✨ MỚI: Tạo enemy từ context
+          // • MỚI: Tạo enemy từ context
           
           // Get character data for level
           const characterData = localStorage.getItem('currentCharacter');
@@ -1466,7 +1466,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       
       // KIỂM TRA ĐẶC BIỆT: Thông báo lỗi cụ thể từ generateTurnResponse
       if (narrative.includes('xin lỗi, có lỗi xảy ra khi xử lý phản hồi từ ai')) {
-        console.error('🚫 PHÁT HIỆN THÔNG BÁO LỖI CỤ THỂ - KHÔNG ĐƯỢC CẬP NHẬT BẤT KỲ THỨ GÌ:', {
+        console.error('× PHÁT HIỆN THÔNG BÁO LỖI CỤ THỂ - KHÔNG ĐƯỢC CẬP NHẬT BẤT KỲ THỨ GÌ:', {
           narrative: response.narrative,
           message: 'Đây là thông báo lỗi từ generateTurnResponse - tuyệt đối không được update state'
         });
@@ -1501,7 +1501,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
       
       const hasErrorPattern = errorPatterns.some(pattern => narrative.includes(pattern));
       if (hasErrorPattern) {
-        console.error('🚫 AI response chứa thông báo lỗi:', {
+        console.error('× AI response chứa thông báo lỗi:', {
           narrative: response.narrative,
           detectedPatterns: errorPatterns.filter(pattern => narrative.includes(pattern))
         });
@@ -1695,7 +1695,7 @@ Trả về chỉ mô tả ngắn gọn, không cần giải thích thêm.`;
           openingMessage.hasImageGenerationFailed = false;
           
         } catch (error) {
-          console.error('❌ Failed to generate opening image:', error);
+          console.error('✗ Failed to generate opening image:', error);
           // Mark as failed
           openingMessage.isGeneratingImage = false;
           openingMessage.hasImageGenerationFailed = true;
@@ -1984,7 +1984,7 @@ ${enhancedMessage}`;
       // Validate AI response using comprehensive validation function
       const validation = validateAIResponse(response);
       if (!validation.isValid) {
-        console.error('🚫 AI response validation failed:', {
+        console.error('× AI response validation failed:', {
           error: validation.error,
           response: response,
           narrative: response?.narrative,
@@ -2245,7 +2245,7 @@ ${enhancedMessage}`;
             const currentPlayerLocation = locationService.getCurrentLocation();
             
             if (targetLocation && currentPlayerLocation) {
-              // ❌ REMOVED: Don't update location here - it will be updated after travel time calculation
+              // ✗ REMOVED: Don't update location here - it will be updated after travel time calculation
               // This was causing the bug where currentPlayerLocation was already updated to target location
               // when calculating travel time, resulting in 0 distance and 0 travel time
               
@@ -2268,7 +2268,7 @@ ${enhancedMessage}`;
           // Parse items from AI response
           inventoryService.parseItemsFromAIResponse(response);
           
-          // 🚨 CRITICAL: Validate and restore locationType consistency using LocationSyncService
+          // ! CRITICAL: Validate and restore locationType consistency using LocationSyncService
           if (newSceneState.location) {
             // Sync location object if it exists
             if (typeof newSceneState.location === 'object') {
@@ -2449,7 +2449,7 @@ ${enhancedMessage}`;
                 if (gameState.worldTime) {
                   newTime = worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes);
                   
-                  // ✅ Update player location AFTER travel time calculation
+                  // ✓ Update player location AFTER travel time calculation
                   const newPlayerLocation = {
                     currentLocationId: targetLocation.id,
                     locationHistory: [
@@ -2463,19 +2463,19 @@ ${enhancedMessage}`;
                   };
                   locationService.savePlayerLocation(newPlayerLocation);
                   
-                  // ✅ Update sceneState.location from player_location after travel
+                  // ✓ Update sceneState.location from player_location after travel
                   newSceneState.location = targetLocation.id;
-                  newSceneState.worldTime = newTime; // ✅ Also update sceneState.worldTime
+                  newSceneState.worldTime = newTime; // ✓ Also update sceneState.worldTime
                 } else {
-                  console.error(`❌ [Travel Time] gameState.worldTime is null! Cannot advance time.`);
+                  console.error(`✗ [Travel Time] gameState.worldTime is null! Cannot advance time.`);
                   newTime = gameState.worldTime;
                 }
               } else {
-                console.error(`❌ [Travel Time] Target location "${locationName}" not found! Available locations:`, worldDataParsed.locations?.map((loc: any) => loc.name));
+                console.error(`✗ [Travel Time] Target location "${locationName}" not found! Available locations:`, worldDataParsed.locations?.map((loc: any) => loc.name));
                 newTime = gameState.worldTime;
               }
             } else {
-              console.error(`❌ [Travel Time] Current player location not found!`);
+              console.error(`✗ [Travel Time] Current player location not found!`);
               newTime = gameState.worldTime;
             }
           } else {
@@ -2483,14 +2483,14 @@ ${enhancedMessage}`;
             if (gameState.worldTime) {
               newTime = worldTimeService.advanceMinutes(gameState.worldTime, durationMinutes);
             } else {
-              console.error(`❌ [Time Update] gameState.worldTime is null! Cannot advance time.`);
+              console.error(`✗ [Time Update] gameState.worldTime is null! Cannot advance time.`);
               newTime = gameState.worldTime; // Keep original time
             }
           }
 
           // Update game state with correct worldTime after time calculation
           
-          // ✅ Update sceneState.worldTime for all cases (not just travel)
+          // ✓ Update sceneState.worldTime for all cases (not just travel)
           newSceneState.worldTime = newTime;
           
           setGameState(prev => ({
@@ -2509,7 +2509,7 @@ ${enhancedMessage}`;
             if (completeWorldData) {
               const worldDataParsed = JSON.parse(completeWorldData);
               worldDataParsed.currentTime = newTime;
-              worldDataParsed.worldTime = newTime; // ✅ Also update worldTime field
+              worldDataParsed.worldTime = newTime; // ✓ Also update worldTime field
               localStorage.setItem('world_gen_result', JSON.stringify(worldDataParsed));
             }
           }
@@ -2670,7 +2670,7 @@ ${enhancedMessage}`;
         }
       } else {
         // BẢO VỆ KÉP: Đảm bảo không có gì được update khi AI response không thành công
-        console.error('🚫 AI response failed - skipping ALL game updates to prevent corruption');
+        console.error('× AI response failed - skipping ALL game updates to prevent corruption');
         
         // Khôi phục gợi ý hành động cũ khi AI response bị lỗi
         if (backupSuggestions.length > 0) {
@@ -2680,7 +2680,7 @@ ${enhancedMessage}`;
       }
 
     } catch (error) {
-      console.error('🚫 Lỗi gửi tin nhắn:', {
+      console.error('× Lỗi gửi tin nhắn:', {
         error: error,
         errorMessage: error instanceof Error ? error.message : 'Có lỗi xảy ra',
         errorStack: error instanceof Error ? error.stack : undefined,
@@ -2814,7 +2814,7 @@ ${enhancedMessage}`;
       sccService.cleanupOldChatHistory(turnCounter);
       
     } catch (error) {
-      console.error(`❌ Error during summarization (Attempt ${retryCount + 1}):`, error);
+      console.error(`✗ Error during summarization (Attempt ${retryCount + 1}):`, error);
       
       if (retryCount < maxRetries) {
         // Wait before retry
@@ -2823,7 +2823,7 @@ ${enhancedMessage}`;
         // Recursive retry
         return handleSummarization(sccContext, worldData, characterData, scenarioData, retryCount + 1);
       } else {
-        console.error('❌ Summarization failed after all retries. Continuing without summarization.');
+        console.error('✗ Summarization failed after all retries. Continuing without summarization.');
         
         // Show error notification but continue game
         setError('Không thể tóm tắt ngữ cảnh. Game sẽ tiếp tục nhưng có thể chậm hơn.');
@@ -2870,7 +2870,7 @@ ${enhancedMessage}`;
   const handleSaveGame = async (slotId: 'slot1' | 'slot2' | 'slot3' | 'local1' | 'local2' | 'local3') => {
     // Kiểm tra nếu đang có tiến trình xử lý nào đang chạy
     if (isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions) {
-      setSaveMessage('❌ Không thể lưu game khi đang xử lý. Vui lòng đợi hoàn tất.');
+      setSaveMessage('✗ Không thể lưu game khi đang xử lý. Vui lòng đợi hoàn tất.');
       setTimeout(() => setSaveMessage(null), 3000); // Tắt timeout
       return;
     }
@@ -2921,7 +2921,7 @@ ${enhancedMessage}`;
               const updatedMerchantShops = merchantService.exportForSaveGame();
               currentMerchantShops.shops = updatedMerchantShops.shops;
             } catch (error) {
-              console.error('🔍 Error creating shop:', error);
+              console.error('→ Error creating shop:', error);
             }
           }
         }
@@ -3021,13 +3021,13 @@ ${enhancedMessage}`;
 
       if (result.success) {
         const source = isLocalSlot ? 'Local' : 'Cloud';
-        setSaveMessage(`✅ Đã lưu vào slot ${slotId} (${source})`);
+        setSaveMessage(`✓ Đã lưu vào slot ${slotId} (${source})`);
         setTimeout(() => setSaveMessage(null), 3000); // Tắt timeout
       } else {
-        setSaveMessage(`❌ Lỗi: ${result.error}`);
+        setSaveMessage(`✗ Lỗi: ${result.error}`);
       }
     } catch (error) {
-      setSaveMessage(`❌ Lỗi khi lưu game: ${error}`);
+      setSaveMessage(`✗ Lỗi khi lưu game: ${error}`);
     } finally {
       // Loading state is handled in SavePopup
     }
@@ -3809,7 +3809,7 @@ ${enhancedMessage}`;
       }
 
     } catch (error) {
-      console.error('❌ Lỗi load game:', error);
+      console.error('✗ Lỗi load game:', error);
       setError('Lỗi tải game');
     }
   };
@@ -3864,7 +3864,7 @@ ${enhancedMessage}`;
         worldData.contentFlags = newFlags;
         localStorage.setItem('world_gen_result', JSON.stringify(worldData));
       } catch (error) {
-        console.error('❌ Error updating contentFlags in world_gen_result:', error);
+        console.error('✗ Error updating contentFlags in world_gen_result:', error);
       }
     }
     
@@ -3876,7 +3876,7 @@ ${enhancedMessage}`;
         worldData.contentFlags = newFlags;
         localStorage.setItem('currentWorldData', JSON.stringify(worldData));
       } catch (error) {
-        console.error('❌ Error updating contentFlags in currentWorldData:', error);
+        console.error('✗ Error updating contentFlags in currentWorldData:', error);
       }
     }
   };
@@ -4383,8 +4383,8 @@ ${enhancedMessage}`;
           </p>
           
           {error && (
-            <div className="mb-4 p-3 bg-red-800 border border-red-500 rounded-lg">
-              <div className="flex items-center space-x-2 text-red-300">
+            <div className="mb-4 p-3 bg-gray-900 border border-gray-700 rounded-lg">
+              <div className="flex items-center space-x-2 text-white">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-sm">{error}</span>
               </div>
@@ -4394,7 +4394,7 @@ ${enhancedMessage}`;
           <button
             onClick={initializeGame}
             disabled={isLoading}
-            className="w-full py-3 bg-blue-600 border border-blue-500 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="w-full py-3 bg-yellow-600 border border-yellow-500 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {isLoading ? (
               <>
@@ -4428,10 +4428,10 @@ ${enhancedMessage}`;
           <MotionWrapper
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-blue-600 border-b border-blue-500 p-3"
+            className="bg-yellow-600 border-b border-yellow-500 p-3"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-sm text-blue-300">
+              <div className="flex items-center space-x-2 text-sm text-yellow-300">
                 <FileText className="w-4 h-4" />
                 <span>Đã tóm tắt ngữ cảnh (Lượt {turnCounter})</span>
               </div>
@@ -4491,9 +4491,9 @@ ${enhancedMessage}`;
                   >
                     {gameState.contentFlags.adult_enabled ? (
                       gameState.contentFlags.adult_intensity === 'direct' ? (
-                        <AlertTriangle className="w-4 h-4 text-red-400" />
+                        <AlertTriangle className="w-4 h-4 text-white" />
                       ) : (
-                        <Shield className="w-4 h-4 text-orange-400" />
+                        <Shield className="w-4 h-4 text-yellow-400" />
                       )
                     ) : (
                       <EyeOff className="w-4 h-4 text-gray-400" />
@@ -4501,8 +4501,8 @@ ${enhancedMessage}`;
                     <span className={`text-xs font-medium ${
                       gameState.contentFlags.adult_enabled
                         ? gameState.contentFlags.adult_intensity === 'direct' 
-                          ? 'text-red-300' 
-                          : 'text-orange-300'
+                          ? 'text-white' 
+                          : 'text-yellow-300'
                         : 'text-gray-400'
                     }`}>
                       {gameState.contentFlags.adult_enabled 
@@ -4545,8 +4545,8 @@ ${enhancedMessage}`;
                 }}
                 className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
                   isInfoMenuPinned 
-                    ? 'bg-blue-900 border-blue-700 text-blue-100' 
-                    : 'bg-blue-800 border-blue-700 text-white hover:bg-blue-900'
+                    ? 'bg-yellow-900 border-yellow-700 text-white' 
+                    : 'bg-yellow-800 border-yellow-700 text-white hover:bg-yellow-900'
                 }`}
                 title={isInfoMenuPinned ? "Bỏ ghim menu" : "Thông tin game"}
               >
@@ -4557,7 +4557,7 @@ ${enhancedMessage}`;
               {/* Action Log Button */}
               <button
                 onClick={() => setShowActionLog(true)}
-                className="p-2 bg-purple-800 border border-purple-700 text-white rounded-lg hover:bg-purple-900 transition-colors duration-200 mobile-button touch-feedback"
+                className="p-2 bg-gray-900 border border-yellow-700 text-white rounded-lg hover:bg-gray-950 transition-colors duration-200 mobile-button touch-feedback"
                 title="Lịch sử hành động"
               >
                 <History className="w-4 h-4" />
@@ -4569,7 +4569,7 @@ ${enhancedMessage}`;
                 className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
                     ? 'bg-gray-800 border-gray-700 text-gray-400 cursor-not-allowed'
-                    : 'bg-purple-800 border-purple-700 text-white hover:bg-purple-900'
+                    : 'bg-gray-900 border-yellow-700 text-white hover:bg-gray-950'
                 }`}
                 title={
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
@@ -4586,7 +4586,7 @@ ${enhancedMessage}`;
                 className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
                     ? 'bg-gray-800 border-gray-700 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-800 border-green-700 text-white hover:bg-green-900'
+                    : 'bg-yellow-900 border-yellow-700 text-white hover:bg-gray-900'
                 }`}
                 title={
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
@@ -4604,7 +4604,7 @@ ${enhancedMessage}`;
                 className={`p-2 border rounded-lg transition-colors duration-200 mobile-button touch-feedback ${
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
                     ? 'bg-gray-800 border-gray-700 text-gray-400 cursor-not-allowed'
-                    : 'bg-red-800 border-red-700 text-white hover:bg-red-900'
+                    : 'bg-gray-900 border-gray-800 text-white hover:bg-gray-900'
                 }`}
                 title={
                   isLoading || isAIProcessing || isNPCAnalysisProcessing || isGeneratingSuggestions
@@ -4640,14 +4640,14 @@ ${enhancedMessage}`;
                     disabled={isLoading}
                     className={`mt-1 p-2 md:p-1.5 rounded-md transition-all duration-200 min-w-[40px] min-h-[40px] md:min-w-[32px] md:min-h-[32px] flex items-center justify-center ${
                       resendingMessageIndex === index
-                        ? 'opacity-100 bg-green-800 text-green-100'
+                        ? 'opacity-100 bg-yellow-900 text-yellow-200'
                         : showResendButton === index 
                           ? 'opacity-100' 
                           : 'opacity-70 md:opacity-0 md:group-hover:opacity-100'
                     } ${
                       isLoading 
                         ? 'text-gray-500 cursor-not-allowed' 
-                        : 'text-blue-400 hover:text-blue-300 hover:bg-blue-800 active:bg-blue-900'
+                        : 'text-yellow-400 hover:text-yellow-300 hover:bg-yellow-800 active:bg-yellow-900'
                     } touch-manipulation`}
                     title={
                       resendingMessageIndex === index 
@@ -4659,7 +4659,7 @@ ${enhancedMessage}`;
                   >
                     <RefreshCw className={`w-4 h-4 ${
                       isLoading ? 'animate-spin' : 
-                      resendingMessageIndex === index ? 'text-green-400' : ''
+                      resendingMessageIndex === index ? 'text-yellow-400' : ''
                     }`} />
                   </button>
                 )}
@@ -4678,7 +4678,7 @@ ${enhancedMessage}`;
                 <div
                   className={`max-w-3xl px-3 sm:px-4 py-3 rounded-lg cursor-pointer md:cursor-default mobile-padding ${
                     message.role === 'player'
-                      ? 'bg-blue-800 border border-blue-700 text-blue-100'
+                      ? 'bg-yellow-800 border border-yellow-700 text-white'
                       : 'bg-gray-900 border border-gray-800 text-gray-100'
                   }`}
                   onClick={() => handleMessageTap(index, message.role)}
@@ -4749,10 +4749,10 @@ ${enhancedMessage}`;
       >
         {/* Error Display */}
         {error && (
-          <div className={`mx-4 mb-2 p-3 bg-red-800 border border-red-500 rounded-lg transition-all duration-300 ${
+          <div className={`mx-4 mb-2 p-3 bg-gray-900 border border-gray-700 rounded-lg transition-all duration-300 ${
             isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
           }`}>
-            <div className="flex items-center space-x-2 text-red-300">
+            <div className="flex items-center space-x-2 text-white">
               <AlertCircle className="w-4 h-4" />
               <span className="text-sm">{error}</span>
             </div>
@@ -4761,10 +4761,10 @@ ${enhancedMessage}`;
 
         {/* Save Message Display */}
         {saveMessage && (
-          <div className={`mx-4 mb-2 p-3 bg-green-800 border border-green-500 rounded-lg transition-all duration-300 ${
+          <div className={`mx-4 mb-2 p-3 bg-yellow-900 border border-yellow-500 rounded-lg transition-all duration-300 ${
             isInfoMenuPinned && !shouldUseMobileLayout() ? 'mr-96' : ''
           }`}>
-            <div className="flex items-center space-x-2 text-green-300">
+            <div className="flex items-center space-x-2 text-yellow-300">
               <Save className="w-4 h-4" />
               <span className="text-sm">{saveMessage}</span>
             </div>
@@ -4795,7 +4795,7 @@ ${enhancedMessage}`;
 
           {/* Resend indicator */}
           {resendingMessageIndex !== null && (
-            <div className="mb-1.5 text-xs text-green-400 flex items-center space-x-1">
+            <div className="mb-1.5 text-xs text-yellow-400 flex items-center space-x-1">
               <RefreshCw className="w-3 h-3" />
               <span>Đã copy tin nhắn vào ô chat - bạn có thể chỉnh sửa trước khi gửi</span>
             </div>
@@ -4804,7 +4804,7 @@ ${enhancedMessage}`;
 
           {/* Travel action indicator */}
           {isTravelActionSelected && (
-            <div className="mb-1.5 text-xs text-green-400 flex items-center space-x-1">
+            <div className="mb-1.5 text-xs text-yellow-400 flex items-center space-x-1">
               <Send className="w-3 h-3" />
               <span>Đã chọn địa điểm di chuyển - nhấn gửi để thực hiện hành động</span>
             </div>
@@ -4831,16 +4831,16 @@ ${enhancedMessage}`;
                 shouldUseMobileLayout() ? 'text-sm' : 'text-base'
               } ${
                 hasMinimizedModals
-                  ? 'border-red-700 focus:border-red-700 opacity-75'
+                  ? 'border-gray-800 focus:border-gray-800 opacity-75'
                   : selectedSuggestionId
-                    ? 'border-blue-700 focus:border-blue-700 opacity-75'
+                    ? 'border-yellow-700 focus:border-yellow-700 opacity-75'
                     : isTravelActionSelected
-                      ? 'border-green-600 focus:border-green-600 opacity-75'
+                      ? 'border-yellow-600 focus:border-yellow-600 opacity-75'
                       : resendingMessageIndex !== null 
-                        ? 'border-green-700 focus:border-green-700' 
+                        ? 'border-yellow-700 focus:border-yellow-700' 
                         : (isAIProcessing || isNPCAnalysisProcessing)
                           ? 'border-yellow-700 focus:border-yellow-700'
-                          : 'border-gray-800 focus:border-blue-700'
+                          : 'border-gray-800 focus:border-yellow-700'
               }`}
               rows={2}
               disabled={!!selectedSuggestionId || isTravelActionSelected || hasMinimizedModals}
@@ -4854,10 +4854,10 @@ ${enhancedMessage}`;
               disabled={!currentMessage.trim() || isLoading || isAIProcessing || isNPCAnalysisProcessing || hasMinimizedModals}
               className={`px-3 sm:px-4 py-3 border rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${shouldUseMobileLayout() ? 'min-h-[48px] min-w-[48px]' : 'mobile-button'} touch-feedback ${
                 hasMinimizedModals
-                  ? 'bg-red-800 border-red-700 text-white'
+                  ? 'bg-gray-900 border-gray-800 text-white'
                   : isAIProcessing || isNPCAnalysisProcessing
                     ? 'bg-yellow-800 border-yellow-700 text-white'
-                    : 'bg-blue-800 border-blue-700 text-white hover:bg-blue-900'
+                    : 'bg-yellow-800 border-yellow-700 text-white hover:bg-yellow-900'
               }`}
             >
               <Send className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -4892,7 +4892,7 @@ ${enhancedMessage}`;
         <Suspense fallback={
           <div className="fixed top-0 right-0 h-screen bg-gray-900 border-l border-gray-600 z-50 flex items-center justify-center w-96">
             <div className="glass-effect p-8 rounded-2xl text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto mb-4"></div>
               <p className="text-white text-sm">Đang tải menu...</p>
             </div>
           </div>
@@ -5049,21 +5049,21 @@ ${enhancedMessage}`;
                 {/* Health Recovery Info */}
                 <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
                   <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-green-400">Hồi máu khi nghỉ ngơi</span>
+                    <div className="w-2 h-2 bg-yellow-600 rounded-full"></div>
+                    <span className="text-sm font-medium text-yellow-400">Hồi máu khi nghỉ ngơi</span>
                   </div>
                   <div className="text-xs text-gray-300 space-y-1">
                     <div className="flex justify-between">
                       <span>2-4 giờ:</span>
-                      <span className="text-green-400">+25% máu</span>
+                      <span className="text-yellow-400">+25% máu</span>
                     </div>
                     <div className="flex justify-between">
                       <span>4-6 giờ:</span>
-                      <span className="text-green-400">+50% máu</span>
+                      <span className="text-yellow-400">+50% máu</span>
                     </div>
                     <div className="flex justify-between">
                       <span>6+ giờ:</span>
-                      <span className="text-green-400">+75% máu</span>
+                      <span className="text-yellow-400">+75% máu</span>
                     </div>
                   </div>
                   
@@ -5071,7 +5071,7 @@ ${enhancedMessage}`;
                   <div className="mt-2 pt-2 border-t border-gray-700">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-400">Hồi máu dự kiến:</span>
-                      <span className="text-green-400 font-medium">
+                      <span className="text-yellow-400 font-medium">
                         {skipHours >= 2 && skipHours < 4 ? '+25%' : 
                          skipHours >= 4 && skipHours < 6 ? '+50%' : 
                          skipHours >= 6 ? '+75%' : 'Không hồi máu'}
@@ -5124,7 +5124,7 @@ ${enhancedMessage}`;
                 </button>
                 <button
                   onClick={handleSkipTime}
-                  className="flex-1 px-4 py-2 bg-purple-600 border border-purple-500 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-yellow-600 border border-yellow-500 text-white rounded-lg hover:bg-yellow-700 transition-colors"
                 >
                   Xác nhận
                 </button>

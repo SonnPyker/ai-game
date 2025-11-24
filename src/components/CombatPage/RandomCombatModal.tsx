@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Sword, Shield, AlertTriangle } from 'lucide-react';
 import { MotionWrapper } from '../MotionWrapper';
 import { ModalHeader } from '../ModalHeader';
@@ -27,7 +27,7 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
     modalId: 'random-combat-modal',
     title: 'Chiến đấu ngẫu nhiên',
     subtitle: typeof location === 'string' ? location : ((location as any)?.name || 'Unknown Location'),
-    icon: <Sword className="w-5 h-5 text-red-400" />
+    icon: <Sword className="w-5 h-5 text-white" />
   });
   
   if (!isOpen) return null;
@@ -48,10 +48,10 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
   // Threat level display functions
   const getThreatLevelColor = (threatLevel: string) => {
     switch (threatLevel.toLowerCase()) {
-      case 'low': return 'text-green-400 bg-green-900/30 border-green-600';
+      case 'low': return 'text-yellow-400 bg-gray-900/30 border-yellow-600';
       case 'medium': return 'text-yellow-400 bg-yellow-900/30 border-yellow-600';
-      case 'high': return 'text-orange-400 bg-orange-900/30 border-orange-600';
-      case 'extreme': return 'text-red-400 bg-red-900/30 border-red-600';
+      case 'high': return 'text-yellow-400 bg-gray-900/30 border-yellow-600';
+      case 'extreme': return 'text-white bg-gray-950/30 border-gray-700';
       default: return 'text-gray-400 bg-gray-900/30 border-gray-600';
     }
   };
@@ -93,9 +93,9 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
           {/* Enemy Info */}
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <div className="flex items-center space-x-3 mb-3">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-gray-900 rounded-full"></div>
               <h3 className="text-lg font-semibold text-white">{enemyName}</h3>
-              <span className="px-2 py-1 bg-red-600 text-xs text-white rounded">
+              <span className="px-2 py-1 bg-gray-900 text-xs text-white rounded">
                 Level {enemyLevel}
               </span>
               <span className={`px-2 py-1 text-xs font-medium rounded border ${getThreatLevelColor(enemyThreatLevel)}`}>
@@ -129,7 +129,7 @@ export const RandomCombatModal: React.FC<RandomCombatModalProps> = ({
           <div className="flex space-x-3">
             <button
               onClick={onFight}
-              className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+              className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-gray-900 hover:bg-gray-900 text-white rounded-lg transition-colors font-medium"
             >
               <Sword className="w-5 h-5" />
               <span>Chiến Đấu</span>

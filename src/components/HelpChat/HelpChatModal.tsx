@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Search, ArrowLeft } from 'lucide-react';
 import { HelpFAQ, HelpCategory } from '../../types/helpChat';
@@ -130,7 +130,7 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                     placeholder="Tìm kiếm câu hỏi..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 text-sm"
                   />
                 </div>
               </div>
@@ -145,7 +145,7 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                     onClick={() => handleCategoryFilter(null)}
                     className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                       !selectedCategory
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-yellow-600 text-white'
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }`}
                   >
@@ -157,7 +157,7 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                       onClick={() => handleCategoryFilter(category.id)}
                       className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                         selectedCategory === category.id
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-yellow-600 text-white'
                           : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                       }`}
                       title={category.description}
@@ -184,11 +184,11 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                         onClick={() => handleFAQSelect(faq)}
                         className={`w-full p-3 text-left rounded-lg transition-colors group ${
                           selectedFAQ?.id === faq.id
-                            ? 'bg-blue-600/20 border border-blue-500/30'
+                            ? 'bg-yellow-600/20 border border-yellow-500/30'
                             : 'bg-gray-700 hover:bg-gray-600'
                         }`}
                       >
-                        <div className="font-medium text-white group-hover:text-blue-300 text-sm leading-snug">
+                        <div className="font-medium text-white group-hover:text-yellow-300 text-sm leading-snug">
                           {faq.question}
                         </div>
                         <div className="text-xs text-gray-400 mt-1.5 flex items-center gap-2 flex-wrap">
@@ -235,7 +235,7 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                       placeholder="Tìm kiếm câu hỏi..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 text-sm"
                     />
                   </div>
                 </div>
@@ -250,7 +250,7 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                       onClick={() => handleCategoryFilter(null)}
                       className={`px-3 py-2 text-xs rounded-lg transition-colors ${
                         !selectedCategory
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-yellow-600 text-white'
                           : 'bg-gray-700 text-gray-300 active:bg-gray-600'
                       }`}
                     >
@@ -262,7 +262,7 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                         onClick={() => handleCategoryFilter(category.id)}
                         className={`px-3 py-2 text-xs rounded-lg transition-colors ${
                           selectedCategory === category.id
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-yellow-600 text-white'
                             : 'bg-gray-700 text-gray-300 active:bg-gray-600'
                         }`}
                       >
@@ -293,7 +293,7 @@ export const HelpChatModal: React.FC<HelpChatModalProps> = ({ isOpen, onClose })
                           onClick={() => handleFAQSelect(faq)}
                           className="w-full p-3 sm:p-4 text-left bg-gray-700 active:bg-gray-600 rounded-lg transition-colors group touch-manipulation"
                         >
-                          <div className="font-medium text-white group-active:text-blue-300 text-sm sm:text-base leading-snug">
+                          <div className="font-medium text-white group-active:text-yellow-300 text-sm sm:text-base leading-snug">
                             {faq.question}
                           </div>
                           <div className="text-xs text-gray-400 mt-1.5 flex items-center gap-2 flex-wrap">

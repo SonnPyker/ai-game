@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Key, 
@@ -192,10 +192,10 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
       setTestResults(prev => ({ ...prev, [keyId]: result }));
       
       if (result.success) {
-        setSuccessMessage(`✅ API key hoạt động tốt! (${result.details?.duration || 'N/A'})`);
+        setSuccessMessage(`✓ API key hoạt động tốt! (${result.details?.duration || 'N/A'})`);
       } else {
-        setErrorMessage(`❌ API key không hoạt động: ${result.error || 'Unknown error'}`);
-        console.error('❌ Individual key test failed:', result);
+        setErrorMessage(`✗ API key không hoạt động: ${result.error || 'Unknown error'}`);
+        console.error('✗ Individual key test failed:', result);
       }
     } catch (error) {
       const errorResult = { success: false, error: 'Lỗi khi test API key', details: { error: error } };
@@ -222,7 +222,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
     
     
     if (workingKeys === totalKeys) {
-      setSuccessMessage(`✅ Tất cả ${totalKeys} API keys đều hoạt động tốt!`);
+      setSuccessMessage(`✓ Tất cả ${totalKeys} API keys đều hoạt động tốt!`);
     } else {
       const failedKeys = Object.entries(results)
         .filter(([_, result]) => !result.success)
@@ -256,11 +256,11 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
       
       if (success) {
         const currentKey = geminiService.getCurrentKeyInfo();
-        setSuccessMessage(`✅ Đã tự động chuyển sang key: ${currentKey?.name || 'Unknown'}`);
+        setSuccessMessage(`✓ Đã tự động chuyển sang key: ${currentKey?.name || 'Unknown'}`);
         loadApiKeys();
         loadStats();
       } else {
-        setErrorMessage('❌ Không tìm thấy key nào đang hoạt động');
+        setErrorMessage('✗ Không tìm thấy key nào đang hoạt động');
       }
     } catch (error) {
       console.error('Auto-switch failed:', error);
@@ -284,11 +284,11 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
       
       if (success) {
         const currentKey = geminiService.getCurrentKeyInfo();
-        setSuccessMessage(`✅ Đã chuyển sang key: ${currentKey?.name || 'Unknown'}`);
+        setSuccessMessage(`✓ Đã chuyển sang key: ${currentKey?.name || 'Unknown'}`);
         loadApiKeys();
         loadStats();
       } else {
-        setErrorMessage('❌ Không có key nào khác để chuyển');
+        setErrorMessage('✗ Không có key nào khác để chuyển');
       }
     } catch (error) {
       console.error('Force switch failed:', error);
@@ -314,9 +314,9 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
   };
 
   const getKeyStatusColor = (key: ApiKeyInfo) => {
-    if (!key.isActive) return 'text-red-400';
+    if (!key.isActive) return 'text-white';
     if (key.errorCount > 0) return 'text-yellow-400';
-    return 'text-green-400';
+    return 'text-yellow-400';
   };
 
   const getKeyStatusText = (key: ApiKeyInfo) => {
@@ -331,7 +331,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-white flex items-center space-x-2">
-            <Key className="w-6 h-6 text-primary-400" />
+            <Key className="w-6 h-6 text-yellow-400" />
             <span>Quản Lý API Keys</span>
           </h2>
           <p className="text-gray-400 mt-1">
@@ -352,7 +352,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div className="glass-effect p-4 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
-              <Key className="w-5 h-5 text-primary-400" />
+              <Key className="w-5 h-5 text-yellow-400" />
               <span className="text-sm text-gray-400">Tổng Keys</span>
             </div>
             <div className="text-2xl font-bold text-white">{stats.totalKeys}</div>
@@ -360,7 +360,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
           
           <div className="glass-effect p-4 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
-              <Shield className="w-5 h-5 text-green-400" />
+              <Shield className="w-5 h-5 text-yellow-400" />
               <span className="text-sm text-gray-400">Active</span>
             </div>
             <div className="text-2xl font-bold text-white">{stats.activeKeys}</div>
@@ -368,7 +368,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
           
           <div className="glass-effect p-4 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
-              <TrendingUp className="w-5 h-5 text-blue-400" />
+              <TrendingUp className="w-5 h-5 text-yellow-400" />
               <span className="text-sm text-gray-400">Tổng Usage</span>
             </div>
             <div className="text-2xl font-bold text-white">{stats.totalUsage}</div>
@@ -376,7 +376,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
           
           <div className="glass-effect p-4 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
-              <AlertTriangle className="w-5 h-5 text-red-400" />
+              <AlertTriangle className="w-5 h-5 text-white" />
               <span className="text-sm text-gray-400">Tổng Lỗi</span>
             </div>
             <div className="text-2xl font-bold text-white">{stats.totalErrors}</div>
@@ -384,7 +384,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
 
           <div className="glass-effect p-4 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
-              <Activity className="w-5 h-5 text-purple-400" />
+              <Activity className="w-5 h-5 text-yellow-400" />
               <span className="text-sm text-gray-400">Queue</span>
             </div>
             <div className="text-2xl font-bold text-white">{stats.queueLength}</div>
@@ -406,27 +406,27 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
         <div className="glass-effect p-4 rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-              <Activity className="w-5 h-5 text-primary-400" />
+              <Activity className="w-5 h-5 text-yellow-400" />
               <span>Key Hiện Tại</span>
             </h3>
             <div className="flex items-center space-x-2 flex-wrap gap-2">
               <button
                 onClick={handleTestAllKeys}
-                className="px-3 py-1 bg-blue-500/20 border border-blue-500/50 rounded text-blue-300 hover:bg-blue-500/30 transition-colors text-sm"
+                className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/50 rounded text-yellow-300 hover:bg-yellow-500/30 transition-colors text-sm"
               >
                 Test Tất Cả
               </button>
               <button
                 onClick={handleAutoSwitch}
                 disabled={status === 'loading'}
-                className="px-3 py-1 bg-green-500/20 border border-green-500/50 rounded text-green-300 hover:bg-green-500/30 transition-colors text-sm disabled:opacity-50"
+                className="px-3 py-1 bg-yellow-600/20 border border-yellow-500/50 rounded text-yellow-300 hover:bg-yellow-600/30 transition-colors text-sm disabled:opacity-50"
               >
                 {status === 'loading' ? 'Đang chuyển...' : 'Tự Động Chuyển'}
               </button>
               <button
                 onClick={handleForceSwitch}
                 disabled={status === 'loading'}
-                className="px-3 py-1 bg-purple-500/20 border border-purple-500/50 rounded text-purple-300 hover:bg-purple-500/30 transition-colors text-sm disabled:opacity-50"
+                className="px-3 py-1 bg-yellow-600/20 border border-yellow-500/50 rounded text-yellow-300 hover:bg-yellow-500/30 transition-colors text-sm disabled:opacity-50"
               >
                 {status === 'loading' ? 'Đang chuyển...' : 'Chuyển Tiếp'}
               </button>
@@ -473,11 +473,11 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                   }}
                   placeholder="Ví dụ: Account 1, Account 2..."
                   className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none ${
-                    validationErrors.name ? 'border-red-500' : 'border-white/20 focus:border-primary-400'
+                    validationErrors.name ? 'border-gray-700' : 'border-white/20 focus:border-yellow-400'
                   }`}
                 />
                 {validationErrors.name && (
-                  <p className="text-red-400 text-xs mt-1">{validationErrors.name}</p>
+                  <p className="text-white text-xs mt-1">{validationErrors.name}</p>
                 )}
               </div>
               <div>
@@ -491,11 +491,11 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                   }}
                   placeholder="Ví dụ: Key chính, Key backup..."
                   className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none ${
-                    validationErrors.name ? 'border-red-500' : 'border-white/20 focus:border-primary-400'
+                    validationErrors.name ? 'border-gray-700' : 'border-white/20 focus:border-yellow-400'
                   }`}
                 />
                 {validationErrors.name && (
-                  <p className="text-red-400 text-xs mt-1">{validationErrors.name}</p>
+                  <p className="text-white text-xs mt-1">{validationErrors.name}</p>
                 )}
               </div>
               <div>
@@ -509,11 +509,11 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                   }}
                   placeholder="Nhập API key của bạn..."
                   className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none ${
-                    validationErrors.apiKey ? 'border-red-500' : 'border-white/20 focus:border-primary-400'
+                    validationErrors.apiKey ? 'border-gray-700' : 'border-white/20 focus:border-yellow-400'
                   }`}
                 />
                 {validationErrors.apiKey && (
-                  <p className="text-red-400 text-xs mt-1">{validationErrors.apiKey}</p>
+                  <p className="text-white text-xs mt-1">{validationErrors.apiKey}</p>
                 )}
               </div>
               <div className="flex space-x-3">
@@ -585,14 +585,14 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                     ) : (
                       <div className="flex flex-col">
                         <h4 className="text-lg font-semibold text-white">{key.name}</h4>
-                        <span className="text-sm text-blue-300 font-medium">{key.accountName}</span>
+                        <span className="text-sm text-yellow-300 font-medium">{key.accountName}</span>
                       </div>
                     )}
                     <span className={`text-sm ${getKeyStatusColor(key)}`}>
                       {getKeyStatusText(key)}
                     </span>
                     {key.id === geminiService.getCurrentKeyInfo()?.id && (
-                      <span className="px-2 py-1 bg-primary-500/20 border border-primary-500/50 rounded text-primary-300 text-xs">
+                      <span className="px-2 py-1 bg-yellow-600/20 border border-yellow-500/50 rounded text-yellow-400 text-xs">
                         Đang dùng
                       </span>
                     )}
@@ -618,7 +618,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                   </div>
                   
                   {key.lastError && (
-                    <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-300 text-sm">
+                    <div className="mt-2 p-2 bg-gray-900/10 border border-gray-700/20 rounded text-white text-sm">
                       <strong>Lỗi cuối:</strong> {key.lastError.length > 100 ? key.lastError.substring(0, 100) + '...' : key.lastError}
                     </div>
                   )}
@@ -629,14 +629,14 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                     <>
                       <button
                         onClick={handleSaveEdit}
-                        className="p-2 text-green-400 hover:bg-green-500/20 rounded-lg transition-colors"
+                        className="p-2 text-yellow-400 hover:bg-yellow-600/20 rounded-lg transition-colors"
                         title="Lưu"
                       >
                         <Check className="w-4 h-4" />
                       </button>
                       <button
                         onClick={handleCancelEdit}
-                        className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                        className="p-2 text-white hover:bg-gray-900/20 rounded-lg transition-colors"
                         title="Hủy"
                       >
                         <X className="w-4 h-4" />
@@ -647,7 +647,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                       <button
                         onClick={() => handleTestKey(key.id)}
                         disabled={testingKeys[key.id]}
-                        className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                        className="p-2 text-yellow-400 hover:bg-yellow-500/20 rounded-lg transition-colors"
                         title="Test key"
                       >
                         {testingKeys[key.id] ? (
@@ -665,7 +665,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                       </button>
                       <button
                         onClick={() => handleRemoveApiKey(key.id)}
-                        className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                        className="p-2 text-white hover:bg-gray-900/20 rounded-lg transition-colors"
                         title="Xóa key"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -679,11 +679,11 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
               {testResults[key.id] !== undefined && (
                 <div className={`mt-3 p-3 rounded-lg text-sm ${
                   testResults[key.id].success 
-                    ? 'bg-green-500/10 border border-green-500/20 text-green-300'
-                    : 'bg-red-500/10 border border-red-500/20 text-red-300'
+                    ? 'bg-yellow-600/10 border border-yellow-500/20 text-yellow-300'
+                    : 'bg-gray-900/10 border border-gray-700/20 text-white'
                 }`}>
                   <div className="font-medium">
-                    {testResults[key.id].success ? '✅ API key hoạt động tốt' : '❌ API key không hoạt động'}
+                    {testResults[key.id].success ? '✓ API key hoạt động tốt' : '✗ API key không hoạt động'}
                   </div>
                   {testResults[key.id].details && (
                     <div className="mt-1 text-xs opacity-75">
@@ -691,16 +691,16 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
                         <div>⏱️ Thời gian: {testResults[key.id].details.duration}</div>
                       )}
                       {testResults[key.id].details.responseLength && (
-                        <div>📝 Độ dài phản hồi: {testResults[key.id].details.responseLength} ký tự</div>
+                        <div>○ Độ dài phản hồi: {testResults[key.id].details.responseLength} ký tự</div>
                       )}
                       {testResults[key.id].details.responsePreview && (
-                        <div>💬 Xem trước: {testResults[key.id].details.responsePreview.substring(0, 50)}...</div>
+                        <div>○ Xem trước: {testResults[key.id].details.responsePreview.substring(0, 50)}...</div>
                       )}
                     </div>
                   )}
                   {testResults[key.id].error && (
                     <div className="mt-1 text-xs opacity-75">
-                      🔍 Chi tiết lỗi: {(() => {
+                      → Chi tiết lỗi: {(() => {
                         const error = testResults[key.id].error;
                         return error && error.length > 80 ? error.substring(0, 80) + '...' : error;
                       })()}
@@ -718,7 +718,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
         <MotionWrapper
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-green-300"
+          className="p-4 bg-yellow-600/10 border border-yellow-500/20 rounded-lg text-yellow-300"
         >
           {successMessage}
         </MotionWrapper>
@@ -728,7 +728,7 @@ export function MultiApiKeyManager({ onApiKeySet }: MultiApiKeyManagerProps) {
         <MotionWrapper
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300"
+          className="p-4 bg-gray-900/10 border border-gray-700/20 rounded-lg text-white"
         >
           {errorMessage.length > 150 ? errorMessage.substring(0, 150) + '...' : errorMessage}
         </MotionWrapper>

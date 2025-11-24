@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+﻿import { useNavigate } from 'react-router-dom';
 import { 
   Sword, 
   Sparkles, 
@@ -101,7 +101,7 @@ export function HomePage() {
       >
         <div className="mb-8">
           <MotionWrapper 
-            className={`${isMobile ? 'w-16 h-16 mb-4' : 'w-24 h-24 mb-6'} mx-auto bg-primary-500 rounded-full flex items-center justify-center`}
+            className={`${isMobile ? 'w-16 h-16 mb-4' : 'w-24 h-24 mb-6'} mx-auto bg-yellow-600 rounded-full flex items-center justify-center`}
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           >
@@ -120,7 +120,7 @@ export function HomePage() {
         <div className="flex justify-center">
           <button 
             onClick={handleStartGame}
-            className={`btn-primary inline-flex items-center space-x-2 sm:space-x-3 ${isMobile ? 'text-sm px-4 py-3' : 'text-lg px-8 py-4'} bg-primary-500 hover:bg-primary-600 transform hover:scale-105 transition-all duration-200`}
+            className={`btn-primary inline-flex items-center space-x-2 sm:space-x-3 ${isMobile ? 'text-sm px-4 py-3' : 'text-lg px-8 py-4'} bg-yellow-600 hover:bg-yellow-700 transform hover:scale-105 transition-all duration-200`}
           >
             <Play className={`${isMobile ? 'w-4 h-4' : 'w-6 h-6'}`} />
             <span className={isMobile ? 'hidden sm:inline' : ''}>BẮT ĐẦU CHƠI MỚI</span>
@@ -157,7 +157,7 @@ export function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <div className={`${isMobile ? 'w-10 h-10 mb-3' : 'w-12 h-12 mb-4'} bg-primary-500 rounded-lg flex items-center justify-center`}>
+                <div className={`${isMobile ? 'w-10 h-10 mb-3' : 'w-12 h-12 mb-4'} bg-yellow-600 rounded-lg flex items-center justify-center`}>
                   <Icon className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-white`} />
                 </div>
                 <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold-vietnamese text-white mb-3 uppercase`}>

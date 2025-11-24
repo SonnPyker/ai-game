@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Target, 
@@ -80,7 +80,7 @@ export function QuestTracker({
         value: objective.itemToReceive.value || 0,
         rarity: objective.itemToReceive.rarity || 'common',
         tags: objective.itemToReceive.tags || [],
-        icon: '📦', // Default icon for quest chain items
+        icon: '□', // Default icon for quest chain items
         isEquipped: false,
         stats: {
           strength: 0,
@@ -99,7 +99,7 @@ export function QuestTracker({
       // Mark objective as completed
       onQuestUpdate(questId, objective.id, true);
     } catch (error) {
-      console.error('❌ Lỗi khi nhận item:', error);
+      console.error('✗ Lỗi khi nhận item:', error);
     }
   };
 
@@ -209,17 +209,17 @@ export function QuestTracker({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-400" />;
+        return <CheckCircle className="w-4 h-4 text-yellow-400" />;
       case 'active':
-        return <Play className="w-4 h-4 text-blue-400" />;
+        return <Play className="w-4 h-4 text-yellow-400" />;
       case 'locked':
         return <Lock className="w-4 h-4 text-gray-400" />;
       case 'available':
         return <Target className="w-4 h-4 text-yellow-400" />; // Icon khác cho side quest available
       case 'failed':
-        return <AlertCircle className="w-4 h-4 text-red-400" />;
+        return <AlertCircle className="w-4 h-4 text-white" />;
       case 'declined':
-        return <AlertCircle className="w-4 h-4 text-red-400" />; // Icon cho quest đã từ chối
+        return <AlertCircle className="w-4 h-4 text-white" />; // Icon cho quest đã từ chối
       default:
         return <Clock className="w-4 h-4 text-yellow-400" />;
     }
@@ -260,12 +260,12 @@ export function QuestTracker({
         animate={{ opacity: 1, y: 0 }}
         className={`bg-gray-800/50 rounded-lg p-4 border-2 transition-all duration-200 ${
           isCompleted 
-            ? 'border-green-500/50 bg-green-900/20' 
+            ? 'border-yellow-500/50 bg-gray-900/20' 
             : isLocked
             ? 'border-gray-500/30 bg-gray-900/20'
             : isDeclined
-            ? 'border-red-500/30 bg-red-900/20'
-            : 'border-blue-500/30 hover:border-blue-500/50'
+            ? 'border-gray-700/30 bg-gray-950/20'
+            : 'border-yellow-500/30 hover:border-yellow-500/50'
         }`}
       >
         {/* Quest Header */}
@@ -285,7 +285,7 @@ export function QuestTracker({
             {getStatusIcon(quest.status)}
             <h3 className="text-lg font-semibold text-white">{quest.title}</h3>
             {quest.act && (
-              <span className="px-2 py-1 bg-blue-600/30 text-blue-200 text-xs rounded">
+              <span className="px-2 py-1 bg-yellow-600/30 text-gray-200 text-xs rounded">
                 Act {quest.act}
               </span>
             )}
@@ -303,7 +303,7 @@ export function QuestTracker({
               <span className="text-xs text-gray-500 italic">Bị khóa</span>
             )}
             {isDeclined && (
-              <span className="text-xs text-red-400 italic">Đã từ chối</span>
+              <span className="text-xs text-white italic">Đã từ chối</span>
             )}
           </div>
         </div>
@@ -344,7 +344,7 @@ export function QuestTracker({
           <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
             <div 
               className={`h-2 rounded-full transition-all duration-300 ${
-                isCompleted ? 'bg-green-500' : 'bg-blue-500'
+                isCompleted ? 'bg-yellow-600' : 'bg-yellow-500'
               }`}
               style={{ width: `${progress}%` }}
             />
@@ -375,10 +375,10 @@ export function QuestTracker({
                         checked={objective.completed}
                         onChange={(e) => onQuestUpdate(quest.id, objective.id, e.target.checked)}
                         disabled={isLocked}
-                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500"
                       />
                       <span className={`text-sm ${
-                        objective.completed ? 'text-green-400 line-through' : 'text-white'
+                        objective.completed ? 'text-yellow-400 line-through' : 'text-white'
                       }`}>
                         {(() => {
                           const highlightedParts = highlightNames(objective.description);
@@ -399,7 +399,7 @@ export function QuestTracker({
                         })()}
                       </span>
                       {objective.completed && (
-                        <CheckCircle className="w-3 h-3 text-green-400" />
+                        <CheckCircle className="w-3 h-3 text-yellow-400" />
                       )}
                     </div>
                     
@@ -412,7 +412,7 @@ export function QuestTracker({
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2">
                           <div 
-                            className="bg-red-400 h-2 rounded-full transition-all duration-300"
+                            className="bg-gray-900 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${combatProgress.percentage}%` }}
                           ></div>
                         </div>
@@ -424,7 +424,7 @@ export function QuestTracker({
                       <div className="ml-6">
                         <div className="flex items-center space-x-2 text-xs">
                           {findItemProgress.hasItem ? (
-                            <span className="text-green-400 flex items-center space-x-1">
+                            <span className="text-yellow-400 flex items-center space-x-1">
                               <CheckCircle className="w-3 h-3" />
                               <span>Đã tìm thấy</span>
                             </span>
@@ -464,7 +464,7 @@ export function QuestTracker({
 
         {/* Thông báo cho quest đã từ chối */}
         {isDeclined && (
-          <div className="text-center py-4 text-red-400">
+          <div className="text-center py-4 text-white">
             <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm italic">Quest này đã bị từ chối và không thể nhận lại</p>
           </div>
@@ -498,11 +498,11 @@ export function QuestTracker({
                     case 'currency':
                       return 'bg-yellow-600/30 text-yellow-300';
                     case 'experience':
-                      return 'bg-purple-600/30 text-purple-300';
+                      return 'bg-yellow-600/30 text-yellow-300';
                     case 'item':
-                      return 'bg-blue-600/30 text-blue-300';
+                      return 'bg-yellow-600/30 text-yellow-300';
                     case 'faction_reputation':
-                      return 'bg-orange-600/30 text-orange-300';
+                      return 'bg-yellow-700/30 text-yellow-300';
                     default:
                       return 'bg-yellow-600/30 text-yellow-300';
                   }
@@ -513,7 +513,7 @@ export function QuestTracker({
                     key={index}
                     className={`flex items-center space-x-1 px-2 py-1 rounded text-xs ${
                       reward.claimed 
-                        ? 'bg-green-600/30 text-green-300' 
+                        ? 'bg-yellow-700/30 text-yellow-300' 
                         : getRewardColor(reward.type)
                     }`}
                   >
@@ -558,7 +558,7 @@ export function QuestTracker({
               <div className="flex justify-end mt-3 pt-3 border-t border-gray-700/50">
                 <button
                   onClick={() => handleClaimAllRewards(quest)}
-                  className="px-4 py-2 bg-green-600/20 border border-green-500/50 text-green-300 rounded text-sm hover:bg-green-600/30 transition-colors flex items-center space-x-2"
+                  className="px-4 py-2 bg-yellow-700/20 border border-yellow-500/50 text-yellow-300 rounded text-sm hover:bg-yellow-600/30 transition-colors flex items-center space-x-2"
                 >
                   <Gift className="w-4 h-4" />
                   <span>Nhận tất cả thưởng</span>
@@ -584,7 +584,7 @@ export function QuestTracker({
             {quest.type === 'side' && (
               <button
                 onClick={() => onQuestDeclineActive(quest.id)}
-                className="px-3 py-1 bg-red-600/20 border border-red-500/50 text-red-300 rounded text-sm hover:bg-red-600/30 transition-colors"
+                className="px-3 py-1 bg-gray-900/20 border border-gray-700/50 text-white rounded text-sm hover:bg-gray-800/30 transition-colors"
               >
                 Từ chối Quest
               </button>
@@ -741,7 +741,7 @@ export function QuestTracker({
                        className={`flex items-center justify-between p-3 rounded-lg transition-colors disabled:opacity-50 ${
                          canCreateQuest 
                            ? 'bg-gray-700/50 hover:bg-gray-700/70' 
-                           : 'bg-red-900/20 border border-red-500/30 hover:bg-red-900/30'
+                           : 'bg-gray-950/20 border border-gray-700/30 hover:bg-gray-900/30'
                        }`}
                        title={isAnyAIProcessing ? 'AI đang xử lý, vui lòng đợi...' : !canCreateQuest ? 'Cần 100 điểm danh tiếng để tạo quest' : 'Tạo quest phe phái'}
                      >
@@ -750,7 +750,7 @@ export function QuestTracker({
                          <div className="text-left">
                            <div className="text-white">{faction.name}</div>
                            <div className={`text-xs ${
-                             canCreateQuest ? 'text-green-400' : 'text-red-400'
+                             canCreateQuest ? 'text-yellow-400' : 'text-white'
                            }`}>
                              Danh tiếng: {Math.round(factionReputation.reputation)}/100
                              {!canCreateQuest && ' (Chưa đủ)'}
@@ -758,13 +758,13 @@ export function QuestTracker({
                          </div>
                        </div>
                        {isCreatingQuest === faction.name ? (
-                         <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                         <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
                        ) : isAnyAIProcessing ? (
                          <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
                        ) : canCreateQuest ? (
                          <Plus className="w-4 h-4 text-gray-400" />
                        ) : (
-                         <AlertCircle className="w-4 h-4 text-red-400" />
+                         <AlertCircle className="w-4 h-4 text-white" />
                        )}
                      </button>
                    );
@@ -801,8 +801,8 @@ export function QuestTracker({
                  disabled={isCreatingQuest === factionName || isAnyAIProcessing}
                  className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors disabled:opacity-50 ${
                    checkFactionReputation(factionName)
-                     ? 'bg-blue-600/20 border border-blue-500/50 text-blue-300 hover:bg-blue-600/30'
-                     : 'bg-red-600/20 border border-red-500/50 text-red-300 hover:bg-red-600/30'
+                     ? 'bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 hover:bg-yellow-600/30'
+                     : 'bg-gray-900/20 border border-gray-700/50 text-white hover:bg-gray-800/30'
                  }`}
                  title={isAnyAIProcessing ? 'AI đang xử lý, vui lòng đợi...' : !checkFactionReputation(factionName) ? 'Cần 100 điểm danh tiếng để tạo quest' : 'Tạo quest phe phái'}
                >
@@ -843,7 +843,7 @@ export function QuestTracker({
                        className={`flex items-center justify-between p-3 rounded-lg transition-colors disabled:opacity-50 ${
                          canCreateQuest 
                            ? 'bg-gray-700/50 hover:bg-gray-700/70' 
-                           : 'bg-red-900/20 border border-red-500/30 hover:bg-red-900/30'
+                           : 'bg-gray-950/20 border border-gray-700/30 hover:bg-gray-900/30'
                        }`}
                        title={isAnyAIProcessing ? 'AI đang xử lý, vui lòng đợi...' : !canCreateQuest ? 'Cần 100 điểm danh tiếng để tạo quest' : 'Tạo quest phe phái'}
                      >
@@ -852,7 +852,7 @@ export function QuestTracker({
                          <div className="text-left">
                            <div className="text-white">{faction.name}</div>
                            <div className={`text-xs ${
-                             canCreateQuest ? 'text-green-400' : 'text-red-400'
+                             canCreateQuest ? 'text-yellow-400' : 'text-white'
                            }`}>
                              Danh tiếng: {Math.round(factionReputation.reputation)}/100
                              {!canCreateQuest && ' (Chưa đủ)'}
@@ -860,13 +860,13 @@ export function QuestTracker({
                          </div>
                        </div>
                        {isCreatingQuest === faction.name ? (
-                         <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                         <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
                        ) : isAnyAIProcessing ? (
                          <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
                        ) : canCreateQuest ? (
                          <Plus className="w-4 h-4 text-gray-400" />
                        ) : (
-                         <AlertCircle className="w-4 h-4 text-red-400" />
+                         <AlertCircle className="w-4 h-4 text-white" />
                        )}
                      </button>
                    );
@@ -886,7 +886,7 @@ export function QuestTracker({
           onClick={() => setActiveTab('main')}
           className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
             activeTab === 'main'
-              ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+              ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
               : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
           }`}
         >
@@ -897,7 +897,7 @@ export function QuestTracker({
           onClick={() => setActiveTab('side')}
           className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
             activeTab === 'side'
-              ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+              ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
               : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
           }`}
         >
@@ -908,7 +908,7 @@ export function QuestTracker({
           onClick={() => setActiveTab('faction')}
           className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
             activeTab === 'faction'
-              ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+              ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
               : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
           }`}
         >

@@ -16,7 +16,7 @@ export class SaveStorageFactoryImpl implements SaveStorageFactory {
     const isSupabaseAvailable = await this.supabaseStore.isAvailable();
     
     if (isSupabaseAvailable) {
-      console.log('📡 Sử dụng SupabaseStore (Cloud)');
+      console.log('→ Sử dụng SupabaseStore (Cloud)');
       return this.supabaseStore;
     }
 
@@ -24,7 +24,7 @@ export class SaveStorageFactoryImpl implements SaveStorageFactory {
     const isLocalAvailable = await this.localStore.isAvailable();
     
     if (isLocalAvailable) {
-      console.log('💾 Sử dụng LocalStore (Local)');
+      console.log('→ Sử dụng LocalStore (Local)');
       return this.localStore;
     }
 

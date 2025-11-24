@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { 
   Sparkles, 
   Play,
@@ -605,10 +605,10 @@ export function WorldBuilder() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      alert('✅ Đã xuất dữ liệu thế giới thành công!');
+      alert('✓ Đã xuất dữ liệu thế giới thành công!');
     } catch (error) {
       console.error('Error exporting world:', error);
-      alert('❌ Có lỗi xảy ra khi xuất dữ liệu thế giới');
+      alert('✗ Có lỗi xảy ra khi xuất dữ liệu thế giới');
     }
   };
 
@@ -637,10 +637,10 @@ export function WorldBuilder() {
           currentTime: prev.currentTime // Keep current time
         }));
         
-        alert('✅ Đã nhập dữ liệu thế giới thành công!');
+        alert('✓ Đã nhập dữ liệu thế giới thành công!');
       } catch (error) {
         console.error('Error importing world:', error);
-        alert('❌ Có lỗi xảy ra khi nhập dữ liệu thế giới: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+        alert('✗ Có lỗi xảy ra khi nhập dữ liệu thế giới: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
       }
     };
     reader.readAsText(file);
@@ -662,7 +662,7 @@ export function WorldBuilder() {
           
           {/* Import/Export Buttons */}
           <div className={`flex ${shouldUseMobileLayout() ? 'flex-col sm:flex-row' : ''} ${shouldUseMobileLayout() ? 'space-y-2 sm:space-y-0 sm:space-x-3' : 'space-x-3'}`}>
-            <label className={`${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-2'} bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 cursor-pointer flex items-center space-x-2`}>
+            <label className={`${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-2'} bg-yellow-500/20 border-2 border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 cursor-pointer flex items-center space-x-2`}>
               <Upload className={`${shouldUseMobileLayout() ? 'w-3 h-3' : 'w-4 h-4'}`} />
               <span className={shouldUseMobileLayout() ? 'text-xs' : ''}>Nhập thế giới</span>
               <input
@@ -675,7 +675,7 @@ export function WorldBuilder() {
             
             <button
               onClick={handleExportWorld}
-              className={`${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-2'} bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 flex items-center space-x-2`}
+              className={`${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-2'} bg-yellow-600/20 border-2 border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 flex items-center space-x-2`}
             >
               <Download className={`${shouldUseMobileLayout() ? 'w-3 h-3' : 'w-4 h-4'}`} />
               <span className={shouldUseMobileLayout() ? 'text-xs' : ''}>Xuất thế giới</span>
@@ -698,7 +698,7 @@ export function WorldBuilder() {
                 <button
                   onClick={() => handleAISuggestion('coreIdea')}
                   disabled={isGenerating}
-                  className={`${shouldUseMobileLayout() ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-sm'} bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 disabled:opacity-50`}
+                  className={`${shouldUseMobileLayout() ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-sm'} bg-yellow-600/20 border-2 border-yellow-500/70 text-yellow-400 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 disabled:opacity-50`}
                 >
                   {isGenerating && generatingField === 'coreIdea' ? 'Đang tạo...' : 'Hoàn thành tất cả'}
                 </button>
@@ -707,7 +707,7 @@ export function WorldBuilder() {
                 value={worldData.coreIdea}
                 onChange={(e) => setWorldData(prev => ({ ...prev, coreIdea: e.target.value }))}
                 placeholder="Mô tả ý tưởng cốt lõi của thế giới..."
-                className={`w-full ${shouldUseMobileLayout() ? 'h-24' : 'h-32'} px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none resize-none break-words ${shouldUseMobileLayout() ? 'text-sm' : ''}`}
+                className={`w-full ${shouldUseMobileLayout() ? 'h-24' : 'h-32'} px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none resize-none break-words ${shouldUseMobileLayout() ? 'text-sm' : ''}`}
               />
             </MotionWrapper>
 
@@ -727,7 +727,7 @@ export function WorldBuilder() {
                     value={worldData.genre}
                     onChange={(e) => setWorldData(prev => ({ ...prev, genre: e.target.value }))}
                     placeholder="Ví dụ: Fantasy, Sci-fi, Horror..."
-                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none`}
+                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none`}
                   />
                 </div>
                 <div>
@@ -737,7 +737,7 @@ export function WorldBuilder() {
                     value={worldData.setting}
                     onChange={(e) => setWorldData(prev => ({ ...prev, setting: e.target.value }))}
                     placeholder="Ví dụ: Thời trung cổ, Tương lai, Hiện đại..."
-                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none`}
+                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none`}
                   />
                 </div>
               </div>
@@ -757,7 +757,7 @@ export function WorldBuilder() {
                   <select
                     value={worldData.storyTone}
                     onChange={(e) => setWorldData(prev => ({ ...prev, storyTone: e.target.value }))}
-                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none`}
+                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-yellow-500 focus:outline-none`}
                   >
                     <option value="">Chọn tông truyện</option>
                     {storyTones.map(tone => (
@@ -770,7 +770,7 @@ export function WorldBuilder() {
                   <select
                     value={worldData.narration}
                     onChange={(e) => setWorldData(prev => ({ ...prev, narration: e.target.value }))}
-                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none`}
+                    className={`w-full ${shouldUseMobileLayout() ? 'px-3 py-2 text-sm' : 'px-4 py-3'} bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-yellow-500 focus:outline-none`}
                   >
                     <option value="">Chọn ngôi kể</option>
                     {narrations.map(narration => (
@@ -794,13 +794,13 @@ export function WorldBuilder() {
                   <button
                     onClick={() => handleAISuggestion('corePrinciples')}
                     disabled={isGenerating || !worldData.coreIdea.trim()}
-                    className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm disabled:opacity-50"
+                    className="px-3 py-1 bg-yellow-600/20 border-2 border-yellow-500/70 text-yellow-400 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 text-sm disabled:opacity-50"
                   >
                     {isGenerating && generatingField === 'corePrinciples' ? 'Đang tạo...' : 'Gợi ý bằng AI'}
                   </button>
                   <button
                     onClick={addCorePrinciple}
-                    className="p-2 bg-green-500/20 border-2 border-green-500/50 rounded-lg text-green-300 hover:bg-green-500/30 transition-colors duration-200"
+                    className="p-2 bg-yellow-600/20 border-2 border-yellow-500/50 rounded-lg text-yellow-300 hover:bg-yellow-600/30 transition-colors duration-200"
                     title="Thêm nguyên tắc thế giới"
                   >
                     <Plus className="w-4 h-4" />
@@ -817,11 +817,11 @@ export function WorldBuilder() {
                         value={principle.name}
                         onChange={(e) => updateCorePrinciple(index, 'name', e.target.value)}
                         placeholder="Tên nguyên tắc thế giới"
-                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm break-words overflow-wrap-anywhere"
+                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none text-sm break-words overflow-wrap-anywhere"
                       />
                       <button
                         onClick={() => removeCorePrinciple(index)}
-                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors duration-200"
+                        className="p-2 text-white hover:text-white hover:bg-gray-900/20 rounded-lg transition-colors duration-200"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -831,7 +831,7 @@ export function WorldBuilder() {
                       onChange={(e) => updateCorePrinciple(index, 'description', e.target.value)}
                       placeholder="Mô tả chi tiết nguyên tắc thế giới"
                       rows={2}
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none break-words overflow-wrap-anywhere"
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none text-sm resize-none break-words overflow-wrap-anywhere"
                     />
                   </div>
                 ))}
@@ -851,13 +851,13 @@ export function WorldBuilder() {
                   <button
                     onClick={() => handleAISuggestion('foundationEntities')}
                     disabled={isGenerating || !worldData.coreIdea.trim()}
-                    className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm disabled:opacity-50"
+                    className="px-3 py-1 bg-yellow-600/20 border-2 border-yellow-500/70 text-yellow-400 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 text-sm disabled:opacity-50"
                   >
                     {isGenerating && generatingField === 'foundationEntities' ? 'Đang tạo...' : 'Gợi ý bằng AI'}
                   </button>
                   <button
                     onClick={addFoundationEntity}
-                    className="p-2 bg-green-500/20 border-2 border-green-500/50 rounded-lg text-green-300 hover:bg-green-500/30 transition-colors duration-200"
+                    className="p-2 bg-yellow-600/20 border-2 border-yellow-500/50 rounded-lg text-yellow-300 hover:bg-yellow-600/30 transition-colors duration-200"
                     title="Thêm thực thể"
                   >
                     <Plus className="w-4 h-4" />
@@ -872,7 +872,7 @@ export function WorldBuilder() {
                       <select
                         value={entity.classification || 'Nhân vật'}
                         onChange={(e) => updateFoundationEntity(index, 'classification', e.target.value)}
-                        className="px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none text-sm"
+                        className="px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-yellow-500 focus:outline-none text-sm"
                       >
                         {entityClassifications.map((classification) => (
                           <option key={classification} value={classification} className="bg-gray-800">
@@ -885,11 +885,11 @@ export function WorldBuilder() {
                         value={entity.name}
                         onChange={(e) => updateFoundationEntity(index, 'name', e.target.value)}
                         placeholder="Tên thực thể"
-                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm break-words overflow-wrap-anywhere"
+                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none text-sm break-words overflow-wrap-anywhere"
                       />
                       <button
                         onClick={() => removeFoundationEntity(index)}
-                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors duration-200"
+                        className="p-2 text-white hover:text-white hover:bg-gray-900/20 rounded-lg transition-colors duration-200"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -899,7 +899,7 @@ export function WorldBuilder() {
                       onChange={(e) => updateFoundationEntity(index, 'description', e.target.value)}
                       placeholder="Mô tả chi tiết"
                       rows={2}
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none break-words overflow-wrap-anywhere"
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none text-sm resize-none break-words overflow-wrap-anywhere"
                     />
                   </div>
                 ))}
@@ -917,7 +917,7 @@ export function WorldBuilder() {
                 <h3 className="text-xl font-bold-vietnamese text-white uppercase">TIỀN TỆ</h3>
                 <button
                   onClick={addCurrency}
-                  className="p-2 bg-green-500/20 border-2 border-green-500/50 rounded-lg text-green-300 hover:bg-green-500/30 transition-colors duration-200"
+                  className="p-2 bg-yellow-600/20 border-2 border-yellow-500/50 rounded-lg text-yellow-300 hover:bg-yellow-600/30 transition-colors duration-200"
                   title="Thêm tiền tệ"
                 >
                   <Plus className="w-4 h-4" />
@@ -932,20 +932,20 @@ export function WorldBuilder() {
                         value={currency.name}
                         onChange={(e) => updateCurrency(index, 'name', e.target.value)}
                         placeholder="Tên tiền tệ"
-                        className="w-1/3 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm"
+                        className="w-1/3 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none text-sm"
                       />
                       <label className="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={currency.isMain}
                           onChange={(e) => updateCurrency(index, 'isMain', e.target.checked)}
-                          className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-primary-500 focus:ring-primary-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
+                          className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-yellow-500 focus:ring-yellow-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
                         />
                         <span>Chính</span>
                       </label>
                       <button
                         onClick={() => removeCurrency(index)}
-                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors duration-200"
+                        className="p-2 text-white hover:text-white hover:bg-gray-900/20 rounded-lg transition-colors duration-200"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -955,7 +955,7 @@ export function WorldBuilder() {
                       onChange={(e) => updateCurrency(index, 'description', e.target.value)}
                       placeholder="Mô tả tiền tệ"
                       rows={2}
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-sm resize-none break-words overflow-wrap-anywhere"
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none text-sm resize-none break-words overflow-wrap-anywhere"
                     />
                   </div>
                 ))}
@@ -977,7 +977,7 @@ export function WorldBuilder() {
                     type="number"
                     value={worldData.startYear}
                     onChange={(e) => setWorldData(prev => ({ ...prev, startYear: parseInt(e.target.value) || 1 }))}
-                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-yellow-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -985,7 +985,7 @@ export function WorldBuilder() {
                   <select
                     value={worldData.difficulty}
                     onChange={(e) => setWorldData(prev => ({ ...prev, difficulty: e.target.value }))}
-                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white focus:border-yellow-500 focus:outline-none"
                   >
                     <option value="">Chọn độ khó</option>
                     {difficulties.map(difficulty => (
@@ -1000,7 +1000,7 @@ export function WorldBuilder() {
                     type="checkbox"
                     checked={worldData.useLevels}
                     onChange={(e) => setWorldData(prev => ({ ...prev, useLevels: e.target.checked }))}
-                    className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-primary-500 focus:ring-primary-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
+                    className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-yellow-500 focus:ring-yellow-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
                   />
                   <span>Sử dụng hệ thống cấp độ</span>
                 </label>
@@ -1028,7 +1028,7 @@ export function WorldBuilder() {
                 <button
                   onClick={handleCreateWorld}
                   disabled={isGenerating}
-                  className="w-full py-4 bg-primary-500/20 border-2 border-primary-500/50 text-primary-300 rounded-lg hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 text-lg font-medium"
+                  className="w-full py-4 bg-yellow-600/20 border-2 border-yellow-500/50 text-yellow-400 rounded-lg hover:bg-yellow-600/30 hover:border-yellow-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 text-lg font-medium"
                 >
                   <Sparkles className="w-6 h-6" />
                   <span>{isGenerating ? 'Đang tạo thế giới...' : 'Tạo Thế Giới & Chuyển Tiếp'}</span>
@@ -1065,7 +1065,7 @@ export function WorldBuilder() {
                       setSelectedPrincipleIndices(aiGeneratedPrinciples.map((_, i) => i));
                     }
                   }}
-                  className="w-4 h-4 rounded border-2 border-gray-400 bg-transparent text-primary-500 focus:ring-primary-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
+                  className="w-4 h-4 rounded border-2 border-gray-400 bg-transparent text-yellow-500 focus:ring-yellow-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
                 />
                 <span className="text-sm text-gray-300">Chọn Tất cả</span>
               </label>
@@ -1077,8 +1077,8 @@ export function WorldBuilder() {
                   key={principle.id || index}
                   className={`relative bg-gray-700/50 border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl ${
                     selectedPrincipleIndices.includes(index)
-                      ? 'border-primary-500 bg-primary-500/10 shadow-primary-500/20'
-                      : 'border-gray-600/50 hover:border-primary-400/50 hover:bg-gray-700/70'
+                      ? 'border-yellow-500 bg-yellow-600/10 shadow-primary-500/20'
+                      : 'border-gray-600/50 hover:border-yellow-400/50 hover:bg-gray-700/70'
                   }`}
                   onClick={() => togglePrincipleSelection(index)}
                 >
@@ -1088,7 +1088,7 @@ export function WorldBuilder() {
                       type="checkbox"
                       checked={selectedPrincipleIndices.includes(index)}
                       onChange={() => togglePrincipleSelection(index)}
-                      className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-primary-500 focus:ring-primary-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
+                      className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-yellow-500 focus:ring-yellow-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
                       onClick={(e) => e.stopPropagation()}
                     />
                   </div>
@@ -1117,7 +1117,7 @@ export function WorldBuilder() {
               </button>
               <button
                 onClick={handleSelectPrinciples}
-                className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200"
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200"
               >
                 Thêm ({selectedPrincipleIndices.length}) mục đã chọn
               </button>
@@ -1151,7 +1151,7 @@ export function WorldBuilder() {
                       setSelectedEntityIndices(aiGeneratedEntities.map((_, i) => i));
                     }
                   }}
-                  className="w-4 h-4 rounded border-2 border-gray-400 bg-transparent text-primary-500 focus:ring-primary-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
+                  className="w-4 h-4 rounded border-2 border-gray-400 bg-transparent text-yellow-500 focus:ring-yellow-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
                 />
                 <span className="text-sm text-gray-300">Chọn Tất cả</span>
               </label>
@@ -1163,8 +1163,8 @@ export function WorldBuilder() {
                   key={entity.id || index}
                   className={`relative bg-gray-700/50 border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl ${
                     selectedEntityIndices.includes(index)
-                      ? 'border-primary-500 bg-primary-500/10 shadow-primary-500/20'
-                      : 'border-gray-600/50 hover:border-primary-400/50 hover:bg-gray-700/70'
+                      ? 'border-yellow-500 bg-yellow-600/10 shadow-primary-500/20'
+                      : 'border-gray-600/50 hover:border-yellow-400/50 hover:bg-gray-700/70'
                   }`}
                   onClick={() => toggleEntitySelection(index)}
                 >
@@ -1174,7 +1174,7 @@ export function WorldBuilder() {
                       type="checkbox"
                       checked={selectedEntityIndices.includes(index)}
                       onChange={() => toggleEntitySelection(index)}
-                      className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-primary-500 focus:ring-primary-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
+                      className="w-5 h-5 rounded border-2 border-gray-400 bg-transparent text-yellow-500 focus:ring-yellow-500 focus:ring-2 focus:ring-offset-0 cursor-pointer"
                       onClick={(e) => e.stopPropagation()}
                     />
                   </div>
@@ -1193,7 +1193,7 @@ export function WorldBuilder() {
                     
                     {/* Tag phân loại */}
                     {entity.classification && (
-                      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
                         Loại: {entity.classification}
                       </div>
                     )}
@@ -1210,7 +1210,7 @@ export function WorldBuilder() {
               </button>
               <button
                 onClick={handleSelectEntities}
-                className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200"
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200"
               >
                 Thêm ({selectedEntityIndices.length}) mục đã chọn
               </button>
@@ -1239,7 +1239,7 @@ export function WorldBuilder() {
               <button
                 onClick={handleRegenerateDescription}
                 disabled={isGenerating}
-                className="px-6 py-3 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50 flex items-center space-x-2"
+                className="px-6 py-3 bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50 flex items-center space-x-2"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>{isGenerating ? 'Đang tạo lại...' : 'Tạo Lại Mô Tả'}</span>
@@ -1253,7 +1253,7 @@ export function WorldBuilder() {
                 </button>
                 <button
                   onClick={handleStartGame}
-                  className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 flex items-center space-x-2"
+                  className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 flex items-center space-x-2"
                 >
                   <Play className="w-4 h-4" />
                   <span>Tạo Nhân Vật</span>

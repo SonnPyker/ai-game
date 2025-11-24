@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Save, 
@@ -81,7 +81,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
       const slotsData = await saveGameService.listSlots();
       setSlots(slotsData);
     } catch (err) {
-      console.error('❌ Lỗi tải slots:', err);
+      console.error('✗ Lỗi tải slots:', err);
       setError('Không thể tải danh sách slot');
     } finally {
       setLoading(false);
@@ -121,7 +121,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         setError(`Lỗi sync: ${result.errors.join(', ')}`);
       }
     } catch (err) {
-      console.error('❌ Lỗi sync:', err);
+      console.error('✗ Lỗi sync:', err);
       setError('Lỗi đồng bộ dữ liệu');
     } finally {
       setLoading(false);
@@ -140,7 +140,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         setError('Lỗi giải quyết xung đột');
       }
     } catch (err) {
-      console.error('❌ Lỗi resolve conflict:', err);
+      console.error('✗ Lỗi resolve conflict:', err);
       setError('Lỗi giải quyết xung đột');
     }
   };
@@ -188,7 +188,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         setError(result.error || 'Lỗi lưu game');
       }
     } catch (err) {
-      console.error('❌ Lỗi lưu game:', err);
+      console.error('✗ Lỗi lưu game:', err);
       setError('Lỗi lưu game');
     } finally {
       setLoading(false);
@@ -210,7 +210,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         setError(result.error || 'Lỗi tải game');
       }
     } catch (err) {
-      console.error('❌ Lỗi tải game:', err);
+      console.error('✗ Lỗi tải game:', err);
       setError('Lỗi tải game');
     } finally {
       setLoading(false);
@@ -235,7 +235,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         setError('Lỗi xóa slot');
       }
     } catch (err) {
-      console.error('❌ Lỗi xóa slot:', err);
+      console.error('✗ Lỗi xóa slot:', err);
       setError('Lỗi xóa slot');
     } finally {
       setLoading(false);
@@ -266,7 +266,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         setError('Không thể export game');
       }
     } catch (err) {
-      console.error('❌ Lỗi export game:', err);
+      console.error('✗ Lỗi export game:', err);
       setError('Lỗi export game');
     } finally {
       setLoading(false);
@@ -296,7 +296,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
         setError('Lỗi import game');
       }
     } catch (err) {
-      console.error('❌ Lỗi import game:', err);
+      console.error('✗ Lỗi import game:', err);
       setError('Lỗi import game');
     } finally {
       setLoading(false);
@@ -309,8 +309,8 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
 
   const getSlotIcon = (slot: SaveSlot) => {
     if (slot.isEmpty) return <FileText className="w-5 h-5 text-gray-400" />;
-    if (slot.source === 'cloud') return <Cloud className="w-5 h-5 text-blue-400" />;
-    return <HardDrive className="w-5 h-5 text-green-400" />;
+    if (slot.source === 'cloud') return <Cloud className="w-5 h-5 text-yellow-400" />;
+    return <HardDrive className="w-5 h-5 text-yellow-400" />;
   };
 
   const getSlotStatus = (slot: SaveSlot) => {
@@ -322,7 +322,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
   const getSlotStatusColor = (slot: SaveSlot) => {
     if (slot.isEmpty) return 'text-gray-400';
     if (slot.pendingSync) return 'text-yellow-400';
-    return slot.source === 'cloud' ? 'text-blue-400' : 'text-green-400';
+    return slot.source === 'cloud' ? 'text-yellow-400' : 'text-yellow-400';
   };
 
   if (!isOpen) return null;
@@ -351,14 +351,14 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
             <div className="flex items-center space-x-2">
               {/* Auth Status */}
               {authState.isAuthenticated ? (
-                <div className="flex items-center space-x-2 text-green-300">
+                <div className="flex items-center space-x-2 text-yellow-300">
                   <User className="w-4 h-4" />
                   <span className="text-sm">{authState.user?.name || authState.user?.email}</span>
                 </div>
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200"
+                  className="flex items-center space-x-2 px-3 py-2 bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200"
                 >
                   <LogIn className="w-4 h-4" />
                   <span className="text-sm">Đăng nhập</span>
@@ -369,7 +369,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
               <button
                 onClick={handleSync}
                 disabled={loading || !syncService.isOnlineStatus()}
-                className="flex items-center space-x-2 px-3 py-2 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-3 py-2 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 title={syncService.isOnlineStatus() ? 'Đồng bộ dữ liệu' : 'Offline - không thể sync'}
               >
                 {loading ? (
@@ -397,7 +397,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
               className={`mb-4 p-3 rounded-lg border ${
                 syncStatus.hasLocalChanges || syncStatus.hasCloudChanges
                   ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300'
-                  : 'bg-green-500/20 border-green-500/50 text-green-300'
+                  : 'bg-yellow-600/20 border-yellow-500/50 text-yellow-300'
               }`}
             >
               <div className="flex items-center space-x-2">
@@ -424,9 +424,9 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
             <MotionWrapper
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg"
+              className="mb-4 p-3 bg-gray-900/20 border border-gray-700/50 rounded-lg"
             >
-              <div className="flex items-center space-x-2 text-red-300">
+              <div className="flex items-center space-x-2 text-white">
                 <AlertTriangle className="w-4 h-4" />
                 <span className="text-sm">{error}</span>
               </div>
@@ -437,9 +437,9 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
             <MotionWrapper
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg"
+              className="mb-4 p-3 bg-yellow-600/20 border border-yellow-500/50 rounded-lg"
             >
-              <div className="flex items-center space-x-2 text-green-300">
+              <div className="flex items-center space-x-2 text-yellow-300">
                 <CheckCircle className="w-4 h-4" />
                 <span className="text-sm">{success}</span>
               </div>
@@ -461,7 +461,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                   animate={{ opacity: 1, y: 0 }}
                   className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                     selectedSlot === slotId
-                      ? 'border-blue-500/50 bg-blue-500/10'
+                      ? 'border-yellow-500/50 bg-yellow-500/10'
                       : 'border-gray-600/50 bg-gray-800/30'
                   }`}
                 >
@@ -479,7 +479,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                       )}
                       className={`px-2 py-1 rounded text-xs transition-colors duration-200 ${
                         selectedSlot === slotId
-                          ? 'bg-blue-500/20 text-blue-300'
+                          ? 'bg-yellow-500/20 text-yellow-300'
                           : 'bg-gray-600/20 text-gray-300 hover:bg-gray-600/30'
                       }`}
                     >
@@ -541,7 +541,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                       <button
                         onClick={() => handleLoad(slotId as 'slot1' | 'slot2' | 'slot3')}
                         disabled={loading}
-                        className="w-full py-2 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                        className="w-full py-2 bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                       >
                         {loading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -558,7 +558,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                       className={`w-full py-2 border rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${
                         loading || !currentGameData || isProcessing
                           ? 'bg-gray-500/20 border-gray-500/50 text-gray-400 cursor-not-allowed opacity-50'
-                          : 'bg-green-500/20 border-green-500/50 text-green-300 hover:bg-green-500/30'
+                          : 'bg-yellow-600/20 border-yellow-500/50 text-yellow-300 hover:bg-yellow-600/30'
                       }`}
                     >
                       {loading ? (
@@ -575,7 +575,7 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                       <button
                         onClick={() => handleDelete(slotId as 'slot1' | 'slot2' | 'slot3')}
                         disabled={loading}
-                        className="w-full py-2 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                        className="w-full py-2 bg-gray-900/20 border border-gray-700/50 text-white rounded-lg hover:bg-gray-900/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                       >
                         {loading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -606,13 +606,13 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                 <button
                   onClick={() => handleExport(selectedSlot)}
                   disabled={loading || slots.find(s => s.slotId === selectedSlot)?.isEmpty}
-                  className="flex-1 py-2 bg-purple-500/20 border border-purple-500/50 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  className="flex-1 py-2 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   <Upload className="w-4 h-4" />
                   <span>Export</span>
                 </button>
 
-                <label className="flex-1 py-2 bg-orange-500/20 border border-orange-500/50 text-orange-300 rounded-lg hover:bg-orange-500/30 transition-colors duration-200 cursor-pointer flex items-center justify-center space-x-2">
+                <label className="flex-1 py-2 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 cursor-pointer flex items-center justify-center space-x-2">
                   <Download className="w-4 h-4" />
                   <span>Import</span>
                   <input
@@ -679,8 +679,8 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                      <h5 className="text-blue-300 font-medium mb-2">Dữ liệu Local</h5>
+                    <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <h5 className="text-yellow-300 font-medium mb-2">Dữ liệu Local</h5>
                       <p className="text-sm text-gray-300">
                         Cập nhật: {conflict.localSave?.meta.updatedAt ? new Date(conflict.localSave.meta.updatedAt).toLocaleString('vi-VN') : 'N/A'}
                       </p>
@@ -689,8 +689,8 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                       </p>
                     </div>
                     
-                    <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                      <h5 className="text-green-300 font-medium mb-2">Dữ liệu Cloud</h5>
+                    <div className="p-3 bg-yellow-600/10 border border-yellow-500/30 rounded-lg">
+                      <h5 className="text-yellow-300 font-medium mb-2">Dữ liệu Cloud</h5>
                       <p className="text-sm text-gray-300">
                         Cập nhật: {conflict.cloudSave?.meta.updatedAt ? new Date(conflict.cloudSave.meta.updatedAt).toLocaleString('vi-VN') : 'N/A'}
                       </p>
@@ -704,20 +704,20 @@ export function SaveManager({ isOpen, onClose, onLoadGame, currentGameData, isPr
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleResolveConflict(conflict.slotId, 'local')}
-                        className="flex-1 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200"
+                        className="flex-1 py-2 bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200"
                       >
                         Giữ Local
                       </button>
                       <button
                         onClick={() => handleResolveConflict(conflict.slotId, 'cloud')}
-                        className="flex-1 py-2 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200"
+                        className="flex-1 py-2 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200"
                       >
                         Giữ Cloud
                       </button>
                     </div>
                     <button
                       onClick={() => handleResolveConflict(conflict.slotId, 'both')}
-                      className="w-full py-2 bg-purple-500/20 border border-purple-500/50 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors duration-200"
+                      className="w-full py-2 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200"
                     >
                       Giữ cả hai (Local + Cloud)
                     </button>

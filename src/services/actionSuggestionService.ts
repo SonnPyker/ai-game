@@ -197,11 +197,11 @@ class ActionSuggestionService {
         return result;
       } catch (error) {
         lastError = error as Error;
-        console.error(`❌ ${operationName} - Lần thử ${attempt + 1} thất bại:`, error);
+        console.error(`✗ ${operationName} - Lần thử ${attempt + 1} thất bại:`, error);
         
         // Nếu đã thử hết số lần cho phép, sử dụng fallback
         if (attempt >= this.retryConfig.maxRetries) {
-          console.error(`💥 ${operationName} - Đã thử hết ${this.retryConfig.maxRetries + 1} lần, sử dụng fallback`);
+          console.error(`• ${operationName} - Đã thử hết ${this.retryConfig.maxRetries + 1} lần, sử dụng fallback`);
           break;
         }
         
@@ -302,14 +302,14 @@ PHÂN BIỆT ATTACK VÀ DC CHECK:
 - HẦU HẾT HÀNH ĐỘNG BÌNH THƯỜNG KHÔNG CẦN DC CHECK
 
 HƯỚNG DẪN TẠO DC CHECK:
-✅ TẠO DC CHECK KHI:
+✓ TẠO DC CHECK KHI:
 - Thuyết phục NPC có tính cách khó tính, đáng nghi
 - Đe dọa kẻ thù mạnh, nguy hiểm
 - Lừa dối người thông minh, có kinh nghiệm
 - Leo trèo, nhào lộn khó khăn
 - Điều tra bí mật, thông tin nhạy cảm
 
-❌ KHÔNG TẠO DC CHECK KHI:
+✗ KHÔNG TẠO DC CHECK KHI:
 - Quan sát thường, nhìn xung quanh
 - Nói chuyện bình thường với NPC thân thiện
 - Đi lại, di chuyển bình thường
@@ -356,7 +356,7 @@ YÊU CẦU:
 7. Quest chỉ là tham khảo, không ép buộc - chỉ đề xuất nếu phù hợp với hướng đi hiện tại
 8. Thời gian phải đa dạng và thực tế (ví dụ: 8p, 12p, 18p, 25p, 35p, 45p, 65p, 80p)
 
-🚫 QUAN TRỌNG VỀ DI CHUYỂN:
+× QUAN TRỌNG VỀ DI CHUYỂN:
 - TUYỆT ĐỐI KHÔNG tạo hành động di chuyển đến các địa điểm đã có trên bản đồ
 - Chỉ tạo hành động di chuyển đến địa điểm KHÔNG có trên bản đồ (địa điểm mới, chưa khám phá)
 - Ưu tiên hành động tại vị trí hiện tại và khu vực lân cận
@@ -590,7 +590,7 @@ QUAN TRỌNG VỀ CẢNH 18+:
           );
           
           if (isToMapLocation) {
-            console.warn(`🚫 Đã lọc bỏ action suggestion di chuyển đến địa điểm có trên bản đồ: "${suggestion.text}"`);
+            console.warn(`× Đã lọc bỏ action suggestion di chuyển đến địa điểm có trên bản đồ: "${suggestion.text}"`);
             return false; // Lọc bỏ hành động di chuyển đến địa điểm có trên bản đồ
           }
           
@@ -830,7 +830,7 @@ Trả về số từ 5-60. Chỉ số, không giải thích.`;
       return { duration: fallbackDuration, message };
       
     } catch (error) {
-      console.error(`❌ [Parallel] Lỗi ước tính thời gian cho "${message}":`, error);
+      console.error(`✗ [Parallel] Lỗi ước tính thời gian cho "${message}":`, error);
       
       // Fallback cuối cùng
       const messageLength = message.length;

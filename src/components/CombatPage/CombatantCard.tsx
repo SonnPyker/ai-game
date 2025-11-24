@@ -1,4 +1,4 @@
-// import React from 'react';
+﻿// import React from 'react';
 import { Heart, Shield, Sword, Target, ArrowRight } from 'lucide-react';
 import { Combatant, combatService } from '../../services/combatService';
 import { MotionWrapper } from '../MotionWrapper';
@@ -36,9 +36,9 @@ export function CombatantCard({
 
   // Get HP bar color based on percentage
   const getHPBarColor = (percentage: number) => {
-    if (percentage > 60) return 'bg-green-500';
+    if (percentage > 60) return 'bg-yellow-600';
     if (percentage > 30) return 'bg-yellow-500';
-    return 'bg-red-500';
+    return 'bg-gray-900';
   };
 
   // Get status text
@@ -53,8 +53,8 @@ export function CombatantCard({
 
   // Get status color
   const getStatusColor = () => {
-    if (!isAlive) return 'text-red-400';
-    if (isCurrentTurn) return isEnemy ? 'text-orange-400' : 'text-blue-400';
+    if (!isAlive) return 'text-white';
+    if (isCurrentTurn) return isEnemy ? 'text-yellow-400' : 'text-yellow-400';
     if (isEnemy && isPlayerTurn) return 'text-yellow-400';
     return 'text-gray-400';
   };
@@ -71,9 +71,9 @@ export function CombatantCard({
           ${isSelected ? 'border-yellow-400 shadow-lg shadow-yellow-400/20' : 'border-gray-600'}
           ${!isAlive ? 'opacity-50' : ''}
           ${isCurrentTurn ? (
-            isEnemy ? 'ring-2 ring-orange-400 border-orange-400 shadow-lg shadow-orange-400/30' : 
-            isAlly ? 'ring-2 ring-green-400 border-green-400 shadow-lg shadow-green-400/30' :
-            'ring-2 ring-blue-400 border-blue-400 shadow-lg shadow-blue-400/30'
+            isEnemy ? 'ring-2 ring-orange-400 border-gray-700 shadow-lg shadow-orange-400/30' : 
+            isAlly ? 'ring-2 ring-yellow-400 border-yellow-400 shadow-lg shadow-green-400/30' :
+            'ring-2 ring-blue-400 border-yellow-400 shadow-lg shadow-blue-400/30'
           ) : ''}
           ${onSelect ? 'cursor-pointer hover:border-gray-500' : ''}
           ${animationState.className}
@@ -88,25 +88,25 @@ export function CombatantCard({
           {/* Current Turn Arrow Indicator */}
           {isCurrentTurn && (
             <ArrowRight className={`w-5 h-5 ${
-              isEnemy ? 'text-orange-400' : 
-              isAlly ? 'text-green-400' : 
-              'text-blue-400'
+              isEnemy ? 'text-yellow-400' : 
+              isAlly ? 'text-yellow-400' : 
+              'text-yellow-400'
             }`} />
           )}
           <h3 className={`font-bold text-lg ${
-            isEnemy ? 'text-red-400' : 
-            isAlly ? 'text-green-400' : 
-            'text-blue-400'
+            isEnemy ? 'text-white' : 
+            isAlly ? 'text-yellow-400' : 
+            'text-yellow-400'
           }`}>
             {combatant.name}
           </h3>
           {isEnemy && (
-            <span className="text-xs bg-red-600/20 text-red-400 px-2 py-1 rounded">
+            <span className="text-xs bg-gray-900/20 text-white px-2 py-1 rounded">
               Kẻ thù
             </span>
           )}
           {isAlly && (
-            <span className="text-xs bg-green-600/20 text-green-400 px-2 py-1 rounded">
+            <span className="text-xs bg-yellow-700/20 text-yellow-400 px-2 py-1 rounded">
               Đồng minh
             </span>
           )}
@@ -115,9 +115,9 @@ export function CombatantCard({
         <div className="flex items-center space-x-2">
           {isCurrentTurn && (
             <div className={`text-xs font-bold px-2 py-1 rounded ${
-              isEnemy ? 'bg-orange-400/20 text-orange-400' : 
-              isAlly ? 'bg-green-400/20 text-green-400' :
-              'bg-blue-400/20 text-blue-400'
+              isEnemy ? 'bg-gray-900/20 text-yellow-400' : 
+              isAlly ? 'bg-yellow-500/20 text-yellow-400' :
+              'bg-yellow-400/20 text-yellow-400'
             }`}>
               ĐANG LƯỢT
             </div>
@@ -137,7 +137,7 @@ export function CombatantCard({
       <div className="mb-3">
         <div className="flex items-center justify-between text-sm mb-1">
           <div className="flex items-center space-x-1">
-            <Heart className="w-4 h-4 text-red-400" />
+            <Heart className="w-4 h-4 text-white" />
             <span>HP</span>
           </div>
           <span className="text-gray-300">
@@ -156,7 +156,7 @@ export function CombatantCard({
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="flex items-center space-x-1">
-          <Shield className="w-4 h-4 text-blue-400" />
+          <Shield className="w-4 h-4 text-yellow-400" />
           <span className="text-gray-300">AC:</span>
           <span className="font-mono">
             {!isEnemy && temporaryPlayerStats 
@@ -167,7 +167,7 @@ export function CombatantCard({
         </div>
         
         <div className="flex items-center space-x-1">
-          <Sword className="w-4 h-4 text-orange-400" />
+          <Sword className="w-4 h-4 text-yellow-400" />
           <span className="text-gray-300">Combat:</span>
           <span className="font-mono">{combatant.combatLevel || combatant.level || 1}</span>
         </div>
@@ -178,7 +178,7 @@ export function CombatantCard({
         <div className="mt-2 text-sm">
           <div className="flex items-center space-x-1">
             <span className="text-gray-400">Character Level:</span>
-            <span className="font-mono text-green-400">{combatant.characterLevel}</span>
+            <span className="font-mono text-yellow-400">{combatant.characterLevel}</span>
           </div>
         </div>
       )}
@@ -245,11 +245,11 @@ export function CombatantCard({
         <MotionWrapper
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute inset-0 bg-red-900/20 rounded-lg flex items-center justify-center"
+          className="absolute inset-0 bg-gray-950/20 rounded-lg flex items-center justify-center"
         >
           <div className="text-center">
-            <div className="text-4xl mb-2">💀</div>
-            <div className="text-red-400 font-bold">Bị đánh bại</div>
+            <div className="text-4xl mb-2">○</div>
+            <div className="text-white font-bold">Bị đánh bại</div>
           </div>
         </MotionWrapper>
       )}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Character, SkillTreeSkill } from '../../types';
 import { skillTreeService } from '../../services/skillTreeService';
 import { 
@@ -64,12 +64,12 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
     return (
       <div className={`w-16 h-16 rounded-lg flex items-center justify-center text-3xl transition-all duration-200 ${
         isLearned 
-          ? 'bg-green-600/20 border-2 border-green-500 text-green-300' 
+          ? 'bg-yellow-700/20 border-2 border-yellow-500 text-yellow-300' 
           : canLearn 
-            ? 'bg-blue-600/20 border-2 border-blue-500 text-blue-300 hover:bg-blue-600/30 cursor-pointer'
+            ? 'bg-yellow-600/20 border-2 border-yellow-500 text-yellow-300 hover:bg-yellow-600/30 cursor-pointer'
             : 'bg-gray-600/20 border-2 border-gray-500 text-gray-400'
       }`}>
-        {skill.icon || '⭐'}
+        {skill.icon || '★'}
       </div>
     );
   };
@@ -84,9 +84,9 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
         key={skill.id}
         className={`bg-gray-800/50 rounded-lg p-4 border transition-all duration-200 md:min-h-[280px] ${
           isLearned 
-            ? 'border-green-500/50 bg-green-900/20' 
+            ? 'border-yellow-500/50 bg-gray-900/20' 
             : canLearn 
-              ? 'border-blue-500/50 hover:border-blue-400 cursor-pointer'
+              ? 'border-yellow-500/50 hover:border-yellow-400 cursor-pointer'
               : 'border-gray-600/50'
         }`}
         onClick={() => canLearn && handleLearnSkill(skill.id)}
@@ -96,8 +96,8 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
             {renderSkillIcon(skill)}
             <span className={`text-xs px-2 py-1 rounded mt-2 ${
               skill.tier === 1 ? 'bg-gray-600 text-gray-300' :
-              skill.tier === 2 ? 'bg-blue-600 text-blue-300' :
-              skill.tier === 3 ? 'bg-purple-600 text-purple-300' :
+              skill.tier === 2 ? 'bg-yellow-600 text-yellow-300' :
+              skill.tier === 3 ? 'bg-yellow-600 text-yellow-300' :
               'bg-yellow-600 text-yellow-300'
             }`}>
               {skill.tier === 'special' ? 'Đặc biệt' : `Tier ${skill.tier}`}
@@ -107,12 +107,12 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
           <div className="flex-1 md:w-full">
             <div className="flex items-center justify-between mb-2 md:justify-center">
               <h3 className={`font-semibold text-sm ${
-                isLearned ? 'text-green-300' : canLearn ? 'text-blue-300' : 'text-gray-400'
+                isLearned ? 'text-yellow-300' : canLearn ? 'text-yellow-300' : 'text-gray-400'
               }`}>
                 {skill.name}
               </h3>
               <div className="flex items-center space-x-1 md:ml-2">
-                {isLearned && <Check className="w-4 h-4 text-green-400" />}
+                {isLearned && <Check className="w-4 h-4 text-yellow-400" />}
               </div>
             </div>
             
@@ -121,52 +121,52 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
             {/* Bonuses - Compact display */}
             <div className="space-y-1 mb-3">
               {skill.bonuses.armorClass && (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-yellow-400 font-medium">
                   +{skill.bonuses.armorClass} AC
                 </div>
               )}
               {skill.bonuses.attackBonus && (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-yellow-400 font-medium">
                   +{skill.bonuses.attackBonus} Attack
                 </div>
               )}
               {skill.bonuses.damageBonus && (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-yellow-400 font-medium">
                   {skill.bonuses.damageBonus} Damage
                 </div>
               )}
               {skill.bonuses.initiative && (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-yellow-400 font-medium">
                   +{skill.bonuses.initiative} Initiative
                 </div>
               )}
               {skill.bonuses.criticalChance && (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-yellow-400 font-medium">
                   +{skill.bonuses.criticalChance}% Critical
                 </div>
               )}
               {skill.bonuses.statBonuses && Object.entries(skill.bonuses.statBonuses).map(([stat, value]) => (
-                <div key={stat} className="text-xs text-green-400 font-medium">
+                <div key={stat} className="text-xs text-yellow-400 font-medium">
                   +{value} {stat.charAt(0).toUpperCase() + stat.slice(1)}
                 </div>
               ))}
               {skill.bonuses.shopPriceModifier && (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-yellow-400 font-medium">
                   {skill.bonuses.shopPriceModifier}% Shop
                 </div>
               )}
               {skill.bonuses.sellPriceModifier && (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-yellow-400 font-medium">
                   +{skill.bonuses.sellPriceModifier}% Sell
                 </div>
               )}
               {skill.bonuses.reputationGainModifier && (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-yellow-400 font-medium">
                   +{skill.bonuses.reputationGainModifier}% Rep
                 </div>
               )}
               {skill.bonuses.relationshipGainModifier && (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-yellow-400 font-medium">
                   +{skill.bonuses.relationshipGainModifier}% Rel
                 </div>
               )}
@@ -178,7 +178,7 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
                 {skill.cost} skill point{skill.cost > 1 ? 's' : ''}
               </span>
               {canLearn && (
-                <button className="px-3 py-1 bg-blue-600 text-blue-100 rounded text-xs hover:bg-blue-700 transition-colors">
+                <button className="px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700 transition-colors">
                   Learn
                 </button>
               )}
@@ -199,7 +199,7 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
       </h3>
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <h4 className="text-blue-300 font-medium mb-2">Combat</h4>
+          <h4 className="text-yellow-300 font-medium mb-2">Combat</h4>
           <div className="space-y-1">
             {activeBonuses.armorClass && activeBonuses.armorClass > 0 && (
               <div className="text-gray-300">+{activeBonuses.armorClass} AC</div>
@@ -219,7 +219,7 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
           </div>
         </div>
         <div>
-          <h4 className="text-green-300 font-medium mb-2">Social</h4>
+          <h4 className="text-yellow-300 font-medium mb-2">Social</h4>
           <div className="space-y-1">
             {activeBonuses.statBonuses && Object.entries(activeBonuses.statBonuses).map(([stat, value]) => 
               value > 0 && (
@@ -256,17 +256,17 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
         <h3 className="text-lg font-semibold text-white mb-3">Skill Points</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center space-x-3">
-            <Sword className="w-6 h-6 text-orange-400" />
+            <Sword className="w-6 h-6 text-yellow-400" />
             <div>
-              <div className="text-orange-300 font-medium">Combat Points</div>
-              <div className="text-2xl font-bold text-orange-400">{combatPoints}</div>
+              <div className="text-yellow-300 font-medium">Combat Points</div>
+              <div className="text-2xl font-bold text-yellow-400">{combatPoints}</div>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <Heart className="w-6 h-6 text-pink-400" />
+            <Heart className="w-6 h-6 text-white" />
             <div>
-              <div className="text-pink-300 font-medium">Social Points</div>
-              <div className="text-2xl font-bold text-pink-400">{socialPoints}</div>
+              <div className="text-gray-300 font-medium">Social Points</div>
+              <div className="text-2xl font-bold text-white">{socialPoints}</div>
             </div>
           </div>
         </div>
@@ -278,7 +278,7 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
           onClick={() => setActiveTab('combat')}
           className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
             activeTab === 'combat'
-              ? 'bg-orange-600/20 border-b-2 border-orange-500 text-orange-300'
+              ? 'bg-yellow-700/20 border-b-2 border-yellow-500 text-yellow-300'
               : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
           }`}
         >
@@ -289,7 +289,7 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
           onClick={() => setActiveTab('social')}
           className={`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
             activeTab === 'social'
-              ? 'bg-pink-600/20 border-b-2 border-pink-500 text-pink-300'
+              ? 'bg-gray-800/20 border-b-2 border-gray-700 text-gray-300'
               : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
           }`}
         >
@@ -310,7 +310,7 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
       <div className="flex justify-end">
         <button
           onClick={() => setShowResetModal(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-red-600/20 border border-red-500/50 text-red-300 rounded hover:bg-red-600/30 transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 bg-gray-900/20 border border-gray-700/50 text-white rounded hover:bg-gray-800/30 transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
           <span>Reset Skill Tree (1000 gold)</span>
@@ -322,7 +322,7 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center space-x-3 mb-4">
-              <AlertTriangle className="w-6 h-6 text-red-400" />
+              <AlertTriangle className="w-6 h-6 text-white" />
               <h3 className="text-lg font-semibold text-white">Reset Skill Tree</h3>
             </div>
             <p className="text-gray-300 mb-6">
@@ -342,7 +342,7 @@ export function SkillTreeView({ character, onCharacterUpdate }: SkillTreeViewPro
               </button>
               <button
                 onClick={handleResetSkillTree}
-                className="flex-1 px-4 py-2 bg-red-600 text-red-100 rounded hover:bg-red-700 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-900 transition-colors"
               >
                 Reset
               </button>

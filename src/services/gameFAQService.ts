@@ -6,35 +6,35 @@ export const helpCategories: HelpCategoryInfo[] = [
     id: 'world-builder',
     name: 'Xây Dựng Thế Giới',
     description: 'Tạo và tùy chỉnh thế giới game',
-    icon: '🌍',
+    icon: '○',
     faqCount: 0 // Will be calculated
   },
   {
     id: 'character-creation',
     name: 'Tạo Nhân Vật',
     description: 'Thiết kế và tùy chỉnh nhân vật',
-    icon: '👤',
+    icon: '○',
     faqCount: 0 // Will be calculated
   },
   {
     id: 'combat',
     name: 'Chiến Đấu',
     description: 'Hệ thống combat và kỹ năng',
-    icon: '⚔️',
+    icon: '⚔',
     faqCount: 0 // Will be calculated
   },
   {
     id: 'gameplay',
     name: 'Chơi Game',
     description: 'Các cơ chế gameplay chính',
-    icon: '🎮',
+    icon: '□',
     faqCount: 0 // Will be calculated
   },
   {
     id: 'relationships',
     name: 'Mối Quan Hệ',
     description: 'Hệ thống quan hệ với NPC',
-    icon: '🤝',
+    icon: '○',
     faqCount: 0 // Will be calculated
   }
 ];

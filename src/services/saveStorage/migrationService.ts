@@ -123,7 +123,7 @@ export class MigrationService {
       return saveGame;
 
     } catch (error) {
-      console.error('❌ Lỗi migration:', error);
+      console.error('✗ Lỗi migration:', error);
       throw new Error(`Migration thất bại: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -164,7 +164,7 @@ export class MigrationService {
       return true;
 
     } catch (error) {
-      console.error('❌ Lỗi validation SaveGame:', error);
+      console.error('✗ Lỗi validation SaveGame:', error);
       return false;
     }
   }
@@ -272,7 +272,7 @@ export class MigrationService {
           effects: ['instant_damage:1d6+2', 'stat_buff:strength:+1:self:2turns'],
           cooldown: 3,
           currentCooldown: 0,
-          icon: '⚔️',
+          icon: '⚔',
           requiresTarget: true
         },
         {
@@ -284,7 +284,7 @@ export class MigrationService {
           effects: ['instant_heal:1d6+2', 'stat_buff:constitution:+1:self:2turns'],
           cooldown: 3,
           currentCooldown: 0,
-          icon: '💚',
+          icon: '♡',
           requiresTarget: false
         },
         {
@@ -296,7 +296,7 @@ export class MigrationService {
           effects: ['stat_buff:charisma:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'],
           cooldown: 0,
           currentCooldown: 0,
-          icon: '💬',
+          icon: '○',
           requiresTarget: false
         }
       ];
@@ -308,7 +308,7 @@ export class MigrationService {
       // Determine skill type based on name or description
       let skillType: 'damage' | 'healing' | 'social' = 'damage';
       let effects: string[] = ['instant_damage:1d4', 'stat_buff:strength:+1:self:2turns'];
-      let icon = '⚔️';
+      let icon = '⚔';
       let cooldown = 3;
       let requiresTarget = true;
 
@@ -319,21 +319,21 @@ export class MigrationService {
           description.includes('heal') || description.includes('hồi') || description.includes('phục')) {
         skillType = 'healing';
         effects = ['instant_heal:1d4:+1', 'stat_buff:constitution:+1:self:2turns'];
-        icon = '💚';
+        icon = '♡';
         cooldown = 3;
         requiresTarget = false;
       } else if (name.includes('social') || name.includes('giao') || name.includes('thuyết') || 
                  description.includes('social') || description.includes('giao') || description.includes('thuyết')) {
         skillType = 'social';
         effects = ['stat_buff:charisma:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'];
-        icon = '💬';
+        icon = '○';
         cooldown = 0;
         requiresTarget = false;
       } else if (name.includes('damage') || name.includes('tấn') || name.includes('công') || 
                  description.includes('damage') || description.includes('tấn') || description.includes('công')) {
         skillType = 'damage';
         effects = ['instant_damage:1d4', 'stat_buff:strength:+1:self:2turns'];
-        icon = '⚔️';
+        icon = '⚔';
         cooldown = 3;
         requiresTarget = true;
       }
@@ -375,7 +375,7 @@ export class MigrationService {
           effects: ['instant_damage:1d4', 'stat_buff:strength:+1:self:2turns'],
           cooldown: 3,
           currentCooldown: 0,
-          icon: '⚔️',
+          icon: '⚔',
           requiresTarget: true
         },
         healing: {
@@ -387,7 +387,7 @@ export class MigrationService {
           effects: ['instant_heal:1d4:+1', 'stat_buff:constitution:+1:self:2turns'],
           cooldown: 3,
           currentCooldown: 0,
-          icon: '💚',
+          icon: '♡',
           requiresTarget: false
         },
         social: {
@@ -399,7 +399,7 @@ export class MigrationService {
           effects: ['stat_buff:charisma:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'],
           cooldown: 0,
           currentCooldown: 0,
-          icon: '💬',
+          icon: '○',
           requiresTarget: false
         }
       };
@@ -438,7 +438,7 @@ export class MigrationService {
           effects: ['instant_damage:1d6+2', 'stat_buff:strength:+1:self:2turns'],
           cooldown: 2,
           currentCooldown: 0,
-          icon: '⚔️',
+          icon: '⚔',
           requiresTarget: true
         },
         {
@@ -450,7 +450,7 @@ export class MigrationService {
           effects: ['defend', 'stat_buff:constitution:+2:self:2turns'],
           cooldown: 3,
           currentCooldown: 0,
-          icon: '🛡️',
+          icon: '○',
           requiresTarget: false
         },
         {
@@ -462,7 +462,7 @@ export class MigrationService {
           effects: ['stat_buff:charisma:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'],
           cooldown: 4,
           currentCooldown: 0,
-          icon: '💬',
+          icon: '○',
           requiresTarget: false
         }
       ];

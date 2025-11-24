@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Equipment, InventoryItem, CharacterSkill } from '../../types';
 import { ItemCard } from './ItemCard';
 // import { accessoryEffectService } from '../../services/accessoryEffectService';
@@ -140,7 +140,7 @@ export function EquipmentView({
                             e.stopPropagation();
                             handleUnequipItem(item.id);
                           }}
-                          className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                          className="p-1 text-gray-400 hover:text-white hover:bg-gray-900/20 rounded transition-colors"
                           title="Gỡ trang bị"
                         >
                           <Minus className="w-3 h-3" />
@@ -216,7 +216,7 @@ export function EquipmentView({
                         />
                         <button
                           onClick={() => handleEquipItem(item.id)}
-                          className="absolute top-2 right-2 p-2 bg-blue-600/80 hover:bg-blue-600 text-white rounded-full transition-colors"
+                          className="absolute top-2 right-2 p-2 bg-yellow-600/80 hover:bg-yellow-600 text-white rounded-full transition-colors"
                           title="Trang bị"
                         >
                           <Plus className="w-4 h-4" />
@@ -243,7 +243,7 @@ export function EquipmentView({
             {skills.map((skill, index) => (
               <div key={skill.id || index} className="flex items-center justify-between p-2 bg-gray-700/50 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">{skill.icon || '⚔️'}</span>
+                  <span className="text-lg">{skill.icon || '⚔'}</span>
                   <div>
                     <div className="text-white font-medium text-sm">{skill.name}</div>
                     <div className="text-gray-400 text-xs">
@@ -254,7 +254,7 @@ export function EquipmentView({
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-blue-400 text-xs">
+                  <div className="text-yellow-400 text-xs">
                     Cooldown: {skill.cooldown || 0}s
                   </div>
                   {skill.requiresTarget && (

@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Shield, AlertTriangle } from 'lucide-react';
+﻿import { Eye, EyeOff, Shield, AlertTriangle } from 'lucide-react';
 import { ContentFlags } from '../../types';
 import { MotionWrapper } from '../MotionWrapper';
 
@@ -46,7 +46,7 @@ export function AdultContentSettings({
         <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-600/50">
           <div className="flex items-center space-x-3">
             {contentFlags.adult_enabled ? (
-              <Eye className="w-5 h-5 text-green-400" />
+              <Eye className="w-5 h-5 text-yellow-400" />
             ) : (
               <EyeOff className="w-5 h-5 text-gray-400" />
             )}
@@ -65,7 +65,7 @@ export function AdultContentSettings({
             disabled={disabled}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               contentFlags.adult_enabled 
-                ? 'bg-green-500' 
+                ? 'bg-yellow-600' 
                 : 'bg-gray-600'
             } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           >
@@ -85,7 +85,7 @@ export function AdultContentSettings({
               disabled={disabled}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 contentFlags.adult_intensity === 'direct_safe'
-                  ? 'bg-primary-500/20 text-primary-300 border-2 border-primary-500/70'
+                  ? 'bg-yellow-600/20 text-yellow-400 border-2 border-yellow-500/70'
                   : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 border-2 border-gray-600/50'
               } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >
@@ -98,7 +98,7 @@ export function AdultContentSettings({
               disabled={disabled}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 contentFlags.adult_intensity === 'direct'
-                  ? 'bg-orange-500/20 text-orange-300 border-2 border-orange-500/70'
+                  ? 'bg-yellow-600/20 text-yellow-300 border-2 border-yellow-500/70'
                   : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 border-2 border-gray-600/50'
               } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >

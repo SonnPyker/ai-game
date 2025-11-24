@@ -331,7 +331,7 @@ export class CloudSyncService {
 
       const saveGame = await this.supabaseStore.load(slotId);
       if (saveGame) {
-        console.log(`✅ Đã tải slot ${slotId} từ cloud`);
+        console.log(`✓ Đã tải slot ${slotId} từ cloud`);
         return {
           success: true,
           saveGame
@@ -364,7 +364,7 @@ export class CloudSyncService {
       }
 
       await this.supabaseStore.remove(slotId);
-      console.log(`✅ Đã xóa slot ${slotId} từ cloud`);
+      console.log(`✓ Đã xóa slot ${slotId} từ cloud`);
       
       return {
         success: true,

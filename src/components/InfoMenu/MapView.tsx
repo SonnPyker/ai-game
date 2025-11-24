@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { MapPin, Info, Navigation, Clock } from 'lucide-react';
 import { WorldData, Location, WorldTime } from '../../types';
 import { locationService } from '../../services/locationService';
@@ -88,16 +88,16 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
     const isShop = locationSyncService.isShopLocation(cell.location);
     
     if (cell.isCurrentLocation) {
-      return 'bg-green-500 text-white border-2 border-green-300 shadow-lg';
+      return 'bg-yellow-600 text-white border-2 border-yellow-400 shadow-lg';
     } else if (cell.isNearby) {
-      return 'bg-blue-400 text-white border-2 border-blue-200 shadow-md';
+      return 'bg-yellow-400 text-white border-2 border-gray-700 shadow-md';
     } else if (isShop) {
       // Ưu tiên hiển thị màu vàng cho tất cả địa điểm được nhận diện là shop
       return 'bg-yellow-500 text-white border-2 border-yellow-300 shadow-md';
     } else if (cell.location.type === 'story') {
-      return 'bg-red-500 text-white border-2 border-red-300 shadow-md';
+      return 'bg-gray-900 text-white border-2 border-gray-700 shadow-md';
     } else {
-      return 'bg-blue-500 text-white border-2 border-blue-300 shadow-md';
+      return 'bg-yellow-500 text-white border-2 border-gray-600 shadow-md';
     }
   };
 
@@ -120,17 +120,17 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-green-500 rounded border border-green-400"></div>
+              <div className="w-4 h-4 bg-yellow-600 rounded border border-yellow-400"></div>
               <span className="text-white">Vị trí hiện tại</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-red-500 rounded border border-red-400"></div>
+              <div className="w-4 h-4 bg-gray-900 rounded border border-gray-700"></div>
               <span className="text-white">Địa điểm cốt truyện</span>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-blue-500 rounded border border-blue-400"></div>
+              <div className="w-4 h-4 bg-yellow-500 rounded border border-yellow-400"></div>
               <span className="text-white">Địa điểm phụ</span>
             </div>
             <div className="flex items-center space-x-2">
@@ -307,8 +307,8 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
                   location.type === 'shop' || location.locationType === 'shop' || location.id.startsWith('loc_shop')
                     ? 'bg-yellow-500/20 text-yellow-300' 
                     : location.type === 'story' 
-                    ? 'bg-red-500/20 text-red-300'
-                    : 'bg-blue-500/20 text-blue-300'
+                    ? 'bg-gray-900/20 text-white'
+                    : 'bg-yellow-500/20 text-yellow-300'
                 }`}>
                   {location.type === 'shop' || location.locationType === 'shop' || location.id.startsWith('loc_shop') ? 'Cửa hàng' :
                    location.type === 'story' ? 'Cốt truyện chính' : 
@@ -338,7 +338,7 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
                 )}
                 
                 {isCurrentLocation && (
-                  <div className="text-green-400 text-sm font-medium">
+                  <div className="text-yellow-400 text-sm font-medium">
                     ✓ Bạn đang ở đây
                   </div>
                 )}
@@ -349,8 +349,8 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
                       onClick={() => handleTravelToLocation(location)}
                       className={`flex-1 text-white py-2 px-4 rounded transition-colors ${
                         selectedLocationId === location.id
-                          ? 'bg-green-600 hover:bg-green-700 ring-2 ring-green-400'
-                          : 'bg-blue-600 hover:bg-blue-700'
+                          ? 'bg-yellow-700 hover:bg-yellow-700 ring-2 ring-yellow-400'
+                          : 'bg-yellow-600 hover:bg-yellow-700'
                       }`}
                       title={selectedLocationId === location.id ? 'Click để hủy chọn' : ''}
                     >
@@ -399,8 +399,8 @@ export function MapView({ worldData, currentLocationId, onLocationClick, selecte
                   currentLocation.type === 'shop' || currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop')
                     ? 'bg-yellow-500/20 text-yellow-300' 
                     : currentLocation.type === 'story' 
-                    ? 'bg-red-500/20 text-red-300'
-                    : 'bg-blue-500/20 text-blue-300'
+                    ? 'bg-gray-900/20 text-white'
+                    : 'bg-yellow-500/20 text-yellow-300'
                 }`}>
                   {currentLocation.type === 'shop' || currentLocation.locationType === 'shop' || currentLocation.id.startsWith('loc_shop') ? 'Cửa hàng' :
                    currentLocation.type === 'story' ? 'Cốt truyện chính' : 

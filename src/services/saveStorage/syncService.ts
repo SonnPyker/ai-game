@@ -176,11 +176,11 @@ export class SyncService {
         }
       }
 
-      console.log('✅ Sync completed:', result);
+      console.log('✓ Sync completed:', result);
       return result;
 
     } catch (error) {
-      console.error('❌ Lỗi sync:', error);
+      console.error('✗ Lỗi sync:', error);
       result.success = false;
       result.errors.push(`Lỗi sync tổng thể: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return result;
@@ -220,17 +220,17 @@ export class SyncService {
           break;
         case 'both':
           // Keep both versions - no action needed, just clear conflict
-          console.log(`✅ Keeping both local and cloud versions for ${slotId}`);
+          console.log(`✓ Keeping both local and cloud versions for ${slotId}`);
           return true;
         default:
           return false;
       }
 
-      console.log(`✅ Resolved conflict for ${slotId} with resolution: ${resolution}`);
+      console.log(`✓ Resolved conflict for ${slotId} with resolution: ${resolution}`);
       return true;
 
     } catch (error) {
-      console.error(`❌ Lỗi resolve conflict cho ${slotId}:`, error);
+      console.error(`✗ Lỗi resolve conflict cho ${slotId}:`, error);
       return false;
     }
   }
@@ -294,16 +294,16 @@ export class SyncService {
     if (!this.isOnline) return;
 
     try {
-      console.log('🔄 Starting background sync...');
+      console.log('○ Starting background sync...');
       const result = await this.syncAll();
       
       if (result.success) {
-        console.log(`✅ Background sync completed: ${result.syncedSlots.length} slots synced`);
+        console.log(`✓ Background sync completed: ${result.syncedSlots.length} slots synced`);
       } else {
         console.warn('⚠️ Background sync had errors:', result.errors);
       }
     } catch (error) {
-      console.error('❌ Background sync failed:', error);
+      console.error('✗ Background sync failed:', error);
     }
   }
 
@@ -347,11 +347,11 @@ export class SyncService {
         }
       }
 
-      console.log(`✅ Synced slot ${slotId}`);
+      console.log(`✓ Synced slot ${slotId}`);
       return true;
 
     } catch (error) {
-      console.error(`❌ Lỗi sync slot ${slotId}:`, error);
+      console.error(`✗ Lỗi sync slot ${slotId}:`, error);
       return false;
     }
   }

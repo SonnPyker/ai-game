@@ -43,7 +43,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc hồi máu nhỏ',
         description: 'Thuốc hồi máu cơ bản, hồi phục một chút sức khỏe.',
-        icon: '🧪',
+        icon: '○',
         rarity: 'common',
         effect: 'heal:1d4:+1:instant',
         effects: [{ type: 'heal', value: 3 }], // Average of 1d4+1
@@ -53,7 +53,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc hồi máu',
         description: 'Thuốc hồi máu hiệu quả, hồi phục sức khỏe đáng kể.',
-        icon: '🧪',
+        icon: '○',
         rarity: 'uncommon',
         effect: 'heal:2d4:+2:instant',
         effects: [{ type: 'heal', value: 7 }], // Average of 2d4+2
@@ -63,7 +63,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc hồi máu lớn',
         description: 'Thuốc hồi máu mạnh mẽ, hồi phục nhiều sức khỏe.',
-        icon: '🧪',
+        icon: '○',
         rarity: 'rare',
         effect: 'heal:4d4:+4:instant',
         effects: [{ type: 'heal', value: 14 }], // Average of 4d4+4
@@ -73,7 +73,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc hồi máu tối thượng',
         description: 'Thuốc hồi máu cực mạnh, hồi phục toàn bộ sức khỏe.',
-        icon: '🧪',
+        icon: '○',
         rarity: 'epic',
         effect: 'heal:8d4:+8:instant',
         effects: [{ type: 'heal', value: 28 }], // Average of 8d4+8
@@ -85,7 +85,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc sức mạnh',
         description: 'Tăng sức mạnh tấn công trong thời gian ngắn.',
-        icon: '💪',
+        icon: '○',
         rarity: 'common',
         effect: 'damage_buff:+1d4:3turns',
         effects: [{ type: 'damage_buff', value: 2, duration: 3 }], // Average of 1d4
@@ -95,7 +95,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc berserker',
         description: 'Kích thích cơn thịnh nộ, tăng sát thương đáng kể.',
-        icon: '😡',
+        icon: '○',
         rarity: 'uncommon',
         effect: 'damage_buff:+1d6:5turns',
         effects: [{ type: 'damage_buff', value: 3, duration: 5 }], // Average of 1d6
@@ -105,7 +105,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc chiến binh',
         description: 'Thuốc của chiến binh, tăng sát thương mạnh mẽ.',
-        icon: '⚔️',
+        icon: '⚔',
         rarity: 'rare',
         effect: 'damage_buff:+2d6:4turns',
         effects: [{ type: 'damage_buff', value: 7, duration: 4 }], // Average of 2d6
@@ -117,7 +117,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc khiên',
         description: 'Tăng khả năng phòng thủ trong thời gian ngắn.',
-        icon: '🛡️',
+        icon: '○',
         rarity: 'common',
         effect: 'stat_buff:ac:+2:3turns',
         effects: [{ type: 'ac_buff', value: 2, duration: 3 }],
@@ -127,7 +127,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc da đá',
         description: 'Làm da cứng như đá, tăng phòng thủ đáng kể.',
-        icon: '🪨',
+        icon: '○',
         rarity: 'uncommon',
         effect: 'stat_buff:ac:+3:5turns',
         effects: [{ type: 'ac_buff', value: 3, duration: 5 }],
@@ -137,7 +137,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc bảo vệ thánh',
         description: 'Bảo vệ thánh thần, tăng phòng thủ mạnh mẽ.',
-        icon: '✨',
+        icon: '•',
         rarity: 'rare',
         effect: 'stat_buff:ac:+4:6turns',
         effects: [{ type: 'ac_buff', value: 4, duration: 6 }],
@@ -149,7 +149,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc nhanh nhẹn',
         description: 'Tăng tốc độ và phản xạ.',
-        icon: '💨',
+        icon: '○',
         rarity: 'common',
         effect: 'stat_buff:agility:+2:5turns',
         effects: [{ type: 'stat_buff', value: 2, duration: 60, statType: 'agility' }], // 1 hour = 60 turns
@@ -159,7 +159,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc trí tuệ',
         description: 'Tăng trí tuệ và khả năng tư duy.',
-        icon: '🧠',
+        icon: '○',
         rarity: 'uncommon',
         effect: 'stat_buff:intelligence:+3:5turns',
         effects: [{ type: 'stat_buff', value: 3, duration: 60, statType: 'intelligence' }],
@@ -169,7 +169,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc sức mạnh tối thượng',
         description: 'Tăng sức mạnh cơ bắp đáng kể.',
-        icon: '💪',
+        icon: '○',
         rarity: 'rare',
         effect: 'stat_buff:strength:+4:5turns',
         effects: [{ type: 'stat_buff', value: 4, duration: 60, statType: 'strength' }],
@@ -181,7 +181,7 @@ class ConsumableDatabase {
       {
         name: 'Bom độc',
         description: 'Bom chứa độc tố, gây sát thương và làm yếu kẻ thù.',
-        icon: '💣',
+        icon: '○',
         rarity: 'common',
         effect: 'debuff:poison:1d4:3turns',
         effects: [{ type: 'debuff', value: 2, duration: 3, target: 'enemy' }], // Average of 1d4
@@ -201,7 +201,7 @@ class ConsumableDatabase {
       {
         name: 'Bom băng',
         description: 'Bom băng làm chậm kẻ thù.',
-        icon: '❄️',
+        icon: '•',
         rarity: 'rare',
         effect: 'debuff:slow:1:4turns',
         effects: [{ type: 'debuff', value: 1, duration: 4, target: 'enemy' }],
@@ -213,7 +213,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc giải độc',
         description: 'Loại bỏ tất cả hiệu ứng độc tố.',
-        icon: '🌿',
+        icon: '○',
         rarity: 'common',
         effect: 'cure:poison:instant',
         effects: [{ type: 'cure', value: 0 }],
@@ -223,7 +223,7 @@ class ConsumableDatabase {
       {
         name: 'Thuốc thánh',
         description: 'Loại bỏ tất cả hiệu ứng tiêu cực.',
-        icon: '✨',
+        icon: '•',
         rarity: 'rare',
         effect: 'cure:all:instant',
         effects: [{ type: 'cure', value: 0 }],

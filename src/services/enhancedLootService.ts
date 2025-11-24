@@ -372,12 +372,12 @@ class EnhancedLootService {
    */
   private getDefaultIcon(type: string): string {
     const icons = {
-      'misc': '📦',
-      'consumable': '🧪',
-      'weapon': '⚔️',
-      'armor': '🛡️'
+      'misc': '□',
+      'consumable': '○',
+      'weapon': '⚔',
+      'armor': '○'
     };
-    return icons[type as keyof typeof icons] || '📦';
+    return icons[type as keyof typeof icons] || '□';
   }
 
   /**

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Sword, 
@@ -43,7 +43,7 @@ export function CombatConfirmationModal({
     modalId: 'combat-confirmation-modal',
     title: 'Xác nhận chiến đấu',
     subtitle: npc?.name || 'Kẻ thù',
-    icon: <Sword className="w-5 h-5 text-red-400" />
+    icon: <Sword className="w-5 h-5 text-white" />
   });
 
   if (!isOpen) return null;
@@ -60,7 +60,7 @@ export function CombatConfirmationModal({
 
   const getStatusIcon = (status: boolean) => {
     return status ? (
-      <CheckCircle className="w-4 h-4 text-green-400" />
+      <CheckCircle className="w-4 h-4 text-yellow-400" />
     ) : (
       <AlertTriangle className="w-4 h-4 text-yellow-400" />
     );
@@ -71,7 +71,7 @@ export function CombatConfirmationModal({
   };
 
   const getStatusColor = (status: boolean) => {
-    return status ? 'text-green-400' : 'text-yellow-400';
+    return status ? 'text-yellow-400' : 'text-yellow-400';
   };
 
   return (
@@ -94,7 +94,7 @@ export function CombatConfirmationModal({
           <ModalHeader
             title="Xác nhận Chiến đấu"
             subtitle={`Chuẩn bị đối đầu với ${npc.name}`}
-            icon={<Sword className="w-6 h-6 text-red-400" />}
+            icon={<Sword className="w-6 h-6 text-white" />}
             onClose={onClose}
             onMinimize={minimize}
             className="bg-gray-800 px-6 py-4"
@@ -105,9 +105,9 @@ export function CombatConfirmationModal({
             {/* NPC Info */}
             <div className="bg-gray-800/50 rounded-lg p-4">
               <div className="flex items-center space-x-3 mb-3">
-                <User className="w-5 h-5 text-blue-400" />
+                <User className="w-5 h-5 text-yellow-400" />
                 <h3 className="text-lg font-semibold text-white">{npc.name}</h3>
-                <span className="px-2 py-1 bg-red-600/20 text-red-400 text-xs rounded">
+                <span className="px-2 py-1 bg-gray-900/20 text-white text-xs rounded">
                   Kẻ thù
                 </span>
               </div>
@@ -120,24 +120,24 @@ export function CombatConfirmationModal({
               {npc.combatStats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                   <div className="flex items-center space-x-2">
-                    <Heart className="w-4 h-4 text-red-400" />
+                    <Heart className="w-4 h-4 text-white" />
                     <span className="text-gray-400">HP:</span>
                     <span className="text-white">
                       {npc.combatStats.health?.current || 0}/{npc.combatStats.health?.max || 0}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Shield className="w-4 h-4 text-blue-400" />
+                    <Shield className="w-4 h-4 text-yellow-400" />
                     <span className="text-gray-400">AC:</span>
                     <span className="text-white">{npc.combatStats.armorClass || 'N/A'}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Sword className="w-4 h-4 text-orange-400" />
+                    <Sword className="w-4 h-4 text-yellow-400" />
                     <span className="text-gray-400">Combat:</span>
                     <span className="text-white">{npc.combatStats.combatLevel || 'N/A'}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Target className="w-4 h-4 text-green-400" />
+                    <Target className="w-4 h-4 text-yellow-400" />
                     <span className="text-gray-400">Character:</span>
                     <span className="text-white">{npc.combatStats.characterLevel || 'N/A'}</span>
                   </div>
@@ -151,7 +151,7 @@ export function CombatConfirmationModal({
                 <h3 className="text-lg font-semibold text-white">Trạng thái Chuẩn bị</h3>
                 <button
                   onClick={() => setShowDetails(!showDetails)}
-                  className="text-blue-400 hover:text-blue-300 text-sm"
+                  className="text-yellow-400 hover:text-yellow-300 text-sm"
                 >
                   {showDetails ? 'Ẩn chi tiết' : 'Xem chi tiết'}
                 </button>
@@ -161,7 +161,7 @@ export function CombatConfirmationModal({
               <div className="flex items-center space-x-4 mb-4">
                 <div className="flex items-center space-x-2">
                   {preparationStatus.isGenerating ? (
-                    <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                    <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
                   ) : (
                     getStatusIcon(isReady)
                   )}
@@ -206,9 +206,9 @@ export function CombatConfirmationModal({
 
                   {/* Errors */}
                   {preparationStatus.errors.length > 0 && (
-                    <div className="mt-3 p-3 bg-red-900/20 border border-red-500/30 rounded">
-                      <h4 className="text-red-400 font-medium mb-2">Lỗi:</h4>
-                      <ul className="text-red-300 text-sm space-y-1">
+                    <div className="mt-3 p-3 bg-gray-950/20 border border-gray-700/30 rounded">
+                      <h4 className="text-white font-medium mb-2">Lỗi:</h4>
+                      <ul className="text-white text-sm space-y-1">
                         {preparationStatus.errors.map((error, index) => (
                           <li key={index}>• {error}</li>
                         ))}
@@ -257,7 +257,7 @@ export function CombatConfirmationModal({
                   disabled={!isReady || isPreparing}
                   className={`px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
                     isReady && !isPreparing
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      ? 'bg-gray-900 hover:bg-gray-900 text-white'
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 >

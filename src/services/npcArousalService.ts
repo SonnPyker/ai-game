@@ -1,4 +1,4 @@
-import { NPCRelationship, ArousalEvent, ArousalPersonality, ArousalPreferences, ContentFlags } from '../types';
+﻿import { NPCRelationship, ArousalEvent, ArousalPersonality, ArousalPreferences, ContentFlags } from '../types';
 
 class NPCArousalService {
   private static instance: NPCArousalService;
@@ -543,7 +543,7 @@ PHẢN ỨNG SINH LÝ MƠ MÀNG (TĂNG NHẸ):
 - Có thể có co thắt nhẹ hoặc run rẩy
 - LƯU Ý: Phản ứng mơ màng chỉ tăng chỉ số nhẹ hơn so với tỉnh táo
 ` : `
-✅ TRẠNG THÁI TỈNH TÁO:
+✓ TRẠNG THÁI TỈNH TÁO:
 - Đối tượng hoàn toàn tỉnh táo và có ý thức
 - Phản ứng bình thường dựa trên tính cách và sở thích
 - Chỉ số cảm xúc tăng 100% theo logic thông thường
@@ -567,7 +567,7 @@ NGUYÊN TẮC PHÂN TÍCH CHUNG:
 10. Phản xạ sinh lý tự nhiên không thể kiểm soát được
 11. Phản ứng vô thức chỉ tăng chỉ số nhẹ, không mạnh như có ý thức
 
-🎲 XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
+□ XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
 - Nếu narrative chứa "[DC CHECK RESULT]" với Result: SUCCESS:
   * NPC PHẢI tuân theo hành động của player một cách hợp lý
   * Nếu player thuyết phục/quyến rũ thành công → NPC đồng ý, thay đổi ý kiến, hoặc làm theo yêu cầu
@@ -1087,16 +1087,16 @@ OUTPUT JSON:
 
   // Get arousal color for UI
   getArousalColor(level: number): string {
-    if (level >= 75) return 'text-red-400';
-    if (level >= 50) return 'text-orange-400';
+    if (level >= 75) return 'text-white';
+    if (level >= 50) return 'text-yellow-400';
     if (level >= 25) return 'text-yellow-400';
     return 'text-gray-400';
   }
 
   // Get arousal bar color for UI
   getArousalBarColor(level: number): string {
-    if (level >= 75) return 'bg-red-500';
-    if (level >= 50) return 'bg-orange-500';
+    if (level >= 75) return 'bg-gray-900';
+    if (level >= 50) return 'bg-yellow-600';
     if (level >= 25) return 'bg-yellow-500';
     return 'bg-gray-500';
   }

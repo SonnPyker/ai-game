@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { MotionWrapper } from '../MotionWrapper';
 import { Key, Eye, EyeOff, Check, X, AlertCircle } from 'lucide-react';
 import { geminiService } from '../../services/geminiService';
@@ -68,7 +68,7 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
       transition={{ duration: 0.5 }}
     >
       <div className="flex items-center space-x-3 mb-6">
-        <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
+        <div className="w-10 h-10 bg-yellow-600 rounded-lg flex items-center justify-center">
           <Key className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -88,7 +88,7 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="Nhập API key của bạn..."
-              className="w-full px-4 py-3 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent break-words"
+              className="w-full px-4 py-3 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent break-words"
             />
             <button
               type="button"
@@ -104,10 +104,10 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
           <MotionWrapper
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center space-x-2 p-3 bg-red-500/20 border border-red-500/30 rounded-lg"
+            className="flex items-center space-x-2 p-3 bg-gray-900/20 border border-gray-700/30 rounded-lg"
           >
-            <AlertCircle className="w-5 h-5 text-red-400" />
-            <span className="text-red-300 text-sm">{errorMessage}</span>
+            <AlertCircle className="w-5 h-5 text-white" />
+            <span className="text-white text-sm">{errorMessage}</span>
           </MotionWrapper>
         )}
 
@@ -115,10 +115,10 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
           <MotionWrapper
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center space-x-2 p-3 bg-green-500/20 border border-green-500/30 rounded-lg"
+            className="flex items-center space-x-2 p-3 bg-yellow-600/20 border border-yellow-500/30 rounded-lg"
           >
-            <Check className="w-5 h-5 text-green-400" />
-            <span className="text-green-300 text-sm">API key đã được lưu thành công!</span>
+            <Check className="w-5 h-5 text-yellow-400" />
+            <span className="text-yellow-300 text-sm">API key đã được lưu thành công!</span>
           </MotionWrapper>
         )}
 
@@ -150,10 +150,10 @@ export function ApiKeyConfig({ onApiKeySet }: ApiKeyConfigProps) {
           </button>
         </div>
 
-        <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-          <h4 className="text-sm font-semibold text-blue-300 mb-2">Cách lấy API Key:</h4>
+        <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <h4 className="text-sm font-semibold text-yellow-300 mb-2">Cách lấy API Key:</h4>
           <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
-            <li>Truy cập <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Google AI Studio</a></li>
+            <li>Truy cập <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:underline">Google AI Studio</a></li>
             <li>Đăng nhập bằng tài khoản Google</li>
             <li>Click "Create API Key"</li>
             <li>Copy API key và paste vào ô trên</li>

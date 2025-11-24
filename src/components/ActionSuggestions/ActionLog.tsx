@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Clock, Zap, AlertTriangle, CheckCircle, Filter, ChevronDown, ChevronUp, ShoppingCart, DollarSign, TrendingUp, TrendingDown, Package, Store, User } from 'lucide-react';
 import { ActionLogEntry } from '../../services/actionSuggestionService';
 import { tradingHistoryService, TradingLogEntry } from '../../services/tradingHistoryService';
@@ -22,7 +22,7 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
     modalId: 'action-log-modal',
     title: 'Lịch sử hành động',
     subtitle: 'Đang tải...',
-    icon: <Clock className="w-5 h-5 text-blue-400" />
+    icon: <Clock className="w-5 h-5 text-yellow-400" />
   });
 
   // Initialize all entries as collapsed when entries change
@@ -74,11 +74,11 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
   }
 
   const getImpactIcon = (tags: string[]) => {
-    if (tags.some(tag => tag.includes('Attack') || tag === 'attack')) return <AlertTriangle className="w-4 h-4 text-red-400" />;
-    if (tags.some(tag => tag.includes('DCCheck'))) return <CheckCircle className="w-4 h-4 text-blue-400" />;
-    if (tags.includes('risk')) return <AlertTriangle className="w-4 h-4 text-orange-400" />;
-    if (tags.includes('story')) return <CheckCircle className="w-4 h-4 text-green-400" />;
-    if (tags.includes('relationship')) return <Zap className="w-4 h-4 text-purple-400" />;
+    if (tags.some(tag => tag.includes('Attack') || tag === 'attack')) return <AlertTriangle className="w-4 h-4 text-white" />;
+    if (tags.some(tag => tag.includes('DCCheck'))) return <CheckCircle className="w-4 h-4 text-yellow-400" />;
+    if (tags.includes('risk')) return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+    if (tags.includes('story')) return <CheckCircle className="w-4 h-4 text-yellow-400" />;
+    if (tags.includes('relationship')) return <Zap className="w-4 h-4 text-yellow-400" />;
     return <Clock className="w-4 h-4 text-gray-400" />;
   };
 
@@ -115,24 +115,24 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
 
   const getItemTypeIcon = (itemType: string) => {
     switch (itemType) {
-      case 'weapon': return '⚔️';
-      case 'armor': return '🛡️';
-      case 'consumable': return '🧪';
-      case 'misc': return '📦';
-      default: return '📦';
+      case 'weapon': return '⚔';
+      case 'armor': return '○';
+      case 'consumable': return '○';
+      case 'misc': return '□';
+      default: return '□';
     }
   };
 
   const getTypeIcon = (type: 'buy' | 'sell') => {
-    return type === 'buy' ? <TrendingDown className="w-4 h-4 text-red-400" /> : <TrendingUp className="w-4 h-4 text-green-400" />;
+    return type === 'buy' ? <TrendingDown className="w-4 h-4 text-white" /> : <TrendingUp className="w-4 h-4 text-yellow-400" />;
   };
 
   const getTypeColor = (type: 'buy' | 'sell') => {
-    return type === 'buy' ? 'text-red-400' : 'text-green-400';
+    return type === 'buy' ? 'text-white' : 'text-yellow-400';
   };
 
   const getTypeBgColor = (type: 'buy' | 'sell') => {
-    return type === 'buy' ? 'bg-red-500/10 border-red-500/20' : 'bg-green-500/10 border-green-500/20';
+    return type === 'buy' ? 'bg-gray-900/10 border-gray-700/20' : 'bg-yellow-600/10 border-yellow-500/20';
   };
 
   const getItemTypes = () => {
@@ -163,7 +163,7 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
         <ModalHeader
           title="Lịch sử hành động"
           subtitle={`${filter === 'trading' ? tradingHistory.length : filteredEntries.length} ${filter === 'trading' ? 'giao dịch' : 'hành động'}`}
-          icon={<Clock className="w-5 h-5 text-blue-400" />}
+          icon={<Clock className="w-5 h-5 text-yellow-400" />}
           onMinimize={minimize}
           onClose={onClose}
         />
@@ -188,7 +188,7 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                   onClick={() => setFilter(key as any)}
                   className={`px-3 py-1 rounded-lg text-sm transition-colors ${
                     filter === key
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
+                      ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50'
                       : 'bg-gray-700/30 text-gray-300 hover:bg-gray-600/30'
                   }`}
                 >
@@ -209,19 +209,19 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                 <div className="p-4 border border-gray-700/50 rounded-lg bg-gray-800/30">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-red-400">{tradingStats.totalBuy}</div>
+                      <div className="text-2xl font-bold text-white">{tradingStats.totalBuy}</div>
                       <div className="text-sm text-gray-400">Giao dịch mua</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-green-400">{tradingStats.totalSell}</div>
+                      <div className="text-2xl font-bold text-yellow-400">{tradingStats.totalSell}</div>
                       <div className="text-sm text-gray-400">Giao dịch bán</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-red-400">{tradingStats.totalSpent.toLocaleString()}</div>
+                      <div className="text-2xl font-bold text-white">{tradingStats.totalSpent.toLocaleString()}</div>
                       <div className="text-sm text-gray-400">Gold đã chi</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-green-400">{tradingStats.totalEarned.toLocaleString()}</div>
+                      <div className="text-2xl font-bold text-yellow-400">{tradingStats.totalEarned.toLocaleString()}</div>
                       <div className="text-sm text-gray-400">Gold đã kiếm</div>
                     </div>
                   </div>
@@ -244,7 +244,7 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                     onClick={() => setTradingFilter(key as any)}
                     className={`px-3 py-1 rounded-lg text-sm transition-colors ${
                       tradingFilter === key
-                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
+                        ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50'
                         : 'bg-gray-700/30 text-gray-300 hover:bg-gray-600/30'
                     }`}
                   >
@@ -262,7 +262,7 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                   onClick={() => setItemTypeFilter('all')}
                   className={`px-3 py-1 rounded-lg text-sm transition-colors ${
                     itemTypeFilter === 'all'
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
+                      ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50'
                       : 'bg-gray-700/30 text-gray-300 hover:bg-gray-600/30'
                   }`}
                 >
@@ -274,7 +274,7 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                     onClick={() => setItemTypeFilter(itemType)}
                     className={`px-3 py-1 rounded-lg text-sm transition-colors ${
                       itemTypeFilter === itemType
-                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
+                        ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50'
                         : 'bg-gray-700/30 text-gray-300 hover:bg-gray-600/30'
                     }`}
                   >
@@ -421,16 +421,16 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                           {entry.dcCheckResult && (
                             <div className="text-sm text-gray-300">
                               <span className="text-gray-500">DC Check:</span>
-                              <div className="ml-2 mt-1 p-2 bg-blue-900/20 border border-blue-700/30 rounded">
+                              <div className="ml-2 mt-1 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded">
                                 <div className="flex items-center space-x-4 text-xs">
-                                  <span className="text-blue-300">
+                                  <span className="text-yellow-300">
                                     <strong>{entry.dcCheckResult.stat.charAt(0).toUpperCase() + entry.dcCheckResult.stat.slice(1)}</strong>
                                   </span>
                                   <span className="text-gray-400">
                                     {entry.dcCheckResult.roll} + {entry.dcCheckResult.modifier} = {entry.dcCheckResult.total}
                                   </span>
                                   <span className="text-gray-400">vs DC {entry.dcCheckResult.dc}</span>
-                                  <span className={`font-medium ${entry.dcCheckResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                                  <span className={`font-medium ${entry.dcCheckResult.success ? 'text-yellow-400' : 'text-white'}`}>
                                     {entry.dcCheckResult.success ? 'SUCCESS' : 'FAILURE'}
                                   </span>
                                 </div>
@@ -442,9 +442,9 @@ export function ActionLog({ isOpen, onClose, entries }: ActionLogProps) {
                           {entry.attackAction && (
                             <div className="text-sm text-gray-300">
                               <span className="text-gray-500">Attack Action:</span>
-                              <div className="ml-2 mt-1 p-2 bg-red-900/20 border border-red-700/30 rounded">
+                              <div className="ml-2 mt-1 p-2 bg-gray-950/20 border border-gray-800/30 rounded">
                                 <div className="text-xs">
-                                  <span className="text-red-300">
+                                  <span className="text-white">
                                     Target: <strong>{entry.attackAction.targetNPC}</strong>
                                   </span>
                                   <span className="ml-2 text-gray-400">

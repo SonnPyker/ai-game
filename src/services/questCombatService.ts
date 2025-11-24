@@ -105,7 +105,7 @@ class QuestCombatService {
       } else {
       }
     } catch (error) {
-      console.error('❌ Error validating quests:', error);
+      console.error('✗ Error validating quests:', error);
     }
   }
 

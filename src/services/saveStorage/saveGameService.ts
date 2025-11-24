@@ -16,7 +16,7 @@ export class SaveGameService {
     try {
       // Kiểm tra migration trước
       if (migrationService.needsMigration()) {
-        console.log('🔄 Phát hiện dữ liệu cũ, thực hiện migration...');
+        console.log('○ Phát hiện dữ liệu cũ, thực hiện migration...');
         await migrationService.migrateToSlot1();
       }
 
@@ -24,9 +24,9 @@ export class SaveGameService {
       this.currentAdapter = await saveStorageFactory.getAdapter();
       this.isInitialized = true;
 
-      console.log('✅ SaveGameService đã khởi tạo');
+      console.log('✓ SaveGameService đã khởi tạo');
     } catch (error) {
-      console.error('❌ Lỗi khởi tạo SaveGameService:', error);
+      console.error('✗ Lỗi khởi tạo SaveGameService:', error);
       throw error;
     }
   }
@@ -85,11 +85,11 @@ export class SaveGameService {
         pendingSync: saveGame.meta.pendingSync
       };
 
-      console.log(`✅ Đã lưu game vào ${slotId} (${saveGame.meta.source})`);
+      console.log(`✓ Đã lưu game vào ${slotId} (${saveGame.meta.source})`);
       return result;
 
     } catch (error) {
-      console.error(`❌ Lỗi lưu game vào ${slotId}:`, error);
+      console.error(`✗ Lỗi lưu game vào ${slotId}:`, error);
       return {
         success: false,
         slotId,
@@ -121,11 +121,11 @@ export class SaveGameService {
         source: saveGame.meta.source
       };
 
-      console.log(`✅ Đã tải game từ ${slotId} (${saveGame.meta.source})`);
+      console.log(`✓ Đã tải game từ ${slotId} (${saveGame.meta.source})`);
       return result;
 
     } catch (error) {
-      console.error(`❌ Lỗi tải game từ ${slotId}:`, error);
+      console.error(`✗ Lỗi tải game từ ${slotId}:`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -142,7 +142,7 @@ export class SaveGameService {
 
       return await this.currentAdapter.list();
     } catch (error) {
-      console.error('❌ Lỗi liệt kê slot:', error);
+      console.error('✗ Lỗi liệt kê slot:', error);
       return [];
     }
   }
@@ -155,10 +155,10 @@ export class SaveGameService {
       }
 
       await this.currentAdapter.remove(slotId);
-      console.log(`✅ Đã xóa slot ${slotId}`);
+      console.log(`✓ Đã xóa slot ${slotId}`);
       return true;
     } catch (error) {
-      console.error(`❌ Lỗi xóa slot ${slotId}:`, error);
+      console.error(`✗ Lỗi xóa slot ${slotId}:`, error);
       return false;
     }
   }
@@ -174,7 +174,7 @@ export class SaveGameService {
 
       return migrationService.exportSaveGame(loadResult.saveGame);
     } catch (error) {
-      console.error(`❌ Lỗi export game từ ${slotId}:`, error);
+      console.error(`✗ Lỗi export game từ ${slotId}:`, error);
       return null;
     }
   }
@@ -191,10 +191,10 @@ export class SaveGameService {
       saveGame.meta.pendingSync = true;
 
       await this.currentAdapter.save(targetSlotId, saveGame);
-      console.log(`✅ Đã import game vào ${targetSlotId}`);
+      console.log(`✓ Đã import game vào ${targetSlotId}`);
       return true;
     } catch (error) {
-      console.error(`❌ Lỗi import game vào ${targetSlotId}:`, error);
+      console.error(`✗ Lỗi import game vào ${targetSlotId}:`, error);
       return false;
     }
   }
@@ -212,7 +212,7 @@ export class SaveGameService {
         conflictResolution: 'local' // Mặc định ưu tiên local
       };
     } catch (error) {
-      console.error('❌ Lỗi kiểm tra sync status:', error);
+      console.error('✗ Lỗi kiểm tra sync status:', error);
       return {
         hasLocalChanges: false,
         hasCloudChanges: false

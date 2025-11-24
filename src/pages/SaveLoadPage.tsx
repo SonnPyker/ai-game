@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { 
   Trash2, 
   AlertTriangle,
@@ -347,7 +347,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
       case 'empty':
         return <div className="w-3 h-3 bg-gray-500 rounded-full" />;
       case 'saved':
-        return <CheckCircle className="w-5 h-5 text-green-400" />;
+        return <CheckCircle className="w-5 h-5 text-yellow-400" />;
       default:
         return <div className="w-3 h-3 bg-gray-500 rounded-full" />;
     }
@@ -390,7 +390,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
             <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Đang kiểm tra...</span>
           </div>
         ) : authState.isAuthenticated ? (
-          <div className={`flex items-center space-x-2 ${isMobile ? 'px-2 py-1' : 'px-3 py-2'} bg-green-500/20 border border-green-500/50 rounded-lg text-green-300`}>
+          <div className={`flex items-center space-x-2 ${isMobile ? 'px-2 py-1' : 'px-3 py-2'} bg-yellow-600/20 border border-yellow-500/50 rounded-lg text-yellow-300`}>
             <User className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
             <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium ${isMobile ? 'hidden sm:inline' : ''}`}>{authState.user?.email}</span>
             <span className={`${isMobile ? 'sm:hidden' : 'hidden'} text-xs`}>Đã đăng nhập</span>
@@ -417,7 +417,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         <MotionWrapper
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg flex items-center space-x-3"
+          className="mb-6 p-4 bg-gray-900/20 border border-gray-700/50 text-white rounded-lg flex items-center space-x-3"
         >
           <AlertTriangle className="w-5 h-5" />
           <span className="font-medium">Có xung đột dữ liệu giữa Local và Cloud!</span>
@@ -429,7 +429,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                 setShowConflictModal(true);
               }
             }}
-            className="ml-auto px-3 py-1 bg-red-500/20 border border-red-500/50 rounded text-sm hover:bg-red-500/30 transition-colors"
+            className="ml-auto px-3 py-1 bg-gray-900/20 border border-gray-700/50 rounded text-sm hover:bg-gray-900/30 transition-colors"
           >
             Giải quyết
           </button>
@@ -441,7 +441,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         <MotionWrapper
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg flex items-center space-x-3"
+          className="mb-6 p-4 bg-gray-900/20 border border-gray-700/50 text-white rounded-lg flex items-center space-x-3"
         >
           <XCircle className="w-5 h-5" />
           <span>{error}</span>
@@ -451,7 +451,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         <MotionWrapper
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg flex items-center space-x-3"
+          className="mb-6 p-4 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg flex items-center space-x-3"
         >
           <CheckCircle className="w-5 h-5" />
           <span>{success}</span>
@@ -467,7 +467,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
           className="mb-8"
         >
           <div className="flex items-center space-x-2 mb-4">
-            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
               <span className="text-white text-xs font-bold">☁️</span>
             </div>
             <h3 className="text-lg font-bold text-white">Cloud Save</h3>
@@ -484,9 +484,9 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
               key={slotId}
               className={`p-6 border-2 rounded-xl transition-all duration-200 ${
                 isSelected
-                  ? 'border-blue-500/50 bg-blue-500/10'
+                  ? 'border-yellow-500/50 bg-yellow-500/10'
                   : 'border-gray-600/50 bg-gray-800/20'
-              } ${conflict?.hasConflict ? 'border-red-500/50 bg-red-500/10' : ''}`}
+              } ${conflict?.hasConflict ? 'border-gray-700/50 bg-gray-900/10' : ''}`}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
@@ -503,7 +503,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     isSelected
                       ? 'bg-gray-600/50 text-gray-300'
-                      : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                      : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
                   }`}
                 >
                   {isSelected ? 'Bỏ chọn' : 'Chọn'}
@@ -528,7 +528,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                     )}
                   </div>
                   {conflict?.hasConflict && (
-                    <div className="mt-2 text-xs text-red-400 flex items-center space-x-1">
+                    <div className="mt-2 text-xs text-white flex items-center space-x-1">
                       <AlertTriangle className="w-3 h-3" />
                       <span>Xung đột dữ liệu</span>
                     </div>
@@ -541,7 +541,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                 <button
                   onClick={() => handleLoad(slotId as any)}
                   disabled={loading || !slot?.saveGame}
-                  className="flex flex-col items-center space-y-1 px-3 py-3 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 disabled:opacity-50"
+                  className="flex flex-col items-center space-y-1 px-3 py-3 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 disabled:opacity-50"
                 >
                   <Play className="w-5 h-5" />
                   <span className="text-xs">Tải</span>
@@ -549,7 +549,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                 <button
                   onClick={() => handleDelete(slotId as any)}
                   disabled={loading || !slot?.saveGame}
-                  className="flex flex-col items-center space-y-1 px-3 py-3 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors duration-200 disabled:opacity-50"
+                  className="flex flex-col items-center space-y-1 px-3 py-3 bg-gray-900/20 border border-gray-700/50 text-white rounded-lg hover:bg-gray-900/30 transition-colors duration-200 disabled:opacity-50"
                 >
                   <Trash2 className="w-5 h-5" />
                   <span className="text-xs">Xóa</span>
@@ -557,7 +557,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                 <button
                   onClick={() => handleExport(slotId as any)}
                   disabled={loading || !slot?.saveGame}
-                  className="flex flex-col items-center space-y-1 px-3 py-3 bg-purple-500/20 border border-purple-500/50 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors duration-200 disabled:opacity-50"
+                  className="flex flex-col items-center space-y-1 px-3 py-3 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50"
                 >
                   <Download className="w-5 h-5" />
                   <span className="text-xs">Export</span>
@@ -568,7 +568,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
               <button
                 onClick={() => handleImport(slotId as any)}
                 disabled={loading}
-                className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-orange-500/20 border border-orange-500/50 text-orange-300 rounded-lg hover:bg-orange-500/30 transition-colors duration-200 disabled:opacity-50 mb-4"
+                className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50 mb-4"
               >
                 <Upload className="w-4 h-4" />
                 <span className="text-sm">Import</span>
@@ -589,8 +589,8 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
         className="mb-8"
       >
         <div className="flex items-center space-x-2 mb-4">
-          <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">💾</span>
+          <div className="w-5 h-5 bg-yellow-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">→</span>
           </div>
           <h3 className="text-lg font-bold text-white">Local Save</h3>
         </div>
@@ -605,7 +605,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                 key={slotId}
                 className={`${isMobile ? 'p-4' : 'p-6'} border-2 rounded-xl transition-all duration-200 ${
                   isSelected
-                    ? 'border-blue-500/50 bg-blue-500/10'
+                    ? 'border-yellow-500/50 bg-yellow-500/10'
                     : 'border-gray-600/50 bg-gray-800/20'
                 }`}
               >
@@ -656,7 +656,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                   <button
                     onClick={() => handleLoad(slotId as any)}
                     disabled={loading || !slot?.saveGame}
-                    className={`flex flex-col items-center space-y-1 ${isMobile ? 'px-2 py-2' : 'px-3 py-3'} bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 disabled:opacity-50`}
+                    className={`flex flex-col items-center space-y-1 ${isMobile ? 'px-2 py-2' : 'px-3 py-3'} bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 disabled:opacity-50`}
                   >
                     <Play className={`${isMobile ? 'w-3 h-3' : 'w-5 h-5'}`} />
                     <span className={`${isMobile ? 'text-xs' : 'text-xs'}`}>Tải</span>
@@ -664,7 +664,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                   <button
                     onClick={() => handleDelete(slotId as any)}
                     disabled={loading || !slot?.saveGame}
-                    className="flex flex-col items-center space-y-1 px-3 py-3 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors duration-200 disabled:opacity-50"
+                    className="flex flex-col items-center space-y-1 px-3 py-3 bg-gray-900/20 border border-gray-700/50 text-white rounded-lg hover:bg-gray-900/30 transition-colors duration-200 disabled:opacity-50"
                   >
                     <Trash2 className="w-5 h-5" />
                     <span className="text-xs">Xóa</span>
@@ -672,7 +672,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                   <button
                     onClick={() => handleExport(slotId as any)}
                     disabled={loading || !slot?.saveGame}
-                    className="flex flex-col items-center space-y-1 px-3 py-3 bg-purple-500/20 border border-purple-500/50 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors duration-200 disabled:opacity-50"
+                    className="flex flex-col items-center space-y-1 px-3 py-3 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50"
                   >
                     <Download className="w-5 h-5" />
                     <span className="text-xs">Export</span>
@@ -683,7 +683,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                 <button
                   onClick={() => handleImport(slotId as any)}
                   disabled={loading}
-                  className="w-full flex items-center justify-center space-x-2 px-3 py-3 bg-orange-500/20 border border-orange-500/50 text-orange-300 rounded-lg hover:bg-orange-500/30 transition-colors duration-200 disabled:opacity-50"
+                  className="w-full flex items-center justify-center space-x-2 px-3 py-3 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50"
                 >
                   <Upload className="w-5 h-5" />
                   <span className="text-sm">Import</span>
@@ -717,14 +717,14 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
                 <button
                   onClick={() => handleResolveConflict(conflictSlot, 'local')}
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50"
                 >
                   Giữ Local
                 </button>
                 <button
                   onClick={() => handleResolveConflict(conflictSlot, 'cloud')}
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 disabled:opacity-50"
                 >
                   Giữ Cloud
                 </button>
@@ -732,7 +732,7 @@ export function SaveLoadPage({}: SaveLoadPageProps) {
               <button
                 onClick={() => handleResolveConflict(conflictSlot, 'both')}
                 disabled={loading}
-                className="w-full px-4 py-2 bg-purple-500/20 border border-purple-500/50 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors duration-200 disabled:opacity-50"
+                className="w-full px-4 py-2 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50"
               >
                 Giữ cả hai (Local + Cloud)
               </button>

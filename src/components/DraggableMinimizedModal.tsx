@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+﻿import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useMinimizedModalContext, MinimizedModalData } from '../contexts/MinimizedModalContext';
 
@@ -170,7 +170,7 @@ export function DraggableMinimizedModal({
           bg-gray-800 border border-gray-600 rounded-lg shadow-lg
           transition-all duration-200
           ${isDragging || isDraggingLocal 
-            ? 'shadow-2xl scale-105 border-blue-400' 
+            ? 'shadow-2xl scale-105 border-yellow-400' 
             : 'hover:shadow-xl hover:scale-102'
           }
           ${isMobile ? 'text-xs' : 'text-sm'}

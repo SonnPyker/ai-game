@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Heart, 
@@ -47,7 +47,7 @@ export function NPCInfoModal({
     modalId: 'npc-info-modal',
     title: npc?.name || 'NPC Info',
     subtitle: 'Chi tiết nhân vật',
-    icon: <User className="w-5 h-5 text-blue-400" />
+    icon: <User className="w-5 h-5 text-yellow-400" />
   });
 
   // Force re-render when NPC data changes
@@ -117,7 +117,7 @@ export function NPCInfoModal({
                     <Target className="w-4 h-4 mr-1" />
                     Combat Level
                   </span>
-                  <span className="text-orange-400 font-semibold">
+                  <span className="text-yellow-400 font-semibold">
                     {npc.combatStats.combatLevel || npc.combatStats.level || 1}
                   </span>
                 </div>
@@ -126,7 +126,7 @@ export function NPCInfoModal({
                     <User className="w-4 h-4 mr-1" />
                     Character Level
                   </span>
-                  <span className="text-green-400 font-semibold">
+                  <span className="text-yellow-400 font-semibold">
                     {npc.combatStats.characterLevel || npc.level || 'N/A'}
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export function NPCInfoModal({
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-red-500 h-2 rounded-full transition-all duration-300" 
+                    className="bg-gray-900 h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${(npc.combatStats.health.current / npc.combatStats.health.max) * 100}%` }}
                   ></div>
                 </div>
@@ -329,7 +329,7 @@ export function NPCInfoModal({
               <div className="w-full bg-gray-700 rounded-full h-3">
                 <div 
                   className={`h-3 rounded-full transition-all duration-300 ${
-                    npc.relationshipLevel > 0 ? 'bg-green-500' : 'bg-red-500'
+                    npc.relationshipLevel > 0 ? 'bg-yellow-600' : 'bg-gray-900'
                   }`}
                   style={{ width: `${Math.min(Math.abs(npc.relationshipLevel), 100)}%` }}
                 ></div>
@@ -338,20 +338,20 @@ export function NPCInfoModal({
             
             <div className="flex items-center justify-center">
               <span className={`px-3 py-1 rounded text-sm font-medium ${
-                npc.status === 'admiring' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/50' :
-                npc.status === 'ally' ? 'bg-green-700/20 text-green-300 border border-green-500/50' :
-                npc.status === 'trusting' ? 'bg-green-600/20 text-green-300 border border-green-500/50' :
-                npc.status === 'friendly' ? 'bg-green-500/20 text-green-300 border border-green-500/50' :
-                npc.status === 'respectful' ? 'bg-green-400/20 text-green-300 border border-green-500/50' :
+                npc.status === 'admiring' ? 'bg-gray-800/20 text-gray-300 border border-gray-700/50' :
+                npc.status === 'ally' ? 'bg-yellow-800/20 text-yellow-300 border border-yellow-500/50' :
+                npc.status === 'trusting' ? 'bg-yellow-700/20 text-yellow-300 border border-yellow-500/50' :
+                npc.status === 'friendly' ? 'bg-yellow-600/20 text-yellow-300 border border-yellow-500/50' :
+                npc.status === 'respectful' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50' :
                 npc.status === 'neutral' ? 'bg-gray-600/20 text-gray-300 border border-gray-500/50' :
                 npc.status === 'acquaintance' ? 'bg-gray-500/20 text-gray-300 border border-gray-500/50' :
                 npc.status === 'cautious' ? 'bg-yellow-600/20 text-yellow-300 border border-yellow-500/50' :
                 npc.status === 'suspicious' ? 'bg-yellow-700/20 text-yellow-300 border border-yellow-500/50' :
-                npc.status === 'disappointed' ? 'bg-orange-600/20 text-orange-300 border border-orange-500/50' :
-                npc.status === 'rival' ? 'bg-orange-700/20 text-orange-300 border border-orange-500/50' :
-                npc.status === 'enemy' ? 'bg-red-700/20 text-red-300 border border-red-500/50' :
-                npc.status === 'hostile' ? 'bg-red-600/20 text-red-300 border border-red-500/50' :
-                npc.status === 'competitive' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/50' :
+                npc.status === 'disappointed' ? 'bg-yellow-700/20 text-yellow-300 border border-yellow-500/50' :
+                npc.status === 'rival' ? 'bg-yellow-800/20 text-yellow-300 border border-yellow-500/50' :
+                npc.status === 'enemy' ? 'bg-gray-900/20 text-white border border-gray-700/50' :
+                npc.status === 'hostile' ? 'bg-gray-900/20 text-white border border-gray-700/50' :
+                npc.status === 'competitive' ? 'bg-yellow-600/20 text-yellow-300 border border-yellow-500/50' :
                 'bg-gray-600/20 text-gray-300 border border-gray-500/50'
               }`}>
                 {npc.status === 'admiring' ? 'Ngưỡng mộ' :
@@ -388,7 +388,7 @@ export function NPCInfoModal({
             <div className="w-full bg-gray-700 rounded-full h-3">
               <div 
                 className={`h-3 rounded-full transition-all duration-300 ${
-                  npc.reputation > 0 ? 'bg-blue-500' : 'bg-red-500'
+                  npc.reputation > 0 ? 'bg-yellow-500' : 'bg-gray-900'
                 }`}
                 style={{ width: `${Math.min(Math.abs(npc.reputation), 100)}%` }}
               ></div>
@@ -423,7 +423,7 @@ export function NPCInfoModal({
                     <div className="flex items-center space-x-2 mt-1">
                       <div className="w-16 bg-gray-700 rounded-full h-2">
                         <div 
-                          className="h-2 rounded-full bg-pink-500"
+                          className="h-2 rounded-full bg-gray-800"
                           style={{ width: `${npc.arousal.personality.responsiveness}%` }}
                         ></div>
                       </div>
@@ -435,7 +435,7 @@ export function NPCInfoModal({
                     <div className="flex items-center space-x-2 mt-1">
                       <div className="w-16 bg-gray-700 rounded-full h-2">
                         <div 
-                          className="h-2 rounded-full bg-blue-500"
+                          className="h-2 rounded-full bg-yellow-500"
                           style={{ width: `${npc.arousal.personality.inhibition}%` }}
                         ></div>
                       </div>
@@ -447,7 +447,7 @@ export function NPCInfoModal({
                     <div className="flex items-center space-x-2 mt-1">
                       <div className="w-16 bg-gray-700 rounded-full h-2">
                         <div 
-                          className="h-2 rounded-full bg-purple-500"
+                          className="h-2 rounded-full bg-yellow-600"
                           style={{ width: `${npc.arousal.personality.curiosity}%` }}
                         ></div>
                       </div>
@@ -459,7 +459,7 @@ export function NPCInfoModal({
                     <div className="flex items-center space-x-2 mt-1">
                       <div className="w-16 bg-gray-700 rounded-full h-2">
                         <div 
-                          className="h-2 rounded-full bg-green-500"
+                          className="h-2 rounded-full bg-yellow-600"
                           style={{ width: `${npc.arousal.personality.experience}%` }}
                         ></div>
                       </div>
@@ -471,7 +471,7 @@ export function NPCInfoModal({
                     <div className="flex items-center space-x-2 mt-1">
                       <div className="w-16 bg-gray-700 rounded-full h-2">
                         <div 
-                          className="h-2 rounded-full bg-red-500"
+                          className="h-2 rounded-full bg-gray-900"
                           style={{ width: `${npc.arousal.personality.dominance}%` }}
                         ></div>
                       </div>
@@ -483,7 +483,7 @@ export function NPCInfoModal({
                     <div className="flex items-center space-x-2 mt-1">
                       <div className="w-16 bg-gray-700 rounded-full h-2">
                         <div 
-                          className="h-2 rounded-full bg-pink-400"
+                          className="h-2 rounded-full bg-gray-800"
                           style={{ width: `${npc.arousal.personality.romanticism}%` }}
                         ></div>
                       </div>
@@ -530,7 +530,7 @@ export function NPCInfoModal({
                     <span className="text-gray-400 text-sm">Hấp dẫn:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {npc.arousal.preferences.turnOns.map((turnOn, index) => (
-                        <span key={index} className="px-2 py-1 bg-green-600/20 text-green-300 rounded text-xs">
+                        <span key={index} className="px-2 py-1 bg-yellow-700/20 text-yellow-300 rounded text-xs">
                           {turnOn}
                         </span>
                       ))}
@@ -544,7 +544,7 @@ export function NPCInfoModal({
                     <span className="text-gray-400 text-sm">Không thích:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {npc.arousal.preferences.turnOffs.map((turnOff, index) => (
-                        <span key={index} className="px-2 py-1 bg-red-600/20 text-red-300 rounded text-xs">
+                        <span key={index} className="px-2 py-1 bg-gray-900/20 text-white rounded text-xs">
                           {turnOff}
                         </span>
                       ))}
@@ -558,7 +558,7 @@ export function NPCInfoModal({
                     <span className="text-gray-400 text-sm">Sở thích đặc biệt:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {npc.arousal.preferences.kinks.map((kink, index) => (
-                        <span key={index} className="px-2 py-1 bg-purple-600/20 text-purple-300 rounded text-xs">
+                        <span key={index} className="px-2 py-1 bg-yellow-600/20 text-yellow-300 rounded text-xs">
                           {kink}
                         </span>
                       ))}
@@ -572,7 +572,7 @@ export function NPCInfoModal({
                     <span className="text-gray-400 text-sm">Ranh giới:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {npc.arousal.preferences.boundaries.map((boundary, index) => (
-                        <span key={index} className="px-2 py-1 bg-orange-600/20 text-orange-300 rounded text-xs">
+                        <span key={index} className="px-2 py-1 bg-yellow-700/20 text-yellow-300 rounded text-xs">
                           {boundary}
                         </span>
                       ))}
@@ -586,7 +586,7 @@ export function NPCInfoModal({
                     <span className="text-gray-400 text-sm">Kiểu tính cách ưa thích:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {npc.arousal.preferences.personalityTypes.map((type, index) => (
-                        <span key={index} className="px-2 py-1 bg-blue-600/20 text-blue-300 rounded text-xs">
+                        <span key={index} className="px-2 py-1 bg-yellow-600/20 text-yellow-300 rounded text-xs">
                           {type}
                         </span>
                       ))}
@@ -617,9 +617,9 @@ export function NPCInfoModal({
                     </span>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       event.change > 0 
-                        ? 'bg-green-600/20 text-green-300' 
+                        ? 'bg-yellow-700/20 text-yellow-300' 
                         : event.change < 0 
-                        ? 'bg-red-600/20 text-red-300'
+                        ? 'bg-gray-900/20 text-white'
                         : 'bg-gray-600/20 text-gray-300'
                     }`}>
                       {event.change > 0 ? '+' : ''}{event.change}
@@ -634,10 +634,10 @@ export function NPCInfoModal({
                   <div className="flex items-center justify-between mt-2">
                     <span className={`px-2 py-1 rounded text-xs ${
                       event.intensity === 'high' 
-                        ? 'bg-red-500/20 text-red-300' 
+                        ? 'bg-gray-900/20 text-white' 
                         : event.intensity === 'medium' 
                         ? 'bg-yellow-500/20 text-yellow-300'
-                        : 'bg-blue-500/20 text-blue-300'
+                        : 'bg-yellow-500/20 text-yellow-300'
                     }`}>
                       {event.intensity === 'high' ? 'Cao' : 
                        event.intensity === 'medium' ? 'Trung bình' : 'Thấp'}
@@ -676,7 +676,7 @@ export function NPCInfoModal({
         <ModalHeader
           title={npc.name}
           subtitle="Chi tiết nhân vật"
-          icon={<User className="w-5 h-5 text-blue-400" />}
+          icon={<User className="w-5 h-5 text-yellow-400" />}
           onClose={onClose}
           onMinimize={minimize}
         />
@@ -687,7 +687,7 @@ export function NPCInfoModal({
             onClick={() => setActiveTab('info')}
             className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 flex-1 ${
               activeTab === 'info'
-                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
             }`)}
           >
@@ -698,7 +698,7 @@ export function NPCInfoModal({
             onClick={() => setActiveTab('relationship')}
             className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 flex-1 ${
               activeTab === 'relationship'
-                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
             }`)}
           >

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, RotateCcw, Zap, Shield, Sword, Target, Plus, Minus } from 'lucide-react';
 import { DiceRoller, DiceRoll, DiceRollResult } from '../../utils/diceRoller';
@@ -20,7 +20,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
   const { isMinimized, minimize } = useModalMinimize({
     modalId: 'dice-roller-modal',
     title: 'Dice Roller',
-    icon: <Dice1 className="w-5 h-5 text-blue-400" />
+    icon: <Dice1 className="w-5 h-5 text-yellow-400" />
   });
 
   const availableDice = DiceRoller.getAvailableDice();
@@ -124,14 +124,14 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
               return (
                 <div key={i} className="text-sm">
                   <span className="font-mono">Roll {i + 1}:</span>
-                  <span className="ml-2 font-bold text-blue-400">{r}</span>
+                  <span className="ml-2 font-bold text-yellow-400">{r}</span>
                 </div>
               );
             }
             return (
               <div key={i} className="text-sm">
                 <span className="font-mono">{r.dice || 'Unknown'}:</span>
-                <span className="ml-2 font-bold text-blue-400">{r.total || 0}</span>
+                <span className="ml-2 font-bold text-yellow-400">{r.total || 0}</span>
                 {r.rolls && Array.isArray(r.rolls) && r.rolls.length > 1 && (
                   <span className="ml-2 text-gray-400">
                     ({r.rolls.join(', ')}){r.modifier && ` + ${r.modifier}`}
@@ -140,7 +140,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
               </div>
             );
           })}
-          <div className="text-lg font-bold text-green-400">
+          <div className="text-lg font-bold text-yellow-400">
             Total: {roll.total || 0}
           </div>
         </div>
@@ -151,7 +151,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
       return (
         <div className="text-sm">
           <span className="font-mono">{singleRoll.dice || 'Unknown'}:</span>
-          <span className="ml-2 font-bold text-blue-400">{singleRoll.total || 0}</span>
+          <span className="ml-2 font-bold text-yellow-400">{singleRoll.total || 0}</span>
           {singleRoll.rolls && Array.isArray(singleRoll.rolls) && singleRoll.rolls.length > 1 && (
             <span className="ml-2 text-gray-400">
               ({singleRoll.rolls.join(', ')}){singleRoll.modifier && ` + ${singleRoll.modifier}`}
@@ -187,7 +187,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
         {/* Header */}
         <ModalHeader
           title="Dice Roller"
-          icon={<Dice1 className="w-6 h-6 text-blue-400" />}
+          icon={<Dice1 className="w-6 h-6 text-yellow-400" />}
           onClose={onClose}
           onMinimize={minimize}
           className="bg-gray-800 px-6 py-4"
@@ -226,7 +226,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
                       value={customNotation}
                       onChange={(e) => setCustomNotation(e.target.value)}
                       placeholder="e.g., 2d6+3, d20, 1d100"
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-yellow-500 focus:outline-none"
                     />
                   </div>
                   <div className="flex space-x-2">
@@ -240,7 +240,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
                       type="number"
                       value={modifier}
                       onChange={(e) => setModifier(parseInt(e.target.value) || 0)}
-                      className="w-20 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-center focus:border-blue-500 focus:outline-none"
+                      className="w-20 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-center focus:border-yellow-500 focus:outline-none"
                     />
                     <button
                       onClick={() => setModifier(modifier + 1)}
@@ -252,7 +252,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
                   <button
                     onClick={handleRoll}
                     disabled={isRolling}
-                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                    className="w-full py-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
                   >
                     {isRolling ? (
                       <MotionWrapper
@@ -277,7 +277,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
                     <button
                       onClick={() => handleAbilityCheck(0)}
                       disabled={isRolling}
-                      className="p-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      className="p-2 bg-yellow-700 hover:bg-yellow-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
                     >
                       <Target className="w-4 h-4" />
                       <span>d20</span>
@@ -285,7 +285,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
                     <button
                       onClick={() => handleAttack(0, '1d8')}
                       disabled={isRolling}
-                      className="p-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      className="p-2 bg-gray-900 hover:bg-gray-900 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
                     >
                       <Sword className="w-4 h-4" />
                       <span>Attack</span>
@@ -295,7 +295,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
                     <button
                       onClick={() => handleAbilityCheck(2)}
                       disabled={isRolling}
-                      className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      className="p-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
                     >
                       <Shield className="w-4 h-4" />
                       <span>d20+2</span>
@@ -303,7 +303,7 @@ const DiceRollerComponent: React.FC<DiceRollerProps> = ({ isOpen, onClose }) => 
                     <button
                       onClick={() => handleQuickRoll('4d6')}
                       disabled={isRolling}
-                      className="p-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      className="p-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
                     >
                       <Zap className="w-4 h-4" />
                       <span>4d6</span>

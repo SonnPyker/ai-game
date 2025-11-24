@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -103,11 +103,11 @@ export function CombatInventory({
   const getItemIcon = (item: InventoryItem) => {
     switch (item.type) {
       case 'weapon':
-        return <Sword className="w-5 h-5 text-orange-400" />;
+        return <Sword className="w-5 h-5 text-yellow-400" />;
       case 'consumable':
-        return <Beaker className="w-5 h-5 text-green-400" />;
+        return <Beaker className="w-5 h-5 text-yellow-400" />;
       case 'misc':
-        return <Package className="w-5 h-5 text-blue-400" />;
+        return <Package className="w-5 h-5 text-yellow-400" />;
       default:
         return <Package className="w-5 h-5 text-gray-400" />;
     }
@@ -317,7 +317,7 @@ export function CombatInventory({
                           {item.name}
                         </h3>
                         {item.isEquipped && (
-                          <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded">
+                          <span className="text-xs bg-yellow-600/20 text-yellow-400 px-2 py-1 rounded">
                             Đã trang bị
                           </span>
                         )}
@@ -331,17 +331,17 @@ export function CombatInventory({
                       {(item.damage || item.attackBonus) && (
                         <div className="flex flex-wrap gap-2 text-xs mb-3">
                           {item.damage && (
-                            <span className="text-red-400 font-mono">
+                            <span className="text-white font-mono">
                               Sát thương: {item.damage}
                             </span>
                           )}
                           {item.attackBonus && (
-                            <span className="text-blue-400">
+                            <span className="text-yellow-400">
                               Tấn công: +{item.attackBonus}
                             </span>
                           )}
                           {item.damageType && (
-                            <span className="text-purple-400">
+                            <span className="text-yellow-400">
                               {item.damageType}
                             </span>
                           )}
@@ -363,8 +363,8 @@ export function CombatInventory({
                           ${item.quantity === 0
                             ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                             : item.damage 
-                              ? 'bg-red-600 hover:bg-red-700 text-white' 
-                              : 'bg-green-600 hover:bg-green-700 text-white'
+                              ? 'bg-gray-900 hover:bg-gray-900 text-white' 
+                              : 'bg-yellow-700 hover:bg-yellow-700 text-white'
                           }
                         `}
                       >
@@ -415,7 +415,7 @@ export function CombatInventory({
                           HP: {enemy.health.current}/{enemy.health.max} | AC: {enemy.armorClass}
                         </div>
                       </div>
-                      <div className="text-red-400">
+                      <div className="text-white">
                         <Zap className="w-4 h-4" />
                       </div>
                     </div>

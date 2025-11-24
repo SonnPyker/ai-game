@@ -85,7 +85,7 @@ class FactionQuestService {
             type: 'misc',
             rarity: 'unique',
             quantity: 1,
-            icon: '🎁',
+            icon: '□',
             tags: ['reward', 'faction']
           }],
           description: `Vật phẩm đặc trưng ${factionName}`,
@@ -422,7 +422,7 @@ Trả về JSON theo format này:
               type: 'misc',
               rarity: 'unique',
               quantity: 1,
-              icon: '🎁',
+              icon: '□',
               tags: ['reward', 'faction']
             }],
             description: `Vật phẩm đặc trưng ${factionName}`,

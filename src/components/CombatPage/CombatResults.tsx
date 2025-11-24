@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { MotionWrapper, MotionH1, MotionP, MotionButton } from '../MotionWrapper';
 import { 
   Trophy, 
@@ -85,18 +85,18 @@ export function CombatResults({
         title: 'Chiến Thắng!',
         subtitle: 'Bạn đã đánh bại tất cả kẻ thù!',
         icon: <Trophy className="w-16 h-16 text-yellow-400" />,
-        bgColor: 'bg-green-900/20',
-        borderColor: 'border-green-400/50',
-        textColor: 'text-green-300'
+        bgColor: 'bg-gray-900/20',
+        borderColor: 'border-yellow-400/50',
+        textColor: 'text-yellow-300'
       };
     } else {
       return {
         title: 'Thất Bại!',
         subtitle: 'Bạn đã bị đánh bại trong combat!',
-        icon: <X className="w-16 h-16 text-red-400" />,
-        bgColor: 'bg-red-900/20',
-        borderColor: 'border-red-400/50',
-        textColor: 'text-red-300'
+        icon: <X className="w-16 h-16 text-white" />,
+        bgColor: 'bg-gray-950/20',
+        borderColor: 'border-gray-700/50',
+        textColor: 'text-white'
       };
     }
   };
@@ -110,11 +110,11 @@ export function CombatResults({
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'common': return 'text-gray-400';
-      case 'uncommon': return 'text-green-400';
-      case 'rare': return 'text-blue-400';
-      case 'epic': return 'text-purple-400';
-      case 'legendary': return 'text-orange-400';
-      case 'unique': return 'text-pink-400';
+      case 'uncommon': return 'text-yellow-400';
+      case 'rare': return 'text-yellow-400';
+      case 'epic': return 'text-yellow-400';
+      case 'legendary': return 'text-yellow-400';
+      case 'unique': return 'text-white';
       default: return 'text-gray-400';
     }
   };
@@ -122,11 +122,11 @@ export function CombatResults({
   const getRarityBg = (rarity: string) => {
     switch (rarity) {
       case 'common': return 'bg-gray-600/20';
-      case 'uncommon': return 'bg-green-600/20';
-      case 'rare': return 'bg-blue-600/20';
-      case 'epic': return 'bg-purple-600/20';
-      case 'legendary': return 'bg-orange-600/20';
-      case 'unique': return 'bg-pink-600/20';
+      case 'uncommon': return 'bg-yellow-700/20';
+      case 'rare': return 'bg-yellow-600/20';
+      case 'epic': return 'bg-yellow-600/20';
+      case 'legendary': return 'bg-yellow-700/20';
+      case 'unique': return 'bg-gray-800/20';
       default: return 'bg-gray-600/20';
     }
   };
@@ -231,7 +231,7 @@ export function CombatResults({
                 <div className="bg-gray-800/50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <Package className="w-6 h-6 text-blue-400" />
+                      <Package className="w-6 h-6 text-yellow-400" />
                       <div>
                         <div className="font-medium text-white">Vật Phẩm</div>
                         <div className="text-sm text-gray-400">
@@ -242,7 +242,7 @@ export function CombatResults({
                     <div className="flex space-x-2">
                       <button
                         onClick={selectAllItems}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+                        className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded transition-colors"
                       >
                         Chọn Tất Cả
                       </button>
@@ -267,7 +267,7 @@ export function CombatResults({
                       const itemName = item.name || 'Unknown Item';
                       const itemType = item.type || 'misc';
                       const itemRarity = item.rarity || 'common';
-                      const itemIcon = item.icon || '📦';
+                      const itemIcon = item.icon || '□';
                       const itemDescription = item.description || '';
                       
                       return (
@@ -280,7 +280,7 @@ export function CombatResults({
                             p-3 rounded-lg border cursor-pointer transition-all
                             ${getRarityBg(itemRarity)} 
                             ${selectedItems.has(itemId) 
-                              ? 'border-blue-400 ring-2 ring-blue-400/50' 
+                              ? 'border-yellow-400 ring-2 ring-blue-400/50' 
                               : 'border-gray-600 hover:border-gray-500'
                             }
                           `}
@@ -291,7 +291,7 @@ export function CombatResults({
                           <div className={`
                             w-5 h-5 rounded border-2 flex items-center justify-center transition-colors
                             ${selectedItems.has(itemId) 
-                              ? 'bg-blue-500 border-blue-500' 
+                              ? 'bg-yellow-500 border-yellow-500' 
                               : 'border-gray-400 hover:border-gray-300'
                             }
                           `}>
@@ -309,7 +309,7 @@ export function CombatResults({
                               {itemType} • {itemRarity}
                             </div>
                             {item.damage && (
-                              <div className="text-xs text-red-400 font-mono">
+                              <div className="text-xs text-white font-mono">
                                 {item.damage} damage
                               </div>
                             )}
@@ -356,7 +356,7 @@ export function CombatResults({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
               onClick={handleContinue}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+              className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
             >
               <ArrowRight className="w-5 h-5" />
               <span>Tiếp Tục ({selectedItems.size} items)</span>

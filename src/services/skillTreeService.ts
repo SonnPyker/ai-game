@@ -24,7 +24,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 1,
       bonuses: { armorClass: 2 },
-      icon: '🛡️'
+      icon: '○'
     },
     {
       id: 'precise_strike',
@@ -34,7 +34,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 1,
       bonuses: { attackBonus: 1 },
-      icon: '🎯'
+      icon: '◎'
     },
     {
       id: 'power_attack',
@@ -44,7 +44,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 1,
       bonuses: { damageBonus: '1d4' },
-      icon: '⚔️'
+      icon: '⚔'
     },
     {
       id: 'quick_reflexes',
@@ -54,7 +54,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 1,
       bonuses: { initiative: 1 },
-      icon: '⚡'
+      icon: '•'
     },
 
     // Tier 2 (Intermediate)
@@ -66,7 +66,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 2,
       bonuses: { armorClass: 3 },
-      icon: '🛡️'
+      icon: '○'
     },
     {
       id: 'deadly_precision',
@@ -76,7 +76,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 2,
       bonuses: { attackBonus: 2 },
-      icon: '🎯'
+      icon: '◎'
     },
     {
       id: 'crushing_blow',
@@ -86,7 +86,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 2,
       bonuses: { damageBonus: '1d6' },
-      icon: '⚔️'
+      icon: '⚔'
     },
     {
       id: 'combat_expertise',
@@ -96,7 +96,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 2,
       bonuses: { initiative: 2 },
-      icon: '⚡'
+      icon: '•'
     },
 
     // Tier 3 (Advanced)
@@ -108,7 +108,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 3,
       bonuses: { armorClass: 5 },
-      icon: '🛡️'
+      icon: '○'
     },
     {
       id: 'perfect_aim',
@@ -118,7 +118,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 3,
       bonuses: { attackBonus: 3 },
-      icon: '🎯'
+      icon: '◎'
     },
     {
       id: 'devastating_strike',
@@ -128,7 +128,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 3,
       bonuses: { damageBonus: '2d4' },
-      icon: '⚔️'
+      icon: '⚔'
     },
     {
       id: 'lightning_reflexes',
@@ -138,7 +138,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 3,
       bonuses: { initiative: 3 },
-      icon: '⚡'
+      icon: '•'
     },
 
     // Special Combat Skills
@@ -150,7 +150,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 2,
       bonuses: { specialAbilities: ['second_wind'] },
-      icon: '💨'
+      icon: '○'
     },
     {
       id: 'counterattack',
@@ -160,7 +160,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 2,
       bonuses: { specialAbilities: ['counterattack'] },
-      icon: '🔄'
+      icon: '○'
     },
     {
       id: 'critical_master',
@@ -170,7 +170,7 @@ class SkillTreeService {
       category: 'combat',
       cost: 2,
       bonuses: { criticalChance: 10 },
-      icon: '💥'
+      icon: '•'
     },
 
     // SOCIAL SKILLS
@@ -183,7 +183,7 @@ class SkillTreeService {
       category: 'social',
       cost: 1,
       bonuses: { statBonuses: { charisma: 1 } },
-      icon: '😊'
+      icon: '○'
     },
     {
       id: 'quick_wit',
@@ -193,7 +193,7 @@ class SkillTreeService {
       category: 'social',
       cost: 1,
       bonuses: { statBonuses: { intelligence: 1 } },
-      icon: '🧠'
+      icon: '○'
     },
     {
       id: 'strong_presence',
@@ -203,7 +203,7 @@ class SkillTreeService {
       category: 'social',
       cost: 1,
       bonuses: { statBonuses: { strength: 1 } },
-      icon: '💪'
+      icon: '○'
     },
     {
       id: 'nimble_mind',
@@ -213,7 +213,7 @@ class SkillTreeService {
       category: 'social',
       cost: 1,
       bonuses: { statBonuses: { agility: 1 } },
-      icon: '🏃'
+      icon: '○'
     },
 
     // Tier 2 (Intermediate)
@@ -225,7 +225,7 @@ class SkillTreeService {
       category: 'social',
       cost: 2,
       bonuses: { statBonuses: { charisma: 2 } },
-      icon: '😊'
+      icon: '○'
     },
     {
       id: 'sharp_intellect',
@@ -235,7 +235,7 @@ class SkillTreeService {
       category: 'social',
       cost: 2,
       bonuses: { statBonuses: { intelligence: 2 } },
-      icon: '🧠'
+      icon: '○'
     },
     {
       id: 'iron_constitution',
@@ -245,7 +245,7 @@ class SkillTreeService {
       category: 'social',
       cost: 2,
       bonuses: { statBonuses: { constitution: 2 } },
-      icon: '🛡️'
+      icon: '○'
     },
     {
       id: 'keen_perception',
@@ -255,7 +255,7 @@ class SkillTreeService {
       category: 'social',
       cost: 2,
       bonuses: { statBonuses: { wisdom: 2 } },
-      icon: '👁️'
+      icon: '○'
     },
 
     // Tier 3 (Advanced)
@@ -267,7 +267,7 @@ class SkillTreeService {
       category: 'social',
       cost: 3,
       bonuses: { statBonuses: { charisma: 3 } },
-      icon: '😊'
+      icon: '○'
     },
     {
       id: 'genius_mind',
@@ -277,7 +277,7 @@ class SkillTreeService {
       category: 'social',
       cost: 3,
       bonuses: { statBonuses: { intelligence: 3 } },
-      icon: '🧠'
+      icon: '○'
     },
     {
       id: 'unbreakable_will',
@@ -288,7 +288,7 @@ class SkillTreeService {
       prerequisites: ['keen_perception'],
       cost: 3,
       bonuses: { statBonuses: { wisdom: 3 } },
-      icon: '👁️'
+      icon: '○'
     },
     {
       id: 'peak_condition',
@@ -299,7 +299,7 @@ class SkillTreeService {
       prerequisites: ['iron_constitution'],
       cost: 3,
       bonuses: { statBonuses: { constitution: 3 } },
-      icon: '🛡️'
+      icon: '○'
     },
 
     // Special Social Skills
@@ -311,7 +311,7 @@ class SkillTreeService {
       category: 'social',
       cost: 2,
       bonuses: { shopPriceModifier: -10, sellPriceModifier: 20 },
-      icon: '💰'
+      icon: '◇'
     },
     {
       id: 'inspiring_leader',
@@ -321,7 +321,7 @@ class SkillTreeService {
       category: 'social',
       cost: 2,
       bonuses: { reputationGainModifier: 15 },
-      icon: '👑'
+      icon: '◇'
     },
     {
       id: 'master_negotiator',
@@ -331,7 +331,7 @@ class SkillTreeService {
       category: 'social',
       cost: 2,
       bonuses: { specialAbilities: ['master_negotiator'] },
-      icon: '🤝'
+      icon: '○'
     },
     {
       id: 'natural_leader',
@@ -341,7 +341,7 @@ class SkillTreeService {
       category: 'social',
       cost: 2,
       bonuses: { relationshipGainModifier: 10 },
-      icon: '👥'
+      icon: '○'
     }
   ];
 

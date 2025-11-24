@@ -62,7 +62,7 @@ class EnemyDatabaseService {
             type: 'weapon',
             rarity: 'common',
             quantity: 1,
-            icon: '⚔️',
+            icon: '⚔',
             damage: '1d6',
             damageType: 'physical',
             attackBonus: 0
@@ -111,7 +111,7 @@ class EnemyDatabaseService {
             type: 'weapon',
             rarity: 'uncommon',
             quantity: 1,
-            icon: '🪓',
+            icon: '⚔',
             damage: '1d12',
             damageType: 'physical',
             attackBonus: 0,
@@ -173,7 +173,7 @@ class EnemyDatabaseService {
             type: 'weapon',
             rarity: 'uncommon',
             quantity: 1,
-            icon: '⚔️',
+            icon: '⚔',
             damage: '1d6+1',
             damageType: 'magical',
             attackBonus: 1
@@ -239,7 +239,7 @@ class EnemyDatabaseService {
             type: 'misc',
             rarity: 'rare',
             quantity: 1,
-            icon: '🔥',
+            icon: '•',
             damage: '1d4',
             damageType: 'fire'
           }
@@ -311,7 +311,7 @@ class EnemyDatabaseService {
             type: 'misc',
             rarity: 'rare',
             quantity: 1,
-            icon: '🐉',
+            icon: '○',
             stats: {
               constitution: 2
             }
@@ -323,7 +323,7 @@ class EnemyDatabaseService {
             type: 'misc',
             rarity: 'uncommon',
             quantity: 2,
-            icon: '🦷',
+            icon: '○',
             damage: '1d4',
             damageType: 'physical'
           }
@@ -584,7 +584,7 @@ class EnemyDatabaseService {
           description: 'Tấn công mạnh mẽ với sát thương tăng thêm.',
           skillType: 'damage' as const,
           effects: ['damage_buff:+1d4:3turns'],
-          icon: '⚔️',
+          icon: '⚔',
           requiresTarget: true
         }
       ],
@@ -594,7 +594,7 @@ class EnemyDatabaseService {
           description: 'Tấn công mạnh mẽ với sát thương tăng thêm.',
           skillType: 'damage' as const,
           effects: ['damage_buff:+1d4:3turns'],
-          icon: '⚔️',
+          icon: '⚔',
           requiresTarget: true
         },
         {
@@ -602,7 +602,7 @@ class EnemyDatabaseService {
           description: 'Tăng khả năng phòng thủ tạm thời.',
           skillType: 'healing' as const,
           effects: ['stat_buff:ac:+2:3turns'],
-          icon: '🛡️',
+          icon: '○',
           requiresTarget: false
         }
       ],
@@ -612,7 +612,7 @@ class EnemyDatabaseService {
           description: 'Tấn công mạnh mẽ với sát thương tăng thêm.',
           skillType: 'damage' as const,
           effects: ['damage_buff:+1d4:3turns'],
-          icon: '⚔️',
+          icon: '⚔',
           requiresTarget: true
         },
         {
@@ -620,7 +620,7 @@ class EnemyDatabaseService {
           description: 'Tăng khả năng phòng thủ tạm thời.',
           skillType: 'healing' as const,
           effects: ['stat_buff:ac:+2:3turns'],
-          icon: '🛡️',
+          icon: '○',
           requiresTarget: false
         },
         {
@@ -628,7 +628,7 @@ class EnemyDatabaseService {
           description: 'Hồi phục HP cho bản thân.',
           skillType: 'healing' as const,
           effects: ['heal:2d4:+2:instant'],
-          icon: '💚',
+          icon: '♡',
           requiresTarget: false
         }
       ]
@@ -655,7 +655,7 @@ class EnemyDatabaseService {
           description: 'Kích hoạt bản năng hoang dã, tăng sát thương và tốc độ.',
           skillType: 'damage' as const,
           effects: ['stat_buff:strength:+2:4turns', 'stat_buff:agility:+2:4turns'],
-          icon: '🐺',
+          icon: '○',
           requiresTarget: false
         }
       ],
@@ -665,7 +665,7 @@ class EnemyDatabaseService {
           description: 'Hút máu từ kẻ thù để hồi phục bản thân.',
           skillType: 'damage' as const,
           effects: ['damage:1d6:instant', 'heal:1d4:instant'],
-          icon: '💀',
+          icon: '○',
           requiresTarget: true
         }
       ],
@@ -675,7 +675,7 @@ class EnemyDatabaseService {
           description: 'Tạo ra ngọn lửa địa ngục gây sát thương AoE.',
           skillType: 'damage' as const,
           effects: ['damage:2d6:instant'],
-          icon: '🔥',
+          icon: '•',
           requiresTarget: true
         }
       ],
@@ -685,7 +685,7 @@ class EnemyDatabaseService {
           description: 'Tạo ra lá chắn nguyên tố bảo vệ khỏi sát thương.',
           skillType: 'healing' as const,
           effects: ['stat_buff:ac:+3:5turns'],
-          icon: '🌪️',
+          icon: '○',
           requiresTarget: false
         }
       ],
@@ -695,7 +695,7 @@ class EnemyDatabaseService {
           description: 'Tự động sửa chữa và hồi phục HP.',
           skillType: 'healing' as const,
           effects: ['heal:1d6:+1:instant'],
-          icon: '🔧',
+          icon: '○',
           requiresTarget: false
         }
       ]

@@ -1,4 +1,4 @@
-import { BookOpen, Zap, Heart, MessageCircle, Star, AlertTriangle } from 'lucide-react';
+﻿import { BookOpen, Zap, Heart, MessageCircle, Star, AlertTriangle } from 'lucide-react';
 import { SkillBook } from '../../types';
 import { skillBookService } from '../../services/skillBookService';
 
@@ -24,11 +24,11 @@ export function SkillBookPreview({
   const getSkillTypeIcon = (skillType: string) => {
     switch (skillType) {
       case 'damage':
-        return <Zap className="w-5 h-5 text-red-400" />;
+        return <Zap className="w-5 h-5 text-white" />;
       case 'healing':
-        return <Heart className="w-5 h-5 text-green-400" />;
+        return <Heart className="w-5 h-5 text-yellow-400" />;
       case 'social':
-        return <MessageCircle className="w-5 h-5 text-blue-400" />;
+        return <MessageCircle className="w-5 h-5 text-yellow-400" />;
       default:
         return <BookOpen className="w-5 h-5 text-gray-400" />;
     }
@@ -37,11 +37,11 @@ export function SkillBookPreview({
   const getSkillTypeColor = (skillType: string) => {
     switch (skillType) {
       case 'damage':
-        return 'text-red-400';
+        return 'text-white';
       case 'healing':
-        return 'text-green-400';
+        return 'text-yellow-400';
       case 'social':
-        return 'text-blue-400';
+        return 'text-yellow-400';
       default:
         return 'text-gray-400';
     }
@@ -52,11 +52,11 @@ export function SkillBookPreview({
       case 'common':
         return 'text-gray-400 border-gray-400';
       case 'uncommon':
-        return 'text-green-400 border-green-400';
+        return 'text-yellow-400 border-yellow-400';
       case 'rare':
-        return 'text-blue-400 border-blue-400';
+        return 'text-yellow-400 border-yellow-400';
       case 'epic':
-        return 'text-purple-400 border-purple-400';
+        return 'text-yellow-400 border-gray-700';
       case 'legendary':
         return 'text-yellow-400 border-yellow-400';
       default:
@@ -147,7 +147,7 @@ export function SkillBookPreview({
                 <span className="text-yellow-400 font-semibold text-lg">{price} gold</span>
               </div>
               {!canAfford && (
-                <p className="text-red-400 text-sm mt-2">
+                <p className="text-white text-sm mt-2">
                   Bạn không có đủ tiền để mua skill book này.
                 </p>
               )}

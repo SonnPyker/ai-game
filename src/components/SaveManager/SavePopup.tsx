@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Save, 
@@ -95,7 +95,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
       setLoading(true);
       setError(null);
       await onSaveGame(slotId);
-      setSuccess(`✅ Đã lưu vào slot ${slotId} (Cloud)`);
+      setSuccess(`✓ Đã lưu vào slot ${slotId} (Cloud)`);
       await loadSlots();
       await checkConflicts();
     } catch (err) {
@@ -116,7 +116,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
       setLoading(true);
       setError(null);
       await onSaveGame(slotId as any);
-      setSuccess(`✅ Đã lưu vào slot ${slotId} (Local)`);
+      setSuccess(`✓ Đã lưu vào slot ${slotId} (Local)`);
       await loadSlots();
     } catch (err) {
       setError('Lỗi khi lưu game cục bộ');
@@ -237,7 +237,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
       case 'empty':
         return <div className="w-3 h-3 bg-gray-500 rounded-full" />;
       case 'saved':
-        return <CheckCircle className="w-5 h-5 text-green-400" />;
+        return <CheckCircle className="w-5 h-5 text-yellow-400" />;
       default:
         return <div className="w-3 h-3 bg-gray-500 rounded-full" />;
     }
@@ -281,7 +281,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <Save className="w-6 h-6 text-blue-400" />
+              <Save className="w-6 h-6 text-yellow-400" />
               <h2 className="text-2xl font-bold text-white">QUẢN LÝ SAVE GAME</h2>
             </div>
             <button
@@ -309,7 +309,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
             <MotionWrapper
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg flex items-center space-x-2"
+              className="mb-4 p-3 bg-gray-900/20 border border-gray-700/50 text-white rounded-lg flex items-center space-x-2"
             >
               <AlertTriangle className="w-4 h-4" />
               <span className="text-sm">{error}</span>
@@ -319,7 +319,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
             <MotionWrapper
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 bg-green-500/20 border border-green-500/50 text-green-300 rounded-lg flex items-center space-x-2"
+              className="mb-4 p-3 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-lg flex items-center space-x-2"
             >
               <CheckCircle className="w-4 h-4" />
               <span className="text-sm">{success}</span>
@@ -330,7 +330,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
           {authState.isAuthenticated && !authState.isLoading && (
             <div className="mb-8">
               <div className="flex items-center space-x-2 mb-4">
-                <Cloud className="w-5 h-5 text-blue-400" />
+                <Cloud className="w-5 h-5 text-yellow-400" />
                 <h3 className="text-lg font-bold text-white">Cloud Save</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -344,7 +344,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                   key={slotId}
                   className={`p-4 border-2 rounded-xl transition-all duration-200 ${
                     'border-gray-600/50 bg-gray-800/20'
-                  } ${conflict?.hasConflict ? 'border-red-500/50 bg-red-500/10' : ''}`}
+                  } ${conflict?.hasConflict ? 'border-gray-700/50 bg-gray-900/10' : ''}`}
                 >
                   {/* Slot Header */}
                   <div className="flex items-center justify-between mb-3">
@@ -358,7 +358,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                       </span>
                     </div>
                     {conflict?.hasConflict && (
-                      <div className="w-2 h-2 bg-red-500 rounded-full" title="Có xung đột dữ liệu" />
+                      <div className="w-2 h-2 bg-gray-900 rounded-full" title="Có xung đột dữ liệu" />
                     )}
                   </div>
 
@@ -410,7 +410,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                         className={`w-full flex items-center justify-center space-x-2 px-3 py-2 border rounded-lg transition-colors duration-200 ${
                           loading || isProcessing
                             ? 'bg-gray-500/20 border-gray-500/50 text-gray-400 cursor-not-allowed opacity-50'
-                            : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30'
+                            : 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300 hover:bg-yellow-500/30'
                         }`}
                       >
                       {loading ? (
@@ -429,7 +429,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                       <button
                         onClick={() => handleDelete(slotId as any)}
                         disabled={loading || !slot?.saveGame}
-                        className="flex items-center justify-center space-x-1 px-2 py-1 bg-red-500/20 border border-red-500/50 text-red-300 rounded text-xs hover:bg-red-500/30 transition-colors duration-200 disabled:opacity-50"
+                        className="flex items-center justify-center space-x-1 px-2 py-1 bg-gray-900/20 border border-gray-700/50 text-white rounded text-xs hover:bg-gray-900/30 transition-colors duration-200 disabled:opacity-50"
                       >
                         <Trash2 className="w-3 h-3" />
                         <span>Xóa</span>
@@ -437,7 +437,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                       <button
                         onClick={() => handleExport(slotId as any)}
                         disabled={loading || !slot?.saveGame}
-                        className="flex items-center justify-center space-x-1 px-2 py-1 bg-purple-500/20 border border-purple-500/50 text-purple-300 rounded text-xs hover:bg-purple-500/30 transition-colors duration-200 disabled:opacity-50"
+                        className="flex items-center justify-center space-x-1 px-2 py-1 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded text-xs hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50"
                       >
                         <Download className="w-3 h-3" />
                         <span>Export</span>
@@ -448,7 +448,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                     <button
                       onClick={() => handleImport(slotId as any)}
                       disabled={loading}
-                      className="w-full flex items-center justify-center space-x-2 px-2 py-1 bg-orange-500/20 border border-orange-500/50 text-orange-300 rounded text-xs hover:bg-orange-500/30 transition-colors duration-200 disabled:opacity-50"
+                      className="w-full flex items-center justify-center space-x-2 px-2 py-1 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded text-xs hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50"
                     >
                       <Upload className="w-3 h-3" />
                       <span>Import</span>
@@ -465,7 +465,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
           {/* Local Save Slots - Always show */}
           <div className="mb-8">
             <div className="flex items-center space-x-2 mb-4">
-              <HardDrive className="w-5 h-5 text-green-400" />
+              <HardDrive className="w-5 h-5 text-yellow-400" />
               <h3 className="text-lg font-bold text-white">Local Save</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -540,7 +540,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                         className={`w-full flex items-center justify-center space-x-2 px-3 py-2 border rounded-lg transition-colors duration-200 ${
                           loading || isProcessing
                             ? 'bg-gray-500/20 border-gray-500/50 text-gray-400 cursor-not-allowed opacity-50'
-                            : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30'
+                            : 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300 hover:bg-yellow-500/30'
                         }`}
                       >
                         {loading ? (
@@ -559,7 +559,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                         <button
                           onClick={() => handleDelete(slotId as any)}
                           disabled={loading || !slot?.saveGame}
-                          className="flex items-center justify-center space-x-1 px-2 py-1 bg-red-500/20 border border-red-500/50 text-red-300 rounded text-xs hover:bg-red-500/30 transition-colors duration-200 disabled:opacity-50"
+                          className="flex items-center justify-center space-x-1 px-2 py-1 bg-gray-900/20 border border-gray-700/50 text-white rounded text-xs hover:bg-gray-900/30 transition-colors duration-200 disabled:opacity-50"
                         >
                           <Trash2 className="w-3 h-3" />
                           <span>Xóa</span>
@@ -567,7 +567,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                         <button
                           onClick={() => handleExport(slotId as any)}
                           disabled={loading || !slot?.saveGame}
-                          className="flex items-center justify-center space-x-1 px-2 py-1 bg-purple-500/20 border border-purple-500/50 text-purple-300 rounded text-xs hover:bg-purple-500/30 transition-colors duration-200 disabled:opacity-50"
+                          className="flex items-center justify-center space-x-1 px-2 py-1 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded text-xs hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50"
                         >
                           <Download className="w-3 h-3" />
                           <span>Export</span>
@@ -578,7 +578,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
                       <button
                         onClick={() => handleImport(slotId as any)}
                         disabled={loading}
-                        className="w-full flex items-center justify-center space-x-1 px-2 py-1 bg-orange-500/20 border border-orange-500/50 text-orange-300 rounded text-xs hover:bg-orange-500/30 transition-colors duration-200 disabled:opacity-50"
+                        className="w-full flex items-center justify-center space-x-1 px-2 py-1 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded text-xs hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50"
                       >
                         <Upload className="w-3 h-3" />
                         <span>Import</span>
@@ -595,7 +595,7 @@ export function SavePopup({ isOpen, onClose, onSaveGame, isProcessing = false }:
             <div className="text-sm text-gray-400">
               {authState.isAuthenticated ? (
                 <div className="flex items-center space-x-2">
-                  <Cloud className="w-4 h-4 text-green-400" />
+                  <Cloud className="w-4 h-4 text-yellow-400" />
                   <span>Đã đăng nhập - Có thể đồng bộ cloud</span>
                 </div>
               ) : (

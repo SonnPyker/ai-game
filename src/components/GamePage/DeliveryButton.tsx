@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Package, CheckCircle, AlertCircle } from 'lucide-react';
 import { InventoryItem, QuestProgress } from '../../types';
 import { inventoryService } from '../../services/inventoryService';
@@ -90,7 +90,7 @@ export function DeliveryButton({
       {/* Delivery Button */}
       <button
         onClick={handleDeliveryClick}
-        className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+        className="flex items-center space-x-2 px-4 py-2 bg-yellow-700 hover:bg-yellow-700 text-white rounded-lg transition-colors"
       >
         <Package className="w-4 h-4" />
         <span>Giao đồ ({deliveryItems.length})</span>
@@ -122,7 +122,7 @@ export function DeliveryButton({
                   key={item.id}
                   className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                     selectedItem?.id === item.id
-                      ? 'border-green-500 bg-green-900/20'
+                      ? 'border-yellow-500 bg-gray-900/20'
                       : 'border-gray-600 hover:border-gray-500'
                   }`}
                   onClick={() => handleItemSelect(item)}
@@ -133,10 +133,10 @@ export function DeliveryButton({
                       <h4 className="text-white font-medium">{item.name}</h4>
                       <p className="text-gray-400 text-sm">{item.description}</p>
                       <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
+                        <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded">
                           {item.type}
                         </span>
-                        <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded">
+                        <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded">
                           {item.rarity}
                         </span>
                         {item.quantity > 1 && (
@@ -147,7 +147,7 @@ export function DeliveryButton({
                       </div>
                     </div>
                     {selectedItem?.id === item.id && (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <CheckCircle className="w-5 h-5 text-yellow-500" />
                     )}
                   </div>
                 </div>
@@ -164,7 +164,7 @@ export function DeliveryButton({
               <button
                 onClick={handleConfirmDelivery}
                 disabled={!selectedItem || isDelivering}
-                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                className="flex-1 px-4 py-2 bg-yellow-700 hover:bg-yellow-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
               >
                 {isDelivering ? (
                   <>
@@ -181,13 +181,13 @@ export function DeliveryButton({
             </div>
 
             {selectedItem && (
-              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500 rounded-lg">
+              <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-500 rounded-lg">
                 <div className="flex items-start space-x-2">
-                  <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5" />
-                  <div className="text-sm text-blue-300">
+                  <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5" />
+                  <div className="text-sm text-yellow-300">
                     <p className="font-medium">Xác nhận giao đồ:</p>
                     <p>Bạn sẽ giao <span className="font-semibold">{selectedItem.name}</span> cho {npcName}.</p>
-                    <p className="text-xs mt-1 text-blue-400">
+                    <p className="text-xs mt-1 text-yellow-400">
                       Vật phẩm sẽ bị xóa khỏi túi đồ sau khi giao.
                     </p>
                   </div>

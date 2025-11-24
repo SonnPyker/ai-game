@@ -333,7 +333,7 @@ class MultiApiKeyService {
       const duration = Date.now() - startTime;
       const errorMessage = this.getDetailedErrorMessage(error);
       
-      console.error(`❌ API test FAILED for ${testKey.name}:`, {
+      console.error(`✗ API test FAILED for ${testKey.name}:`, {
         error: errorMessage,
         duration: `${duration}ms`,
         errorType: error.constructor.name,
@@ -477,7 +477,7 @@ class MultiApiKeyService {
       queueItem.resolve(result);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.log(`❌ [Error] ${queueItem.id.substring(0, 12)} by ${key.accountName} (${key.name}): ${errorMessage}`);
+      console.log(`✗ [Error] ${queueItem.id.substring(0, 12)} by ${key.accountName} (${key.name}): ${errorMessage}`);
       queueItem.reject(error instanceof Error ? error : new Error(errorMessage));
     } finally {
       this.activeRequests.delete(key.id);
@@ -591,7 +591,7 @@ class MultiApiKeyService {
       }
     }
     
-    console.error('💥 No working keys found!');
+    console.error('• No working keys found!');
     return false;
   }
 
@@ -600,7 +600,7 @@ class MultiApiKeyService {
     if (this.rotateToNextKey()) {
       return true;
     } else {
-      console.error('❌ No more keys available to switch to');
+      console.error('✗ No more keys available to switch to');
       return false;
     }
   }

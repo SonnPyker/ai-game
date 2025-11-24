@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Image, Loader2, RefreshCw } from 'lucide-react';
 import { comfyUIService } from '../services/comfyUIService';
 import { promptExtractionService } from '../services/promptExtractionService';
@@ -101,14 +101,14 @@ export const ImageGenerationButton: React.FC<ImageGenerationButtonProps> = ({
 
   const getButtonStyle = () => {
     if (isGenerating) {
-      return "bg-blue-600 hover:bg-blue-700 text-white";
+      return "bg-yellow-600 hover:bg-yellow-700 text-white";
     }
 
     if (message.hasImageGenerationFailed) {
-      return "bg-orange-600 hover:bg-orange-700 text-white";
+      return "bg-yellow-700 hover:bg-yellow-800 text-white";
     }
 
-    return "bg-purple-600 hover:bg-purple-700 text-white";
+    return "bg-yellow-600 hover:bg-yellow-700 text-white";
   };
 
   return (

@@ -85,7 +85,7 @@ class EffectProcessingService {
     
     // STRONG VALIDATION for consumables
     if (!item.effect) {
-      console.error('❌ CONSUMABLE VALIDATION FAILED: No effect found on item', {
+      console.error('✗ CONSUMABLE VALIDATION FAILED: No effect found on item', {
         itemName: item.name,
         itemType: item.type,
         itemId: item.id,
@@ -96,7 +96,7 @@ class EffectProcessingService {
     }
     
     if (typeof item.effect !== 'string' || item.effect.trim() === '') {
-      console.error('❌ CONSUMABLE VALIDATION FAILED: Invalid effect format', {
+      console.error('✗ CONSUMABLE VALIDATION FAILED: Invalid effect format', {
         itemName: item.name,
         effect: item.effect,
         effectType: typeof item.effect
@@ -112,7 +112,7 @@ class EffectProcessingService {
     if (item.armorClass) invalidFields.push('armorClass');
     
     if (invalidFields.length > 0) {
-      console.error('❌ CONSUMABLE VALIDATION FAILED: Invalid weapon/armor fields on consumable', {
+      console.error('✗ CONSUMABLE VALIDATION FAILED: Invalid weapon/armor fields on consumable', {
         itemName: item.name,
         invalidFields: invalidFields,
         values: {
@@ -275,7 +275,7 @@ class EffectProcessingService {
       name: 'Hồi máu',
       description: `Hồi phục ${healAmount} HP`,
       duration: 0, // Instant
-      icon: '💚',
+      icon: '♡',
       effects: {
         healthModifier: healAmount
       }
@@ -342,7 +342,7 @@ class EffectProcessingService {
       name: 'Tăng sát thương',
       description: `+${damageValue} sát thương trong ${duration} lượt`,
       duration,
-      icon: '⚔️',
+      icon: '⚔',
       effects: {
         damageModifier: damageValue // Store without + (e.g., "1d4")
       }
@@ -395,7 +395,7 @@ class EffectProcessingService {
       name: cureNames[cureType] || 'Chữa trị',
       description: `Loại bỏ hiệu ứng ${cureType === 'all' ? 'tiêu cực' : cureType}`,
       duration: 0, // Instant
-      icon: '✨',
+      icon: '•',
       effects: {}
     };
   }
@@ -415,15 +415,15 @@ class EffectProcessingService {
    */
   private getStatIcon(statType: string): string {
     const icons: { [key: string]: string } = {
-      'strength': '💪',
-      'agility': '🏃',
-      'constitution': '❤️',
-      'intelligence': '🧠',
-      'wisdom': '👁️',
-      'charisma': '✨',
-      'ac': '🛡️'
+      'strength': '○',
+      'agility': '○',
+      'constitution': '♡',
+      'intelligence': '○',
+      'wisdom': '○',
+      'charisma': '•',
+      'ac': '○'
     };
-    return icons[statType] || '📈';
+    return icons[statType] || '○';
   }
 
   /**
@@ -432,8 +432,8 @@ class EffectProcessingService {
   private getDebuffIcon(debuffType: string): string {
     const icons: { [key: string]: string } = {
       'poison': '☠️',
-      'weakness': '😵',
-      'slow': '🐌'
+      'weakness': '○',
+      'slow': '○'
     };
     return icons[debuffType] || '⚠️';
   }
@@ -457,7 +457,7 @@ class EffectProcessingService {
       name: 'Hồi máu',
       description: `Hồi phục ${healAmount} HP (${diceCount}d${diceSize}+${bonus})`,
       duration: 0, // Instant
-      icon: '💚',
+      icon: '♡',
       effects: {
         healthModifier: healAmount
       },
@@ -488,7 +488,7 @@ class EffectProcessingService {
       name: 'Tăng sát thương',
       description: `+${buffAmount} sát thương trong ${duration} turn`,
       duration,
-      icon: '⚔️',
+      icon: '⚔',
       effects: {
         damageModifier: buffAmount.toString()
       }
@@ -510,7 +510,7 @@ class EffectProcessingService {
       name: 'Tăng phòng thủ',
       description: `+${acBonus} AC trong ${duration} turn`,
       duration,
-      icon: '🛡️',
+      icon: '○',
       effects: {
         armorClassModifier: acBonus
       }
@@ -584,7 +584,7 @@ class EffectProcessingService {
         name: 'Yếu đuối',
         description: `Giảm sát thương trong ${duration} turn`,
         duration,
-        icon: '😵',
+        icon: '○',
           effects: {
             damageModifier: "-2"
           }
@@ -600,7 +600,7 @@ class EffectProcessingService {
         name: 'Chậm chạp',
         description: `Giảm tốc độ trong ${duration} turn`,
         duration,
-        icon: '🐌',
+        icon: '○',
         effects: {
           statModifiers: { agility: -2 }
         }
@@ -620,7 +620,7 @@ class EffectProcessingService {
         name: 'Giải độc',
         description: 'Loại bỏ tất cả hiệu ứng độc tố',
         duration: 0,
-        icon: '🌿',
+        icon: '○',
         effects: {}
       };
     } else if (effectString === 'cure_all') {
@@ -629,7 +629,7 @@ class EffectProcessingService {
         name: 'Thanh tẩy',
         description: 'Loại bỏ tất cả hiệu ứng tiêu cực',
         duration: 0,
-        icon: '✨',
+        icon: '•',
         effects: {}
       };
     }

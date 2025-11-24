@@ -156,7 +156,7 @@ class GeminiService {
       const duration = Date.now() - startTime;
       const errorMessage = this.getDetailedErrorMessage(error);
       
-      console.error('❌ Single API test FAILED:', {
+      console.error('✗ Single API test FAILED:', {
         error: errorMessage,
         duration: `${duration}ms`
       });
@@ -562,7 +562,7 @@ HƯỚNG DẪN MÔ TẢ Y HỌC:
     if (error.message?.includes('PROHIBITED_CONTENT') || 
         error.message?.includes('SAFETY') ||
         error.message?.includes('BLOCKED_REASON')) {
-      console.error('🚫 PROHIBITED_CONTENT Error Detected:', {
+      console.error('× PROHIBITED_CONTENT Error Detected:', {
         context: promptContext,
         error: error.message,
         errorType: error.constructor?.name || 'Unknown',
@@ -586,7 +586,7 @@ HƯỚNG DẪN MÔ TẢ Y HỌC:
             return await multiApiKeyService.generateContent(prompt, contentFlags);
           }
         } catch (switchError) {
-          console.error('❌ Auto-switch failed:', switchError);
+          console.error('✗ Auto-switch failed:', switchError);
         }
         
         throw error;
@@ -967,17 +967,17 @@ YÊU CẦU KỸ NĂNG:
 1. **SKILL 1 - DAMAGE**: Kỹ năng gây sát thương trong combat
    - Effect format: "damage_buff:+1d6:3turns" hoặc "damage_buff:+2d4:2turns"
    - Cooldown: 2-4 lượt
-   - Icon: emoji phù hợp (⚔️, 🔥, ⚡, etc.)
+   - Icon: emoji phù hợp (⚔, •, •, etc.)
 
 2. **SKILL 2 - HEALING**: Kỹ năng hồi phục/buff trong combat
    - Effect format: "heal:2d4:+2:instant" hoặc "stat_buff:ac:+2:3turns"
    - Cooldown: 3-5 lượt
-   - Icon: emoji phù hợp (💚, ✨, 🛡️, etc.)
+   - Icon: emoji phù hợp (♡, •, ○, etc.)
 
 3. **SKILL 3 - SOCIAL**: Kỹ năng giao tiếp/thuyết phục NPC
    - Effect: "social_buff:persuasion:+3:1turns" hoặc "social_buff:charm:+2:2turns"
    - Cooldown: 5-8 lượt
-   - Icon: emoji phù hợp (💬, 🎭, 🧠, etc.)
+   - Icon: emoji phù hợp (○, ○, ○, etc.)
 
 Trả về JSON theo format:
 {
@@ -1002,7 +1002,7 @@ Trả về JSON theo format:
       "effect": "damage_buff:+1d6:3turns",
       "cooldown": 3,
       "currentCooldown": 0,
-      "icon": "⚔️"
+      "icon": "⚔"
     },
     {
       "id": "skill_healing_1", 
@@ -1013,7 +1013,7 @@ Trả về JSON theo format:
       "effect": "heal:2d4:+2:instant",
       "cooldown": 4,
       "currentCooldown": 0,
-      "icon": "💚"
+      "icon": "♡"
     },
     {
       "id": "skill_social_1",
@@ -1024,7 +1024,7 @@ Trả về JSON theo format:
       "effect": "social_buff:persuasion:+3:1turns",
       "cooldown": 6,
       "currentCooldown": 0,
-      "icon": "💬"
+      "icon": "○"
     }
   ]
 }
@@ -1054,7 +1054,7 @@ Chỉ trả về JSON, không có text khác.`;
             effect: 'damage_buff:+1d6:3turns',
             cooldown: 3,
             currentCooldown: 0,
-            icon: '⚔️',
+            icon: '⚔',
             description: 'Tăng sát thương tấn công trong 3 lượt' 
           },
           { 
@@ -1065,7 +1065,7 @@ Chỉ trả về JSON, không có text khác.`;
             effect: 'heal:2d4:+2:instant',
             cooldown: 4,
             currentCooldown: 0,
-            icon: '💚',
+            icon: '♡',
             description: 'Hồi phục máu ngay lập tức' 
           },
           { 
@@ -1076,7 +1076,7 @@ Chỉ trả về JSON, không có text khác.`;
             effect: 'social_buff:persuasion:+3:1turns',
             cooldown: 6,
             currentCooldown: 0,
-            icon: '💬',
+            icon: '○',
             description: 'Tăng khả năng thuyết phục NPC' 
           }
         ]
@@ -1126,7 +1126,7 @@ Tạo 3 kỹ năng ngẫu nhiên từ các loại sau (KHÔNG bắt buộc phả
 - Ví dụ: ["instant_damage:1d6+2", "stat_buff:strength:+1:self:2turns"]
 - Damage phải cân bằng: 1d6+2, 1d8+1, 2d4+1 (tổng 3-10 damage)
 - Cooldown: 2-4 lượt (random quanh 3)
-- Icon: emoji phù hợp (⚔️, 🔥, ⚡, etc.)
+- Icon: emoji phù hợp (⚔, •, •, etc.)
 - requiresTarget: true
 
 **HEALING SKILLS**: Kỹ năng hồi phục/buff trong combat
@@ -1134,14 +1134,14 @@ Tạo 3 kỹ năng ngẫu nhiên từ các loại sau (KHÔNG bắt buộc phả
 - Ví dụ: ["instant_heal:1d6+2", "stat_buff:constitution:+1:self:2turns"] hoặc ["defend", "stat_buff:ac:+1:self:2turns"]
 - Healing phải cân bằng: 1d6+2, 2d4+2, 3d4+1 (tổng 3-10 healing)
 - Cooldown: 2-4 lượt (random quanh 3)
-- Icon: emoji phù hợp (💚, ✨, 🛡️, etc.)
+- Icon: emoji phù hợp (♡, •, ○, etc.)
 - requiresTarget: false
 
 **SOCIAL SKILLS**: Kỹ năng giao tiếp/thuyết phục NPC
 - BẮT BUỘC có ít nhất 2 effects trong array
 - Ví dụ: ["stat_buff:charisma:+2:self:3turns", "stat_buff:wisdom:+1:self:3turns"]
 - Cooldown: 0 (không có cooldown)
-- Icon: emoji phù hợp (💬, 🎭, 🧠, etc.)
+- Icon: emoji phù hợp (○, ○, ○, etc.)
 - requiresTarget: false
 
 **QUAN TRỌNG**: Tạo 3 skills ngẫu nhiên, có thể có 2 damage + 1 healing, hoặc 1 damage + 2 social, hoặc bất kỳ combination nào. KHÔNG bắt buộc phải có đủ cả 3 loại.
@@ -1158,7 +1158,7 @@ JSON FORMAT:
       "effects": ["instant_damage:1d6+2", "stat_buff:strength:+1:self:2turns"],
       "cooldown": 3,
       "currentCooldown": 0,
-      "icon": "⚔️",
+      "icon": "⚔",
       "requiresTarget": true
     },
     {
@@ -1170,7 +1170,7 @@ JSON FORMAT:
       "effects": ["instant_heal:1d6+2", "stat_buff:constitution:+1:self:2turns"],
       "cooldown": 3,
       "currentCooldown": 0,
-      "icon": "💚",
+      "icon": "♡",
       "requiresTarget": false
     },
     {
@@ -1182,7 +1182,7 @@ JSON FORMAT:
       "effects": ["stat_buff:charisma:+2:self:3turns", "stat_buff:wisdom:+1:self:3turns"],
       "cooldown": 0,
       "currentCooldown": 0,
-      "icon": "💬",
+      "icon": "○",
       "requiresTarget": false
     }
   ]
@@ -1215,7 +1215,7 @@ RULES QUAN TRỌNG:
             effects: ['instant_damage:2d6', 'stat_buff:strength:+1:self:2turns'],
             cooldown: 3,
             currentCooldown: 0,
-            icon: '⚔️',
+            icon: '⚔',
             description: 'Tấn công mạnh và tăng sức mạnh',
             requiresTarget: true
           },
@@ -1227,7 +1227,7 @@ RULES QUAN TRỌNG:
             effects: ['instant_heal:2d4:+2', 'stat_buff:constitution:+2:self:3turns'],
             cooldown: 3,
             currentCooldown: 0,
-            icon: '💚',
+            icon: '♡',
             description: 'Hồi phục máu và tăng thể chất',
             requiresTarget: false
           },
@@ -1239,7 +1239,7 @@ RULES QUAN TRỌNG:
             effects: ['stat_buff:charisma:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'],
             cooldown: 0,
             currentCooldown: 0,
-            icon: '💬',
+            icon: '○',
             description: 'Tăng khả năng giao tiếp và thuyết phục',
             requiresTarget: false
           }
@@ -1429,7 +1429,7 @@ QUAN TRỌNG VỀ INVENTORY ITEM STRUCTURE - TUÂN THỦ NGHIÊM NGẶT:
   * type: "weapon" | "armor" | "consumable" | "misc"
   * rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "unique"
   * quantity: number (thường là 1)
-  * icon: string (emoji phù hợp: ⚔️ cho weapon, 🛡️ cho armor, 🧪 cho consumable, 📦 cho misc)
+  * icon: string (emoji phù hợp: ⚔ cho weapon, ○ cho armor, ○ cho consumable, □ cho misc)
   * isEquipped: boolean (luôn false khi tạo mới)
   * stats: object (các chỉ số tăng cường, có thể để 0 nếu không có)
   * slot: string (slot trang bị phù hợp: "weapon", "armor", "accessory1", "accessory2", "accessory3")
@@ -1453,7 +1453,7 @@ QUAN TRỌNG VỀ ITEM REWARDS - TẠO TÊN VÀ MÔ TẢ CỤ THỂ:
 - VÍ DỤ TỐT: "Kiếm Thánh Quang", "Áo giáp Rồng", "Thuốc hồi sinh", "Chìa khóa ma thuật"
 - VÍ DỤ SAI: "Vật phẩm ngẫu nhiên", "Một vật phẩm hữu ích"
 
-🎲 RANDOM CONSUMABLE GENERATION - AI SÁNG TẠO:
+□ RANDOM CONSUMABLE GENERATION - AI SÁNG TẠO:
 - **Khi tạo random consumable, AI phải sử dụng format mới và sáng tạo:**
   * Tên: "Thuốc Sức Mạnh Rồng", "Bình Nước Thánh", "Viên Ngọc Tăng Trí", "Thuốc Tàng Hình"
   * Effect: Sử dụng format "type:target:value:duration" hoặc combo effects
@@ -1671,7 +1671,7 @@ SCHEMA:
               "rarity": "common/uncommon/rare/epic/legendary",
               "quantity": 1,
               "value": 100,
-              "icon": "⚔️/🛡️/🧪/📦",
+              "icon": "⚔/○/○/□",
               "isEquipped": false,
               "stats": {
                 "strength": 0,
@@ -1754,7 +1754,7 @@ SCHEMA:
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
                 "value": 100,
-                "icon": "⚔️/🛡️/🧪/📦",
+                "icon": "⚔/○/○/□",
                 "isEquipped": false,
                 "stats": {
                   "strength": 0,
@@ -1836,7 +1836,7 @@ SCHEMA:
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
                 "value": 100,
-                "icon": "⚔️/🛡️/🧪/📦",
+                "icon": "⚔/○/○/□",
                 "isEquipped": false,
                 "stats": {
                   "strength": 0,
@@ -1895,7 +1895,7 @@ SCHEMA:
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
                 "value": 100,
-                "icon": "⚔️/🛡️/🧪/📦",
+                "icon": "⚔/○/○/□",
                 "isEquipped": false,
                 "stats": {
                   "strength": 0,
@@ -1954,7 +1954,7 @@ SCHEMA:
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
                 "value": 100,
-                "icon": "⚔️/🛡️/🧪/📦",
+                "icon": "⚔/○/○/□",
                 "isEquipped": false,
                 "stats": {
                   "strength": 0,
@@ -2013,7 +2013,7 @@ SCHEMA:
                 "rarity": "common/uncommon/rare/epic/legendary",
                 "quantity": 1,
                 "value": 100,
-                "icon": "⚔️/🛡️/🧪/📦",
+                "icon": "⚔/○/○/□",
                 "isEquipped": false,
                 "stats": {
                   "strength": 0,
@@ -2924,7 +2924,7 @@ QUAN TRỌNG VỀ EQUIPMENT STATS:
 - Equipment chỉ cung cấp: armorClass (cho armor), attackBonus/damage (cho weapons)
 - Stats bonuses không tồn tại trong hệ thống này
 
-🎯 SCENE CONSUMABLE GENERATION - AI SÁNG TẠO THEO CONTEXT:
+◎ SCENE CONSUMABLE GENERATION - AI SÁNG TẠO THEO CONTEXT:
 - **Khi tạo consumable trong scene, AI phải phù hợp với context:**
   * **Tavern/Shop**: "Thuốc Hồi Máu", "Bia Sức Mạnh", "Trà Tăng Trí"
   * **Dungeon**: "Thuốc Chống Ma", "Bình Nước Ma Thuật", "Viên Ngọc Sáng"
@@ -2972,7 +2972,7 @@ QUAN TRỌNG VỀ ARMOR GENERATION:
 - KHÔNG tạo armor nào thiếu armorClass
 - CẤM: accessory1, accessory2, accessory3 KHÔNG ĐƯỢC có armorClass
 
-💎 QUAN TRỌNG VỀ ACCESSORY GENERATION - HỆ THỐNG MỚI:
+◇ QUAN TRỌNG VỀ ACCESSORY GENERATION - HỆ THỐNG MỚI:
 - ACCESSORY PHẢI có: slot (accessory1/2/3), effects (array không rỗng) - KHÔNG ĐƯỢC THIẾU
 - ACCESSORY KHÔNG ĐƯỢC có: damage, damageType, attackBonus, armorClass (chỉ dành cho weapon/armor)
 - Effect format chuẩn cho accessories: "stat_buff:stat_name:+value:permanent"
@@ -3001,7 +3001,7 @@ VÍ DỤ ACCESSORY ĐÚNG FORMAT:
   "type": "misc",
   "rarity": "common",
   "quantity": 1,
-  "icon": "💍",
+  "icon": "○",
   "slot": "accessory1",
   "effects": ["stat_buff:strength:+1:permanent"],
   "value": 30,
@@ -3082,7 +3082,7 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
 - KHÔNG được tạo item rewards chỉ có description mà không có items array
 - Mỗi item phải có id duy nhất, name cụ thể, và thông tin đầy đủ
 
-🚨 QUAN TRỌNG VỀ CONSUMABLE GENERATION - VALIDATION MẠNH:
+! QUAN TRỌNG VỀ CONSUMABLE GENERATION - VALIDATION MẠNH:
 - CONSUMABLE PHẢI có: effect (format chuẩn) - KHÔNG ĐƯỢC THIẾU
 - CONSUMABLE KHÔNG ĐƯỢC có: damage, damageType, attackBonus, armorClass (chỉ dành cho weapon/armor)
 - Effect format chuẩn MỚI (type:target:value:duration):
@@ -3118,7 +3118,7 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
   * Long: 60 turns (1 hour = 60 turns)
 - KHÔNG tạo consumable nào thiếu effect hoặc effect không đúng format
 
-🎨 SÁNG TẠO CONSUMABLE MỚI - AI CÓ THỂ TẠO:
+○ SÁNG TẠO CONSUMABLE MỚI - AI CÓ THỂ TẠO:
 - **Elemental Effects**: "stat_buff:fire_resistance:+5:5turns", "damage_buff:+1d6:fire:3turns"
 - **Mental Effects**: "stat_buff:wisdom:+4:4turns", "stat_buff:intelligence:+3:6turns"
 - **Physical Effects**: "stat_buff:constitution:+3:5turns", "stat_buff:strength:+2:4turns"
@@ -3128,7 +3128,7 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
 - **Magical Effects**: "stat_buff:spell_power:+2:5turns", "damage_buff:+1d4:magical:4turns"
 - **Combo Potions**: Kết hợp nhiều effects với dấu | (VD: "heal:1d4:+1:instant|stat_buff:ac:+2:5turns")
 
-💡 GỢI Ý TẠO CONSUMABLE THEO THEME:
+○ GỢI Ý TẠO CONSUMABLE THEO THEME:
 - **Alchemy**: "stat_buff:all:+1:3turns", "heal:2d4:+2:instant"
 - **Magic**: "stat_buff:intelligence:+3:5turns", "damage_buff:+1d6:magical:4turns"
 - **Nature**: "stat_buff:constitution:+2:6turns", "heal:1d4:+1:instant"
@@ -3168,14 +3168,14 @@ QUAN TRỌNG VỀ ITEM REWARDS TRONG SIDE QUEST:
 
 
 
-🚫 QUAN TRỌNG - TÁCH BIỆT QUEST REWARDS VÀ SCENE ITEMS:
+× QUAN TRỌNG - TÁCH BIỆT QUEST REWARDS VÀ SCENE ITEMS:
 - QUEST REWARD ITEMS KHÔNG BAO GIỜ được thêm vào sceneState.availableItems
 - sceneState.availableItems CHỈ chứa items thực sự tìm thấy trong scene/context hiện tại
 - Quest reward items được xử lý riêng biệt trong quest system
 - KHÔNG nhầm lẫn giữa items tìm thấy trong scene và items từ quest rewards
 - Nếu có quest reward items, KHÔNG thêm chúng vào sceneState.availableItems
 
-🚫 QUAN TRỌNG - TÁCH BIỆT QUEST DATA VÀ SCENE DATA:
+× QUAN TRỌNG - TÁCH BIỆT QUEST DATA VÀ SCENE DATA:
 - sceneState KHÔNG BAO GIỜ được chứa mainQuests, sideQuests, hoặc bất kỳ quest data nào
 - sceneState CHỈ chứa dữ liệu liên quan đến scene hiện tại: location, npcs, availableItems, clocks, flags, worldTime
 - Quest data được quản lý riêng biệt trong quest system, KHÔNG phải trong sceneState
@@ -3331,7 +3331,7 @@ Hãy kể tiếp câu chuyện dựa trên:
 - PLAYER_ACTION: hành động người chơi vừa nêu.
 - GAME_TIME: thời gian trong game (ảnh hưởng đến phản ứng của thế giới và NPC).
 
-🎯 ENEMY GENERATION CONTEXT:
+◎ ENEMY GENERATION CONTEXT:
 - World Difficulty: ${worldDifficulty}
 - Player Level: ${playerLevel}
 - Location Type: ${locationType}
@@ -3340,7 +3340,7 @@ Hãy kể tiếp câu chuyện dựa trên:
 - Suggested Threat Level: ${threatLevelContext} (hệ thống sẽ tự động điều chỉnh)
 - Context Analysis: Dựa trên narrative context và location type, hệ thống đã tính toán số lượng enemies phù hợp
 
-🎲 DC CHECK RESULTS (nếu có):
+□ DC CHECK RESULTS (nếu có):
 - Nếu PLAYER_ACTION chứa "[DC CHECK RESULT]", đây là kết quả của một skill check
 - Format: [DC CHECK RESULT]
   - Stat: [Tên stat] (Strength, Agility, Constitution, Intelligence, Wisdom, Charisma)
@@ -3444,7 +3444,7 @@ ${narrativeRules}
 - SUMMARY (SCC): ${JSON.stringify(summary)}
 - SCENE_STATE: ${JSON.stringify(sceneState)} (chứa location, locationId, npcs, availableItems, clocks, flags)
 
-📋 CHI TIẾT SCENE_STATE STRUCTURE:
+○ CHI TIẾT SCENE_STATE STRUCTURE:
 - **location**: Thông tin vị trí hiện tại
   * name: Tên địa điểm (VD: "Tavern The Golden Dragon", "Dark Forest", "Ancient Ruins")
   * description: Mô tả chi tiết địa điểm
@@ -3536,7 +3536,7 @@ ${narrativeRules}
   * coded_messages: Tin nhắn mã hóa
   * ancient_knowledge: Kiến thức cổ xưa
 
-🔄 HƯỚNG DẪN CẬP NHẬT SCENE_STATE:
+○ HƯỚNG DẪN CẬP NHẬT SCENE_STATE:
 - **Khi player thực hiện hành động, AI PHẢI cập nhật sceneState phù hợp:**
   * Thay đổi npcs (mood, dialogue, position, status)
   * Thêm/xóa availableItems (khi tìm thấy/lấy items)
@@ -3562,17 +3562,17 @@ ${narrativeRules}
   * Giữ nguyên các thông tin không thay đổi
   * Cập nhật real-time dựa trên player actions
   * Đảm bảo sceneState phản ánh chính xác tình huống hiện tại
-  * 🚨 QUAN TRỌNG: Khi cập nhật sceneState.location, PHẢI đồng bộ locationType với world data gốc
-  * 🚨 KHÔNG BAO GIỜ thay đổi locationType từ 'shop' sang loại khác
+  * ! QUAN TRỌNG: Khi cập nhật sceneState.location, PHẢI đồng bộ locationType với world data gốc
+  * ! KHÔNG BAO GIỜ thay đổi locationType từ 'shop' sang loại khác
 
-📝 HƯỚNG DẪN CHI TIẾT CẬP NHẬT TỪNG TRƯỜNG SCENE_STATE:
+○ HƯỚNG DẪN CHI TIẾT CẬP NHẬT TỪNG TRƯỜNG SCENE_STATE:
 
 **1. location** - Cập nhật khi:
 - Player di chuyển đến địa điểm mới
 - Môi trường thay đổi đáng kể (từ sáng sang tối, từ yên tĩnh sang ồn ào)
 - Có sự kiện lớn ảnh hưởng đến địa điểm
 
-🚨 QUAN TRỌNG VỀ LOCATION TYPE CONSISTENCY:
+! QUAN TRỌNG VỀ LOCATION TYPE CONSISTENCY:
 - KHI CẬP NHẬT sceneState.location, PHẢI GIỮ NGUYÊN locationType từ world data gốc
 - KHÔNG BAO GIỜ thay đổi locationType từ 'shop' sang 'secondary' hoặc 'story'
 - Nếu location có locationType: 'shop', PHẢI giữ nguyên trong sceneState
@@ -3665,7 +3665,7 @@ LƯU Ý VỀ NGÔI KỂ:
 - Nếu narration = "Ngôi thứ nhất": sử dụng "Tôi" khi nói về nhân vật chính  
 - Nếu narration = "Ngôi thứ ba": sử dụng "Anh ấy/Cô ấy" khi nói về nhân vật chính
 
-🎲 XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
+□ XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
 ${dcResult ? `
 DC CHECK RESULT CHI TIẾT:
 - Stat: ${dcResult.stat.charAt(0).toUpperCase() + dcResult.stat.slice(1)}
@@ -3766,7 +3766,7 @@ QUAN TRỌNG VỀ OUTPUT:
         "type": "item",
         "amount": 1,
         "description": "Vật phẩm (+1)",
-        "items": [{"id": "item_id", "name": "Tên item", "description": "Mô tả", "type": "misc|weapon|armor|consumable", "rarity": "common", "quantity": 1, "tags": ["reward"], "icon": "📦"}]
+        "items": [{"id": "item_id", "name": "Tên item", "description": "Mô tả", "type": "misc|weapon|armor|consumable", "rarity": "common", "quantity": 1, "tags": ["reward"], "icon": "□"}]
       }
     ],
     "isLocationSignature": false,

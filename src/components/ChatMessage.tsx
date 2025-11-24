@@ -1,4 +1,4 @@
-import { memo } from 'react';
+﻿import { memo } from 'react';
 import { ChatMessage as ChatMessageType } from '../types';
 
 interface ChatMessageProps {
@@ -22,7 +22,7 @@ const ChatMessage = memo<ChatMessageProps>(({
     <div className={`mb-4 ${message.role === 'player' ? 'text-right' : 'text-left'}`}>
       <div className={`inline-block max-w-[85%] p-3 rounded-lg ${
         message.role === 'player' 
-          ? 'bg-blue-600 text-white' 
+          ? 'bg-yellow-600 text-white' 
           : 'bg-gray-700 text-gray-100'
       }`}>
         <div className="whitespace-pre-wrap break-words">

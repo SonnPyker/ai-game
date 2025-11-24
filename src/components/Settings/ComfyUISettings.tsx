@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ComfyUISettings as ComfyUISettingsType, ComfyUIResolution } from '../../types';
 import { comfyUIService } from '../../services/comfyUIService';
 import { MotionWrapper } from '../MotionWrapper';
@@ -200,10 +200,10 @@ export function ComfyUISettings() {
 
   const getCategoryColor = (category: string): string => {
     const colors: { [key: string]: string } = {
-      'quality': 'bg-blue-500',
-      'anatomy': 'bg-green-500',
-      'style': 'bg-purple-500',
-      'detail': 'bg-orange-500',
+      'quality': 'bg-yellow-500',
+      'anatomy': 'bg-yellow-600',
+      'style': 'bg-yellow-600',
+      'detail': 'bg-yellow-600',
       'lighting': 'bg-yellow-500',
       'custom': 'bg-gray-500'
     };
@@ -333,7 +333,7 @@ pause > nul`;
         transition={{ duration: 0.5 }}
       >
         <div className="flex items-center justify-center space-x-3 mb-4">
-          <Image className="w-8 h-8 text-purple-400" />
+          <Image className="w-8 h-8 text-yellow-400" />
           <h2 className="text-2xl font-bold text-white">ComfyUI Settings</h2>
         </div>
         <p className="text-gray-300 max-w-2xl mx-auto">
@@ -362,7 +362,7 @@ pause > nul`;
               onChange={(e) => handleToggleEnable(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-14 h-7 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
+            <div className="w-14 h-7 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-600"></div>
           </label>
         </div>
       </MotionWrapper>
@@ -375,7 +375,7 @@ pause > nul`;
         transition={{ duration: 0.5, delay: 0.2 }}
       >
         <div className="flex items-center space-x-3 mb-4">
-          <Settings className="w-5 h-5 text-green-400" />
+          <Settings className="w-5 h-5 text-yellow-400" />
           <h3 className="text-lg font-semibold text-white">ComfyUI Path Configuration</h3>
         </div>
 
@@ -389,7 +389,7 @@ pause > nul`;
               type="text"
               value={comfyUIPath}
               onChange={(e) => handleComfyUIPathChange(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               placeholder="D:\ComfyUI\ComfyUI_windows_portable"
             />
             <p className="text-xs text-gray-400 mt-1">
@@ -407,7 +407,7 @@ pause > nul`;
               </div>
               <button
                 onClick={handleStartComfyUI}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center space-x-2"
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-600 text-sm flex items-center space-x-2"
               >
                 <Settings className="w-4 h-4" />
                 <span>Generate ComfyUI Script</span>
@@ -422,7 +422,7 @@ pause > nul`;
               </div>
               <button
                 onClick={handleGenerateFullStartupScript}
-                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm flex items-center space-x-2"
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-600 text-sm flex items-center space-x-2"
               >
                 <Server className="w-4 h-4" />
                 <span>Generate Full Startup Script</span>
@@ -440,7 +440,7 @@ pause > nul`;
         transition={{ duration: 0.5, delay: 0.3 }}
       >
         <div className="flex items-center space-x-3 mb-4">
-          <Server className="w-5 h-5 text-blue-400" />
+          <Server className="w-5 h-5 text-yellow-400" />
           <h3 className="text-lg font-semibold text-white">Server Configuration</h3>
         </div>
 
@@ -454,7 +454,7 @@ pause > nul`;
               type="url"
               value={settings.serverUrl}
               onChange={(e) => handleServerUrlChange(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               placeholder="http://localhost:5001"
             />
           </div>
@@ -462,8 +462,8 @@ pause > nul`;
           {/* Connection Status */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              {serverStatus === 'connected' && <CheckCircle className="w-5 h-5 text-green-400" />}
-              {serverStatus === 'disconnected' && <XCircle className="w-5 h-5 text-red-400" />}
+              {serverStatus === 'connected' && <CheckCircle className="w-5 h-5 text-yellow-400" />}
+              {serverStatus === 'disconnected' && <XCircle className="w-5 h-5 text-white" />}
               {serverStatus === 'checking' && <AlertTriangle className="w-5 h-5 text-yellow-400 animate-spin" />}
               <span className="text-sm text-gray-300">
                 Server Status: {
@@ -476,7 +476,7 @@ pause > nul`;
             <button
               onClick={handleTestConnection}
               disabled={isTestingConnection}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {isTestingConnection ? 'Testing...' : 'Test Connection'}
             </button>
@@ -492,7 +492,7 @@ pause > nul`;
         transition={{ duration: 0.5, delay: 0.4 }}
       >
         <div className="flex items-center space-x-3 mb-4">
-          <Settings className="w-5 h-5 text-green-400" />
+          <Settings className="w-5 h-5 text-yellow-400" />
           <h3 className="text-lg font-semibold text-white">Image Settings</h3>
         </div>
 
@@ -505,7 +505,7 @@ pause > nul`;
             <select
               value={settings.resolution}
               onChange={(e) => handleResolutionChange(e.target.value as ComfyUIResolution)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             >
               {resolutionOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -527,7 +527,7 @@ pause > nul`;
               <button
                 onClick={loadAvailableCheckpoints}
                 disabled={isLoadingCheckpoints || serverStatus !== 'connected'}
-                className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 bg-yellow-500 text-white rounded text-xs hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoadingCheckpoints ? 'Loading...' : 'Refresh'}
               </button>
@@ -536,7 +536,7 @@ pause > nul`;
               value={settings.checkpoint}
               onChange={(e) => handleCheckpointChange(e.target.value)}
               disabled={availableCheckpoints.length === 0}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent disabled:opacity-50"
             >
               {availableCheckpoints.length === 0 ? (
                 <option value="">{serverStatus === 'connected' ? 'Loading checkpoints...' : 'Connect to server first'}</option>
@@ -563,14 +563,14 @@ pause > nul`;
                 <button
                   onClick={loadAvailableLoras}
                   disabled={isLoadingLoras || serverStatus !== 'connected'}
-                  className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 bg-yellow-500 text-white rounded text-xs hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoadingLoras ? 'Loading...' : 'Refresh'}
                 </button>
                 <button
                   onClick={() => setShowAddLoraModal(true)}
                   disabled={settings.loras.filter(l => l.name !== 'None').length >= settings.maxLoras}
-                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 bg-yellow-700 hover:bg-yellow-700 text-white text-xs rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   + Add LoRA
                 </button>
@@ -587,7 +587,7 @@ pause > nul`;
                         type="checkbox"
                         checked={lora.enabled}
                         onChange={() => handleToggleLoraEnabled(lora.name)}
-                        className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+                        className="w-4 h-4 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500"
                       />
                       <span className="text-sm font-medium text-white">{lora.name}</span>
                       <span className={`px-2 py-1 text-xs rounded-full text-white ${getCategoryColor(lora.category)}`}>
@@ -596,7 +596,7 @@ pause > nul`;
                     </div>
                     <button
                       onClick={() => handleRemoveLora(lora.name)}
-                      className="text-red-400 hover:text-red-300 text-sm"
+                      className="text-white hover:text-white text-sm"
                     >
                       Remove
                     </button>
@@ -615,9 +615,9 @@ pause > nul`;
                       step="0.1"
                       value={lora.strength}
                       onChange={(e) => handleLoraStrengthChange(lora.name, parseFloat(e.target.value))}
-                      className="flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 slider"
+                      className="flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-500 slider"
                     />
-                    <span className="text-xs text-purple-400 font-semibold w-8">
+                    <span className="text-xs text-yellow-400 font-semibold w-8">
                       {lora.strength}
                     </span>
                   </div>
@@ -644,7 +644,7 @@ pause > nul`;
             <select
               value={settings.style}
               onChange={(e) => handleStyleChange(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             >
               <option value="realistic">Realistic</option>
               <option value="anime">Anime</option>
@@ -676,7 +676,7 @@ pause > nul`;
                 value={settings.customStyle}
                 onChange={(e) => handleCustomStyleChange(e.target.value)}
                 placeholder="Enter custom style description (e.g., 'oil painting style, classical art, brush strokes')"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
                 rows={3}
               />
               <p className="text-xs text-gray-400 mt-1">
@@ -693,7 +693,7 @@ pause > nul`;
             <select
               value={settings.qualityLevel}
               onChange={(e) => handleQualityLevelChange(e.target.value as 'standard' | 'high' | 'ultra')}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             >
               <option value="standard">Standard (Faster)</option>
               <option value="high">High (Balanced)</option>
@@ -712,7 +712,7 @@ pause > nul`;
             <select
               value={settings.sampler}
               onChange={(e) => handleSamplerChange(e.target.value as any)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             >
               <option value="euler">Euler (Fast, Good Quality)</option>
               <option value="euler_ancestral">Euler Ancestral (Better Quality)</option>
@@ -746,7 +746,7 @@ pause > nul`;
           {/* Steps Slider */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-3">
-              Sampling Steps: <span className="text-purple-400 font-semibold">{settings.steps}</span>
+              Sampling Steps: <span className="text-yellow-400 font-semibold">{settings.steps}</span>
             </label>
             <div className="relative">
               <input
@@ -755,7 +755,7 @@ pause > nul`;
                 max="150"
                 value={settings.steps}
                 onChange={(e) => handleStepsChange(parseInt(e.target.value))}
-                className="w-full h-3 bg-gray-600 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 slider"
+                className="w-full h-3 bg-gray-600 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-500 slider"
               />
             </div>
             <div className="flex justify-between text-xs text-gray-400 mt-2">
@@ -771,7 +771,7 @@ pause > nul`;
           {/* CFG Scale Slider */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-3">
-              CFG Scale: <span className="text-purple-400 font-semibold">{settings.cfgScale}</span>
+              CFG Scale: <span className="text-yellow-400 font-semibold">{settings.cfgScale}</span>
             </label>
             <div className="relative">
               <input
@@ -781,7 +781,7 @@ pause > nul`;
                 step="0.5"
                 value={settings.cfgScale}
                 onChange={(e) => handleCfgScaleChange(parseFloat(e.target.value))}
-                className="w-full h-3 bg-gray-600 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 slider"
+                className="w-full h-3 bg-gray-600 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-500 slider"
               />
             </div>
             <div className="flex justify-between text-xs text-gray-400 mt-2">
@@ -801,7 +801,7 @@ pause > nul`;
                 type="checkbox"
                 checked={true}
                 disabled={true}
-                className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2 opacity-50 cursor-not-allowed"
+                className="w-4 h-4 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500 focus:ring-2 opacity-50 cursor-not-allowed"
               />
               <span className="text-sm font-medium text-gray-300">
                 Character Consistency (Always Enabled)
@@ -825,13 +825,13 @@ pause > nul`;
         
         <div className="space-y-3 text-sm text-gray-300">
           <div className="flex items-start space-x-2">
-            <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
             <p>
               <strong>ComfyUI Server:</strong> Cần chạy ComfyUI local server để sử dụng tính năng này.
             </p>
           </div>
           <div className="flex items-start space-x-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
             <p>
               <strong>Image Generation:</strong> Ảnh sẽ được tạo tự động cho opening message và mỗi AI response.
             </p>
@@ -843,7 +843,7 @@ pause > nul`;
             </p>
           </div>
           <div className="flex items-start space-x-2">
-            <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-2 h-2 bg-gray-800 rounded-full mt-2 flex-shrink-0"></div>
             <p>
               <strong>Storage:</strong> Ảnh được lưu local, tự động cleanup khi vượt quá 100 ảnh.
             </p>
@@ -871,7 +871,7 @@ pause > nul`;
 
       {settings.enabled && serverStatus === 'disconnected' && (
         <MotionWrapper
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg"
+          className="bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
@@ -901,7 +901,7 @@ pause > nul`;
                 <select
                   value={selectedLoraForAdd}
                   onChange={(e) => setSelectedLoraForAdd(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 >
                   <option value="None">Select a LoRA...</option>
                   {availableLoras.filter(lora => !settings.loras.some(l => l.name === lora)).map((lora) => (
@@ -920,7 +920,7 @@ pause > nul`;
                 <select
                   value={newLoraCategory}
                   onChange={(e) => setNewLoraCategory(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 >
                   <option value="quality">Quality Enhancement</option>
                   <option value="anatomy">Anatomy Improvement</option>
@@ -934,7 +934,7 @@ pause > nul`;
               {/* Strength Slider */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Strength: <span className="text-purple-400">{newLoraStrength}</span>
+                  Strength: <span className="text-yellow-400">{newLoraStrength}</span>
                 </label>
                 <input
                   type="range"
@@ -943,7 +943,7 @@ pause > nul`;
                   step="0.1"
                   value={newLoraStrength}
                   onChange={(e) => setNewLoraStrength(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 slider"
+                  className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-500 slider"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
                   <span>0.0 (No Effect)</span>
@@ -964,7 +964,7 @@ pause > nul`;
               <button
                 onClick={handleAddLora}
                 disabled={selectedLoraForAdd === 'None'}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Add LoRA
               </button>

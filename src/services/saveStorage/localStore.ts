@@ -37,7 +37,7 @@ export class LocalStore implements SaveStorageAdapter {
       const storageKey = `${this.STORAGE_PREFIX}${slotId}`;
       localStorage.setItem(storageKey, JSON.stringify(updatedSaveGame));
 
-      console.log(`✅ Đã lưu game vào slot ${slotId} trên local`);
+      console.log(`✓ Đã lưu game vào slot ${slotId} trên local`);
     } catch (error) {
       console.error('Lỗi lưu LocalStorage:', error);
       throw new Error(`Lỗi lưu local: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -64,7 +64,7 @@ export class LocalStore implements SaveStorageAdapter {
         source: 'local'
       };
 
-      console.log(`✅ Đã tải game từ slot ${slotId} trên local`);
+      console.log(`✓ Đã tải game từ slot ${slotId} trên local`);
       return saveGame;
     } catch (error) {
       console.error('Lỗi tải LocalStorage:', error);
@@ -120,7 +120,7 @@ export class LocalStore implements SaveStorageAdapter {
       const storageKey = `${this.STORAGE_PREFIX}${slotId}`;
       localStorage.removeItem(storageKey);
 
-      console.log(`✅ Đã xóa slot ${slotId} trên local`);
+      console.log(`✓ Đã xóa slot ${slotId} trên local`);
     } catch (error) {
       console.error('Lỗi xóa LocalStorage:', error);
       throw new Error(`Lỗi xóa local: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -182,6 +182,6 @@ export class LocalStore implements SaveStorageAdapter {
       localStorage.removeItem(key);
     });
 
-    console.log('✅ Đã xóa dữ liệu localStorage cũ');
+    console.log('✓ Đã xóa dữ liệu localStorage cũ');
   }
 }

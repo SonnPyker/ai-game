@@ -1,4 +1,4 @@
-import { MotionWrapper } from '../MotionWrapper';
+﻿import { MotionWrapper } from '../MotionWrapper';
 import { CheckCircle, Target, Gift } from 'lucide-react';
 import { ModalHeader } from '../ModalHeader';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
@@ -87,7 +87,7 @@ export function QuestOfferModal({
               <ul className="space-y-1">
                 {questOffer.objectives.map((objective) => (
                   <li key={objective.id} className="text-sm text-gray-300 flex items-start">
-                    <span className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                    <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                     {objective.description}
                   </li>
                 ))}
@@ -136,7 +136,7 @@ export function QuestOfferModal({
               onAccept();
               onClose();
             }}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center"
+            className="flex-1 bg-yellow-700 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center"
           >
             <CheckCircle className="w-4 h-4 mr-2" />
             Nhận Quest

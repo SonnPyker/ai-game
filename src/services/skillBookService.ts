@@ -96,7 +96,7 @@ class SkillBookService {
         effects: ['instant_damage:1d6+2', 'stat_buff:strength:+1:self:2turns'],
         cooldown: 2,
         currentCooldown: 0,
-        icon: '⚔️',
+        icon: '⚔',
         requiresTarget: true
       },
       {
@@ -108,7 +108,7 @@ class SkillBookService {
         effects: ['instant_damage:1d8+1', 'stat_buff:critical:+5:self:1turns'],
         cooldown: 3,
         currentCooldown: 0,
-        icon: '💥',
+        icon: '•',
         requiresTarget: true
       },
       {
@@ -120,7 +120,7 @@ class SkillBookService {
         effects: ['instant_damage:1d4', 'instant_damage:1d4'],
         cooldown: 2,
         currentCooldown: 0,
-        icon: '⚡',
+        icon: '•',
         requiresTarget: true
       },
 
@@ -134,7 +134,7 @@ class SkillBookService {
         effects: ['instant_damage:2d6+3', 'stat_buff:strength:+2:self:3turns'],
         cooldown: 3,
         currentCooldown: 0,
-        icon: '💀',
+        icon: '○',
         requiresTarget: true
       },
       {
@@ -146,7 +146,7 @@ class SkillBookService {
         effects: ['instant_damage:1d10+2', 'stat_buff:agility:+2:self:2turns'],
         cooldown: 2,
         currentCooldown: 0,
-        icon: '🌪️',
+        icon: '○',
         requiresTarget: true
       },
       {
@@ -158,7 +158,7 @@ class SkillBookService {
         effects: ['instant_damage:1d8+2', 'instant_damage:1d6:magical'],
         cooldown: 4,
         currentCooldown: 0,
-        icon: '🔮',
+        icon: '○',
         requiresTarget: true
       },
 
@@ -172,7 +172,7 @@ class SkillBookService {
         effects: ['instant_damage:3d6+4', 'stat_buff:strength:+3:self:4turns', 'stat_buff:critical:+10:self:2turns'],
         cooldown: 5,
         currentCooldown: 0,
-        icon: '⚡',
+        icon: '•',
         requiresTarget: true
       },
       {
@@ -184,7 +184,7 @@ class SkillBookService {
         effects: ['instant_damage:2d8+3', 'instant_damage:1d6:area'],
         cooldown: 4,
         currentCooldown: 0,
-        icon: '💥',
+        icon: '•',
         requiresTarget: false
       },
 
@@ -198,7 +198,7 @@ class SkillBookService {
         effects: ['heal:1d6+2', 'stat_buff:constitution:+1:self:2turns'],
         cooldown: 2,
         currentCooldown: 0,
-        icon: '💚',
+        icon: '♡',
         requiresTarget: false
       },
       {
@@ -210,7 +210,7 @@ class SkillBookService {
         effects: ['heal:1d4+1', 'stat_buff:strength:+2:self:3turns', 'stat_buff:constitution:+1:self:3turns'],
         cooldown: 3,
         currentCooldown: 0,
-        icon: '💪',
+        icon: '○',
         requiresTarget: false
       },
       {
@@ -222,7 +222,7 @@ class SkillBookService {
         effects: ['heal:1d4', 'heal:1d4', 'stat_buff:wisdom:+2:self:3turns'],
         cooldown: 2,
         currentCooldown: 0,
-        icon: '🛡️',
+        icon: '○',
         requiresTarget: false
       },
 
@@ -236,7 +236,7 @@ class SkillBookService {
         effects: ['heal:2d6+3', 'stat_buff:constitution:+2:self:4turns'],
         cooldown: 3,
         currentCooldown: 0,
-        icon: '💚',
+        icon: '♡',
         requiresTarget: false
       },
       {
@@ -248,7 +248,7 @@ class SkillBookService {
         effects: ['heal:1d8+2', 'stat_buff:all:+1:self:4turns'],
         cooldown: 4,
         currentCooldown: 0,
-        icon: '🌟',
+        icon: '★',
         requiresTarget: false
       },
       {
@@ -260,7 +260,7 @@ class SkillBookService {
         effects: ['heal:cure_all:instant', 'heal:1d6+1'],
         cooldown: 3,
         currentCooldown: 0,
-        icon: '🧪',
+        icon: '○',
         requiresTarget: false
       },
 
@@ -274,7 +274,7 @@ class SkillBookService {
         effects: ['heal:3d8+5', 'stat_buff:all:+2:self:5turns'],
         cooldown: 5,
         currentCooldown: 0,
-        icon: '✨',
+        icon: '•',
         requiresTarget: false
       },
       {
@@ -286,7 +286,7 @@ class SkillBookService {
         effects: ['heal:2d6+3', 'stat_buff:strength:+1:permanent', 'stat_buff:constitution:+1:permanent'],
         cooldown: 6,
         currentCooldown: 0,
-        icon: '🔮',
+        icon: '○',
         requiresTarget: false
       },
 
@@ -300,7 +300,7 @@ class SkillBookService {
         effects: ['stat_buff:charisma:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'],
         cooldown: 2,
         currentCooldown: 0,
-        icon: '💬',
+        icon: '○',
         requiresTarget: false
       },
       {
@@ -312,7 +312,7 @@ class SkillBookService {
         effects: ['stat_buff:intelligence:+2:self:3turns', 'stat_buff:wisdom:+1:self:3turns'],
         cooldown: 2,
         currentCooldown: 0,
-        icon: '🧠',
+        icon: '○',
         requiresTarget: false
       },
       {
@@ -324,7 +324,7 @@ class SkillBookService {
         effects: ['stat_buff:charisma:+3:self:4turns'],
         cooldown: 3,
         currentCooldown: 0,
-        icon: '😊',
+        icon: '○',
         requiresTarget: false
       },
 
@@ -338,7 +338,7 @@ class SkillBookService {
         effects: ['stat_buff:charisma:+3:self:4turns', 'stat_buff:wisdom:+2:self:4turns'],
         cooldown: 3,
         currentCooldown: 0,
-        icon: '🎭',
+        icon: '○',
         requiresTarget: false
       },
       {
@@ -350,7 +350,7 @@ class SkillBookService {
         effects: ['stat_buff:intelligence:+3:self:4turns', 'stat_buff:wisdom:+2:self:4turns'],
         cooldown: 3,
         currentCooldown: 0,
-        icon: '🔮',
+        icon: '○',
         requiresTarget: false
       },
       {
@@ -362,7 +362,7 @@ class SkillBookService {
         effects: ['stat_buff:charisma:+4:self:5turns', 'stat_buff:all:+1:self:3turns'],
         cooldown: 4,
         currentCooldown: 0,
-        icon: '👑',
+        icon: '◇',
         requiresTarget: false
       },
 
@@ -376,7 +376,7 @@ class SkillBookService {
         effects: ['stat_buff:charisma:+4:self:5turns', 'stat_buff:wisdom:+3:self:5turns', 'stat_buff:intelligence:+2:self:5turns'],
         cooldown: 4,
         currentCooldown: 0,
-        icon: '🎪',
+        icon: '○',
         requiresTarget: false
       },
       {
@@ -388,7 +388,7 @@ class SkillBookService {
         effects: ['stat_buff:intelligence:+4:self:5turns', 'stat_buff:wisdom:+3:self:5turns', 'stat_buff:all:+1:self:4turns'],
         cooldown: 4,
         currentCooldown: 0,
-        icon: '🧙',
+        icon: '⚔',
         requiresTarget: false
       }
     ];

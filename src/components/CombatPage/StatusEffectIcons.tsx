@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { StatusEffect } from '../../services/combatService';
 import { MotionWrapper } from '../MotionWrapper';
 
@@ -33,17 +33,17 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
           >
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-lg border transition-all duration-200 cursor-help ${
               effect.name === 'Phòng Thủ' 
-                ? 'bg-blue-700/80 border-blue-500 hover:border-blue-400' 
+                ? 'bg-yellow-700/80 border-yellow-500 hover:border-yellow-400' 
                 : effect.name === 'Burning'
-                ? 'bg-red-700/80 border-red-500 hover:border-red-400'
+                ? 'bg-gray-900/80 border-gray-700 hover:border-gray-700'
                 : effect.name === 'Frozen'
-                ? 'bg-blue-600/80 border-blue-400 hover:border-blue-300'
+                ? 'bg-yellow-600/80 border-yellow-400 hover:border-gray-600'
                 : effect.name === 'Shocked'
                 ? 'bg-yellow-700/80 border-yellow-500 hover:border-yellow-400'
                 : effect.name === 'Poisoned'
-                ? 'bg-green-700/80 border-green-500 hover:border-green-400'
+                ? 'bg-yellow-800/80 border-yellow-500 hover:border-yellow-400'
                 : effect.name === 'Confused'
-                ? 'bg-purple-700/80 border-purple-500 hover:border-purple-400'
+                ? 'bg-yellow-700/80 border-yellow-500 hover:border-gray-700'
                 : 'bg-gray-700/80 border-gray-600 hover:border-gray-400'
             }`}>
               {effect.icon}
@@ -53,18 +53,18 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
             {effect.duration > 0 && (
               <div className={`absolute -top-1 -right-1 w-4 h-4 text-white text-xs rounded-full flex items-center justify-center font-bold border ${
                 effect.name === 'Phòng Thủ' 
-                  ? 'bg-blue-600 border-blue-500' 
+                  ? 'bg-yellow-600 border-yellow-500' 
                   : effect.name === 'Burning'
-                  ? 'bg-red-600 border-red-500'
+                  ? 'bg-gray-900 border-gray-700'
                   : effect.name === 'Frozen'
-                  ? 'bg-blue-500 border-blue-400'
+                  ? 'bg-yellow-500 border-yellow-400'
                   : effect.name === 'Shocked'
                   ? 'bg-yellow-600 border-yellow-500'
                   : effect.name === 'Poisoned'
-                  ? 'bg-green-600 border-green-500'
+                  ? 'bg-yellow-700 border-yellow-500'
                   : effect.name === 'Confused'
-                  ? 'bg-purple-600 border-purple-500'
-                  : 'bg-red-600 border-red-500'
+                  ? 'bg-yellow-600 border-yellow-500'
+                  : 'bg-gray-900 border-gray-700'
               }`}>
                 {effect.duration}
               </div>
@@ -82,7 +82,7 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
             >
               <div className="bg-gray-900 text-white text-sm rounded-lg px-3 py-2 shadow-lg border border-gray-700 min-w-max max-w-xs">
                 <div className={`font-medium mb-1 ${
-                  effect.name === 'Phòng Thủ' ? 'text-blue-100' : 'text-gray-100'
+                  effect.name === 'Phòng Thủ' ? 'text-white' : 'text-gray-100'
                 }`}>
                   {effect.name}
                 </div>
@@ -93,7 +93,7 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
                   {effect.effects.healthModifier && (
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-400">HP:</span>
-                      <span className={effect.effects.healthModifier > 0 ? 'text-green-400' : 'text-red-400'}>
+                      <span className={effect.effects.healthModifier > 0 ? 'text-yellow-400' : 'text-white'}>
                         {effect.effects.healthModifier > 0 ? '+' : ''}{effect.effects.healthModifier}
                       </span>
                     </div>
@@ -102,7 +102,7 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
                   {effect.effects.armorClassModifier && (
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-400">AC:</span>
-                      <span className={effect.effects.armorClassModifier > 0 ? 'text-green-400' : 'text-red-400'}>
+                      <span className={effect.effects.armorClassModifier > 0 ? 'text-yellow-400' : 'text-white'}>
                         {effect.effects.armorClassModifier > 0 ? '+' : ''}{effect.effects.armorClassModifier}
                       </span>
                     </div>
@@ -111,7 +111,7 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
                   {effect.effects.damageModifier && (
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-400">Damage:</span>
-                      <span className="text-green-400">
+                      <span className="text-yellow-400">
                         +{effect.effects.damageModifier}
                       </span>
                     </div>
@@ -120,7 +120,7 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
                   {effect.effects.statModifiers && Object.entries(effect.effects.statModifiers).map(([stat, value]) => (
                     <div key={stat} className="flex justify-between text-xs">
                       <span className="text-gray-400 capitalize">{stat}:</span>
-                      <span className={value > 0 ? 'text-green-400' : 'text-red-400'}>
+                      <span className={value > 0 ? 'text-yellow-400' : 'text-white'}>
                         {value > 0 ? '+' : ''}{value}
                       </span>
                     </div>
@@ -129,7 +129,7 @@ export function StatusEffectIcons({ statusEffects, className = '' }: StatusEffec
                   {effect.name === 'Phòng Thủ' && (
                     <div className="flex justify-between text-xs border-t border-gray-700 pt-1 mt-1">
                       <span className="text-gray-400">Effect:</span>
-                      <span className="text-blue-400">-50% damage taken</span>
+                      <span className="text-yellow-400">-50% damage taken</span>
                     </div>
                   )}
                   
@@ -182,7 +182,7 @@ export function StatusEffectIcon({
     >
       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-lg border transition-all duration-200 cursor-help ${
         effect.name === 'Phòng Thủ' 
-          ? 'bg-blue-700/80 border-blue-500 hover:border-blue-400' 
+          ? 'bg-yellow-700/80 border-yellow-500 hover:border-yellow-400' 
           : 'bg-gray-700/80 border-gray-600 hover:border-gray-400'
       }`}>
         {effect.icon}
@@ -192,8 +192,8 @@ export function StatusEffectIcon({
       {effect.duration > 0 && (
         <div className={`absolute -top-1 -right-1 w-4 h-4 text-white text-xs rounded-full flex items-center justify-center font-bold border ${
           effect.name === 'Phòng Thủ' 
-            ? 'bg-blue-600 border-blue-500' 
-            : 'bg-red-600 border-red-500'
+            ? 'bg-yellow-600 border-yellow-500' 
+            : 'bg-gray-900 border-gray-700'
         }`}>
           {effect.duration}
         </div>
@@ -203,7 +203,7 @@ export function StatusEffectIcon({
       {onRemove && (
         <button
           onClick={handleRemove}
-          className="absolute -top-1 -left-1 w-4 h-4 bg-red-600 hover:bg-red-700 text-white text-xs rounded-full flex items-center justify-center font-bold border border-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          className="absolute -top-1 -left-1 w-4 h-4 bg-gray-900 hover:bg-gray-900 text-white text-xs rounded-full flex items-center justify-center font-bold border border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           title="Remove effect"
         >
           ×

@@ -93,7 +93,7 @@ const processRewardClaim = (reward: any) => {
               description: `Vật phẩm nhận được từ quest: ${itemName}`,
               quantity: quantity,
               tags: ['reward', 'quest'],
-              icon: '🎁'
+              icon: '□'
             };
             
             
@@ -149,7 +149,7 @@ const generateRandomRewardItem = (factionName?: string) => {
     type: randomType as 'weapon' | 'armor' | 'consumable' | 'misc',
     rarity: factionName ? 'unique' as const : 'common' as const,
     quantity: 1,
-    icon: randomType === 'weapon' ? '⚔️' : randomType === 'armor' ? '🛡️' : randomType === 'consumable' ? '🧪' : '📦',
+    icon: randomType === 'weapon' ? '⚔' : randomType === 'armor' ? '○' : randomType === 'consumable' ? '○' : '□',
     isEquipped: false,
     tags: ['reward', randomType]
   };
@@ -738,7 +738,7 @@ export function useQuestSystem() {
         value: objective.itemToReceive.value || 0,
         rarity: objective.itemToReceive.rarity || 'common',
         tags: objective.itemToReceive.tags || [],
-        icon: '📦', // Default icon for quest chain items
+        icon: '□', // Default icon for quest chain items
         isEquipped: false,
         stats: {
           strength: 0,

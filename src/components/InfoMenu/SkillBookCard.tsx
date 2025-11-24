@@ -1,4 +1,4 @@
-import { SkillBook } from '../../types';
+﻿import { SkillBook } from '../../types';
 import { 
   BookOpen, 
   Star,
@@ -25,9 +25,9 @@ export function SkillBookCard({
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'common': return 'text-gray-400';
-      case 'uncommon': return 'text-green-400';
-      case 'rare': return 'text-blue-400';
-      case 'epic': return 'text-purple-400';
+      case 'uncommon': return 'text-yellow-400';
+      case 'rare': return 'text-yellow-400';
+      case 'epic': return 'text-yellow-400';
       case 'legendary': return 'text-yellow-400';
       default: return 'text-gray-400';
     }
@@ -36,9 +36,9 @@ export function SkillBookCard({
   const getRarityBg = (rarity: string) => {
     switch (rarity) {
       case 'common': return 'bg-gray-800/50 border-gray-600/50';
-      case 'uncommon': return 'bg-green-900/20 border-green-600/50';
-      case 'rare': return 'bg-blue-900/20 border-blue-600/50';
-      case 'epic': return 'bg-purple-900/20 border-purple-600/50';
+      case 'uncommon': return 'bg-gray-900/20 border-yellow-600/50';
+      case 'rare': return 'bg-yellow-900/20 border-yellow-600/50';
+      case 'epic': return 'bg-gray-950/20 border-yellow-600/50';
       case 'legendary': return 'bg-yellow-900/20 border-yellow-600/50';
       default: return 'bg-gray-800/50 border-gray-600/50';
     }
@@ -55,7 +55,7 @@ export function SkillBookCard({
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <BookOpen className="w-5 h-5 text-purple-400" />
+          <BookOpen className="w-5 h-5 text-yellow-400" />
           <div>
             <h3 className="font-medium text-white text-sm">{skillBook.name}</h3>
             <p className={`text-xs ${getRarityColor(skillBook.rarity)}`}>
@@ -77,17 +77,17 @@ export function SkillBookCard({
 
       {/* Skill Info */}
       {skillBook.skillData && (
-        <div className="bg-purple-900/30 rounded p-2 mb-3">
+        <div className="bg-gray-950/30 rounded p-2 mb-3">
           <div className="flex items-center justify-between text-xs">
             <div>
-              <span className="text-purple-300">Loại:</span>
+              <span className="text-yellow-300">Loại:</span>
               <span className="text-white ml-1">
                 {skillBook.skillData.skillType === 'damage' ? 'Tấn Công' :
                  skillBook.skillData.skillType === 'healing' ? 'Hồi Phục' : 'Xã Hội'}
               </span>
             </div>
             <div>
-              <span className="text-purple-300">Level:</span>
+              <span className="text-yellow-300">Level:</span>
               <span className="text-white ml-1">
                 {skillBook.skillData.level === 1 ? 'Cơ Bản' :
                  skillBook.skillData.level === 2 ? 'Nâng Cao' : 'Bậc Thầy'}
@@ -95,7 +95,7 @@ export function SkillBookCard({
             </div>
           </div>
           <div className="mt-1">
-            <span className="text-purple-300 text-xs">Skill:</span>
+            <span className="text-yellow-300 text-xs">Skill:</span>
             <span className="text-white ml-1 text-xs">{skillBook.skillData.name}</span>
           </div>
         </div>
@@ -106,7 +106,7 @@ export function SkillBookCard({
         {onUse && (
           <button
             onClick={() => onUse(skillBook)}
-            className="flex-1 px-3 py-2 bg-purple-600/80 hover:bg-purple-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
+            className="flex-1 px-3 py-2 bg-yellow-600/80 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
           >
             <Zap className="w-4 h-4" />
             <span>Sử dụng</span>
@@ -116,7 +116,7 @@ export function SkillBookCard({
         {onDrop && (
           <button
             onClick={() => onDrop(skillBook.id)}
-            className="px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm transition-colors flex items-center justify-center"
+            className="px-3 py-2 bg-gray-900/80 hover:bg-gray-800 text-white rounded-lg text-sm transition-colors flex items-center justify-center"
             title="Vứt bỏ"
           >
             <Trash2 className="w-4 h-4" />

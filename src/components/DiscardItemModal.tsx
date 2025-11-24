@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, Minus, Plus } from 'lucide-react';
 import { InventoryItem } from '../types';
 import { useModalMinimize } from '../hooks/useModalMinimize';
@@ -22,7 +22,7 @@ export function DiscardItemModal({
     modalId: 'discard-item-modal',
     title: 'Vứt bỏ vật phẩm',
     subtitle: item?.name,
-    icon: <Trash2 className="w-5 h-5 text-red-400" />
+    icon: <Trash2 className="w-5 h-5 text-white" />
   });
   const [discardQuantity, setDiscardQuantity] = useState(1);
 
@@ -62,7 +62,7 @@ export function DiscardItemModal({
         {/* Header */}
         <ModalHeader
           title="Vứt bỏ vật phẩm"
-          icon={<Trash2 className="w-6 h-6 text-red-400" />}
+          icon={<Trash2 className="w-6 h-6 text-white" />}
           onClose={onClose}
           onMinimize={minimize}
         />
@@ -71,15 +71,15 @@ export function DiscardItemModal({
         <div className="p-6 space-y-6">
           {/* Item Info */}
           <div className="flex items-start space-x-4">
-            <div className="text-3xl flex-shrink-0">{item.icon || '📦'}</div>
+            <div className="text-3xl flex-shrink-0">{item.icon || '□'}</div>
             <div className="flex-1 min-w-0">
               <h4 className="text-xl font-bold text-white mb-2">{item.name}</h4>
               <div className="flex items-center space-x-2 mb-3">
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                   item.rarity === 'common' ? 'bg-gray-600 text-gray-200' :
-                  item.rarity === 'uncommon' ? 'bg-green-600 text-green-200' :
-                  item.rarity === 'rare' ? 'bg-blue-600 text-blue-200' :
-                  item.rarity === 'epic' ? 'bg-purple-600 text-purple-200' :
+                  item.rarity === 'uncommon' ? 'bg-yellow-700 text-yellow-200' :
+                  item.rarity === 'rare' ? 'bg-yellow-600 text-gray-200' :
+                  item.rarity === 'epic' ? 'bg-yellow-600 text-gray-200' :
                   'bg-yellow-600 text-yellow-200'
                 }`}>
                   {item.rarity}
@@ -179,7 +179,7 @@ export function DiscardItemModal({
               onDiscard(discardQuantity);
               onClose();
             }}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center space-x-3 shadow-lg hover:shadow-red-500/25"
+            className="w-full bg-gray-900 hover:bg-gray-900 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center space-x-3 shadow-lg hover:shadow-red-500/25"
           >
             <Trash2 className="w-5 h-5" />
             <span>
@@ -197,7 +197,7 @@ export function DiscardItemModal({
                 onClick={() => setDiscardQuantity(1)}
                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                   discardQuantity === 1 
-                    ? 'bg-blue-600 text-white' 
+                    ? 'bg-yellow-600 text-white' 
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
@@ -207,7 +207,7 @@ export function DiscardItemModal({
                 onClick={() => setDiscardQuantity(Math.floor(maxQuantity / 2))}
                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                   discardQuantity === Math.floor(maxQuantity / 2)
-                    ? 'bg-blue-600 text-white' 
+                    ? 'bg-yellow-600 text-white' 
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
@@ -217,7 +217,7 @@ export function DiscardItemModal({
                 onClick={() => setDiscardQuantity(maxQuantity)}
                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                   discardQuantity === maxQuantity
-                    ? 'bg-blue-600 text-white' 
+                    ? 'bg-yellow-600 text-white' 
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >

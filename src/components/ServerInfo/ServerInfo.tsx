@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { MotionWrapper } from '../MotionWrapper';
 import { 
   Server, 
@@ -77,8 +77,8 @@ export function ServerInfo({ className = '' }: ServerInfoProps) {
 
   const getStatusColor = () => {
     switch (serverInfo.status) {
-      case 'online': return 'text-green-400';
-      case 'offline': return 'text-red-400';
+      case 'online': return 'text-yellow-400';
+      case 'offline': return 'text-white';
       case 'checking': return 'text-yellow-400';
       default: return 'text-gray-400';
     }
@@ -111,7 +111,7 @@ export function ServerInfo({ className = '' }: ServerInfoProps) {
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <Server className="w-5 h-5 text-primary-400" />
+          <Server className="w-5 h-5 text-yellow-400" />
           <h3 className="text-sm font-semibold text-white">Server Info</h3>
         </div>
         <button
@@ -166,7 +166,7 @@ export function ServerInfo({ className = '' }: ServerInfoProps) {
         {serverInfo.status === 'offline' && (
           <div className="text-xs text-gray-400">
             <p>Không tìm thấy server nào đang chạy.</p>
-            <p>Hãy chạy <code className="text-primary-400">start.bat</code> để khởi động server.</p>
+            <p>Hãy chạy <code className="text-yellow-400">start.bat</code> để khởi động server.</p>
           </div>
         )}
       </div>

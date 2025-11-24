@@ -1,4 +1,4 @@
-import { Smartphone, Monitor, RotateCcw } from 'lucide-react';
+﻿import { Smartphone, Monitor, RotateCcw } from 'lucide-react';
 import { useResponsiveContext } from '../contexts/ResponsiveContext';
 import { UIMode } from '../hooks/useResponsiveDesign';
 
@@ -72,7 +72,7 @@ export function UIToggle() {
             onClick={() => handleModeChange(mode)}
             className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-all duration-200 ${
               uiMode === mode
-                ? 'bg-blue-600/30 text-blue-300 border border-blue-500/50'
+                ? 'bg-yellow-600/30 text-yellow-300 border border-yellow-500/50'
                 : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
             }`}
             title={getModeDescription(mode)}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { CombatLogEntry } from '../../services/combatService';
 import { TurnLog } from '../../types/combat';
@@ -74,31 +74,31 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
   const getLogIcon = (type: CombatLogEntry['type']) => {
     switch (type) {
       case 'initiative':
-        return <Dice1 className="w-4 h-4 text-blue-400" />;
+        return <Dice1 className="w-4 h-4 text-yellow-400" />;
       case 'attack':
-        return <Sword className="w-4 h-4 text-orange-400" />;
+        return <Sword className="w-4 h-4 text-yellow-400" />;
       case 'damage':
-        return <Heart className="w-4 h-4 text-red-400" />;
+        return <Heart className="w-4 h-4 text-white" />;
       case 'heal':
-        return <Heart className="w-4 h-4 text-green-400" />;
+        return <Heart className="w-4 h-4 text-yellow-400" />;
       case 'status':
-        return <Shield className="w-4 h-4 text-purple-400" />;
+        return <Shield className="w-4 h-4 text-yellow-400" />;
       case 'skill':
-        return <Sparkles className="w-4 h-4 text-cyan-400" />;
+        return <Sparkles className="w-4 h-4 text-white" />;
       case 'buff':
-        return <TrendingUp className="w-4 h-4 text-emerald-400" />;
+        return <TrendingUp className="w-4 h-4 text-white" />;
       case 'debuff':
-        return <TrendingDown className="w-4 h-4 text-amber-400" />;
+        return <TrendingDown className="w-4 h-4 text-yellow-400" />;
       case 'consumable':
-        return <Activity className="w-4 h-4 text-blue-400" />;
+        return <Activity className="w-4 h-4 text-yellow-400" />;
       case 'death':
-        return <Skull className="w-4 h-4 text-red-500" />;
+        return <Skull className="w-4 h-4 text-white" />;
       case 'victory':
         return <Trophy className="w-4 h-4 text-yellow-400" />;
       case 'defeat':
-        return <X className="w-4 h-4 text-red-500" />;
+        return <X className="w-4 h-4 text-white" />;
       case 'info':
-        return <Target className="w-4 h-4 text-blue-400" />;
+        return <Target className="w-4 h-4 text-yellow-400" />;
       default:
         return <Target className="w-4 h-4 text-gray-400" />;
     }
@@ -108,31 +108,31 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
   const getLogColor = (type: CombatLogEntry['type']) => {
     switch (type) {
       case 'initiative':
-        return 'text-blue-300';
+        return 'text-yellow-300';
       case 'attack':
-        return 'text-orange-300';
+        return 'text-yellow-300';
       case 'damage':
-        return 'text-red-300';
+        return 'text-white';
       case 'heal':
-        return 'text-green-300';
+        return 'text-yellow-300';
       case 'status':
-        return 'text-purple-300';
+        return 'text-yellow-300';
       case 'skill':
-        return 'text-cyan-300';
+        return 'text-white';
       case 'buff':
-        return 'text-emerald-300';
+        return 'text-yellow-300';
       case 'debuff':
-        return 'text-amber-300';
+        return 'text-yellow-300';
       case 'consumable':
-        return 'text-blue-300';
+        return 'text-yellow-300';
       case 'death':
-        return 'text-red-400';
+        return 'text-white';
       case 'victory':
         return 'text-yellow-300';
       case 'defeat':
-        return 'text-red-400';
+        return 'text-white';
       case 'info':
-        return 'text-blue-300';
+        return 'text-yellow-300';
       default:
         return 'text-gray-300';
     }
@@ -210,14 +210,14 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
                   <div className={`
                     flex items-center space-x-2 mb-2 px-3 py-2 rounded-lg
                     ${turnLog.isPlayerTurn 
-                      ? 'bg-blue-900/20 border border-blue-500/30' 
-                      : 'bg-red-900/20 border border-red-500/30'
+                      ? 'bg-yellow-900/20 border border-yellow-500/30' 
+                      : 'bg-gray-950/20 border border-gray-700/30'
                     }
                   `}>
                     {turnLog.isPlayerTurn ? (
-                      <User className="w-4 h-4 text-blue-400" />
+                      <User className="w-4 h-4 text-yellow-400" />
                     ) : (
-                      <Bot className="w-4 h-4 text-red-400" />
+                      <Bot className="w-4 h-4 text-white" />
                     )}
                     <span className="font-semibold text-white">
                       Turn {turnLog.turn} - {turnLog.combatantName}
@@ -247,8 +247,8 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
                       className={`
                         bg-gray-800/30 rounded-lg p-2 ml-4 border-l-4
                         ${action.type === 'victory' ? 'border-l-yellow-400 bg-yellow-900/10' : ''}
-                        ${action.type === 'defeat' ? 'border-l-red-400 bg-red-900/10' : ''}
-                        ${action.type === 'death' ? 'border-l-red-500 bg-red-900/10' : ''}
+                        ${action.type === 'defeat' ? 'border-l-red-400 bg-gray-950/10' : ''}
+                        ${action.type === 'death' ? 'border-l-red-500 bg-gray-950/10' : ''}
                         ${action.type === 'damage' ? 'border-l-red-400' : ''}
                         ${action.type === 'heal' ? 'border-l-green-400' : ''}
                         ${action.type === 'attack' ? 'border-l-orange-400' : ''}
@@ -286,8 +286,8 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
                   className={`
                     bg-gray-800/30 rounded-lg p-3 border-l-4
                     ${entry.type === 'victory' ? 'border-l-yellow-400 bg-yellow-900/10' : ''}
-                    ${entry.type === 'defeat' ? 'border-l-red-400 bg-red-900/10' : ''}
-                    ${entry.type === 'death' ? 'border-l-red-500 bg-red-900/10' : ''}
+                    ${entry.type === 'defeat' ? 'border-l-red-400 bg-gray-950/10' : ''}
+                    ${entry.type === 'death' ? 'border-l-red-500 bg-gray-950/10' : ''}
                     ${entry.type === 'damage' ? 'border-l-red-400' : ''}
                     ${entry.type === 'heal' ? 'border-l-green-400' : ''}
                     ${entry.type === 'attack' ? 'border-l-orange-400' : ''}
@@ -338,7 +338,7 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
           >
             <button
               onClick={scrollToBottom}
-              className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg transition-colors duration-200"
+              className="bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded-full shadow-lg transition-colors duration-200"
               title="Scroll xuống cuối"
             >
               <ChevronDown className="w-4 h-4" />
@@ -352,7 +352,7 @@ export function CombatLog({ log, turnLogs = [], isPlayerTurn = false, isInMenu =
         <MotionWrapper
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-4 right-4 bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg"
+          className="absolute bottom-4 right-4 bg-yellow-600 text-white px-3 py-2 rounded-lg shadow-lg"
         >
           <div className="flex items-center space-x-2">
             <Zap className="w-4 h-4" />

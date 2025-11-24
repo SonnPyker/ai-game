@@ -1,4 +1,4 @@
-import { MotionWrapper } from '../MotionWrapper';
+﻿import { MotionWrapper } from '../MotionWrapper';
 import { Sword, AlertTriangle, User, Zap, Shield } from 'lucide-react';
 import { ModalHeader } from '../ModalHeader';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
@@ -37,7 +37,7 @@ export function NPCChallengeModal({
     modalId: 'npc-challenge-modal',
     title: 'Thách đấu NPC',
     subtitle: challengeData?.npcName || 'NPC',
-    icon: <Sword className="w-5 h-5 text-red-400" />
+    icon: <Sword className="w-5 h-5 text-white" />
   });
 
   if (!isOpen) return null;
@@ -49,10 +49,10 @@ export function NPCChallengeModal({
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'text-green-400';
+      case 'easy': return 'text-yellow-400';
       case 'medium': return 'text-yellow-400';
-      case 'hard': return 'text-red-400';
-      case 'extreme': return 'text-purple-400';
+      case 'hard': return 'text-white';
+      case 'extreme': return 'text-yellow-400';
       default: return 'text-gray-400';
     }
   };
@@ -79,19 +79,19 @@ export function NPCChallengeModal({
         <ModalHeader
           title="Thách Đấu!"
           subtitle={`${challengeData.npcName} thách đấu bạn`}
-          icon={<Sword className="w-6 h-6 text-red-400" />}
+          icon={<Sword className="w-6 h-6 text-white" />}
           onClose={onClose}
           onMinimize={minimize}
-          className="bg-red-900/50 px-6 py-4 border-b border-red-700 rounded-t-2xl"
+          className="bg-gray-950/50 px-6 py-4 border-b border-gray-800 rounded-t-2xl"
         />
 
         {/* Content */}
         <div className="p-6 space-y-6">
           {/* Challenge Message */}
           <div className="text-center">
-            <div className="bg-red-800/30 border border-red-700 rounded-lg p-4 mb-4">
-              <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-              <p className="text-red-100 text-lg font-medium">
+            <div className="bg-gray-900/30 border border-gray-800 rounded-lg p-4 mb-4">
+              <AlertTriangle className="w-8 h-8 text-white mx-auto mb-2" />
+              <p className="text-white text-lg font-medium">
                 {challengeData.challengeReason}
               </p>
             </div>
@@ -100,8 +100,8 @@ export function NPCChallengeModal({
           {/* NPC Info */}
           <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
             <div className="flex items-center space-x-3 mb-3">
-              <User className="w-5 h-5 text-blue-400" />
-              <h3 className="text-lg font-semibold text-blue-100">
+              <User className="w-5 h-5 text-yellow-400" />
+              <h3 className="text-lg font-semibold text-white">
                 {challengeData.npcName}
               </h3>
               <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(challengeData.difficulty)} bg-gray-700`}>
@@ -112,16 +112,16 @@ export function NPCChallengeModal({
             {/* Combat Stats */}
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="flex items-center space-x-2">
-                <Shield className="w-4 h-4 text-green-400" />
+                <Shield className="w-4 h-4 text-yellow-400" />
                 <span className="text-gray-300">HP:</span>
-                <span className="text-green-400 font-medium">
+                <span className="text-yellow-400 font-medium">
                   {challengeData.combatStats.health.max}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <Shield className="w-4 h-4 text-blue-400" />
+                <Shield className="w-4 h-4 text-yellow-400" />
                 <span className="text-gray-300">AC:</span>
-                <span className="text-blue-400 font-medium">
+                <span className="text-yellow-400 font-medium">
                   {challengeData.combatStats.armorClass}
                 </span>
               </div>
@@ -133,9 +133,9 @@ export function NPCChallengeModal({
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <Sword className="w-4 h-4 text-red-400" />
+                <Sword className="w-4 h-4 text-white" />
                 <span className="text-gray-300">Tấn công:</span>
-                <span className="text-red-400 font-medium">
+                <span className="text-white font-medium">
                   +{challengeData.combatStats.attacks[0]?.attackBonus || 0}
                 </span>
               </div>
@@ -152,7 +152,7 @@ export function NPCChallengeModal({
                 </div>
                 <div className="text-sm">
                   <span className="text-gray-400">Sát thương:</span>
-                  <span className="text-red-400 ml-2">
+                  <span className="text-white ml-2">
                     {challengeData.combatStats.attacks[0].damage} {challengeData.combatStats.attacks[0].damageType}
                   </span>
                 </div>
@@ -183,7 +183,7 @@ export function NPCChallengeModal({
             </button>
             <button
               onClick={onAcceptChallenge}
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium flex items-center justify-center space-x-2"
+              className="flex-1 bg-gray-900 hover:bg-gray-900 text-white px-4 py-2 rounded-lg transition-colors font-medium flex items-center justify-center space-x-2"
             >
               <Sword className="w-4 h-4" />
               <span>Chấp nhận</span>

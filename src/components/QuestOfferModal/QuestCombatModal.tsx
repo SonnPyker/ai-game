@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Sword, 
@@ -30,7 +30,7 @@ export function QuestCombatModal({
     modalId: 'quest-combat-modal',
     title: 'Chiến đấu Quest',
     subtitle: combatData?.questTitle || 'Quest',
-    icon: <Sword className="w-5 h-5 text-red-400" />
+    icon: <Sword className="w-5 h-5 text-white" />
   });
 
   useEffect(() => {
@@ -58,10 +58,10 @@ export function QuestCombatModal({
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'text-green-400';
+      case 'easy': return 'text-yellow-400';
       case 'medium': return 'text-yellow-400';
-      case 'hard': return 'text-orange-400';
-      case 'extreme': return 'text-red-400';
+      case 'hard': return 'text-yellow-400';
+      case 'extreme': return 'text-white';
       default: return 'text-gray-400';
     }
   };
@@ -97,10 +97,10 @@ export function QuestCombatModal({
             <ModalHeader
               title="Chiến Đấu Nhiệm Vụ"
               subtitle={combatData.questTitle}
-              icon={<Sword className="w-6 h-6 text-red-400" />}
+              icon={<Sword className="w-6 h-6 text-white" />}
               onClose={onClose}
               onMinimize={minimize}
-              className="bg-gradient-to-r from-red-900/50 to-orange-900/50 p-6 border-b border-red-500/30"
+              className="bg-gradient-to-r from-red-900/50 to-orange-900/50 p-6 border-b border-gray-700/30"
             />
 
             {/* Content */}
@@ -108,7 +108,7 @@ export function QuestCombatModal({
               {/* Quest Objective */}
               <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
                 <h3 className="text-lg font-semibold text-white mb-2 flex items-center">
-                  <Target className="w-5 h-5 mr-2 text-blue-400" />
+                  <Target className="w-5 h-5 mr-2 text-yellow-400" />
                   Mục Tiêu Nhiệm Vụ
                 </h3>
                 <p className="text-gray-300">{combatData.objectiveDescription}</p>
@@ -149,7 +149,7 @@ export function QuestCombatModal({
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Kinh nghiệm:</span>
-                      <span className="text-green-400 font-medium">+{combatData.rewards.experience}</span>
+                      <span className="text-yellow-400 font-medium">+{combatData.rewards.experience}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Tiền tệ:</span>
@@ -157,7 +157,7 @@ export function QuestCombatModal({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Vật phẩm:</span>
-                      <span className="text-blue-400 font-medium">{combatData.rewards.items.length} món</span>
+                      <span className="text-yellow-400 font-medium">{combatData.rewards.items.length} món</span>
                     </div>
                   </div>
                 </div>
@@ -166,7 +166,7 @@ export function QuestCombatModal({
               {/* Enemies List */}
               <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
                 <h4 className="text-md font-semibold text-white mb-3 flex items-center">
-                  <Bot className="w-4 h-4 mr-2 text-red-400" />
+                  <Bot className="w-4 h-4 mr-2 text-white" />
                   Kẻ Thù Sẽ Gặp
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -182,15 +182,15 @@ export function QuestCombatModal({
                       <div className="space-y-1 text-xs text-gray-400">
                         <div className="flex justify-between">
                           <span>HP:</span>
-                          <span className="text-red-400">{enemy.health?.max || 'N/A'}</span>
+                          <span className="text-white">{enemy.health?.max || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>AC:</span>
-                          <span className="text-blue-400">{enemy.armorClass || 'N/A'}</span>
+                          <span className="text-yellow-400">{enemy.armorClass || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Loại:</span>
-                          <span className="text-purple-400">{enemy.type || 'N/A'}</span>
+                          <span className="text-yellow-400">{enemy.type || 'N/A'}</span>
                         </div>
                       </div>
                     </div>
@@ -225,7 +225,7 @@ export function QuestCombatModal({
                 <button
                   onClick={handleStartCombat}
                   disabled={isStarting}
-                  className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center space-x-2"
+                  className="flex-1 px-6 py-3 bg-gray-900 hover:bg-gray-900 disabled:bg-gray-900 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center space-x-2"
                 >
                   {isStarting ? (
                     <>

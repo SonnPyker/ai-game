@@ -36,7 +36,7 @@ class LocationSyncService {
 
       // Đồng bộ các thuộc tính quan trọng từ world data gốc
       const criticalProperties = [
-        'type', // 🚨 CRITICAL: Đồng bộ type để đảm bảo shop locations có type: "shop"
+        'type', // ! CRITICAL: Đồng bộ type để đảm bảo shop locations có type: "shop"
         'locationType',
         'id',
         'gridPosition',
@@ -131,7 +131,7 @@ class LocationSyncService {
         fixedCount++;
       }
 
-      // 🚨 CRITICAL: Đảm bảo shop locations có type: "shop" thay vì "secondary"
+      // ! CRITICAL: Đảm bảo shop locations có type: "shop" thay vì "secondary"
       if (location.id && location.id.startsWith('loc_shop')) {
         if (syncedLocation.type !== 'shop') {
           syncedLocation.type = 'shop';
@@ -143,7 +143,7 @@ class LocationSyncService {
         }
       }
 
-      // 🚨 NEW: Tự động sửa các địa điểm có tên shop nhưng type sai
+      // ! NEW: Tự động sửa các địa điểm có tên shop nhưng type sai
       if (isShopByName && syncedLocation.type !== 'shop') {
         syncedLocation.type = 'shop';
         syncedLocation.locationType = 'shop';

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+﻿import { useState, useMemo, useCallback } from 'react';
 import { InventoryItem, SkillBook } from '../../types';
 import { ItemCard } from './ItemCard';
 import { SkillBookCard } from './SkillBookCard';
@@ -140,7 +140,7 @@ export function InventoryView({
             placeholder="Tìm kiếm vật phẩm..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+            className="w-full pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/20"
           />
         </div>
 
@@ -162,7 +162,7 @@ export function InventoryView({
                 onClick={() => setFilter(key as FilterType)}
                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   filter === key
-                    ? 'bg-blue-600/20 border border-blue-500/50 text-blue-300'
+                    ? 'bg-yellow-600/20 border border-yellow-500/50 text-yellow-300'
                     : 'bg-gray-700/50 border border-gray-600/50 text-gray-300 hover:bg-gray-600/50'
                 }`}
               >
@@ -204,7 +204,7 @@ export function InventoryView({
         {(searchQuery || filter !== 'all' || sortBy !== 'name') && (
           <button
             onClick={clearFilters}
-            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors"
           >
             Xóa bộ lọc
           </button>

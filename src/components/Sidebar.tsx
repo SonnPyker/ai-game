@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+﻿import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Settings,
@@ -74,7 +74,7 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
       {/* Toggle Button - Outside sidebar, middle right */}
       <button
         onClick={onToggle}
-        className={`fixed top-1/2 -translate-y-1/2 z-[70] p-2 bg-primary-500/20 border-2 border-primary-500/50 rounded-lg text-primary-300 hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 shadow-lg ${
+        className={`fixed top-1/2 -translate-y-1/2 z-[70] p-2 bg-yellow-600/20 border-2 border-yellow-500/50 rounded-lg text-yellow-400 hover:bg-yellow-600/30 hover:border-yellow-400 transition-all duration-200 shadow-lg ${
           isOpen && !shouldUseMobileLayout() ? 'left-64 sm:left-72' : 'left-2'
         }`}
         title={isOpen ? "Đóng menu" : "Mở menu"}
@@ -107,7 +107,7 @@ export function Sidebar({ isOpen, onClose, onToggle, onOpenAuthModal }: SidebarP
                   e.stopPropagation();
                   onClose();
                 }}
-                className="p-3 text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors duration-200 border-2 border-red-500/50 rounded-lg sidebar-close-btn"
+                className="p-3 text-white hover:text-white hover:bg-gray-900/20 transition-colors duration-200 border-2 border-gray-700/50 rounded-lg sidebar-close-btn"
                 title="Đóng menu"
                 style={{ zIndex: 10001 }}
               >

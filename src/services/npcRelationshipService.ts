@@ -1041,7 +1041,7 @@ NGUYÊN TẮC PHÂN TÍCH THỰC TẾ:
 4. NPCs có thể hiểu lầm, nghi ngờ, hoặc không thích hành động của người chơi
 5. Ngữ cảnh và tình huống quan trọng hơn ý định
 
-🎲 XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
+□ XỬ LÝ DC CHECK RESULTS (QUAN TRỌNG):
 - Nếu narrative chứa "[DC CHECK RESULT]" với Result: SUCCESS:
   * NPC PHẢI tuân theo hành động của player một cách hợp lý
   * Nếu player thuyết phục thành công → NPC đồng ý, thay đổi ý kiến, hoặc làm theo yêu cầu

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpFAQ } from '../../types/helpChat';
 import { MessageSquare, User, Bot } from 'lucide-react';
 
@@ -24,7 +24,7 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ faq }) => {
         const formattedParts = parts.map((part, partIndex) => {
           if (part.startsWith('**') && part.endsWith('**')) {
             return (
-              <strong key={partIndex} className="font-semibold text-blue-200">
+              <strong key={partIndex} className="font-semibold text-gray-200">
                 {part.slice(2, -2)}
               </strong>
             );
@@ -52,16 +52,16 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ faq }) => {
     <div className="flex flex-col space-y-3 sm:space-y-4 h-full">
       {/* Question Bubble */}
       <div className="flex items-start space-x-2 sm:space-x-3">
-        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-blue-500 rounded-full flex items-center justify-center">
+        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-yellow-500 rounded-full flex items-center justify-center">
           <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-3 sm:p-4 max-w-2xl">
+          <div className="bg-yellow-600/20 border border-yellow-500/30 rounded-lg p-3 sm:p-4 max-w-2xl">
             <div className="flex items-center space-x-2 mb-2">
-              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-300" />
-              <span className="text-xs sm:text-sm font-medium text-blue-200">Bạn hỏi</span>
+              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-300" />
+              <span className="text-xs sm:text-sm font-medium text-gray-200">Bạn hỏi</span>
             </div>
-            <p className="text-blue-100 leading-relaxed text-sm sm:text-base break-words">
+            <p className="text-white leading-relaxed text-sm sm:text-base break-words">
               {faq.question}
             </p>
           </div>

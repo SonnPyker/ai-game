@@ -241,7 +241,7 @@ class InventoryService {
     // CONSUMABLE VALIDATION - BẮT BUỘC có effect
     if (itemType === 'consumable') {
       if (!itemData.effect || typeof itemData.effect !== 'string' || itemData.effect.trim() === '') {
-        console.error('❌ Consumable validation failed:', {
+        console.error('✗ Consumable validation failed:', {
           name: itemData.name,
           type: itemType,
           effect: itemData.effect,
@@ -343,12 +343,12 @@ class InventoryService {
   // Get default icon for item type
   private getDefaultIcon(type: string): string {
     const icons = {
-      weapon: '⚔️',
-      armor: '🛡️',
-      consumable: '🧪',
-      misc: '📦'
+      weapon: '⚔',
+      armor: '○',
+      consumable: '○',
+      misc: '□'
     };
-    return icons[type as keyof typeof icons] || '📦';
+    return icons[type as keyof typeof icons] || '□';
   }
 
   // Generate unique item ID

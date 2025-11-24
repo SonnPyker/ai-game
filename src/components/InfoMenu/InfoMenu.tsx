@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   X, 
   Pin, 
@@ -341,9 +341,9 @@ export function InfoMenu({
                 >
                   {contentFlags.adult_enabled ? (
                     contentFlags.adult_intensity === 'direct' ? (
-                      <AlertTriangle className="w-4 h-4 text-red-400" />
+                      <AlertTriangle className="w-4 h-4 text-white" />
                     ) : (
-                      <Shield className="w-4 h-4 text-orange-400" />
+                      <Shield className="w-4 h-4 text-yellow-400" />
                     )
                   ) : (
                     <EyeOff className="w-4 h-4 text-gray-400" />
@@ -351,8 +351,8 @@ export function InfoMenu({
                   <span className={`text-sm font-medium ${
                     contentFlags.adult_enabled
                       ? contentFlags.adult_intensity === 'direct' 
-                        ? 'text-red-300' 
-                        : 'text-orange-300'
+                        ? 'text-white' 
+                        : 'text-yellow-300'
                       : 'text-gray-400'
                   }`}>
                     {contentFlags.adult_enabled 
@@ -370,7 +370,7 @@ export function InfoMenu({
                     onClick={onToggleAdultIntensity}
                     className={getTransitionClass("flex items-center space-x-2 hover:bg-white/5 px-3 py-2 rounded transition-colors")}
                   >
-                    <span className="text-sm text-orange-300">
+                    <span className="text-sm text-yellow-300">
                       {contentFlags.adult_intensity === 'direct' ? 'Tả thực' : 'An toàn'}
                     </span>
                     <span className="text-xs text-gray-400">(Click để đổi)</span>
@@ -434,7 +434,7 @@ export function InfoMenu({
             onClick={() => setCharacterSubSection('info')}
             className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
               characterSubSection === 'info'
-                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
             }`)}
           >
@@ -445,7 +445,7 @@ export function InfoMenu({
             onClick={() => setCharacterSubSection('inventory')}
             className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
               characterSubSection === 'inventory'
-                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
             }`)}
           >
@@ -456,7 +456,7 @@ export function InfoMenu({
             onClick={() => setCharacterSubSection('equipment')}
             className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
               characterSubSection === 'equipment'
-                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
             }`)}
           >
@@ -467,7 +467,7 @@ export function InfoMenu({
             onClick={() => setCharacterSubSection('skilltree')}
             className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm transition-colors duration-200 ${
               characterSubSection === 'skilltree'
-                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
             }`)}
           >
@@ -683,7 +683,7 @@ export function InfoMenu({
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-red-500 h-2 rounded-full transition-all duration-300" 
+                    className="bg-gray-900 h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${(characterData.health.current / characterData.health.max) * 100}%` }}
                   ></div>
                 </div>
@@ -693,13 +693,13 @@ export function InfoMenu({
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-400">Combat Level</span>
-                  <span className="text-orange-400">
+                  <span className="text-yellow-400">
                     {characterData.combatExperience || 0}/{combatLevelService.getXPForCombatLevel(characterData.combatLevel || 1)} XP (Level {characterData.combatLevel || 1})
                   </span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-orange-500 h-2 rounded-full transition-all duration-300" 
+                    className="bg-yellow-600 h-2 rounded-full transition-all duration-300" 
                     style={{ 
                       width: `${combatLevelService.getCombatLevelInfo(characterData).progress}%` 
                     }}
@@ -718,7 +718,7 @@ export function InfoMenu({
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
                     <div 
-                      className="bg-purple-500 h-2 rounded-full transition-all duration-300" 
+                      className="bg-yellow-600 h-2 rounded-full transition-all duration-300" 
                       style={{ 
                         width: `${levelSystemService.getLevelProgress(characterData)}%` 
                       }}
@@ -1179,7 +1179,7 @@ export function InfoMenu({
                   <div className="w-full bg-gray-600 rounded-full h-3 mb-2">
                     <div 
                       className={`h-3 rounded-full transition-all duration-300 ${
-                        reputationData.reputation > 0 ? 'bg-green-500' : 'bg-red-500'
+                        reputationData.reputation > 0 ? 'bg-yellow-600' : 'bg-gray-900'
                       }`}
                            style={{ 
                              width: `${Math.min(Math.abs(reputationData.reputation), 300) / 3}%` 
@@ -1205,7 +1205,7 @@ export function InfoMenu({
                             <span className="text-gray-300">{member.name}</span>
                             <div className="flex items-center space-x-2">
                               <span className={`px-2 py-1 rounded text-xs ${
-                                member.reputation > 0 ? 'bg-green-600/20 text-green-300' : 'bg-red-600/20 text-red-300'
+                                member.reputation > 0 ? 'bg-yellow-700/20 text-yellow-300' : 'bg-gray-900/20 text-white'
                               }`}>
                                 {Math.round(member.reputation)}
                               </span>
@@ -1309,31 +1309,31 @@ export function InfoMenu({
                 const isSelectedNPC = selectedNPCForDialogue === relationship.id;
                 
                 return (
-                <div key={relationship.id} className={`bg-gray-700/50 rounded-lg p-3 ${isSelectedNPC ? 'ring-2 ring-blue-400 bg-blue-900/20' : ''}`}>
+                <div key={relationship.id} className={`bg-gray-700/50 rounded-lg p-3 ${isSelectedNPC ? 'ring-2 ring-blue-400 bg-yellow-900/20' : ''}`}>
                   <div 
-                    className={getTransitionClass(`flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-600/30 rounded p-1 -m-1 transition-colors ${isSelectedNPC ? 'bg-blue-600/20' : ''}`)}
+                    className={getTransitionClass(`flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-600/30 rounded p-1 -m-1 transition-colors ${isSelectedNPC ? 'bg-yellow-600/20' : ''}`)}
                     onClick={() => toggleNPC(relationship.id)}
                   >
                     <div className="flex items-center space-x-2">
-                      <h4 className={`font-medium ${isSelectedNPC ? 'text-blue-300' : 'text-white'}`}>
+                      <h4 className={`font-medium ${isSelectedNPC ? 'text-yellow-300' : 'text-white'}`}>
                         {relationship.name}
-                        {isSelectedNPC && <span className="ml-2 text-xs text-blue-400">(Đang nói chuyện)</span>}
+                        {isSelectedNPC && <span className="ml-2 text-xs text-yellow-400">(Đang nói chuyện)</span>}
                       </h4>
                         <span className={`px-2 py-1 rounded text-xs ${
-                          relationship.status === 'admiring' ? 'bg-pink-500' :
-                          relationship.status === 'ally' ? 'bg-green-700' :
-                          relationship.status === 'trusting' ? 'bg-green-600' :
-                          relationship.status === 'friendly' ? 'bg-green-500' :
-                          relationship.status === 'respectful' ? 'bg-green-400' :
+                          relationship.status === 'admiring' ? 'bg-gray-800' :
+                          relationship.status === 'ally' ? 'bg-yellow-800' :
+                          relationship.status === 'trusting' ? 'bg-yellow-700' :
+                          relationship.status === 'friendly' ? 'bg-yellow-600' :
+                          relationship.status === 'respectful' ? 'bg-yellow-500' :
                           relationship.status === 'neutral' ? 'bg-gray-600' :
                           relationship.status === 'acquaintance' ? 'bg-gray-500' :
                           relationship.status === 'cautious' ? 'bg-yellow-600' :
                           relationship.status === 'suspicious' ? 'bg-yellow-700' :
-                          relationship.status === 'disappointed' ? 'bg-orange-600' :
-                          relationship.status === 'rival' ? 'bg-orange-700' :
-                          relationship.status === 'enemy' ? 'bg-red-700' :
-                          relationship.status === 'hostile' ? 'bg-red-600' :
-                          relationship.status === 'competitive' ? 'bg-orange-500' :
+                          relationship.status === 'disappointed' ? 'bg-yellow-700' :
+                          relationship.status === 'rival' ? 'bg-yellow-800' :
+                          relationship.status === 'enemy' ? 'bg-gray-900' :
+                          relationship.status === 'hostile' ? 'bg-gray-900' :
+                          relationship.status === 'competitive' ? 'bg-yellow-600' :
                           'bg-gray-600'
                         }`}>
                           {relationship.status === 'admiring' ? 'Ngưỡng mộ' :
@@ -1376,7 +1376,7 @@ export function InfoMenu({
                             <div className="w-20 bg-gray-600 rounded-full h-2">
                               <div 
                                 className={`h-2 rounded-full ${
-                                  relationship.relationshipLevel > 0 ? 'bg-green-500' : 'bg-red-500'
+                                  relationship.relationshipLevel > 0 ? 'bg-yellow-600' : 'bg-gray-900'
                                 }`}
                                 style={{ width: `${Math.min(Math.abs(relationship.relationshipLevel), 100)}%` }}
                               ></div>
@@ -1390,7 +1390,7 @@ export function InfoMenu({
                             <div className="w-20 bg-gray-600 rounded-full h-2">
                               <div 
                                 className={`h-2 rounded-full ${
-                                  relationship.reputation > 0 ? 'bg-blue-500' : 'bg-red-500'
+                                  relationship.reputation > 0 ? 'bg-yellow-500' : 'bg-gray-900'
                                 }`}
                                 style={{ width: `${Math.min(Math.abs(relationship.reputation), 100)}%` }}
                               ></div>
@@ -1426,7 +1426,7 @@ export function InfoMenu({
                             e.stopPropagation();
                             onOpenNPCInfo?.(relationship.id);
                           }}
-                          className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 bg-blue-600/20 border border-blue-500/50 text-blue-300 rounded text-xs hover:bg-blue-600/30 transition-colors")}
+                          className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded text-xs hover:bg-yellow-600/30 transition-colors")}
                           title="Xem chi tiết"
                         >
                           <Info className="w-3 h-3" />
@@ -1440,7 +1440,7 @@ export function InfoMenu({
                               e.stopPropagation();
                               handleCombatWithNPC(relationship);
                             }}
-                            className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 bg-orange-600/20 border border-orange-500/50 text-orange-300 rounded text-xs hover:bg-orange-600/30 transition-colors")}
+                            className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 bg-yellow-700/20 border border-yellow-500/50 text-yellow-300 rounded text-xs hover:bg-yellow-700/30 transition-colors")}
                             title={`Tấn công ${relationship.name}`}
                           >
                             <Sword className="w-3 h-3" />
@@ -1456,11 +1456,11 @@ export function InfoMenu({
                             // NPC is already an ally
                             return (
                               <div className="flex items-center space-x-1">
-                                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
+                                <span className="px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded">
                                   Đồng minh
                                 </span>
                                 {relationship.isInjured && (
-                                  <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">
+                                  <span className="px-2 py-1 bg-gray-900/20 text-white text-xs rounded">
                                     Bị thương
                                   </span>
                                 )}
@@ -1469,7 +1469,7 @@ export function InfoMenu({
                                     e.stopPropagation();
                                     handleRemoveAlly(relationship);
                                   }}
-                                  className={getTransitionClass("flex items-center space-x-1 px-2 py-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded text-xs transition-colors")}
+                                  className={getTransitionClass("flex items-center space-x-1 px-2 py-1 text-white hover:text-white hover:bg-gray-900/20 rounded text-xs transition-colors")}
                                   title="Hủy đồng minh"
                                 >
                                   <X className="w-3 h-3" />
@@ -1485,7 +1485,7 @@ export function InfoMenu({
                                   e.stopPropagation();
                                   handleRecruitAlly(relationship);
                                 }}
-                                className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 text-green-400 hover:text-green-300 hover:bg-green-500/20 rounded text-xs transition-colors")}
+                                className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-600/20 rounded text-xs transition-colors")}
                                 title={`Mời ${relationship.name} làm đồng minh`}
                               >
                                 <Users className="w-3 h-3" />
@@ -1513,7 +1513,7 @@ export function InfoMenu({
                             e.stopPropagation();
                             handleRemoveNPC(relationship.id, relationship.name);
                           }}
-                          className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded text-xs transition-colors")}
+                          className={getTransitionClass("flex items-center space-x-1 px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-900/20 rounded text-xs transition-colors")}
                           title={`Xóa quan hệ với ${relationship.name}`}
                         >
                           <Trash2 className="w-3 h-3" />
@@ -1624,7 +1624,7 @@ export function InfoMenu({
             onClick={onTogglePin}
             className={getTransitionClass(`p-2 rounded-lg transition-colors duration-200 ${
               isPinned 
-                ? 'bg-blue-600/30 border border-blue-500/50 text-blue-200' 
+                ? 'bg-yellow-600/30 border border-yellow-500/50 text-gray-200' 
                 : 'bg-gray-600/20 border border-gray-500/30 text-gray-300 hover:bg-gray-600/30'
             }`)}
             title={isPinned ? 'Bỏ ghim' : 'Ghim menu'}
@@ -1651,7 +1651,7 @@ export function InfoMenu({
             onClick={() => updateActiveSection(section.id)}
             className={getTransitionClass(`flex items-center space-x-2 px-4 py-3 text-sm whitespace-nowrap transition-colors duration-200 ${
               activeSection === section.id
-                ? 'bg-blue-600/20 border-b-2 border-blue-500 text-blue-300'
+                ? 'bg-yellow-600/20 border-b-2 border-yellow-500 text-yellow-300'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
             }`)}
           >

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Mail, 
@@ -36,7 +36,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const { isMinimized, minimize } = useModalMinimize({
     modalId: 'auth-modal',
     title: 'Xác thực',
-    icon: <User className="w-5 h-5 text-blue-400" />
+    icon: <User className="w-5 h-5 text-yellow-400" />
   });
 
   useEffect(() => {
@@ -131,9 +131,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
   const getModalIcon = () => {
     if (authState.isAuthenticated) {
-      return <User className="w-5 h-5 text-green-400" />;
+      return <User className="w-5 h-5 text-yellow-400" />;
     }
-    return <Lock className="w-5 h-5 text-blue-400" />;
+    return <Lock className="w-5 h-5 text-yellow-400" />;
   };
 
   // Show minimized modal if minimized
@@ -173,10 +173,10 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               animate={{ opacity: 1, y: 0 }}
               className={`mb-4 p-3 rounded-lg border ${
                 message.type === 'success' 
-                  ? 'bg-green-500/20 border-green-500/50 text-green-300'
+                  ? 'bg-yellow-600/20 border-yellow-500/50 text-yellow-300'
                   : message.type === 'error'
-                  ? 'bg-red-500/20 border-red-500/50 text-red-300'
-                  : 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+                  ? 'bg-gray-900/20 border-gray-700/50 text-white'
+                  : 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300'
               }`}
             >
               <div className="flex items-center space-x-2">
@@ -189,16 +189,16 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
           {/* Auth State Display */}
           {authState.isAuthenticated && authState.user && (
-            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
+            <div className="mb-6 p-4 bg-yellow-600/20 border border-yellow-500/50 rounded-lg">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-green-300" />
+                <div className="w-10 h-10 bg-yellow-600/20 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-yellow-300" />
                 </div>
                 <div>
-                  <p className="text-green-300 font-medium">
+                  <p className="text-yellow-300 font-medium">
                     {authState.user.name || authState.user.email}
                   </p>
-                  <p className="text-green-300/70 text-sm">
+                  <p className="text-yellow-300/70 text-sm">
                     {authState.user.email}
                   </p>
                 </div>
@@ -206,7 +206,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <button
                 onClick={handleSignOut}
                 disabled={authState.isLoading}
-                className="mt-3 w-full py-2 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-3 w-full py-2 bg-gray-900/20 border border-gray-700/50 text-white rounded-lg hover:bg-gray-900/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {authState.isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -232,7 +232,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none"
                       placeholder="Nhập tên của bạn"
                       required
                     />
@@ -251,7 +251,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none"
                     placeholder="Nhập email của bạn"
                     required
                   />
@@ -270,7 +270,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      className="w-full pl-10 pr-12 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                      className="w-full pl-10 pr-12 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none"
                       placeholder="Nhập mật khẩu"
                       required
                     />
@@ -297,7 +297,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                       type={showPassword ? 'text' : 'password'}
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none"
                       placeholder="Xác nhận mật khẩu"
                       required
                     />
@@ -309,7 +309,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <button
                 type="submit"
                 disabled={authState.isLoading}
-                className="w-full py-3 bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full py-3 bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {authState.isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -327,7 +327,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <button
                   type="button"
                   onClick={handleGoogleSignIn}
-                  className="w-full py-3 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors duration-200 flex items-center justify-center space-x-2"
+                  className="w-full py-3 bg-gray-900/20 border border-gray-700/50 text-white rounded-lg hover:bg-gray-900/30 transition-colors duration-200 flex items-center justify-center space-x-2"
                 >
                   <Chrome className="w-5 h-5" />
                   <span>Đăng nhập với Google</span>
@@ -343,7 +343,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 {mode !== 'signin' && (
                   <button
                     onClick={() => switchMode('signin')}
-                    className="text-blue-300 hover:text-blue-200 transition-colors duration-200"
+                    className="text-yellow-300 hover:text-gray-200 transition-colors duration-200"
                   >
                     Đăng nhập
                   </button>
@@ -351,7 +351,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 {mode !== 'signup' && (
                   <button
                     onClick={() => switchMode('signup')}
-                    className="text-blue-300 hover:text-blue-200 transition-colors duration-200"
+                    className="text-yellow-300 hover:text-gray-200 transition-colors duration-200"
                   >
                     Đăng ký
                   </button>
@@ -359,7 +359,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 {mode !== 'reset' && (
                   <button
                     onClick={() => switchMode('reset')}
-                    className="text-blue-300 hover:text-blue-200 transition-colors duration-200"
+                    className="text-yellow-300 hover:text-gray-200 transition-colors duration-200"
                   >
                     Quên mật khẩu?
                   </button>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { MotionWrapper, MotionButton } from '../MotionWrapper';
 import { 
   Sword, 
@@ -283,7 +283,7 @@ export function ActionMenu({
                     className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium ${
                       extraActionUsed 
                         ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50' 
-                        : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg transform hover:scale-105'
+                        : 'bg-yellow-600 hover:bg-yellow-700 text-white hover:shadow-lg transform hover:scale-105'
                     }`}
                     whileHover={extraActionUsed ? {} : { scale: 1.02 }}
                     whileTap={extraActionUsed ? {} : { scale: 0.98 }}
@@ -291,7 +291,7 @@ export function ActionMenu({
                     <Package className="w-5 h-5" />
                     <div className="text-left">
                       <div className="font-medium">Túi Đồ</div>
-                      <div className="text-xs text-blue-200">
+                      <div className="text-xs text-gray-200">
                         Mở túi đồ
                       </div>
                     </div>
@@ -304,7 +304,7 @@ export function ActionMenu({
                     className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium ${
                       skillActionUsed 
                         ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50' 
-                        : 'bg-purple-600 hover:bg-purple-700 text-white hover:shadow-lg transform hover:scale-105'
+                        : 'bg-yellow-600 hover:bg-yellow-700 text-white hover:shadow-lg transform hover:scale-105'
                     }`}
                     whileHover={skillActionUsed ? {} : { scale: 1.02 }}
                     whileTap={skillActionUsed ? {} : { scale: 0.98 }}
@@ -313,7 +313,7 @@ export function ActionMenu({
                     <Sword className="w-5 h-5" />
                     <div className="text-left">
                       <div className="font-medium">Kỹ Năng</div>
-                      <div className="text-xs text-purple-200">
+                      <div className="text-xs text-gray-200">
                         {skillActionUsed ? 'Đã sử dụng' : (skills.length > 0 ? `${skills.length} kỹ năng` : 'Chưa có kỹ năng')}
                       </div>
                     </div>
@@ -333,7 +333,7 @@ export function ActionMenu({
               className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium ${
                 !canEndTurn
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
-                  : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-lg transform hover:scale-105'
+                  : 'bg-yellow-700 hover:bg-yellow-700 text-white hover:shadow-lg transform hover:scale-105'
               }`}
               whileHover={!canEndTurn ? {} : { scale: 1.02 }}
               whileTap={!canEndTurn ? {} : { scale: 0.98 }}
@@ -351,7 +351,7 @@ export function ActionMenu({
             <MotionButton
               onClick={onRun}
               disabled={isProcessing}
-              className="flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium bg-red-700 hover:bg-red-600 text-white hover:shadow-lg transform hover:scale-105"
+              className="flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium bg-gray-900 hover:bg-gray-800 text-white hover:shadow-lg transform hover:scale-105"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -427,7 +427,7 @@ export function ActionMenu({
                 className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium ${
                   extraActionUsed 
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg transform hover:scale-105'
+                    : 'bg-yellow-600 hover:bg-yellow-700 text-white hover:shadow-lg transform hover:scale-105'
                 }`}
                 whileHover={extraActionUsed ? {} : { scale: 1.02 }}
                 whileTap={extraActionUsed ? {} : { scale: 0.98 }}
@@ -435,7 +435,7 @@ export function ActionMenu({
                 <Package className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-medium">Túi Đồ</div>
-                  <div className="text-xs text-blue-200">
+                  <div className="text-xs text-gray-200">
                     Mở túi đồ
                   </div>
                 </div>
@@ -448,7 +448,7 @@ export function ActionMenu({
                 className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium ${
                   skillActionUsed 
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50' 
-                    : 'bg-purple-600 hover:bg-purple-700 text-white hover:shadow-lg transform hover:scale-105'
+                    : 'bg-yellow-600 hover:bg-yellow-700 text-white hover:shadow-lg transform hover:scale-105'
                 }`}
                 whileHover={skillActionUsed ? {} : { scale: 1.02 }}
                 whileTap={skillActionUsed ? {} : { scale: 0.98 }}
@@ -457,7 +457,7 @@ export function ActionMenu({
                 <Sword className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-medium">Kỹ Năng</div>
-                  <div className="text-xs text-purple-200">
+                  <div className="text-xs text-gray-200">
                     {skillActionUsed ? 'Đã sử dụng' : (skills.length > 0 ? `${skills.length} kỹ năng` : 'Chưa có kỹ năng')}
                   </div>
                 </div>
@@ -471,7 +471,7 @@ export function ActionMenu({
             <MotionButton
               onClick={onRun}
               disabled={isProcessing}
-              className="flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium bg-red-700 hover:bg-red-600 text-white hover:shadow-lg transform hover:scale-105 flex-1"
+              className="flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium bg-gray-900 hover:bg-gray-800 text-white hover:shadow-lg transform hover:scale-105 flex-1"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -491,7 +491,7 @@ export function ActionMenu({
               className={`flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-200 font-medium flex-1 ${
                 !canEndTurn
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
-                  : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-lg transform hover:scale-105'
+                  : 'bg-yellow-700 hover:bg-yellow-700 text-white hover:shadow-lg transform hover:scale-105'
               }`}
               whileHover={!canEndTurn ? {} : { scale: 1.02 }}
               whileTap={!canEndTurn ? {} : { scale: 0.98 }}
@@ -516,16 +516,16 @@ export function ActionMenu({
         <MotionWrapper
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-blue-900/20 border border-blue-400/50 rounded-lg p-3"
+          className="bg-yellow-900/20 border border-yellow-400/50 rounded-lg p-3"
         >
           <div className="flex items-center space-x-2">
             <MotionWrapper
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             >
-              <RotateCcw className="w-4 h-4 text-blue-400" />
+              <RotateCcw className="w-4 h-4 text-yellow-400" />
             </MotionWrapper>
-            <span className="text-sm text-blue-300">
+            <span className="text-sm text-yellow-300">
               Đang xử lý hành động...
             </span>
           </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { MotionWrapper } from '../MotionWrapper';
 import { Clock, User, Sword, ChevronRight, Zap } from 'lucide-react';
 import { useResponsiveContext } from '../../contexts/ResponsiveContext';
@@ -41,8 +41,8 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
       >
         {/* Turn Number - Compact */}
         <div className="flex items-center space-x-1">
-          <Clock className="w-3 h-3 text-blue-400" />
-          <span className="text-xs font-bold text-blue-400">
+          <Clock className="w-3 h-3 text-yellow-400" />
+          <span className="text-xs font-bold text-yellow-400">
             T{turnNumber}
           </span>
         </div>
@@ -50,11 +50,11 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
         {/* Current Turn - Very Compact */}
         <div className="flex items-center space-x-1 px-2 py-1 bg-gray-700/50 rounded">
           {isPlayerTurn ? (
-            <User className="w-3 h-3 text-green-400" />
+            <User className="w-3 h-3 text-yellow-400" />
           ) : (
-            <Sword className="w-3 h-3 text-red-400" />
+            <Sword className="w-3 h-3 text-white" />
           )}
-          <span className={`text-xs font-bold ${isPlayerTurn ? 'text-green-400' : 'text-red-400'}`}>
+          <span className={`text-xs font-bold ${isPlayerTurn ? 'text-yellow-400' : 'text-white'}`}>
             {isPlayerTurn ? 'Bạn' : (currentCombatantName || 'Kẻ thù')}
           </span>
         </div>
@@ -63,7 +63,7 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
         {turnOrder.length > 1 && (
           <div className="flex items-center space-x-1 text-xs">
             <span className="text-gray-400">Tiếp:</span>
-            <span className={`font-medium ${isNextPlayerTurn ? 'text-green-300' : 'text-red-300'}`}>
+            <span className={`font-medium ${isNextPlayerTurn ? 'text-yellow-300' : 'text-white'}`}>
               {isNextPlayerTurn ? 'Bạn' : nextName}
             </span>
           </div>
@@ -86,8 +86,8 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
     >
       {/* Turn Number */}
       <div className="flex items-center space-x-1">
-        <Clock className="w-4 h-4 text-blue-400" />
-        <span className="text-sm font-bold text-blue-400">
+        <Clock className="w-4 h-4 text-yellow-400" />
+        <span className="text-sm font-bold text-yellow-400">
           Turn {turnNumber}
         </span>
       </div>
@@ -98,11 +98,11 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
       {/* Current Turn - Compact */}
       <div className="flex items-center space-x-1 px-2 py-1 bg-gray-700/50 rounded border border-gray-500/50">
         {isPlayerTurn ? (
-          <User className="w-4 h-4 text-green-400" />
+          <User className="w-4 h-4 text-yellow-400" />
         ) : (
-          <Sword className="w-4 h-4 text-red-400" />
+          <Sword className="w-4 h-4 text-white" />
         )}
-        <span className={`text-sm font-bold ${isPlayerTurn ? 'text-green-400' : 'text-red-400'}`}>
+        <span className={`text-sm font-bold ${isPlayerTurn ? 'text-yellow-400' : 'text-white'}`}>
           {isPlayerTurn ? 'Bạn' : (currentCombatantName || 'Kẻ thù')}
         </span>
         <Zap className="w-3 h-3 text-yellow-400 animate-pulse" />
@@ -114,7 +114,7 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
           <ChevronRight className="w-3 h-3 text-gray-400" />
           <div className="flex items-center space-x-1 px-1 py-1 bg-gray-600/30 rounded text-xs">
             <span className="text-gray-400">Tiếp:</span>
-            <span className={`font-medium ${isNextPlayerTurn ? 'text-green-300' : 'text-red-300'}`}>
+            <span className={`font-medium ${isNextPlayerTurn ? 'text-yellow-300' : 'text-white'}`}>
               {isNextPlayerTurn ? 'Bạn' : nextName}
             </span>
           </div>

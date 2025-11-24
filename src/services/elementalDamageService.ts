@@ -201,19 +201,19 @@ class ElementalDamageService {
       'fire': {
         name: 'Burning',
         description: 'Bị bỏng, gây sát thương liên tục và giảm phòng thủ',
-        icon: '🔥',
+        icon: '•',
         color: 'red'
       },
       'cold': {
         name: 'Frozen',
         description: 'Bị đóng băng, gây sát thương liên tục và giảm tốc độ',
-        icon: '❄️',
+        icon: '•',
         color: 'blue'
       },
       'lightning': {
         name: 'Shocked',
         description: 'Bị sốc điện, gây sát thương liên tục và có thể bỏ lượt',
-        icon: '⚡',
+        icon: '•',
         color: 'yellow'
       },
       'poison': {
@@ -225,7 +225,7 @@ class ElementalDamageService {
       'psychic': {
         name: 'Confused',
         description: 'Bị rối loạn tâm trí, gây sát thương liên tục và giảm trí tuệ',
-        icon: '🌀',
+        icon: '○',
         color: 'purple'
       }
     };
@@ -233,7 +233,7 @@ class ElementalDamageService {
     return infoMap[damageType] || {
       name: 'Elemental Effect',
       description: 'Hiệu ứng nguyên tố',
-      icon: '✨',
+      icon: '•',
       color: 'gray'
     };
   }

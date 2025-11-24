@@ -245,7 +245,7 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
            "type": "weapon",
            "rarity": "common",
            "quantity": 1,
-           "icon": "⚔️",
+           "icon": "⚔",
            "damage": "1d6+1",
            "damageType": "physical",
            "attackBonus": 1,
@@ -263,7 +263,7 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
            "type": "armor",
            "rarity": "common",
            "quantity": 1,
-           "icon": "🛡️",
+           "icon": "○",
            "armorClass": 12,
            "slot": "armor",
            "value": 40,
@@ -279,7 +279,7 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
            "type": "misc",
            "rarity": "common",
            "quantity": 1,
-           "icon": "💍",
+           "icon": "○",
            "slot": "accessory1",
            "effects": ["stat_buff:strength:+1:permanent"],
            "value": 30,
@@ -293,7 +293,7 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
            "type": "misc",
            "rarity": "uncommon",
            "quantity": 1,
-           "icon": "⌚",
+           "icon": "○",
            "slot": "accessory2",
            "effects": ["stat_buff:intelligence:+2:permanent", "stat_buff:agility:+2:permanent"],
            "value": 80,
@@ -309,7 +309,7 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
            "type": "consumable",
            "rarity": "common",
            "quantity": 5,
-           "icon": "🧪",
+           "icon": "○",
            "effect": "heal:1d4:+1:instant",
            "value": 25,
            "buyPrice": 40,
@@ -327,7 +327,7 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
            "rarity": "common",
            "value": 100,
            "buyPrice": 150,
-           "icon": "📖",
+           "icon": "□",
            "quantity": 1,
            "skillData": {
              "id": "skill_damage_random_1",
@@ -338,7 +338,7 @@ TRẢ VỀ JSON THEO FORMAT CHÍNH XÁC (ĐỒNG NHẤT VỚI HỆ THỐNG):
              "effects": ["instant_damage:1d6+2", "stat_buff:strength:+1:self:2turns"],
              "cooldown": 3,
              "currentCooldown": 0,
-             "icon": "⚔️",
+             "icon": "⚔",
              "requiresTarget": true
            },
            "effects": ["learn_skill:skill_damage_random_1"]
@@ -359,20 +359,20 @@ WEAPONS (VŨ KHÍ):
 - attackBonus: +0 đến +5 (common=0-1, uncommon=1-2, rare=2-3, epic=3-4, legendary=4-5)
 - slot: "weapon"
 - quantity: 1 (vũ khí chỉ có 1 cái)
-- icon: "⚔️", "🗡️", "🏹", "🔨", "⚡"
+- icon: "⚔", "⚔", "⚔", "⚔", "•"
 
 ARMOR (ÁO GIÁP):
 - BẮT BUỘC: armorClass, slot, quantity
 - armorClass: 10-20 (common=11-12, uncommon=12-13, rare=13-14, epic=14-15, legendary=15-16)
 - slot: "armor" (CHỈ slot armor mới có armorClass)
 - quantity: 1 (áo giáp chỉ có 1 cái)
-- icon: "🛡️", "⛑️", "🧥", "👕", "👖", "👟"
+- icon: "○", "○", "○", "○", "○", "○"
 
 ACCESSORIES (PHỤ KIỆN) - HỆ THỐNG MỚI:
 - BẮT BUỘC: slot, quantity, effects
 - slot: "accessory1", "accessory2", "accessory3" (KHÔNG có armorClass)
 - quantity: 1 (phụ kiện chỉ có 1 cái)
-- icon: "💍", "⌚", "📿", "🎭", "🔮", "💎", "🌟", "✨"
+- icon: "○", "○", "○", "○", "○", "◇", "★", "•"
 - effects: Array các stat buffs PERMANENT
 - Effect format: "stat_buff:stat_name:+value:permanent"
   * stat_name: CHỈ ĐƯỢC sử dụng 6 core stats D&D: strength, agility, intelligence, constitution, wisdom, charisma
@@ -397,7 +397,7 @@ CONSUMABLES (VẬT PHẨM TIÊU DÙNG):
 - Cure: "heal:cure_poison:instant", "heal:cure_all:instant"
 - Combo Effects: "heal:1d4:+1:instant|stat_buff:ac:+2:5turns"
 - quantity: Random từ 1-10 (mỗi lần mua -1)
-- icon: "🧪", "💊", "🍯", "🌿", "💧", "🔥", "❄️", "⚡"
+- icon: "○", "○", "○", "○", "○", "•", "•", "•"
 - KHÔNG có: damage, damageType, attackBonus, armorClass, slot
 
 SKILL BOOKS (SÁCH KỸ NĂNG) - QUAN TRỌNG NHẤT:
@@ -417,7 +417,7 @@ BẮT BUỘC CHO SKILL BOOKS (KHÔNG ĐƯỢC SAI):
 - BẮT BUỘC có trường "quantity": 1
 - BẮT BUỘC có trường "value": số (base value)
 - BẮT BUỘC có trường "buyPrice": số (value * rarity multiplier)
-- BẮT BUỘC có trường "icon": "📖"
+- BẮT BUỘC có trường "icon": "□"
 - BẮT BUỘC có trường "effects": ["learn_skill:skill_id"]
 
 SKILL DATA BẮT BUỘC (TRONG skillData):
@@ -840,7 +840,7 @@ JSON FORMAT BẮT BUỘC (KHÔNG ĐƯỢC SAI):
     "skillType": "${skillType}",
     "skillLevel": ${skillLevel},
     "effects": ["learn_skill:skill_id"],
-    "icon": "📖"
+    "icon": "□"
   }
 }
 
@@ -888,7 +888,7 @@ QUAN TRỌNG NHẤT:
         rarity: skillBook.rarity,
         value: skillBook.value,
         buyPrice: skillBook.buyPrice,
-        icon: skillBook.icon || '📖',
+        icon: skillBook.icon || '□',
         quantity: 1,
         skillData: skillBook.skillData,
         effects: skillBook.effects || [`learn_skill:${skillBook.skillData.id}`]
@@ -919,7 +919,7 @@ QUAN TRỌNG NHẤT:
           ['instant_damage:1d8+1', 'stat_buff:agility:+1:self:2turns'],
           ['instant_damage:2d4+1', 'stat_buff:intelligence:+1:self:2turns']
         ],
-        icons: ['⚔️', '👊', '🔥'],
+        icons: ['⚔', '○', '•'],
         cooldowns: [2, 3, 4]
       },
       {
@@ -935,7 +935,7 @@ QUAN TRỌNG NHẤT:
           ['instant_heal:2d4+1', 'stat_buff:wisdom:+1:self:2turns'],
           ['instant_heal:1d8+1', 'stat_buff:constitution:+2:self:1turns']
         ],
-        icons: ['💚', '🌿', '✨'],
+        icons: ['♡', '○', '•'],
         cooldowns: [3, 4, 3]
       },
       {
@@ -951,7 +951,7 @@ QUAN TRỌNG NHẤT:
           ['stat_buff:charisma:+1:self:4turns', 'stat_buff:strength:+1:self:2turns'],
           ['stat_buff:wisdom:+2:self:3turns', 'stat_buff:intelligence:+1:self:3turns']
         ],
-        icons: ['💬', '🎭', '🤝'],
+        icons: ['○', '○', '○'],
         cooldowns: [0, 0, 0]
       }
     ];
@@ -999,7 +999,7 @@ QUAN TRỌNG NHẤT:
       skillType: skill.skillType,
       skillLevel: skillLevel as 1 | 2 | 3,
       effects: [`learn_skill:${skill.id}`],
-      icon: '📖'
+      icon: '□'
     };
   }
 

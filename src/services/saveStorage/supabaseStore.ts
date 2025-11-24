@@ -86,7 +86,7 @@ export class SupabaseStore implements SaveStorageAdapter {
         throw new Error(`Lỗi lưu vào Supabase: ${error.message}`);
       }
 
-      console.log(`✅ Đã lưu game vào slot ${slotId} trên cloud`);
+      console.log(`✓ Đã lưu game vào slot ${slotId} trên cloud`);
     } catch (error) {
       console.error('Lỗi lưu Supabase:', error);
       throw error;
@@ -136,7 +136,7 @@ export class SupabaseStore implements SaveStorageAdapter {
         updatedAt: new Date(data.updated_at).getTime()
       };
 
-      console.log(`✅ Đã tải game từ slot ${slotId} trên cloud`);
+      console.log(`✓ Đã tải game từ slot ${slotId} trên cloud`);
       return saveGame;
     } catch (error) {
       console.error('Lỗi tải Supabase:', error);
@@ -219,7 +219,7 @@ export class SupabaseStore implements SaveStorageAdapter {
         throw new Error(`Lỗi xóa từ Supabase: ${error.message}`);
       }
 
-      console.log(`✅ Đã xóa slot ${slotId} trên cloud`);
+      console.log(`✓ Đã xóa slot ${slotId} trên cloud`);
     } catch (error) {
       console.error('Lỗi xóa Supabase:', error);
       throw error;

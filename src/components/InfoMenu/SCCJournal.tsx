@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Calendar, Clock, FileText, Eye, EyeOff } from 'lucide-react';
 import { SCCSummary } from '../../types';
 
@@ -99,7 +99,7 @@ export function SCCJournal({ isVisible }: SCCJournalProps) {
         </h3>
         <button
           onClick={loadSummaries}
-          className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+          className="px-3 py-1 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-colors"
         >
           Làm mới
         </button>
@@ -139,7 +139,7 @@ export function SCCJournal({ isVisible }: SCCJournalProps) {
                         <ChevronRight className="w-4 h-4 text-gray-400" />
                       )}
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-blue-400" />
+                        <Clock className="w-4 h-4 text-yellow-400" />
                         <span className="font-medium text-white">
                           Lượt {item.turn}
                         </span>
@@ -172,7 +172,7 @@ export function SCCJournal({ isVisible }: SCCJournalProps) {
                       {/* Recap */}
                       {item.summary.recap && (
                         <div>
-                          <h4 className="text-sm font-medium text-blue-400 mb-2">Tóm tắt</h4>
+                          <h4 className="text-sm font-medium text-yellow-400 mb-2">Tóm tắt</h4>
                           <div className="text-sm text-gray-300 bg-gray-900 p-3 rounded border">
                             {item.summary.recap}
                           </div>
@@ -182,7 +182,7 @@ export function SCCJournal({ isVisible }: SCCJournalProps) {
                       {/* Timeline */}
                       {item.summary.timeline && Array.isArray(item.summary.timeline) && item.summary.timeline.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-medium text-blue-400 mb-2">Timeline</h4>
+                          <h4 className="text-sm font-medium text-yellow-400 mb-2">Timeline</h4>
                           <div className="space-y-2">
                             {item.summary.timeline.map((event, index) => (
                               <div key={index} className="text-sm text-gray-300 bg-gray-900 p-2 rounded border">
@@ -196,7 +196,7 @@ export function SCCJournal({ isVisible }: SCCJournalProps) {
                       {/* Clues */}
                       {item.summary.clues && Array.isArray(item.summary.clues) && item.summary.clues.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-medium text-blue-400 mb-2">Manh mối</h4>
+                          <h4 className="text-sm font-medium text-yellow-400 mb-2">Manh mối</h4>
                           <div className="space-y-1">
                             {item.summary.clues.map((clue, index) => (
                               <div key={index} className="text-sm text-gray-300 bg-gray-900 p-2 rounded border">
@@ -210,7 +210,7 @@ export function SCCJournal({ isVisible }: SCCJournalProps) {
                       {/* Open Threads */}
                       {item.summary.openThreads && Array.isArray(item.summary.openThreads) && item.summary.openThreads.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-medium text-blue-400 mb-2">Luồng câu chuyện mở</h4>
+                          <h4 className="text-sm font-medium text-yellow-400 mb-2">Luồng câu chuyện mở</h4>
                           <div className="space-y-1">
                             {item.summary.openThreads.map((thread, index) => (
                               <div key={index} className="text-sm text-gray-300 bg-gray-900 p-2 rounded border">
@@ -224,11 +224,11 @@ export function SCCJournal({ isVisible }: SCCJournalProps) {
                       {/* Relationships */}
                       {item.summary.relationships && Array.isArray(item.summary.relationships) && item.summary.relationships.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-medium text-blue-400 mb-2">Mối quan hệ</h4>
+                          <h4 className="text-sm font-medium text-yellow-400 mb-2">Mối quan hệ</h4>
                           <div className="space-y-1">
                             {item.summary.relationships.map((rel, index) => (
                               <div key={index} className="text-sm text-gray-300 bg-gray-900 p-2 rounded border">
-                                <span className="font-medium text-green-400">{rel.npc}:</span> {rel.status}
+                                <span className="font-medium text-yellow-400">{rel.npc}:</span> {rel.status}
                                 {rel.notes && <span className="text-gray-400"> - {rel.notes}</span>}
                               </div>
                             ))}
@@ -239,14 +239,14 @@ export function SCCJournal({ isVisible }: SCCJournalProps) {
                       {/* Goals */}
                       {item.summary.goals && Array.isArray(item.summary.goals) && item.summary.goals.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-medium text-blue-400 mb-2">Mục tiêu</h4>
+                          <h4 className="text-sm font-medium text-yellow-400 mb-2">Mục tiêu</h4>
                           <div className="space-y-1">
                             {item.summary.goals.map((goal, index) => (
                               <div key={index} className="text-sm text-gray-300 bg-gray-900 p-2 rounded border">
-                                <span className="font-medium text-purple-400">PC:</span> {goal.pcGoal}
+                                <span className="font-medium text-yellow-400">PC:</span> {goal.pcGoal}
                                 {goal.actGoal && (
                                   <div className="mt-1">
-                                    <span className="font-medium text-orange-400">Act:</span> {goal.actGoal}
+                                    <span className="font-medium text-yellow-400">Act:</span> {goal.actGoal}
                                   </div>
                                 )}
                               </div>
@@ -258,7 +258,7 @@ export function SCCJournal({ isVisible }: SCCJournalProps) {
                       {/* Risks */}
                       {item.summary.risks && Array.isArray(item.summary.risks) && item.summary.risks.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-medium text-blue-400 mb-2">Rủi ro</h4>
+                          <h4 className="text-sm font-medium text-yellow-400 mb-2">Rủi ro</h4>
                           <div className="space-y-1">
                             {item.summary.risks.map((risk, index) => (
                               <div key={index} className="text-sm text-gray-300 bg-gray-900 p-2 rounded border">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { 
   Play, 
   Square, 
@@ -89,7 +89,7 @@ export function ParallelApiTester() {
     const prompts = generateTestPrompts(testCount);
     const apiKeys = geminiService.getApiKeys();
     
-    console.log(`🚀 [Parallel Test] Starting ${testCount} requests with ${apiKeys.length} keys`);
+    console.log(`→ [Parallel Test] Starting ${testCount} requests with ${apiKeys.length} keys`);
 
     // Create initial test results
     const initialResults: TestResult[] = prompts.map((prompt, index) => ({
@@ -138,7 +138,7 @@ export function ParallelApiTester() {
             : r
         ));
 
-        console.log(`✅ [Test ${index + 1}] Completed in ${duration}ms using ${usedKey?.accountName || 'Unknown'} (${usedKey?.name || 'Unknown'})`);
+        console.log(`✓ [Test ${index + 1}] Completed in ${duration}ms using ${usedKey?.accountName || 'Unknown'} (${usedKey?.name || 'Unknown'})`);
         
       } catch (error) {
         const duration = Date.now() - Date.now();
@@ -159,7 +159,7 @@ export function ParallelApiTester() {
             : r
         ));
 
-        console.error(`❌ [Test ${index + 1}] Failed using ${usedKey?.accountName || 'Unknown'}:`, error);
+        console.error(`✗ [Test ${index + 1}] Failed using ${usedKey?.accountName || 'Unknown'}:`, error);
       }
     });
 
@@ -167,7 +167,7 @@ export function ParallelApiTester() {
     await Promise.allSettled(promises);
     
     setIsRunning(false);
-    console.log(`🏁 [Parallel Test] Completed - ${stats.completed} success, ${stats.errors} errors`);
+    console.log(`○ [Parallel Test] Completed - ${stats.completed} success, ${stats.errors} errors`);
   };
 
   const stopTest = () => {
@@ -184,11 +184,11 @@ export function ParallelApiTester() {
       case 'pending':
         return <Clock className="w-4 h-4 text-gray-400" />;
       case 'processing':
-        return <Activity className="w-4 h-4 text-blue-400 animate-pulse" />;
+        return <Activity className="w-4 h-4 text-yellow-400 animate-pulse" />;
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-400" />;
+        return <CheckCircle className="w-4 h-4 text-yellow-400" />;
       case 'error':
-        return <XCircle className="w-4 h-4 text-red-400" />;
+        return <XCircle className="w-4 h-4 text-white" />;
     }
   };
 
@@ -197,11 +197,11 @@ export function ParallelApiTester() {
       case 'pending':
         return 'text-gray-400';
       case 'processing':
-        return 'text-blue-400';
+        return 'text-yellow-400';
       case 'completed':
-        return 'text-green-400';
+        return 'text-yellow-400';
       case 'error':
-        return 'text-red-400';
+        return 'text-white';
     }
   };
 
@@ -233,8 +233,8 @@ export function ParallelApiTester() {
             disabled={geminiService.getApiKeys().length === 0}
             className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
               isRunning 
-                ? 'bg-red-500/20 border border-red-500/50 text-red-300 hover:bg-red-500/30'
-                : 'bg-green-500/20 border border-green-500/50 text-green-300 hover:bg-green-500/30'
+                ? 'bg-gray-900/20 border border-gray-700/50 text-white hover:bg-gray-900/30'
+                : 'bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 hover:bg-yellow-600/30'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isRunning ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -254,7 +254,7 @@ export function ParallelApiTester() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass-effect p-4 rounded-lg">
           <div className="flex items-center space-x-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-green-400" />
+            <CheckCircle className="w-5 h-5 text-yellow-400" />
             <span className="text-sm text-gray-400">Hoàn thành</span>
           </div>
           <div className="text-2xl font-bold text-white">{stats.completed}</div>
@@ -262,7 +262,7 @@ export function ParallelApiTester() {
         
         <div className="glass-effect p-4 rounded-lg">
           <div className="flex items-center space-x-2 mb-2">
-            <XCircle className="w-5 h-5 text-red-400" />
+            <XCircle className="w-5 h-5 text-white" />
             <span className="text-sm text-gray-400">Lỗi</span>
           </div>
           <div className="text-2xl font-bold text-white">{stats.errors}</div>
@@ -270,7 +270,7 @@ export function ParallelApiTester() {
         
         <div className="glass-effect p-4 rounded-lg">
           <div className="flex items-center space-x-2 mb-2">
-            <Clock className="w-5 h-5 text-blue-400" />
+            <Clock className="w-5 h-5 text-yellow-400" />
             <span className="text-sm text-gray-400">Thời gian TB</span>
           </div>
           <div className="text-2xl font-bold text-white">{stats.averageTime}ms</div>
@@ -278,7 +278,7 @@ export function ParallelApiTester() {
         
         <div className="glass-effect p-4 rounded-lg">
           <div className="flex items-center space-x-2 mb-2">
-            <BarChart3 className="w-5 h-5 text-purple-400" />
+            <BarChart3 className="w-5 h-5 text-yellow-400" />
             <span className="text-sm text-gray-400">Tổng thời gian</span>
           </div>
           <div className="text-2xl font-bold text-white">{stats.totalTime}s</div>
@@ -321,13 +321,13 @@ export function ParallelApiTester() {
                 </div>
                 
                 {result.error && (
-                  <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-300 text-sm">
+                  <div className="mt-2 p-2 bg-gray-900/10 border border-gray-700/20 rounded text-white text-sm">
                     {result.error}
                   </div>
                 )}
                 
                 {result.response && (
-                  <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded text-green-300 text-sm">
+                  <div className="mt-2 p-2 bg-yellow-600/10 border border-yellow-500/20 rounded text-yellow-300 text-sm">
                     {result.response}
                   </div>
                 )}
@@ -339,7 +339,7 @@ export function ParallelApiTester() {
 
       {/* Instructions */}
       <div className="glass-effect p-4 rounded-lg">
-        <h4 className="text-sm font-semibold text-blue-300 mb-2">Hướng dẫn sử dụng:</h4>
+        <h4 className="text-sm font-semibold text-yellow-300 mb-2">Hướng dẫn sử dụng:</h4>
         <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
           <li>Chọn số lượng requests muốn test (1-20)</li>
           <li>Click "Bắt đầu" để chạy test song song</li>

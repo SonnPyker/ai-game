@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+﻿import { Routes, Route } from 'react-router-dom';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Analytics } from '@vercel/analytics/react';
 import { Suspense, lazy } from 'react';
@@ -28,7 +28,7 @@ function App() {
         <Suspense fallback={
           <div className="min-h-screen bg-black flex items-center justify-center">
             <div className="glass-effect p-8 rounded-2xl text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
               <p className="text-white">Đang tải...</p>
             </div>
           </div>

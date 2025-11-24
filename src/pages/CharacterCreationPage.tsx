@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Character } from '../types';
 import { MotionWrapper } from '../components/MotionWrapper';
@@ -374,10 +374,10 @@ export function CharacterCreationPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      alert('✅ Đã xuất dữ liệu nhân vật thành công!');
+      alert('✓ Đã xuất dữ liệu nhân vật thành công!');
     } catch (error) {
       console.error('Error exporting character:', error);
-      alert('❌ Có lỗi xảy ra khi xuất dữ liệu nhân vật');
+      alert('✗ Có lỗi xảy ra khi xuất dữ liệu nhân vật');
     }
   };
 
@@ -413,10 +413,10 @@ export function CharacterCreationPage() {
         // Auto switch to customize tab after successful import
         setCurrentStep('customize');
         
-        alert('✅ Đã nhập dữ liệu nhân vật thành công! Chuyển sang tab tùy chỉnh.');
+        alert('✓ Đã nhập dữ liệu nhân vật thành công! Chuyển sang tab tùy chỉnh.');
       } catch (error) {
         console.error('Error importing character:', error);
-        alert('❌ Có lỗi xảy ra khi nhập dữ liệu nhân vật: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+        alert('✗ Có lỗi xảy ra khi nhập dữ liệu nhân vật: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
       }
     };
     reader.readAsText(file);
@@ -444,7 +444,7 @@ export function CharacterCreationPage() {
           requiresTarget: skill.requiresTarget || true,
           cooldown: skill.cooldown || 3,
           currentCooldown: 0,
-          icon: skill.icon || '⚔️'
+          icon: skill.icon || '⚔'
         })) || prev.skills
       }));
     } catch (error) {
@@ -492,7 +492,7 @@ export function CharacterCreationPage() {
           requiresTarget: skill.requiresTarget || true,
           cooldown: skill.cooldown || 3,
           currentCooldown: 0,
-          icon: skill.icon || '⚔️'
+          icon: skill.icon || '⚔'
         })) || [];
         
         // Kết hợp: locked skills + new skills (tối đa 3 skills)
@@ -542,7 +542,7 @@ export function CharacterCreationPage() {
             className={`glass-effect ${shouldUseMobileLayout() ? 'p-4' : 'p-6'} rounded-xl ${shouldUseMobileLayout() ? 'mb-4' : 'mb-6'}`}
           >
             <div className={`flex items-center ${shouldUseMobileLayout() ? 'space-x-2' : 'space-x-3'} ${shouldUseMobileLayout() ? 'mb-3' : 'mb-4'}`}>
-              <div className={`${shouldUseMobileLayout() ? 'w-6 h-6' : 'w-8 h-8'} bg-blue-500 rounded-lg flex items-center justify-center`}>
+              <div className={`${shouldUseMobileLayout() ? 'w-6 h-6' : 'w-8 h-8'} bg-yellow-500 rounded-lg flex items-center justify-center`}>
                 <Globe className={`${shouldUseMobileLayout() ? 'w-3 h-3' : 'w-4 h-4'} text-white`} />
               </div>
               <h3 className={`${shouldUseMobileLayout() ? 'text-base' : 'text-lg'} font-semibold text-white`}>Thế giới đã tạo</h3>
@@ -553,7 +553,7 @@ export function CharacterCreationPage() {
               </p>
             </div>
             <p className={`${shouldUseMobileLayout() ? 'text-xs' : 'text-xs'} text-gray-400 ${shouldUseMobileLayout() ? 'mt-1' : 'mt-2'}`}>
-              💡 Tham khảo thông tin thế giới ở trên để mô tả nhân vật phù hợp với bối cảnh
+              ○ Tham khảo thông tin thế giới ở trên để mô tả nhân vật phù hợp với bối cảnh
             </p>
           </MotionWrapper>
         )}
@@ -572,7 +572,7 @@ export function CharacterCreationPage() {
               value={characterDescription}
               onChange={(e) => setCharacterDescription(e.target.value)}
               placeholder="Ví dụ: Tôi muốn tạo một nhân vật tên là Aria, một nữ pháp sư trẻ tuổi với mái tóc bạc dài và đôi mắt tím. Cô ấy thông minh nhưng hơi kiêu ngạo, có khả năng điều khiển phép thuật băng. Cô sinh ra trong một gia đình quý tộc nhưng đã bỏ nhà ra đi để tìm kiếm tri thức cổ xưa..."
-              className={`w-full ${shouldUseMobileLayout() ? 'h-48' : 'h-64'} px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere ${shouldUseMobileLayout() ? 'text-sm' : ''}`}
+              className={`w-full ${shouldUseMobileLayout() ? 'h-48' : 'h-64'} px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-yellow-400 focus:outline-none resize-none break-words overflow-wrap-anywhere ${shouldUseMobileLayout() ? 'text-sm' : ''}`}
             />
           </div>
 
@@ -580,14 +580,14 @@ export function CharacterCreationPage() {
             <button
               onClick={handleAnalyzeDescription}
               disabled={!characterDescription.trim() || isAnalyzing}
-              className={`${shouldUseMobileLayout() ? 'px-4 py-3 text-sm' : 'px-8 py-4'} bg-primary-500/20 border-2 border-primary-500/70 rounded-lg text-primary-300 hover:bg-primary-500/30 hover:border-primary-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center ${shouldUseMobileLayout() ? 'space-x-2' : 'space-x-3'}`}
+              className={`${shouldUseMobileLayout() ? 'px-4 py-3 text-sm' : 'px-8 py-4'} bg-yellow-600/20 border-2 border-yellow-500/70 rounded-lg text-yellow-400 hover:bg-yellow-600/30 hover:border-yellow-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center ${shouldUseMobileLayout() ? 'space-x-2' : 'space-x-3'}`}
             >
               <Sparkles className={`${shouldUseMobileLayout() ? 'w-4 h-4' : 'w-5 h-5'}`} />
               <span>{isAnalyzing ? 'Đang phân tích...' : 'Phân Tích & Tạo Nhân Vật'}</span>
             </button>
             
             {/* Import Character Button */}
-            <label className={`${shouldUseMobileLayout() ? 'px-4 py-2 text-sm' : 'px-6 py-3'} bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 cursor-pointer flex items-center ${shouldUseMobileLayout() ? 'space-x-1' : 'space-x-2'}`}>
+            <label className={`${shouldUseMobileLayout() ? 'px-4 py-2 text-sm' : 'px-6 py-3'} bg-yellow-500/20 border-2 border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 cursor-pointer flex items-center ${shouldUseMobileLayout() ? 'space-x-1' : 'space-x-2'}`}>
               <Upload className={`${shouldUseMobileLayout() ? 'w-3 h-3' : 'w-4 h-4'}`} />
               <span className={shouldUseMobileLayout() ? 'text-xs' : ''}>Nhập nhân vật từ file JSON</span>
               <input
@@ -604,7 +604,7 @@ export function CharacterCreationPage() {
                 return localStorage.getItem('world_gen_result') && (
                   <div className="text-xs text-gray-400 text-center max-w-md">
                     <div className="flex items-center justify-center space-x-1 mb-1">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                       <span>AI sẽ sử dụng thông tin thế giới để suy luận</span>
                     </div>
                     <p>Nhân vật sẽ được tạo phù hợp với thế giới đã thiết lập</p>
@@ -647,7 +647,7 @@ export function CharacterCreationPage() {
           <div className="flex space-x-3">
             <button
               onClick={handleExportCharacter}
-              className="px-4 py-2 bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 flex items-center space-x-2"
+              className="px-4 py-2 bg-yellow-600/20 border-2 border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 flex items-center space-x-2"
             >
               <Download className="w-4 h-4" />
               <span>Xuất nhân vật</span>
@@ -676,13 +676,13 @@ export function CharacterCreationPage() {
                     type="text"
                     value={characterData.name}
                     onChange={(e) => setCharacterData(prev => ({ ...prev, name: e.target.value }))}
-                    className="flex-1 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none break-words overflow-wrap-anywhere"
+                    className="flex-1 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-yellow-400 focus:outline-none break-words overflow-wrap-anywhere"
                     placeholder="Nhập tên nhân vật..."
                   />
                   <button
                     type="button"
                     onClick={handleQuickGenerateName}
-                    className="px-3 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors duration-200 flex items-center gap-1"
+                    className="px-3 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors duration-200 flex items-center gap-1"
                     title="Tạo tên ngẫu nhiên"
                   >
                     <Shuffle className="w-4 h-4" />
@@ -703,7 +703,7 @@ export function CharacterCreationPage() {
                 <select
                   value={characterData.gender}
                   onChange={(e) => setCharacterData(prev => ({ ...prev, gender: e.target.value as any }))}
-                  className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-primary-400 focus:outline-none break-words overflow-wrap-anywhere"
+                  className="w-full px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white focus:border-yellow-400 focus:outline-none break-words overflow-wrap-anywhere"
                 >
                   <option value="male">Nam</option>
                   <option value="female">Nữ</option>
@@ -734,7 +734,7 @@ export function CharacterCreationPage() {
                   <select
                     value={nameGenerationOptions.culture}
                     onChange={(e) => setNameGenerationOptions(prev => ({ ...prev, culture: e.target.value as any }))}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-primary-400 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-yellow-400 focus:outline-none"
                   >
                     <option value="any">Bất kỳ</option>
                     <option value="vietnamese">Việt Nam</option>
@@ -753,7 +753,7 @@ export function CharacterCreationPage() {
                   <select
                     value={nameGenerationOptions.gender}
                     onChange={(e) => setNameGenerationOptions(prev => ({ ...prev, gender: e.target.value as any }))}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-primary-400 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-yellow-400 focus:outline-none"
                   >
                     <option value="any">Bất kỳ</option>
                     <option value="male">Nam</option>
@@ -767,7 +767,7 @@ export function CharacterCreationPage() {
                   <select
                     value={nameGenerationOptions.type}
                     onChange={(e) => setNameGenerationOptions(prev => ({ ...prev, type: e.target.value as any }))}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-primary-400 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-yellow-400 focus:outline-none"
                   >
                     <option value="full">Họ và tên</option>
                     <option value="first">Tên</option>
@@ -782,7 +782,7 @@ export function CharacterCreationPage() {
                   <select
                     value={nameGenerationOptions.length}
                     onChange={(e) => setNameGenerationOptions(prev => ({ ...prev, length: e.target.value as any }))}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-primary-400 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:border-yellow-400 focus:outline-none"
                   >
                     <option value="short">Ngắn</option>
                     <option value="medium">Trung bình</option>
@@ -797,7 +797,7 @@ export function CharacterCreationPage() {
                   type="button"
                   onClick={handleGenerateNames}
                   disabled={isGeneratingName}
-                  className="px-6 py-3 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-500 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
+                  className="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-500 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
                 >
                   {isGeneratingName ? (
                     <>
@@ -849,7 +849,7 @@ export function CharacterCreationPage() {
               value={characterData.appearance}
               onChange={(e) => setCharacterData(prev => ({ ...prev, appearance: e.target.value }))}
               placeholder="Mô tả ngoại hình của nhân vật..."
-              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
+              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-yellow-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
             />
           </div>
 
@@ -860,7 +860,7 @@ export function CharacterCreationPage() {
               value={characterData.personality}
               onChange={(e) => setCharacterData(prev => ({ ...prev, personality: e.target.value }))}
               placeholder="Mô tả tính cách tổng quan của nhân vật..."
-              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
+              className="w-full h-32 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-yellow-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
             />
           </div>
 
@@ -871,7 +871,7 @@ export function CharacterCreationPage() {
               value={characterData.backstory}
               onChange={(e) => setCharacterData(prev => ({ ...prev, backstory: e.target.value }))}
               placeholder="Viết tiểu sử chi tiết của nhân vật..."
-              className="w-full h-48 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
+              className="w-full h-48 px-4 py-3 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-yellow-400 focus:outline-none resize-none break-words overflow-wrap-anywhere"
             />
           </div>
 
@@ -881,7 +881,7 @@ export function CharacterCreationPage() {
               <h3 className="text-xl font-bold-vietnamese text-white uppercase">ĐẶC ĐIỂM TÍNH CÁCH</h3>
               <button
                 onClick={handleAddPersonalityTrait}
-                className="px-3 py-1 bg-primary-500/20 border-2 border-primary-500/70 text-primary-300 rounded-lg hover:bg-primary-500/30 transition-colors duration-200 text-sm"
+                className="px-3 py-1 bg-yellow-600/20 border-2 border-yellow-500/70 text-yellow-400 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 text-sm"
               >
                 + Thêm đặc điểm
               </button>
@@ -895,11 +895,11 @@ export function CharacterCreationPage() {
                     value={trait}
                     onChange={(e) => handleUpdatePersonalityTrait(index, e.target.value)}
                     placeholder="Đặc điểm tính cách..."
-                    className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-primary-400 focus:outline-none text-sm"
+                    className="flex-1 px-3 py-2 bg-white/10 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-yellow-400 focus:outline-none text-sm"
                   />
                   <button
                     onClick={() => handleRemovePersonalityTrait(index)}
-                    className="p-2 text-red-400 hover:text-red-300 transition-colors duration-200"
+                    className="p-2 text-white hover:text-white transition-colors duration-200"
                   >
                     ×
                   </button>
@@ -914,7 +914,7 @@ export function CharacterCreationPage() {
               <h3 className="text-xl font-bold-vietnamese text-white uppercase">CHỈ SỐ CỐT LÕI</h3>
               <button
                 onClick={handleAISuggestStats}
-                className="px-3 py-1 bg-green-500/20 border-2 border-green-500/50 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors duration-200 text-sm flex items-center space-x-1"
+                className="px-3 py-1 bg-yellow-600/20 border-2 border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-600/30 transition-colors duration-200 text-sm flex items-center space-x-1"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>Gợi ý chỉ số</span>
@@ -928,7 +928,7 @@ export function CharacterCreationPage() {
                  const baseValue = typeof value === 'number' ? value : 10;
                  const modifier = Math.floor((baseValue - 10) / 2);
                  const modifierText = modifier >= 0 ? `+${modifier}` : `${modifier}`;
-                 const modifierColor = modifier >= 0 ? 'text-green-400' : 'text-red-400';
+                 const modifierColor = modifier >= 0 ? 'text-yellow-400' : 'text-white';
                  
                  return (
                    <div key={stat} className="bg-white/5 p-4 rounded-lg border-2 border-white/20">
@@ -965,7 +965,7 @@ export function CharacterCreationPage() {
                          };
                          updateHealth(newCoreStats);
                        }}
-                       className="w-full px-2 py-1 bg-white/10 border-2 border-white/40 rounded text-white focus:border-primary-400 focus:outline-none text-center text-sm"
+                       className="w-full px-2 py-1 bg-white/10 border-2 border-white/40 rounded text-white focus:border-yellow-400 focus:outline-none text-center text-sm"
                      />
                    </div>
                  );
@@ -988,7 +988,7 @@ export function CharacterCreationPage() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-lg font-bold-vietnamese text-white uppercase">KỸ NĂNG NHÂN VẬT (3 SKILL)</h3>
-                <p className="text-xs text-blue-400 mt-0.5">
+                <p className="text-xs text-yellow-400 mt-0.5">
                   Reroll tạo 3 kỹ năng ngẫu nhiên (có thể lock skill để giữ lại)
                 </p>
               </div>
@@ -998,7 +998,7 @@ export function CharacterCreationPage() {
                 className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-500/70 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
                 title="Tạo 3 kỹ năng ngẫu nhiên"
               >
-                <span>{isRerolling ? 'Đang tạo...' : '🎲 Reroll'}</span>
+                <span>{isRerolling ? 'Đang tạo...' : '□ Reroll'}</span>
               </button>
             </div>
             
@@ -1014,10 +1014,10 @@ export function CharacterCreationPage() {
                         <div className="flex items-center space-x-2 text-xs text-gray-400">
                           <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                             skill.skillType === 'damage' 
-                              ? 'bg-red-500/20 text-red-300'
+                              ? 'bg-gray-900/20 text-white'
                               : skill.skillType === 'healing'
-                                ? 'bg-green-500/20 text-green-300'
-                                : 'bg-purple-500/20 text-purple-300'
+                                ? 'bg-yellow-600/20 text-yellow-300'
+                                : 'bg-yellow-600/20 text-yellow-300'
                           }`}>
                             {skill.skillType === 'damage' ? 'Tấn Công' : 
                              skill.skillType === 'healing' ? 'Hồi Phục' : 'Xã Hội'}
@@ -1037,7 +1037,7 @@ export function CharacterCreationPage() {
                       }`}
                       title={lockedSkills.has(skill.id) ? 'Bỏ khóa skill' : 'Khóa skill khi reroll'}
                     >
-                      {lockedSkills.has(skill.id) ? '🔒' : '🔓'}
+                      {lockedSkills.has(skill.id) ? '○' : '○'}
                     </button>
                   </div>
                   
@@ -1047,12 +1047,12 @@ export function CharacterCreationPage() {
                   </div>
                   
                   {/* Skill Effects - Compact */}
-                  <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded p-2">
+                  <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-yellow-500/20 rounded p-2">
                     <div className="flex items-start space-x-1">
-                      <span className="text-blue-400 text-xs mt-0.5">⚡</span>
+                      <span className="text-yellow-400 text-xs mt-0.5">•</span>
                       <div className="flex-1">
-                        <span className="text-blue-300 font-medium text-xs">Hiệu quả:</span>
-                        <div className="mt-0.5 text-xs text-blue-200 leading-tight">
+                        <span className="text-yellow-300 font-medium text-xs">Hiệu quả:</span>
+                        <div className="mt-0.5 text-xs text-gray-200 leading-tight">
                           {translateEffectFormat(skill.effects)}
                         </div>
                       </div>
@@ -1089,7 +1089,7 @@ export function CharacterCreationPage() {
         
         <button
           onClick={handleExportCharacter}
-          className="px-6 py-3 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors duration-200 flex items-center space-x-2"
+          className="px-6 py-3 bg-yellow-500/20 border-2 border-yellow-500/50 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors duration-200 flex items-center space-x-2"
         >
           <Download className="w-4 h-4" />
           <span>Xuất Nhân Vật</span>
@@ -1097,7 +1097,7 @@ export function CharacterCreationPage() {
         
         <button
           onClick={handleAcceptAndStart}
-          className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 flex items-center space-x-2"
+          className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 flex items-center space-x-2"
         >
           <Check className="w-4 h-4" />
           <span>Chấp Nhận & Vào Game</span>

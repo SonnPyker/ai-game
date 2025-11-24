@@ -1,4 +1,4 @@
-import { Clock, Zap, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, RefreshCw, AlertCircle } from 'lucide-react';
+﻿import { Clock, Zap, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, RefreshCw, AlertCircle } from 'lucide-react';
 import { SuggestedAction } from '../../services/actionSuggestionService';
 
 interface ActionSuggestionsProps {
@@ -116,20 +116,20 @@ export function ActionSuggestions({
         {!isCollapsed && (
           <div className="space-y-2">
             {/* Error message */}
-            <div className="glass-effect border border-red-600 bg-red-900 rounded-lg p-3">
+            <div className="glass-effect border border-gray-700 bg-gray-950 rounded-lg p-3">
               <div className="flex items-start space-x-2">
-                <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm text-red-300 font-medium mb-1">
+                  <p className="text-sm text-white font-medium mb-1">
                     Lỗi khi tải gợi ý hành động
                   </p>
-                  <p className="text-xs text-red-400 mb-2">
+                  <p className="text-xs text-white mb-2">
                     {lastRetryError}
                   </p>
                   {onRetry && (
                     <button
                       onClick={onRetry}
-                      className="flex items-center space-x-1 text-xs text-red-300 hover:text-red-200 transition-colors"
+                      className="flex items-center space-x-1 text-xs text-white hover:text-gray-200 transition-colors"
                     >
                       <RefreshCw className="w-3 h-3" />
                       <span>Thử lại</span>
@@ -149,8 +149,8 @@ export function ActionSuggestions({
                     onClick={() => onPick(suggestion)}
                     className={`glass-effect border rounded-lg px-3 py-2 text-left transition-all duration-200 group min-h-[50px] touch-feedback active:scale-95 ${
                       isSelected 
-                        ? 'border-blue-600 bg-blue-700 shadow-lg shadow-blue-500/20' 
-                        : 'border-gray-700 hover:border-blue-600 hover:bg-blue-800'
+                        ? 'border-yellow-600 bg-yellow-700 shadow-lg shadow-blue-500/20' 
+                        : 'border-gray-700 hover:border-yellow-600 hover:bg-yellow-800'
                     }`}
                     title={`Thời gian: ${formatDuration(suggestion.durationMinutes)}${isSelected ? ' - Nhấn để hủy chọn' : ''}`}
                   >
@@ -167,21 +167,21 @@ export function ActionSuggestions({
                         {(suggestion.attackTarget || suggestion.impactTags.some(tag => 
                           tag === 'attack' || tag.endsWith('Attack')
                         )) && (
-                          <span className="text-xs text-red-400 font-medium">
-                            ⚔️ Attack
+                          <span className="text-xs text-white font-medium">
+                            ⚔ Attack
                           </span>
                         )}
                         {/* DC Check Action Badge */}
                         {suggestion.dcCheck && (
-                          <span className="text-xs text-blue-400 font-medium">
-                            🎲 DC {suggestion.dcCheck.stat.charAt(0).toUpperCase() + suggestion.dcCheck.stat.slice(1)}
+                          <span className="text-xs text-yellow-400 font-medium">
+                            □ DC {suggestion.dcCheck.stat.charAt(0).toUpperCase() + suggestion.dcCheck.stat.slice(1)}
                           </span>
                         )}
                       </div>
                     </div>
                     
                     <div className={`text-sm transition-colors leading-tight ${
-                      isSelected ? 'text-blue-100' : 'text-white group-hover:text-blue-100'
+                      isSelected ? 'text-white' : 'text-white group-hover:text-white'
                     }`}>
                       {suggestion.summary}
                     </div>
@@ -205,16 +205,16 @@ export function ActionSuggestions({
   };
 
   const getImpactIcon = (tags: string[]) => {
-    if (tags.includes('risk')) return <AlertTriangle className="w-3 h-3 text-red-400" />;
-    if (tags.includes('story')) return <CheckCircle className="w-3 h-3 text-blue-400" />;
-    if (tags.includes('relationship')) return <Zap className="w-3 h-3 text-purple-400" />;
+    if (tags.includes('risk')) return <AlertTriangle className="w-3 h-3 text-white" />;
+    if (tags.includes('story')) return <CheckCircle className="w-3 h-3 text-yellow-400" />;
+    if (tags.includes('relationship')) return <Zap className="w-3 h-3 text-yellow-400" />;
     return <Clock className="w-3 h-3 text-gray-400" />;
   };
 
   const getSourceColor = (source: string) => {
     switch (source) {
-      case 'ai': return 'text-blue-300';
-      case 'quest': return 'text-green-300';
+      case 'ai': return 'text-yellow-300';
+      case 'quest': return 'text-yellow-300';
       case 'heuristic': return 'text-yellow-300';
       default: return 'text-gray-300';
     }
@@ -257,8 +257,8 @@ export function ActionSuggestions({
                 onClick={() => onPick(suggestion)}
                 className={`glass-effect border rounded-lg px-3 py-2 text-left transition-all duration-200 group min-h-[50px] touch-feedback active:scale-95 ${
                   isSelected 
-                    ? 'border-blue-600 bg-blue-700 shadow-lg shadow-blue-500/20' 
-                    : 'border-gray-700 hover:border-blue-600 hover:bg-blue-800'
+                    ? 'border-yellow-600 bg-yellow-700 shadow-lg shadow-blue-500/20' 
+                    : 'border-gray-700 hover:border-yellow-600 hover:bg-yellow-800'
                 }`}
                 title={`Thời gian: ${formatDuration(suggestion.durationMinutes)}${isSelected ? ' - Nhấn để hủy chọn' : ''}`}
               >
@@ -275,21 +275,21 @@ export function ActionSuggestions({
                   {(suggestion.attackTarget || suggestion.impactTags.some(tag => 
                     tag === 'attack' || tag.endsWith('Attack')
                   )) && (
-                    <span className="text-xs text-red-400 font-medium">
-                      ⚔️ Attack
+                    <span className="text-xs text-white font-medium">
+                      ⚔ Attack
                     </span>
                   )}
                   {/* DC Check Action Badge */}
                   {suggestion.dcCheck && (
-                    <span className="text-xs text-blue-400 font-medium">
-                      🎲 DC {suggestion.dcCheck.stat.charAt(0).toUpperCase() + suggestion.dcCheck.stat.slice(1)}
+                    <span className="text-xs text-yellow-400 font-medium">
+                      □ DC {suggestion.dcCheck.stat.charAt(0).toUpperCase() + suggestion.dcCheck.stat.slice(1)}
                     </span>
                   )}
                 </div>
               </div>
               
                 <div className={`text-sm transition-colors leading-tight ${
-                  isSelected ? 'text-blue-100' : 'text-white group-hover:text-blue-100'
+                  isSelected ? 'text-white' : 'text-white group-hover:text-white'
                 }`}>
                   {suggestion.summary}
                 </div>

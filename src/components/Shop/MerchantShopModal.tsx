@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { MotionWrapper } from '../MotionWrapper';
 import { ModalHeader } from '../ModalHeader';
 import { useModalMinimize } from '../../hooks/useModalMinimize';
@@ -308,11 +308,11 @@ export function MerchantShopModal({
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'common': return 'text-gray-400';
-      case 'uncommon': return 'text-green-400';
-      case 'rare': return 'text-blue-400';
-      case 'epic': return 'text-purple-400';
+      case 'uncommon': return 'text-yellow-400';
+      case 'rare': return 'text-yellow-400';
+      case 'epic': return 'text-yellow-400';
       case 'legendary': return 'text-yellow-400';
-      case 'unique': return 'text-red-400';
+      case 'unique': return 'text-white';
       default: return 'text-gray-400';
     }
   };
@@ -476,7 +476,7 @@ export function MerchantShopModal({
                  disabled={!canRestock || isRestocking}
                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                    canRestock && !isRestocking
-                     ? 'bg-green-600 hover:bg-green-700 text-white'
+                     ? 'bg-yellow-700 hover:bg-yellow-700 text-white'
                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                  }`}
                >
@@ -540,7 +540,7 @@ export function MerchantShopModal({
                     <div className="text-right">
                       <p className="text-yellow-400 font-medium">{price} gold</p>
                       {!canBuy && activeTab === 'buy' && (
-                        <p className="text-red-400 text-xs">
+                        <p className="text-white text-xs">
                           {!canAfford(price) ? 'Không đủ tiền' : 'Hết hàng'}
                         </p>
                       )}
@@ -553,22 +553,22 @@ export function MerchantShopModal({
 
                   {/* Item Stats */}
                   {!isSkillBook && item.type === 'weapon' && (
-                    <div className="bg-red-900/20 rounded p-2 mb-3">
+                    <div className="bg-gray-950/20 rounded p-2 mb-3">
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
-                          <span className="text-red-300">Sát thương:</span>
+                          <span className="text-white">Sát thương:</span>
                           <span className="text-white ml-1">{item.damage}</span>
                         </div>
                         <div>
-                          <span className="text-red-300">Loại:</span>
+                          <span className="text-white">Loại:</span>
                           <span className="text-white ml-1">{item.damageType}</span>
                         </div>
                         <div>
-                          <span className="text-red-300">Tấn công:</span>
+                          <span className="text-white">Tấn công:</span>
                           <span className="text-white ml-1">+{item.attackBonus}</span>
                         </div>
                         <div>
-                          <span className="text-red-300">Slot:</span>
+                          <span className="text-white">Slot:</span>
                           <span className="text-white ml-1">{item.slot}</span>
                         </div>
                       </div>
@@ -576,14 +576,14 @@ export function MerchantShopModal({
                   )}
 
                   {!isSkillBook && item.type === 'armor' && (
-                    <div className="bg-blue-900/20 rounded p-2 mb-3">
+                    <div className="bg-yellow-900/20 rounded p-2 mb-3">
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
-                          <span className="text-blue-300">AC:</span>
+                          <span className="text-yellow-300">AC:</span>
                           <span className="text-white ml-1">{item.armorClass}</span>
                         </div>
                         <div>
-                          <span className="text-blue-300">Slot:</span>
+                          <span className="text-yellow-300">Slot:</span>
                           <span className="text-white ml-1">{item.slot}</span>
                         </div>
                       </div>
@@ -591,24 +591,24 @@ export function MerchantShopModal({
                   )}
 
                   {!isSkillBook && (item.type === 'accessory' || (item.type === 'misc' && (item.originalSlot || item.slot) && ['accessory1', 'accessory2', 'accessory3'].includes((item.originalSlot || item.slot) as string))) && (
-                    <div className="bg-purple-900/20 rounded p-2 mb-3">
+                    <div className="bg-gray-950/20 rounded p-2 mb-3">
                       <div className="space-y-2 text-xs">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <span className="text-purple-300">Slot:</span>
+                            <span className="text-yellow-300">Slot:</span>
                             <span className="text-white ml-1">{item.originalSlot || item.slot}</span>
                           </div>
                           <div>
-                            <span className="text-purple-300">Loại:</span>
+                            <span className="text-yellow-300">Loại:</span>
                             <span className="text-white ml-1">Phụ kiện</span>
                           </div>
                         </div>
                         {item.effects && item.effects.length > 0 && (
                           <div>
-                            <span className="text-purple-300">Hiệu ứng:</span>
+                            <span className="text-yellow-300">Hiệu ứng:</span>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {accessoryEffectService.getFormattedEffects(item).map((effect, index) => (
-                                <span key={index} className="text-purple-400 bg-purple-500/20 px-2 py-1 rounded text-xs">
+                                <span key={index} className="text-yellow-400 bg-yellow-600/20 px-2 py-1 rounded text-xs">
                                   {effect}
                                 </span>
                               ))}
@@ -620,10 +620,10 @@ export function MerchantShopModal({
                   )}
 
                   {!isSkillBook && item.type === 'consumable' && (
-                    <div className="bg-green-900/20 rounded p-2 mb-3">
+                    <div className="bg-gray-900/20 rounded p-2 mb-3">
                       <div className="text-xs">
                         <div className="mb-1">
-                          <span className="text-green-300">Hiệu ứng:</span>
+                          <span className="text-yellow-300">Hiệu ứng:</span>
                           <span className="text-white ml-1">{translateEffect(item.effect || '')}</span>
                         </div>
                       </div>
@@ -632,11 +632,11 @@ export function MerchantShopModal({
 
                   {/* Skill Book Info */}
                   {isSkillBook && (
-                    <div className="bg-purple-900/30 rounded p-2 mb-3">
-                      <p className="text-purple-300 text-xs">
+                    <div className="bg-gray-950/30 rounded p-2 mb-3">
+                      <p className="text-yellow-300 text-xs">
                         Loại: {skillBookService.getSkillBookInfo(item).skillTypeName}
                       </p>
-                      <p className="text-purple-300 text-xs">
+                      <p className="text-yellow-300 text-xs">
                         Level: {skillBookService.getSkillBookInfo(item).levelName}
                       </p>
                     </div>
@@ -649,7 +649,7 @@ export function MerchantShopModal({
                       <span className="text-white text-sm font-medium">{item.quantity}</span>
                     </div>
                     {item.quantity === 0 && (
-                      <span className="text-red-400 text-xs">Hết hàng</span>
+                      <span className="text-white text-xs">Hết hàng</span>
                     )}
                   </div>
 
@@ -712,15 +712,15 @@ export function MerchantShopModal({
             <div className="p-6 space-y-6">
               {/* Item Info */}
               <div className="flex items-start space-x-4">
-                <div className="text-3xl flex-shrink-0">{selectedSellItem.icon || '📦'}</div>
+                <div className="text-3xl flex-shrink-0">{selectedSellItem.icon || '□'}</div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xl font-bold text-white mb-2">{selectedSellItem.name}</h4>
                   <div className="flex items-center space-x-2 mb-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                       selectedSellItem.rarity === 'common' ? 'bg-gray-600 text-gray-200' :
-                      selectedSellItem.rarity === 'uncommon' ? 'bg-green-600 text-green-200' :
-                      selectedSellItem.rarity === 'rare' ? 'bg-blue-600 text-blue-200' :
-                      selectedSellItem.rarity === 'epic' ? 'bg-purple-600 text-purple-200' :
+                      selectedSellItem.rarity === 'uncommon' ? 'bg-yellow-700 text-yellow-200' :
+                      selectedSellItem.rarity === 'rare' ? 'bg-yellow-600 text-gray-200' :
+                      selectedSellItem.rarity === 'epic' ? 'bg-yellow-600 text-gray-200' :
                       'bg-yellow-600 text-yellow-200'
                     }`}>
                       {selectedSellItem.rarity}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { MotionWrapper } from '../MotionWrapper';
 import { Sword, Shield, Zap, Skull, Target } from 'lucide-react';
 
@@ -65,28 +65,28 @@ export function CombatDialogueBubble({
   const getIconColor = () => {
     switch (messageType) {
       case 'description':
-        return 'text-blue-400';
+        return 'text-yellow-400';
       case 'attack_roll':
         return 'text-yellow-400';
       case 'damage_roll':
-        return 'text-red-400';
+        return 'text-white';
       case 'status':
-        return 'text-green-400';
+        return 'text-yellow-400';
       case 'death':
         return 'text-gray-400';
       default:
-        return 'text-blue-400';
+        return 'text-yellow-400';
     }
   };
 
   const getBubbleColor = () => {
     switch (combatantType) {
       case 'player':
-        return 'bg-blue-800 border-blue-600 text-blue-100';
+        return 'bg-yellow-800 border-yellow-600 text-white';
       case 'enemy':
-        return 'bg-red-800 border-red-600 text-red-100';
+        return 'bg-gray-900 border-gray-700 text-white';
       case 'npc':
-        return 'bg-purple-800 border-purple-600 text-purple-100';
+        return 'bg-gray-900 border-yellow-600 text-white';
       default:
         return 'bg-gray-800 border-gray-600 text-gray-100';
     }

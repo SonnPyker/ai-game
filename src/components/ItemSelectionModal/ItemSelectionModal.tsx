@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { InventoryItem } from '../../types';
 import { 
   Package, 
@@ -33,7 +33,7 @@ export function ItemSelectionModal({
     modalId: 'item-selection-modal',
     title: title,
     subtitle: `${items.length} vật phẩm`,
-    icon: <Package className="w-5 h-5 text-green-400" />
+    icon: <Package className="w-5 h-5 text-yellow-400" />
   });
 
   // Initialize selected items when modal opens
@@ -92,10 +92,10 @@ export function ItemSelectionModal({
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'common': return 'text-gray-400 border-gray-400';
-      case 'uncommon': return 'text-green-400 border-green-400';
-      case 'rare': return 'text-blue-400 border-blue-400';
-      case 'epic': return 'text-purple-400 border-purple-400';
-      case 'legendary': return 'text-orange-400 border-orange-400';
+      case 'uncommon': return 'text-yellow-400 border-yellow-400';
+      case 'rare': return 'text-yellow-400 border-yellow-400';
+      case 'epic': return 'text-yellow-400 border-gray-700';
+      case 'legendary': return 'text-yellow-400 border-gray-700';
       default: return 'text-gray-400 border-gray-400';
     }
   };
@@ -118,7 +118,7 @@ export function ItemSelectionModal({
         <ModalHeader
           title={title}
           subtitle={description}
-          icon={<Package className="w-5 h-5 text-green-400" />}
+          icon={<Package className="w-5 h-5 text-yellow-400" />}
           onClose={onClose}
           onMinimize={minimize}
           className="p-6"
@@ -139,7 +139,7 @@ export function ItemSelectionModal({
                   onClick={handleSelectAll}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     selectedItems.size === items.length
-                      ? 'bg-blue-600 border-blue-500 text-white'
+                      ? 'bg-yellow-600 border-yellow-500 text-white'
                       : 'border-gray-600 text-gray-300 hover:border-gray-500'
                   }`}
                 >
@@ -159,7 +159,7 @@ export function ItemSelectionModal({
                       key={item.id}
                       className={`border rounded-lg p-4 cursor-pointer transition-all ${
                         isSelected
-                          ? 'border-blue-500 bg-blue-500/10'
+                          ? 'border-yellow-500 bg-yellow-500/10'
                           : 'border-gray-700 hover:border-gray-600'
                       }`}
                       onClick={() => handleToggleItem(item.id)}
@@ -168,7 +168,7 @@ export function ItemSelectionModal({
                         {/* Selection Checkbox */}
                         <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 ${
                           isSelected
-                            ? 'bg-blue-500 border-blue-500'
+                            ? 'bg-yellow-500 border-yellow-500'
                             : 'border-gray-600'
                         }`}>
                           {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -205,8 +205,8 @@ export function ItemSelectionModal({
                                   key={stat}
                                   className={`text-xs px-2 py-1 rounded ${
                                     (value as number) > 0
-                                      ? 'bg-green-900/50 text-green-400'
-                                      : 'bg-red-900/50 text-red-400'
+                                      ? 'bg-gray-900/50 text-yellow-400'
+                                      : 'bg-gray-950/50 text-white'
                                   }`}
                                 >
                                   {stat}: {typeof value === 'number' && value > 0 ? '+' : ''}{value}
@@ -218,7 +218,7 @@ export function ItemSelectionModal({
                           {/* Equipment Slot */}
                           {item.slot && (
                             <div className="mt-2">
-                              <span className="text-xs bg-purple-900/50 text-purple-400 px-2 py-1 rounded">
+                              <span className="text-xs bg-gray-950/50 text-yellow-400 px-2 py-1 rounded">
                                 Slot: {item.slot}
                               </span>
                             </div>
@@ -252,7 +252,7 @@ export function ItemSelectionModal({
             </button>
             <button
               onClick={handleConfirm}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
               Lấy vật phẩm ({selectedItems.size})

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, Easing } from 'framer-motion';
 import { 
@@ -16,15 +16,15 @@ const FloatingDamageText: React.FC<FloatingDamageTextProps> = ({ text, onComplet
   const getDamageClass = (type: CombatAnimationType) => {
     switch (type) {
       case CombatAnimationType.DAMAGE:
-        return 'combat-damage-text text-red-400 font-bold text-lg';
+        return 'combat-damage-text text-white font-bold text-lg';
       case CombatAnimationType.HEAL:
-        return 'combat-heal-text text-green-400 font-bold text-lg';
+        return 'combat-heal-text text-yellow-400 font-bold text-lg';
       case CombatAnimationType.MISS:
         return 'combat-miss-text text-gray-400 font-medium text-base';
       case CombatAnimationType.CRITICAL:
         return 'combat-critical-text text-yellow-400 font-black text-xl';
       default:
-        return 'combat-damage-text text-red-400 font-bold text-lg';
+        return 'combat-damage-text text-white font-bold text-lg';
     }
   };
 
@@ -91,8 +91,8 @@ const FloatingDamageText: React.FC<FloatingDamageTextProps> = ({ text, onComplet
   };
 
   const animationVariants = getAnimationVariants(text.type);
-  const textColorClass = text.type === CombatAnimationType.DAMAGE ? 'text-red-400' : 
-                        text.type === CombatAnimationType.HEAL ? 'text-green-400' :
+  const textColorClass = text.type === CombatAnimationType.DAMAGE ? 'text-white' : 
+                        text.type === CombatAnimationType.HEAL ? 'text-yellow-400' :
                         text.type === CombatAnimationType.MISS ? 'text-gray-400' : 'text-yellow-400';
   
   const textSizeClass = text.type === CombatAnimationType.CRITICAL ? 'text-xl' : 'text-lg';

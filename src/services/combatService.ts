@@ -801,7 +801,7 @@ class CombatService {
       name: 'Phòng Thủ',
       description: 'Giảm 50% sát thương nhận vào',
       duration: 1, // Lasts for 1 turn
-      icon: '🛡️',
+      icon: '○',
       effects: {
         armorClassModifier: 0, // Visual only, actual damage reduction is handled in applyDamageWithEffects
         healthModifier: 0
@@ -1183,13 +1183,13 @@ class CombatService {
         // Log difficulty-based XP bonus
         if (difficultyData.rating !== 'easy') {
           this.addTurnAction('info', 
-            `🎯 ${difficultyData.rating.toUpperCase()} Enemy Bonus: +${enhancedExp - baseExp} XP (${difficultyData.score}/100 difficulty)`
+            `◎ ${difficultyData.rating.toUpperCase()} Enemy Bonus: +${enhancedExp - baseExp} XP (${difficultyData.score}/100 difficulty)`
           );
         }
         
         // Log currency reward
         this.addTurnAction('info', 
-          `💰 ${enemy.name}: +${currencyReward} gold (Level ${enemyLevel}, ${threatLevel.toUpperCase()})`
+          `◇ ${enemy.name}: +${currencyReward} gold (Level ${enemyLevel}, ${threatLevel.toUpperCase()})`
         );
         
         // Use enhanced loot system with difficulty scaling
@@ -1237,7 +1237,7 @@ class CombatService {
         
         if (Array.isArray(bonusItem) && bonusItem.length > 0) {
           items.push(...bonusItem);
-          this.addTurnAction('info', `🎁 Nhận thêm phần thưởng đặc biệt từ chiến thắng ${defeatedEnemyCount} enemies!`);
+          this.addTurnAction('info', `□ Nhận thêm phần thưởng đặc biệt từ chiến thắng ${defeatedEnemyCount} enemies!`);
         }
       }
       
@@ -1277,7 +1277,7 @@ class CombatService {
     // Log XP bonus for multiple enemies
     if (enemyCount > 1 && this.currentCombat.winner === 'player') {
       this.addTurnAction('info', 
-        `🎯 Multi-Enemy Bonus: ${totalExperience} XP × ${enemyCount} enemies = ${finalExperience} XP!`
+        `◎ Multi-Enemy Bonus: ${totalExperience} XP × ${enemyCount} enemies = ${finalExperience} XP!`
       );
     }
     
@@ -1290,7 +1290,7 @@ class CombatService {
       finalCurrency += multiEnemyBonus;
       
       this.addTurnAction('info', 
-        `💰 Multi-Enemy Currency Bonus: +${multiEnemyBonus} gold (${enemyCount} enemies defeated)`
+        `◇ Multi-Enemy Currency Bonus: +${multiEnemyBonus} gold (${enemyCount} enemies defeated)`
       );
     }
     
@@ -1529,7 +1529,7 @@ class CombatService {
     if (this.canEnemyPerformAction(combatant.id, 'extra')) {
       const extraAction = await this.previewConsumableAction(combatant, allCombatants, difficulty);
       if (extraAction) {
-        plannedActions.push(`💊 ${extraAction}`);
+        plannedActions.push(`○ ${extraAction}`);
       }
     }
     
@@ -1545,7 +1545,7 @@ class CombatService {
     if (plannedActions.length > 0) {
       const actionText = plannedActions.length === 1 
         ? plannedActions[0]
-        : `📋 ${combatant.name} chuẩn bị: ${plannedActions.join(' → ')}`;
+        : `○ ${combatant.name} chuẩn bị: ${plannedActions.join(' → ')}`;
       
       this.addTurnAction('info', actionText);
       
@@ -1595,7 +1595,7 @@ class CombatService {
         
         if (Math.random() < skillChance) {
           const skill = availableSkills[0]; // Use first available skill for preview
-          return `🔮 ${combatant.name} sử dụng ${skill.name}`;
+          return `○ ${combatant.name} sử dụng ${skill.name}`;
         }
       }
     }
@@ -1603,10 +1603,10 @@ class CombatService {
     // Default to attack
     if (combatant.attacks && combatant.attacks.length > 0) {
       const attack = combatant.attacks[0];
-      return `⚔️ ${combatant.name} tấn công ${player.name} với ${attack.name}`;
+      return `⚔ ${combatant.name} tấn công ${player.name} với ${attack.name}`;
     }
     
-    return `🛡️ ${combatant.name} phòng thủ`;
+    return `○ ${combatant.name} phòng thủ`;
   }
 
 

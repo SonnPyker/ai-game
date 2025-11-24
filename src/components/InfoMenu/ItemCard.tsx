@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { InventoryItem } from '../../types';
 import { accessoryEffectService } from '../../services/accessoryEffectService';
 import { 
@@ -70,10 +70,10 @@ export function ItemCard({
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'common': return 'text-gray-400 border-gray-400';
-      case 'uncommon': return 'text-green-400 border-green-400';
-      case 'rare': return 'text-blue-400 border-blue-400';
-      case 'epic': return 'text-purple-400 border-purple-400';
-      case 'legendary': return 'text-orange-400 border-orange-400';
+      case 'uncommon': return 'text-yellow-400 border-yellow-400';
+      case 'rare': return 'text-yellow-400 border-yellow-400';
+      case 'epic': return 'text-yellow-400 border-gray-700';
+      case 'legendary': return 'text-yellow-400 border-gray-700';
       default: return 'text-gray-400 border-gray-400';
     }
   };
@@ -121,7 +121,7 @@ export function ItemCard({
     return Object.entries(stats)
       .filter(([_, value]) => value !== 0 && value !== '')
       .map(([stat, value], index) => (
-        <span key={`${stat}-${index}`} className={`text-xs ${typeof value === 'number' && value > 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <span key={`${stat}-${index}`} className={`text-xs ${typeof value === 'number' && value > 0 ? 'text-yellow-400' : 'text-white'}`}>
           {statNames[stat]}: {typeof value === 'number' && value > 0 ? '+' : ''}{value}
         </span>
       ));
@@ -130,12 +130,12 @@ export function ItemCard({
   // Format damage type color
   const getDamageTypeColor = (damageType?: string) => {
     switch (damageType) {
-      case 'fire': return 'text-red-400';
-      case 'cold': return 'text-blue-400';
+      case 'fire': return 'text-white';
+      case 'cold': return 'text-yellow-400';
       case 'lightning': return 'text-yellow-400';
-      case 'poison': return 'text-green-400';
-      case 'magical': return 'text-purple-400';
-      case 'psychic': return 'text-pink-400';
+      case 'poison': return 'text-yellow-400';
+      case 'magical': return 'text-yellow-400';
+      case 'psychic': return 'text-white';
       default: return 'text-gray-400';
     }
   };
@@ -245,7 +245,7 @@ export function ItemCard({
                     className={`w-full px-3 py-2 text-left text-sm flex items-center space-x-2 ${
                       item.isEquipped 
                         ? 'text-yellow-400 hover:bg-yellow-500/20 hover:text-yellow-300' 
-                        : 'text-red-400 hover:bg-red-500/20 hover:text-red-300'
+                        : 'text-white hover:bg-gray-900/20 hover:text-white'
                     }`}
                     title={item.isEquipped ? 'Sẽ tự động gỡ trang bị trước khi vứt bỏ' : ''}
                   >
@@ -280,17 +280,17 @@ export function ItemCard({
         <div className="mb-2">
           <div className="flex flex-wrap gap-2 text-xs">
             {item.damage && (
-              <span className="text-red-400 font-mono">
+              <span className="text-white font-mono">
                 Sát thương: {item.damage}
               </span>
             )}
             {item.attackBonus && (
-              <span className="text-blue-400">
+              <span className="text-yellow-400">
                 Tấn công: {item.attackBonus > 0 ? '+' : ''}{item.attackBonus}
               </span>
             )}
             {item.armorClass && (
-              <span className="text-green-400">
+              <span className="text-yellow-400">
                 AC: {item.armorClass}
               </span>
             )}
@@ -308,7 +308,7 @@ export function ItemCard({
         <div className="mb-2">
           <div className="flex flex-wrap gap-1 text-xs">
             {accessoryEffectService.getFormattedEffects(item).map((effect, index) => (
-              <span key={index} className="text-purple-400 bg-purple-500/20 px-2 py-1 rounded">
+              <span key={index} className="text-yellow-400 bg-yellow-600/20 px-2 py-1 rounded">
                 {effect}
               </span>
             ))}
@@ -327,7 +327,7 @@ export function ItemCard({
 
         {/* Equipped Badge */}
         {item.isEquipped && (
-          <div className="flex items-center space-x-1 text-xs text-green-400">
+          <div className="flex items-center space-x-1 text-xs text-yellow-400">
             <Star className="w-3 h-3" />
             <span>Đã trang bị</span>
           </div>
@@ -335,7 +335,7 @@ export function ItemCard({
 
         {/* Slot Badge */}
         {item.slot && (
-          <div className="text-xs text-blue-400">
+          <div className="text-xs text-yellow-400">
             {item.slot.replace('_', ' ')}
           </div>
         )}
@@ -354,12 +354,12 @@ export function ItemCard({
           {(item.damage || item.attackBonus) && (
             <div className="flex flex-wrap gap-2 text-xs">
               {item.damage && (
-                <span className="text-red-400 font-mono">
+                <span className="text-white font-mono">
                   Sát thương: {item.damage}
                 </span>
               )}
               {item.attackBonus && (
-                <span className="text-blue-400">
+                <span className="text-yellow-400">
                   Tấn công: {item.attackBonus > 0 ? '+' : ''}{item.attackBonus}
                 </span>
               )}

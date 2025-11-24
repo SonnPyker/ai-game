@@ -47,9 +47,9 @@ export class LocalStorageStore implements SaveStorageAdapter {
 
       localStorage.setItem(key, jsonString);
       
-      console.log(`✅ Đã lưu slot ${slotId} (${sizeKB.toFixed(2)}KB)`);
+      console.log(`✓ Đã lưu slot ${slotId} (${sizeKB.toFixed(2)}KB)`);
     } catch (error) {
-      console.error(`❌ Lỗi lưu slot ${slotId}:`, error);
+      console.error(`✗ Lỗi lưu slot ${slotId}:`, error);
       throw error;
     }
   }
@@ -74,10 +74,10 @@ export class LocalStorageStore implements SaveStorageAdapter {
         throw new Error('Dữ liệu SaveGame không hợp lệ');
       }
 
-      console.log(`✅ Đã tải slot ${slotId}`);
+      console.log(`✓ Đã tải slot ${slotId}`);
       return saveGame;
     } catch (error) {
-      console.error(`❌ Lỗi tải slot ${slotId}:`, error);
+      console.error(`✗ Lỗi tải slot ${slotId}:`, error);
       return null;
     }
   }
@@ -104,7 +104,7 @@ export class LocalStorageStore implements SaveStorageAdapter {
 
       return slots;
     } catch (error) {
-      console.error('❌ Lỗi liệt kê slot:', error);
+      console.error('✗ Lỗi liệt kê slot:', error);
       return [];
     }
   }
@@ -118,9 +118,9 @@ export class LocalStorageStore implements SaveStorageAdapter {
       const key = this.getSlotKey(slotId);
       localStorage.removeItem(key);
       
-      console.log(`✅ Đã xóa slot ${slotId}`);
+      console.log(`✓ Đã xóa slot ${slotId}`);
     } catch (error) {
-      console.error(`❌ Lỗi xóa slot ${slotId}:`, error);
+      console.error(`✗ Lỗi xóa slot ${slotId}:`, error);
       throw error;
     }
   }
@@ -135,7 +135,7 @@ export class LocalStorageStore implements SaveStorageAdapter {
 
       return JSON.stringify(saveGame, null, 2);
     } catch (error) {
-      console.error(`❌ Lỗi export slot ${slotId}:`, error);
+      console.error(`✗ Lỗi export slot ${slotId}:`, error);
       return null;
     }
   }
@@ -169,7 +169,7 @@ export class LocalStorageStore implements SaveStorageAdapter {
       await this.save(slotId, saveGameWithMeta);
       return true;
     } catch (error) {
-      console.error(`❌ Lỗi import slot ${slotId}:`, error);
+      console.error(`✗ Lỗi import slot ${slotId}:`, error);
       return false;
     }
   }

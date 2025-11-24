@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Play, Globe, User, ArrowRight, CheckCircle, Circle } from 'lucide-react';
 import { npcRelationshipService } from '../services/npcRelationshipService';
 import { MotionWrapper } from '../components/MotionWrapper';
@@ -174,9 +174,9 @@ export function InitPage() {
     
     switch (status) {
       case 'completed':
-        return <CheckCircle className="w-6 h-6 text-green-400" />;
+        return <CheckCircle className="w-6 h-6 text-yellow-400" />;
       case 'current':
-        return <Icon className="w-6 h-6 text-blue-400" />;
+        return <Icon className="w-6 h-6 text-yellow-400" />;
       case 'disabled':
         return <Icon className="w-6 h-6 text-gray-500" />;
       default:
@@ -189,9 +189,9 @@ export function InitPage() {
     
     switch (status) {
       case 'completed':
-        return 'border-green-500/50 bg-green-500/10';
+        return 'border-yellow-500/50 bg-yellow-600/10';
       case 'current':
-        return 'border-blue-500/50 bg-blue-500/10';
+        return 'border-yellow-500/50 bg-yellow-500/10';
       case 'disabled':
         return 'border-gray-600/50 bg-gray-800/20 opacity-50';
       default:
@@ -204,9 +204,9 @@ export function InitPage() {
     
     switch (status) {
       case 'completed':
-        return 'text-green-300';
+        return 'text-yellow-300';
       case 'current':
-        return 'text-blue-300';
+        return 'text-yellow-300';
       case 'disabled':
         return 'text-gray-500';
       default:
@@ -265,12 +265,12 @@ export function InitPage() {
                     {step.name && (
                       <p className={`${isMobile ? 'text-xs sm:text-sm' : 'text-sm'} font-medium mt-1 ${
                         getStepStatus(step) === 'completed' 
-                          ? 'text-green-300' 
+                          ? 'text-yellow-300' 
                           : getStepStatus(step) === 'current'
-                          ? 'text-blue-300'
+                          ? 'text-yellow-300'
                           : 'text-gray-500'
                       }`}>
-                        📝 {step.name}
+                        ○ {step.name}
                       </p>
                     )}
                   </div>
@@ -278,14 +278,14 @@ export function InitPage() {
                 
                 <div className={`flex items-center space-x-2 ${isMobile ? 'mt-3 sm:mt-0' : ''}`}>
                   {getStepStatus(step) === 'current' && (
-                    <span className={`${isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs'} bg-blue-500/20 border border-blue-500/50 text-blue-300 rounded-full font-medium`}>
+                    <span className={`${isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs'} bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 rounded-full font-medium`}>
                       TIẾP TỤC
                     </span>
                   )}
                   {getStepStatus(step) === 'completed' && (
-                    <span className={`${isMobile ? 'px-2 py-1' : 'px-3 py-1'} bg-green-500/20 border border-green-500/50 text-green-300 rounded-full font-medium ${
+                    <span className={`${isMobile ? 'px-2 py-1' : 'px-3 py-1'} bg-yellow-600/20 border border-yellow-500/50 text-yellow-300 rounded-full font-medium ${
                       step.id === 'scenario' && initState.worldCompleted && initState.characterCompleted && initState.scenarioCompleted 
-                        ? `${isMobile ? 'text-xs px-3 py-1' : 'text-sm px-4 py-2'} bg-green-500/30 border-green-400 text-green-200 font-bold` 
+                        ? `${isMobile ? 'text-xs px-3 py-1' : 'text-sm px-4 py-2'} bg-yellow-600/30 border-yellow-400 text-yellow-200 font-bold` 
                         : isMobile ? 'text-xs' : 'text-xs'
                     }`}>
                       {step.id === 'scenario' && initState.worldCompleted && initState.characterCompleted && initState.scenarioCompleted 
@@ -319,19 +319,19 @@ export function InitPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
               <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
-                initState.worldCompleted ? 'bg-green-400' : 'bg-gray-500'
+                initState.worldCompleted ? 'bg-yellow-500' : 'bg-gray-500'
               }`}></div>
               <p className="text-sm text-gray-300">Thế giới</p>
             </div>
             <div className="text-center">
               <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
-                initState.characterCompleted ? 'bg-green-400' : 'bg-gray-500'
+                initState.characterCompleted ? 'bg-yellow-500' : 'bg-gray-500'
               }`}></div>
               <p className="text-sm text-gray-300">Nhân vật</p>
             </div>
             <div className="text-center">
               <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
-                initState.scenarioCompleted ? 'bg-green-400' : 'bg-gray-500'
+                initState.scenarioCompleted ? 'bg-yellow-500' : 'bg-gray-500'
               }`}></div>
               <p className="text-sm text-gray-300">Kịch bản</p>
             </div>
@@ -346,7 +346,7 @@ export function InitPage() {
           transition={{ duration: 0.5, delay: 0.6 }}
         >
           <p className="text-sm text-gray-500">
-            💡 Nếu bạn đang ở giữa quá trình tạo game và bị chuyển hướng, 
+            ○ Nếu bạn đang ở giữa quá trình tạo game và bị chuyển hướng, 
             hãy nhấn vào bước hiện tại để tiếp tục. Lưu ý: việc quay lại các bước trước có thể reset dữ liệu đã nhập.
           </p>
         </MotionWrapper>
