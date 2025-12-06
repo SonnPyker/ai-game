@@ -112,7 +112,16 @@ export default defineConfig({
     open: true,
     hmr: {
       overlay: true
-    }
+    },
+    proxy: {
+      // Proxy SillyTavern backend to keep same-origin cookies/CSRF
+      '/stapi': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/stapi/, ''),
+      },
+    },
   },
   define: {
     __HMR_CONFIG_NAME__: JSON.stringify('vite'),

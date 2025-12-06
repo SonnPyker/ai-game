@@ -3,6 +3,7 @@ import { ApiKeyConfig } from '../components/Settings/ApiKeyConfig';
 import { MultiApiKeyManager } from '../components/Settings/MultiApiKeyManager';
 import { VersionInfo } from '../components/Settings/VersionInfo';
 import { ComfyUISettings } from '../components/Settings/ComfyUISettings';
+import { SillyTavernSettings } from '../components/Settings/SillyTavernSettings';
 import { geminiService } from '../services/geminiService';
 import { Key, Info, Image } from 'lucide-react';
 import { MotionWrapper } from '../components/MotionWrapper';
@@ -182,6 +183,9 @@ export function SettingsPage() {
                 </div>
               </div>
             </MotionWrapper>
+
+            {/* SillyTavern backend settings */}
+            <SillyTavernSettings />
 
             {/* Usage Information */}
             <MotionWrapper
