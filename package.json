@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --report-unused-disable-directives",
+    "lint:strict": "eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "vercel-build": "npm run build"
   },
@@ -24,6 +26,7 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
     "@typescript-eslint/eslint-plugin": "^8.46.0",
@@ -33,6 +36,8 @@
     "eslint": "^9.37.0",
     "eslint-plugin-react-hooks": "^7.0.0",
     "eslint-plugin-react-refresh": "^0.4.23",
+    "gitnexus": "^1.6.6-rc.23",
+    "globals": "^16.4.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
     "terser": "^5.44.0",
